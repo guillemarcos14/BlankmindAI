@@ -19,7 +19,17 @@ Una cancelación canónica coherente —intención, estado y decisión cancelado
 - Pruebas HTTP locales con tiempos escalados contrastan el comportamiento previo y la recuperación ante peticiones detenidas, cuerpos detenidos, conexión interrumpida y candidatos inválidos. Son fallos controlados, no medición del proveedor ni ejecución física.
 - El panel `live-fault-panel.cjs` está diseñado para retener deliberadamente la primera respuesta de ocho casos, en cuatro pares antes de entregar cabeceras y cuatro durante la lectura del cuerpo. Usa respuestas reales de API para el segundo intento, conserva el control anterior y comprueba estado/acciones. No simula que el proveedor original haya vuelto a fallar ni demuestra ahorro de coste.
 
-La evidencia final debe vincular los informes de pruebas, el panel y una evaluación completa al commit limpio exacto. No repetir una batería fallida hasta obtener verde, cambiar expectativas ni aplicar al nuevo código los dictámenes de otro runtime sin comprobar los hashes exactos de cada entrada.
+## Resultado final del candidato
+
+El commit limpio `fcf5f9bc53585ae093022f33a71040d941185370`, fijado en la rama remota `codex/backend-release-candidate-timeout-recovery-2026-09-26`, completó una pasada de 925 turnos con modelo activo, cero fallos operativos y cero timeouts. Tras vincular el dictamen independiente, los 925 turnos pasan las ocho dimensiones: 842 respuestas excelentes y 83 aceptables, ninguna deficiente ni hallazgo grave. El juez reutilizó 888 dictámenes por entrada completa idéntica y generó 37 nuevos; 882 coincidencias procedían de la semilla histórica y seis se reutilizaron dentro de la ejecución. El corpus es de desarrollo, no un conjunto reservado.
+
+Latencia observada a concurrencia ocho: mediana 1.526 ms, p95 3.155 ms, p99 5.063 ms y máximo 13.966 ms. Hubo cuatro segundas peticiones entre 920 extracciones (0,435 % de solicitudes adicionales): ganó la segunda en tres casos y la primera en uno. Esto no demuestra tres timeouts evitados: las primeras peticiones canceladas podrían haber terminado antes de 20 segundos. Tampoco se atribuye causalmente la diferencia respecto a 105 al nuevo código: la pasada diagnóstica anterior ya terminó sin fallos.
+
+El panel con retrasos deliberados y API real terminó: los ocho controles agotaron 20,004–20,035 segundos y los ocho candidatos recuperaron respuesta en 13,145–15,596 segundos. Estado y acciones coinciden en 8/8 pares; la auditoría independiente pasa 41/41 comprobaciones. Las pruebas locales cubren además el plazo agotado, respuesta inválida, reparación, error terminal, cancelación y ausencia de filtración de métricas internas.
+
+Harness 63/63 con baseline anterior a las ediciones y `--enforce-scope` en feature y release. CI del SHA exacto: BM `36266646997` e iOS `36266646993`, ambos correctos. La integración `8227095e645a477f3461791b631ae3316e47cd73` comparte el árbol completo `87e516a5baa19bf6d69b6ea92e114712334d6f33` y está desplegada sólo en staging privado: `6ab8208ee5651eb68c4d343f`. Se verificaron cuatro ZIP y 38 entradas de código, rechazo anónimo 401 y aislamiento. Una preflight acredita Luna activo; los nueve checks cloud y las doce limpiezas pasan. El smoke no registra la procedencia de modelo de cada respuesta y su recibo fallido es simulado.
+
+`docs/PRODUCT_NEXT_EVIDENCE.json` conserva los archivos originales y hashes de diagnóstico, panel, modelo, juez, vinculación, CI y despliegue. Los commits posteriores de documentación no sustituyen el SHA evaluado ni requieren otro deploy. La corrección de recuperación y su gate de modelo quedan completados; los informes de 105 conservan sus 29 fallos originales, sin reclasificación ni atribución de una causa no demostrada.
 
 ## Límites y coste
 

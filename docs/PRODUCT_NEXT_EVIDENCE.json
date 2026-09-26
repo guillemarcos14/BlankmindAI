@@ -1,9 +1,9 @@
 {
-  "recorded_at": "2026-09-26T17:26:54.702Z",
+  "recorded_at": "2026-09-26T19:52:18.233Z",
   "purpose": "Audit index, not production release authorization. Reports remain in their original local worktrees; hashes refer to complete file bytes.",
   "pull_request": "https://github.com/guillemarcos14/BlankmindAI/pull/6",
-  "deployed_source_commit": "30311fe5bae90df21453d506aed834acceb8c6c8",
-  "private_deploy_id": "6ab7fc6184f6d6492d619bb7",
+  "deployed_source_commit": "8227095e645a477f3461791b631ae3316e47cd73",
+  "private_deploy_id": "6ab8208ee5651eb68c4d343f",
   "staging_supabase_ref": "njqbovsmoowkhhsqmitn",
   "staging_migrations": "001-024",
   "production_changed": false,
@@ -375,6 +375,162 @@
       "path": "tmp/timeout-diagnosis-20260926/paired-offline-validation.json",
       "sha256": "c50dda0896be202f7c73da91d8da956869e2ab89345645eb0705662c8f9a70d0",
       "scope": "Bounded timeout diagnosis on source67cb2a6; one preflight plus24 paired API requests across8 historical timeout cases and4 controls. No timeouts reproduced; no model/policy change justified. Null-to-undefined diagnostic validator correction is offline and preserves raw responses. Not release evidence."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/timeout-correction-20260926/reproduction-c8.json",
+      "sha256": "95350a8967c847becc9ad860fe49508cfe503eb2acabcb45917dbb2bc12052fe",
+      "scope": "Before-fix diagnostic:112 extractions plus one preflight, no timeouts; known synthetic cases, not release approval."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/bm-semantic/timeout-diagnostic-10fe3ff-live.json",
+      "sha256": "9e488e859c1808aa882d6ad8966f387b3b1cd666f911ef6a47b787ffdd917af1",
+      "scope": "Before-fix instrumented policy:925 active model turns,0 operational failures. Visible quality not independently judged; cannot attribute this success to later recovery change."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/timeout-correction-20260926/bounded-candidate-http-1790450628899.json",
+      "sha256": "98433fb8bc62fb86f0c7d625a3f2006b3dc9a10c5b5340a0f54279016fb71d17",
+      "scope": "Fourteen local HTTP fault checks comparing original and candidate; scaled time, no provider reliability or physical claim."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/timeout-correction-20260926/live-fault-panel.json",
+      "sha256": "d96994e5f0d6686f49006f6f8f3f7c0a2b8046d1aa7e16b998de9a4ca2dbbf46",
+      "scope": "Real API with artificial first-response delay:8 original timeouts,8 recovered candidates;state/actions8/8,24HTTP200. Does not reproduce historical provider incident."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/timeout-correction-20260926/fault-panel-independent-audit.json",
+      "sha256": "7e320110939ee061674e189a3c7da86899f3dc7960028d36dfee30c4b6a9a0ae",
+      "scope": "Independent offline audit:41/41; maximum two requests, cancelled loser; no provider billing/cancellation or physical guarantee."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/bm-semantic/timeout-candidate-fcf5f9b-live.json",
+      "sha256": "0103ac36fc3f9ed312f3c61643114adc5ec290535f997fb0fe78c8dc8e9b59d9",
+      "scope": "Exact clean stable fcf runtime:925 active model turns,zero operational failures;seven deterministic dimensions pass. Raw visible text unverified until separate binding."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/bm-semantic/timeout-candidate-fcf5f9b-judge.json",
+      "sha256": "32faf634bf47f2eb84e0367c024de6e8241b1c1826e087f6a7e2260dbb94e9c3",
+      "scope": "Complete v10 judge:842excellent83acceptable0poor0hard;888 exact reused reviews and37 new reviews;0functional failures. Model gate only."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/bm-semantic/timeout-candidate-fcf5f9b-judge.oracle.json",
+      "sha256": "fe5749ebb47fa1c064d5f7cdc8f651f1ff486fc6a1076beec731ccf023344421",
+      "scope": "925 exported exact verdict bindings for fcf responses;no new model response generation."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/bm-semantic/timeout-candidate-fcf5f9b-judge.reviewed.json",
+      "sha256": "646e0cfc7f2b686055432acad2066a713f56d5d6d55833a034137494ae07aaae",
+      "scope": "Offline binding:925pass0fail0unverified,all eight dimensions925/925;physical release gate remains pending."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/bm-semantic/timeout-candidate-fcf5f9b-judge.quality-bound.json",
+      "sha256": "a6ea78f3e053a9114b48b8eaa441ab9e34df6d0975f5674cb0bab9b59ab3089f",
+      "scope": "Quality derivative bound to reviewed fcf; source judgments and original report provenance retained."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/bm-semantic/timeout-candidate-fcf5f9b-judge.json.cache-seed.json",
+      "sha256": "44d606010e03f3b8f86f0079102a9990e2d749de8459534de7f054bf4aea9bdc",
+      "scope": "Immutable seed provenance:882 exact input matches from earlier completed judge,43 remaining target turns before within-run deduplication."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/bm-semantic/timeout-candidate-fcf5f9b-judge.json.recipe.json",
+      "sha256": "33a2171ec749bc196c440dac0f5edbcc0223c7291514216d1d28ea36a2498b41",
+      "scope": "Predeclared cache/judge/binding recipe, exact inputs only; source reports unchanged."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/timeout-correction-20260926/quality-cache-recipe-validation.json",
+      "sha256": "e70b4ab8c0148c2d0f59a780744acca57dbac3606062cefb06da863042509f30",
+      "scope": "Offline cache recipe integrity tests; no model calls."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/timeout-correction-20260926/final-model-audit.json",
+      "sha256": "f70430de687e686b0db92d5b0734a28ac82131d3ed2279b30f7dfebd09e60923",
+      "scope": "Independent final source, model, cache and review-binding integrity audit; no API."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/product-harness/baseline-timeout-correction-20260926.json",
+      "sha256": "ae65ffd9a7f9c337c184a71ad3de4a4b9aba0f83e992398799f9b603aa1a3dce",
+      "scope": "Feature baseline captured before edits."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/product-harness/timeout-correction-candidate-20260926.json",
+      "sha256": "75716d3fdcd07cd99faea3ebf80f9d9879ed845cdc07c9062e598ff9e1cb2c57",
+      "scope": "Exact candidate scoped validation:63/63,12paths,0scope violations."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/ci-fcf5f9b/bm-run.json",
+      "sha256": "13c3ba34913c2f20f49e581890c0a50014983d66d6ca5fb8eb540e3976d8252e",
+      "scope": "Exact fcf CI success:PostgreSQL conversation recovery, contract/runtime gate,Android compile and unit tests."
+    },
+    {
+      "worktree": "Codigo-product-next",
+      "path": "tmp/ci-fcf5f9b/ios-run.json",
+      "sha256": "f69ad38e149e0f48eb9aa8e1bb7e682bf7a922f49309c1b2c38cddee681f7a62",
+      "scope": "Exact fcf iOS CI success;unsigned simulator build,not signed or physical execution."
+    },
+    {
+      "worktree": "Codigo-product-release",
+      "path": "tmp/product-harness/baseline-timeout-correction-20260926.json",
+      "sha256": "9a1dcaf3fcf7430408a9bc3eb65001f691a8cc239f180d83c3f54d71b1756137",
+      "scope": "Release baseline captured before integration."
+    },
+    {
+      "worktree": "Codigo-product-release",
+      "path": "tmp/cloud-stage/private-8227095e645a-final-evidence.json",
+      "sha256": "3fc0191cd08ee343ee3f905341fe9b2f0827a6d95ac4797865aecd98c5c06ee0",
+      "scope": "Private822 integration of fcf:38inputs,4remote ZIPs,anonymous401,isolation,one active Luna preflight,9cloud checks,12cleanup;simulated failed receipt only."
+    },
+    {
+      "worktree": "Codigo-product-release",
+      "path": "tmp/cloud-stage/package-8227095e645a-1790451823768.json",
+      "sha256": "4ecf27d1a8e05e3ef85bf8669096052d3706f2e02243c3029d7a7f4bcc0e4c8e",
+      "scope": "Private822 integration of fcf: package;original bytes retained. No production or physical validation."
+    },
+    {
+      "worktree": "Codigo-product-release",
+      "path": "tmp/cloud-stage/package-8227095e645a-1790451823768.verification-1790451877257-77b5f4.json",
+      "sha256": "ce0adf39bcf5b4d7b6d3ccf4a6fd7f8f5231348f28c9913ab5b796a4b0ed22b3",
+      "scope": "Private822 integration of fcf: verification;original bytes retained. No production or physical validation."
+    },
+    {
+      "worktree": "Codigo-product-release",
+      "path": "tmp/cloud-stage/model-preflight-8227095e645a.json",
+      "sha256": "35052a7459a299a2779dc8b04033ae64e11771df277e42a5cf5b07e66234a35f",
+      "scope": "Private822 integration of fcf: preflight;original bytes retained. No production or physical validation."
+    },
+    {
+      "worktree": "Codigo-product-release",
+      "path": "tmp/assistant-app-cloud/timeout-correction-8227095e645a-20260926-194544.json",
+      "sha256": "ad8627600f4348dc39e4355b74bfab586898936a6cec4dc1535cdb012a7add15",
+      "scope": "Private822 integration of fcf: cloud;original bytes retained. No production or physical validation."
+    },
+    {
+      "worktree": "Codigo-product-release",
+      "path": "tmp/backend-release/timeout-correction-final-clean-20260926.json",
+      "sha256": "b03b0be90f16a6d41d5154e7ca065e0f3fc998c43d086256fd7d7113846f9c3b",
+      "scope": "Private822 integration of fcf: harness;original bytes retained. No production or physical validation."
+    },
+    {
+      "worktree": "Codigo-product-release",
+      "path": "tmp/backend-release/timeout-correction-integration-provenance-20260926.json",
+      "sha256": "1c2e63d86e00b77121dd943717809002882a0dc2aba77c32957065cb02a3eb42",
+      "scope": "Private822 integration of fcf: integration;original bytes retained. No production or physical validation."
     }
   ],
   "coverage_limits": {
@@ -383,37 +539,42 @@
     "distinct_text_sequences": 160,
     "turns": 925,
     "heldout": false,
-    "model_quality_after_corrections": "Complete925 reviewed; release remains rejected due29 operational failures. Five original lexical flags remain in report despite independent false-positive diagnosis.",
+    "model_quality_after_corrections": "Exact clean fcf candidate:925 active model turns,0 operational failures;925 reviewed passes,0 failures,0 unverified. Model gate passed; signed build and physical iPhone gate still pending.",
     "signed_candidate_build": "unavailable",
     "physical_iphone_cases": 0,
     "observed_user_value_multiplier": "not measured",
     "latest_completed_live_judge": {
-      "source_commit": "105cf120761594b75d5a0b47656ea903e4abac2f",
+      "source_commit": "fcf5f9bc53585ae093022f33a71040d941185370",
       "turns": 925,
       "judged": 925,
-      "excellent": 839,
-      "acceptable": 86,
+      "excellent": 842,
+      "acceptable": 83,
       "poor": 0,
       "hard_failures": 0,
       "approval_percent": 100,
       "average_scores": {
-        "understanding": 4.98,
-        "context": 4.98,
-        "usefulness": 4.95,
-        "naturalness": 4.73,
-        "minimality": 4.91
+        "understanding": 4.97,
+        "context": 4.97,
+        "usefulness": 4.96,
+        "naturalness": 4.74,
+        "minimality": 4.92
       },
-      "release_eligible": false,
-      "functional_failures": 29,
-      "operational_failures": 29,
-      "reviewed_total_failures": 33,
-      "reused_exact_reviews": 504,
+      "release_eligible": true,
+      "functional_failures": 0,
+      "release_eligible_scope": "model gate only",
+      "production_release_eligible": false,
+      "operational_failures": 0,
+      "reviewed_total_failures": 0,
+      "reused_exact_reviews": 888,
+      "newly_generated_reviews": 37,
+      "historical_seed_matching_turns": 882,
+      "within_run_exact_reuses": 6,
       "applies_to_current_runtime": true
     },
     "current_cloud_full_conversation": true,
     "current_cloud_infrastructure_checks": 4,
     "current_cloud_cleanup_checks": 12,
-    "current_cloud_model_provenance": "One separate active-model preflight; nine smoke checks do not record per-response provenance.",
+    "current_cloud_model_provenance": "One separate active Luna preflight, one attempt, no model error. Nine cloud smoke checks do not record individual response model provenance; failed receipt is simulated.",
     "historical_completed_live_judge": {
       "source_commit": "66d6d5288d897d40533a9bf0c6d63bb773c9fde5",
       "turns": 925,
@@ -431,56 +592,41 @@
     "current_metrics": {
       "turns": 925,
       "concurrency": 8,
-      "wall_ms": 475881,
-      "latency_ms": {
-        "p50": 2067,
-        "p95": 13630,
-        "p99": 20014,
-        "max": 24836,
-        "mean": 3975.96
-      },
-      "quantile_method": "nearest rank",
+      "active_model_turns": 925,
       "source_counts": {
-        "openai:gpt-5.6-luna:semantic+grounded_canonical_response": 514,
-        "openai:gpt-5.6-luna:semantic+grounded_execution_boundary": 363,
-        "semantic_state_v1+grounded_execution_boundary": 12,
-        "semantic_state_v1+grounded_canonical_response": 16,
-        "openai:gpt-5.6-luna:semantic+openai:gpt-5.6-luna:grounded_contextual_response": 14,
-        "openai:gpt-5.6-luna:semantic+grounded_deterministic_after_model_error": 1,
+        "openai:gpt-5.6-luna:semantic+grounded_canonical_response": 530,
+        "openai:gpt-5.6-luna:semantic+grounded_execution_boundary": 375,
+        "openai:gpt-5.6-luna:semantic+openai:gpt-5.6-luna:grounded_contextual_response": 15,
         "openai:gpt-5.6-luna:conversation": 5
       },
-      "active_model_turns": 897,
-      "active_model_definition": "Source starts openai; not an extraction-only counter",
-      "active_semantic_extraction_turns": 892,
+      "active_semantic_extraction_turns": 920,
       "active_conversation_turns": 5,
-      "semantic_extraction_failure_turns": 28,
-      "semantic_extraction_failure_attempt_counts": {
-        "1": 28
+      "operational_failures": 0,
+      "latency_ms": {
+        "p50": 1526,
+        "p95": 3155,
+        "p99": 5063,
+        "max": 13966
       },
-      "semantic_extraction_failure_codes": {
-        "semantic_model_timeout": 28
-      },
-      "contextual_response_failure_turns": 1,
-      "contextual_response_failure_codes": {
-        "contextual_response_timeout": 1
-      },
-      "extraction_and_context_failure_overlap": 0,
+      "quantile_method": "nearest rank",
+      "second_requests": 4,
+      "primary_winners_with_second_request": 1,
+      "second_request_winners": 3,
+      "additional_requests_percent_of_extractions": 0.43478260869565216,
+      "cost_limit": "Request count, not token billing or proof of three avoided timeouts",
       "pre_review_summary": {
         "conversations": 200,
         "turns": 925,
-        "active_model_turns": 897,
+        "active_model_turns": 925,
         "source_counts": {
-          "openai:gpt-5.6-luna:semantic+grounded_canonical_response": 514,
-          "openai:gpt-5.6-luna:semantic+grounded_execution_boundary": 363,
-          "semantic_state_v1+grounded_execution_boundary": 12,
-          "semantic_state_v1+grounded_canonical_response": 16,
-          "openai:gpt-5.6-luna:semantic+openai:gpt-5.6-luna:grounded_contextual_response": 14,
-          "openai:gpt-5.6-luna:semantic+grounded_deterministic_after_model_error": 1,
+          "openai:gpt-5.6-luna:semantic+grounded_canonical_response": 530,
+          "openai:gpt-5.6-luna:semantic+grounded_execution_boundary": 375,
+          "openai:gpt-5.6-luna:semantic+openai:gpt-5.6-luna:grounded_contextual_response": 15,
           "openai:gpt-5.6-luna:conversation": 5
         },
         "passed": 0,
-        "failed": 33,
-        "unverified": 892,
+        "failed": 0,
+        "unverified": 925,
         "dimensions": {
           "intent": {
             "passed": 925,
@@ -519,21 +665,83 @@
             "pass_percent": 100
           },
           "safety": {
-            "passed": 896,
-            "failed": 29,
+            "passed": 925,
+            "failed": 0,
             "unverified": 0,
-            "pass_percent": 96.86
+            "pass_percent": 100
           },
           "visible_equivalence": {
             "passed": 0,
-            "failed": 5,
-            "unverified": 920,
+            "failed": 0,
+            "unverified": 925,
             "pass_percent": 0
           }
         }
       },
-      "visible_lexical_failure_turns": 5,
-      "safety_and_visible_overlap": 1
+      "reviewed_summary": {
+        "conversations": 200,
+        "turns": 925,
+        "active_model_turns": 925,
+        "source_counts": {
+          "openai:gpt-5.6-luna:semantic+grounded_canonical_response": 530,
+          "openai:gpt-5.6-luna:semantic+grounded_execution_boundary": 375,
+          "openai:gpt-5.6-luna:semantic+openai:gpt-5.6-luna:grounded_contextual_response": 15,
+          "openai:gpt-5.6-luna:conversation": 5
+        },
+        "passed": 925,
+        "failed": 0,
+        "unverified": 0,
+        "dimensions": {
+          "intent": {
+            "passed": 925,
+            "failed": 0,
+            "unverified": 0,
+            "pass_percent": 100
+          },
+          "slots": {
+            "passed": 925,
+            "failed": 0,
+            "unverified": 0,
+            "pass_percent": 100
+          },
+          "transition": {
+            "passed": 925,
+            "failed": 0,
+            "unverified": 0,
+            "pass_percent": 100
+          },
+          "provenance": {
+            "passed": 925,
+            "failed": 0,
+            "unverified": 0,
+            "pass_percent": 100
+          },
+          "decision": {
+            "passed": 925,
+            "failed": 0,
+            "unverified": 0,
+            "pass_percent": 100
+          },
+          "actions": {
+            "passed": 925,
+            "failed": 0,
+            "unverified": 0,
+            "pass_percent": 100
+          },
+          "safety": {
+            "passed": 925,
+            "failed": 0,
+            "unverified": 0,
+            "pass_percent": 100
+          },
+          "visible_equivalence": {
+            "passed": 925,
+            "failed": 0,
+            "unverified": 0,
+            "pass_percent": 100
+          }
+        }
+      }
     }
   },
   "previous_deploys": [
@@ -548,27 +756,28 @@
     {
       "source_commit": "621ba322a85ca5c0141d91c63b2d5653e6a494b1",
       "deploy_id": "6ab7f3296eda28e3dc2f5be6"
+    },
+    {
+      "source_commit": "30311fe5bae90df21453d506aed834acceb8c6c8",
+      "deploy_id": "6ab7fc6184f6d6492d619bb7"
     }
   ],
-  "runtime_feature_commit": "105cf120761594b75d5a0b47656ea903e4abac2f",
+  "runtime_feature_commit": "fcf5f9bc53585ae093022f33a71040d941185370",
   "final_runtime_ci": {
-    "source_commit": "105cf120761594b75d5a0b47656ea903e4abac2f",
-    "bm_run": 36257915234,
+    "source_commit": "fcf5f9bc53585ae093022f33a71040d941185370",
+    "bm_run": 36266646997,
     "bm_conclusion": "success",
-    "ios_run": 36257915232,
+    "ios_run": 36266646993,
     "ios_conclusion": "success",
-    "ios_completed_at": "2026-09-26T17:16:21Z",
-    "visual_artifact": 10911358074,
-    "visual_artifact_sha256": "fc74a30c41f439cdd0ec89c475ccd9c7f45096e2d53558e3294737778e49edac",
-    "visual_review_status": "Eight a6 screenshots previously reviewed; iOS source identical at105. Artifact105 listed, not newly reviewed.",
-    "physical_validation": false,
-    "ios_status": "completed"
+    "ios_status": "completed",
+    "visual_review_status": "Prior eight a6 screenshots reviewed; iOS sources unchanged. No new visual or physical validation in this correction.",
+    "physical_validation": false
   },
   "current_evaluator": {
     "version": "bm-sol-quality-judge-v10-preparation-evidence",
-    "scope": "Completed v10 judgments on both66 and105; thresholds unchanged. All source report failures retained. Post-run lexical tool correction is separate evidence and cannot relabel these reports."
+    "scope": "v10 thresholds unchanged. Current fcf responses are checked against full exact review-input digests; historical failures and reports are preserved."
   },
-  "draft": false,
+  "draft": true,
   "historical_runtime_ci": {
     "source_commit": "a6f9e501165979b7ef81377cd32ea23aaa023c5d",
     "ios_run": 36252850746,
@@ -583,13 +792,15 @@
     "historical_branch": "codex/backend-release-candidate-2026-09-26",
     "historical_commit": "66d6d5288d897d40533a9bf0c6d63bb773c9fde5",
     "historical_release_eligible": false,
-    "current_commit": "105cf120761594b75d5a0b47656ea903e4abac2f",
-    "current_branch": "codex/backend-release-candidate-canonical-2026-09-26",
-    "status": "Published exact105 anchor; rejected candidate, not production authorization",
+    "previous_branch": "codex/backend-release-candidate-canonical-2026-09-26",
+    "previous_commit": "105cf120761594b75d5a0b47656ea903e4abac2f",
+    "previous_release_eligible": false,
+    "current_branch": "codex/backend-release-candidate-timeout-recovery-2026-09-26",
+    "current_commit": "fcf5f9bc53585ae093022f33a71040d941185370",
+    "status": "Published exact candidate; model gate passed, physical release gate pending",
     "docs_commit_changes_candidate": false
   },
   "pending_evidence": [
-    "Successful model reliability gate:29 timed-out operations remain; no quota failure in latest run",
     "Signed candidate artifact and20 physical iPhone cases; no verified native receipt"
   ],
   "post_evaluation_tool_correction": {
@@ -611,6 +822,191 @@
     "concurrency": 1,
     "observed_new_timeouts": 0,
     "live_model_configuration_changed": false,
-    "followup": "Measure future slow requests by transport phase; no additional full925 run without a specific hypothesis"
+    "followup": "Historical diagnosis preserved. Subsequent instrumented control and new recovery candidate are recorded separately under timeout_recovery."
+  },
+  "historical_completed_candidates": [
+    {
+      "runtime_feature_commit": "105cf120761594b75d5a0b47656ea903e4abac2f",
+      "latest_completed_live_judge": {
+        "source_commit": "105cf120761594b75d5a0b47656ea903e4abac2f",
+        "turns": 925,
+        "judged": 925,
+        "excellent": 839,
+        "acceptable": 86,
+        "poor": 0,
+        "hard_failures": 0,
+        "approval_percent": 100,
+        "average_scores": {
+          "understanding": 4.98,
+          "context": 4.98,
+          "usefulness": 4.95,
+          "naturalness": 4.73,
+          "minimality": 4.91
+        },
+        "release_eligible": false,
+        "functional_failures": 29,
+        "operational_failures": 29,
+        "reviewed_total_failures": 33,
+        "reused_exact_reviews": 504,
+        "applies_to_current_runtime": false
+      },
+      "metrics": {
+        "turns": 925,
+        "concurrency": 8,
+        "wall_ms": 475881,
+        "latency_ms": {
+          "p50": 2067,
+          "p95": 13630,
+          "p99": 20014,
+          "max": 24836,
+          "mean": 3975.96
+        },
+        "quantile_method": "nearest rank",
+        "source_counts": {
+          "openai:gpt-5.6-luna:semantic+grounded_canonical_response": 514,
+          "openai:gpt-5.6-luna:semantic+grounded_execution_boundary": 363,
+          "semantic_state_v1+grounded_execution_boundary": 12,
+          "semantic_state_v1+grounded_canonical_response": 16,
+          "openai:gpt-5.6-luna:semantic+openai:gpt-5.6-luna:grounded_contextual_response": 14,
+          "openai:gpt-5.6-luna:semantic+grounded_deterministic_after_model_error": 1,
+          "openai:gpt-5.6-luna:conversation": 5
+        },
+        "active_model_turns": 897,
+        "active_model_definition": "Source starts openai; not an extraction-only counter",
+        "active_semantic_extraction_turns": 892,
+        "active_conversation_turns": 5,
+        "semantic_extraction_failure_turns": 28,
+        "semantic_extraction_failure_attempt_counts": {
+          "1": 28
+        },
+        "semantic_extraction_failure_codes": {
+          "semantic_model_timeout": 28
+        },
+        "contextual_response_failure_turns": 1,
+        "contextual_response_failure_codes": {
+          "contextual_response_timeout": 1
+        },
+        "extraction_and_context_failure_overlap": 0,
+        "pre_review_summary": {
+          "conversations": 200,
+          "turns": 925,
+          "active_model_turns": 897,
+          "source_counts": {
+            "openai:gpt-5.6-luna:semantic+grounded_canonical_response": 514,
+            "openai:gpt-5.6-luna:semantic+grounded_execution_boundary": 363,
+            "semantic_state_v1+grounded_execution_boundary": 12,
+            "semantic_state_v1+grounded_canonical_response": 16,
+            "openai:gpt-5.6-luna:semantic+openai:gpt-5.6-luna:grounded_contextual_response": 14,
+            "openai:gpt-5.6-luna:semantic+grounded_deterministic_after_model_error": 1,
+            "openai:gpt-5.6-luna:conversation": 5
+          },
+          "passed": 0,
+          "failed": 33,
+          "unverified": 892,
+          "dimensions": {
+            "intent": {
+              "passed": 925,
+              "failed": 0,
+              "unverified": 0,
+              "pass_percent": 100
+            },
+            "slots": {
+              "passed": 925,
+              "failed": 0,
+              "unverified": 0,
+              "pass_percent": 100
+            },
+            "transition": {
+              "passed": 925,
+              "failed": 0,
+              "unverified": 0,
+              "pass_percent": 100
+            },
+            "provenance": {
+              "passed": 925,
+              "failed": 0,
+              "unverified": 0,
+              "pass_percent": 100
+            },
+            "decision": {
+              "passed": 925,
+              "failed": 0,
+              "unverified": 0,
+              "pass_percent": 100
+            },
+            "actions": {
+              "passed": 925,
+              "failed": 0,
+              "unverified": 0,
+              "pass_percent": 100
+            },
+            "safety": {
+              "passed": 896,
+              "failed": 29,
+              "unverified": 0,
+              "pass_percent": 96.86
+            },
+            "visible_equivalence": {
+              "passed": 0,
+              "failed": 5,
+              "unverified": 920,
+              "pass_percent": 0
+            }
+          }
+        },
+        "visible_lexical_failure_turns": 5,
+        "safety_and_visible_overlap": 1
+      },
+      "ci": {
+        "source_commit": "105cf120761594b75d5a0b47656ea903e4abac2f",
+        "bm_run": 36257915234,
+        "bm_conclusion": "success",
+        "ios_run": 36257915232,
+        "ios_conclusion": "success",
+        "ios_completed_at": "2026-09-26T17:16:21Z",
+        "visual_artifact": 10911358074,
+        "visual_artifact_sha256": "fc74a30c41f439cdd0ec89c475ccd9c7f45096e2d53558e3294737778e49edac",
+        "visual_review_status": "Eight a6 screenshots previously reviewed; iOS source identical at105. Artifact105 listed, not newly reviewed.",
+        "physical_validation": false,
+        "ios_status": "completed"
+      },
+      "anchor": {
+        "historical_branch": "codex/backend-release-candidate-2026-09-26",
+        "historical_commit": "66d6d5288d897d40533a9bf0c6d63bb773c9fde5",
+        "historical_release_eligible": false,
+        "current_commit": "105cf120761594b75d5a0b47656ea903e4abac2f",
+        "current_branch": "codex/backend-release-candidate-canonical-2026-09-26",
+        "status": "Published exact105 anchor; rejected candidate, not production authorization",
+        "docs_commit_changes_candidate": false
+      }
+    }
+  ],
+  "production_release_eligible": false,
+  "timeout_recovery": {
+    "document": "docs/BM_TIMEOUT_RECOVERY_2026-09-26.md",
+    "source_commit": "fcf5f9bc53585ae093022f33a71040d941185370",
+    "status": "implemented_and_validated_in_private_staging",
+    "original_timeout_cause_proven": false,
+    "historical_reports_reclassified": false,
+    "unmodified_policy_diagnostic_active_turns": 925,
+    "unmodified_policy_diagnostic_timeouts": 0,
+    "extraction_policy": {
+      "deadline_ms": 20000,
+      "speculative_second_after_ms": 12000,
+      "max_requests": 2
+    },
+    "contextual_deadline_ms": 12000,
+    "contextual_new_hedge": false,
+    "app_model_failure": "503 before state/checkpoint/action preparation; original UUID remains retryable; canonical cancellation and prepared checkpoints preserved",
+    "controlled_fault_panel": {
+      "control_timeouts": 8,
+      "candidate_recovered": 8,
+      "state_action_pairs_equal": 8,
+      "independent_checks_passed": 41,
+      "artificial_delay": true,
+      "physical_execution": false
+    },
+    "provider_cancellation_and_billing_verified": false,
+    "private_deploy_manifest": "Codigo-product-release/tmp/cloud-stage/private-8227095e645a-final-evidence.json"
   }
 }
