@@ -3464,16 +3464,19 @@ exports.handler = async (event, runtime = {}) => {
     let semanticModelError = null;
     let semanticModelFailure = null;
     let semanticRequestMetrics = [];
+    let semanticAttemptExecution = null;
     if (semantic.handled && process.env.OPENAI_API_KEY) {
       try {
         semanticExtraction = await extractWithModel({ prompt, previousState: semanticOptions.previousState, context });
         semanticRequestMetrics = semanticExtraction.attempt_metrics || [];
+        semanticAttemptExecution = semanticExtraction.trace?.attempt_execution || null;
         semantic = advanceSemanticState({ ...semanticOptions, extraction: semanticExtraction.extraction });
       } catch (error) {
         semanticModelError = error.name === "TimeoutError" ? "semantic_model_timeout" : error.message;
         semanticModelFailure = { attempt_count: error.semantic_attempt_count || 1,
           attempt_errors: error.semantic_attempt_errors || [semanticModelError] };
         semanticRequestMetrics = error.semantic_attempt_metrics || [];
+        semanticAttemptExecution = error.semantic_attempt_execution || null;
         recordStage(harnessRun, "planner_fallback", { error_code: semanticModelError, ...semanticModelFailure,
           request_metrics: modelRequestLogMetrics(semanticRequestMetrics.at(-1)),
           first_attempt_metrics: semanticRequestMetrics.length > 1 ? modelRequestLogMetrics(semanticRequestMetrics[0]) : null });
@@ -3510,7 +3513,7 @@ exports.handler = async (event, runtime = {}) => {
         context, previous_state: semanticOptions.previousState || null,
         extraction: semanticExtraction?.trace || null, extraction_failure: semanticModelFailure, deterministic_patch: semantic.patch,
         contextual_response_failure: contextFailure,
-        model_requests: { extraction: semanticRequestMetrics, contextual: contextualRequestMetrics },
+        model_requests: { extraction: semanticRequestMetrics, extraction_execution: semanticAttemptExecution, contextual: contextualRequestMetrics },
         extraction_validation: semantic.extractionValidation || null,
         semantic_state: semantic.state, canonical_plan: plan, final_plan: plan,
         postprocessing: "Canonical action facts and response bypass legacy rewriting; the final gate builds actions from validated state.",

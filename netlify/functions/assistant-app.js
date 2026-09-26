@@ -178,7 +178,14 @@ function visibleReply(plan, context, action) {
 }
 
 async function prepare(auth, row, leaseOwner, prompt) {
-  const { plan, context } = await callBlankedAgent(prompt, auth.identity.phone_e164, auth.connection);
+  const { plan, context, modelUnavailable } = await callBlankedAgent(prompt, auth.identity.phone_e164, auth.connection);
+  // Do not commit a degraded reply as completed: the existing failed-turn lease
+  // lets the client retry this exact UUID and payload. A canonical withdrawal is
+  // safe without a model and must still invalidate a pending instruction.
+  const canonicalCancellation = plan.semantic_state?.intent === "cancelled"
+    && plan.semantic_state?.status === "cancelled" && plan.semantic_decision?.type === "cancelled"
+    && Array.isArray(plan.actions) && plan.actions.length === 0;
+  if (modelUnavailable && !canonicalCancellation) throw new Error("assistant_model_unavailable");
   const version = context.memory?.semantic_store_version;
   if (!Number.isSafeInteger(version) || version < 0) throw new Error("semantic_store_missing_version");
   const action = pendingActionFromPlan(plan, { idPrefix: "app" });

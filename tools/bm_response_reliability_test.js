@@ -234,12 +234,15 @@ async function verifyInstrumentedSemanticDeadlines() {
           assert.equal(calls, 2, "an early aborted double gets at most the existing second attempt");
           assert.ok(budgets[1] <= budgets[0] && budgets[1] > 19000);
           assert.equal(trace.model_requests.extraction.length, 2);
+          assert.equal(trace.model_requests.extraction_execution.winner_attempt, null);
+          assert.equal(trace.model_requests.extraction_execution.attempts.length, 2);
           assert.equal(trace.model_requests.contextual, null, "canonical block recovery cannot make a rewrite call");
           assert.ok(trace.model_requests.extraction.every(metrics => metrics.phase === phase && metrics.error_name === "TimeoutError"));
         } else {
           assert.equal(calls, 2);
           assert.equal(budgets[1], 12000, "contextual naturalization keeps its original twelve-second budget");
           assert.equal(trace.model_requests.extraction.length, 1);
+          assert.equal(trace.model_requests.extraction_execution.winner_attempt, 1);
           assert.equal(trace.model_requests.extraction[0].phase, "complete");
           assert.deepEqual(trace.model_requests.extraction[0].usage, { input_tokens: 10, output_tokens: 5, total_tokens: 15, reasoning_tokens: 3 });
           assert.ok(stages.some(stage => stage.request_metrics?.usage_input === 10 && stage.request_metrics?.usage_reasoning === 3),
@@ -253,7 +256,7 @@ async function verifyInstrumentedSemanticDeadlines() {
         else assert.equal(measured.http_status, undefined);
         assert.equal(body.model_requests, undefined);
         assert.equal(body.harness?.model_requests, undefined);
-        assert.doesNotMatch(JSON.stringify(body), /req_internal_|attempt_metrics|request_metrics|model_requests|instrumentation-key-never-sent|"authorization"\s*:|Bearer/i,
+        assert.doesNotMatch(JSON.stringify(body), /req_internal_|attempt_metrics|request_metrics|model_requests|attempt_execution|instrumentation-key-never-sent|"authorization"\s*:|Bearer/i,
           "internal transport diagnostics and request IDs must never appear in the public response or harness metadata");
       }
     }
