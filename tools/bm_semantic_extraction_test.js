@@ -103,6 +103,7 @@ async function verifyRequestDiagnostics() {
   process.env.OPENAI_API_KEY = "test-key-never-sent";
   try {
     await verifyRequestDiagnostics();
+    await require("./bm_bounded_attempts_test").verifyBoundedAttempts();
     const first = advanceSemanticState({ prompt: "Block Instagram now for 30 minutes" });
     let request;
     const extracted = await extractWithModel({

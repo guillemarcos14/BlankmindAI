@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
+const { emptyState } = require("../netlify/functions/bm-semantic-state");
 
 const membership = require("../netlify/functions/_membership");
 const channel = require("../netlify/functions/_assistant_channel");
@@ -14,6 +15,9 @@ let memory = { semantic_store_version: 0 };
 let fault = "";
 let replyText = "Vamos a proteger tus distracciones.";
 let actions = [{ type: "start_protection", minutes: 45, app_names: ["Instagram"] }];
+let modelUnavailable = false;
+let semanticState = { intent: "block", status: "ready" };
+let semanticDecision = { type: "execute" };
 let plannerBarrier = null;
 let memoryUnavailable = false;
 let semanticConflict = false;
@@ -129,7 +133,7 @@ whatsapp.callBlankedAgent = async () => {
   const context = { language: "es", memory: copy(memory) };
   if (plannerBarrier) await plannerBarrier;
   return { plan: { message_text: replyText, response_language: "es", actions: copy(actions),
-    semantic_state: { intent: "block", status: "ready" } }, context };
+    semantic_state: { ...emptyState("es"), ...copy(semanticState) }, semantic_decision: copy(semanticDecision) }, context, modelUnavailable };
 };
 const { handler, actionStatus } = require("../netlify/functions/assistant-app");
 const event = (body, token = "valid") => ({ httpMethod: "POST", headers: { authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
@@ -178,6 +182,99 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
   memory.last_assistant_action_outcome = { id: "a newer action", status: "failed" };
   assert.equal((await request({ action: "status", turn_id: guardedId })).body.turn.action_status, "verified");
   assert.equal(actionStatus("receipt", { pending_assistant_action: { id: "receipt", status: "verified", expires_at: "2020-01-01" } }), "verified");
+
+  // A 200 model fallback is not a completed app turn. Preserve the UUID for a
+  // later healthy reply, with no semantic commit, action, push or private error.
+  const degradedId = crypto.randomUUID();
+  const beforeDegraded = copy(effects);
+  const memoryBeforeDegraded = copy(memory);
+  modelUnavailable = true;
+  replyText = "private provider diagnostic must never become a saved reply";
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    response = await send(degradedId);
+    assert.deepEqual(response, { status: 503, body: { error: "assistant_app_unavailable", retry_after: 3 } });
+    assert.equal(rows.get(degradedId).status, "failed");
+    assert.equal(rows.get(degradedId).lease_expires_at, null);
+    assert.equal(rows.get(degradedId).prepared_payload, undefined);
+    assert.equal(rows.get(degradedId).assistant_text, undefined);
+    assert.deepEqual(memory, memoryBeforeDegraded);
+    for (const key of ["semantic", "queue", "push"]) assert.equal(effects[key], beforeDegraded[key]);
+    assert.equal((await request({ action: "status", turn_id: degradedId })).body.turn.status, "failed");
+  }
+  assert.equal((await send(degradedId, "a replacement payload")).status, 409);
+  assert.equal((await request({ action: "status", turn_id: degradedId }, "other")).status, 404);
+  modelUnavailable = false;
+  replyText = "Vamos a proteger tus distracciones.";
+  response = await send(degradedId);
+  assert.equal(response.status, 200);
+  assert.equal(response.body.turn.action_id, `app_${degradedId}`);
+  assert.equal(effects.semantic - beforeDegraded.semantic, 1);
+  assert.equal(effects.queue - beforeDegraded.queue, 1);
+  const recoveredEffects = copy(effects);
+  assert.equal((await send(degradedId)).body.idempotent, true);
+  assert.deepEqual(effects, recoveredEffects);
+
+  // No-action advice/general fallbacks also remain retryable. The exception is
+  // narrowly scoped to coherent canonical cancellation, never its label alone.
+  modelUnavailable = true;
+  const originalActions = copy(actions);
+  for (const fixture of [
+    { state: { intent: "general", status: "idle" }, decision: { type: "none" }, actions: [] },
+    { state: { intent: "advice", status: "collecting" }, decision: { type: "ask" }, actions: [] },
+    { state: { intent: "cancelled", status: "ready" }, decision: { type: "cancelled" }, actions: [] },
+    { state: { intent: "cancelled", status: "cancelled" }, decision: { type: "ask" }, actions: [] },
+    { state: { intent: "cancelled", status: "cancelled" }, decision: { type: "cancelled" }, actions: originalActions },
+  ]) {
+    semanticState = fixture.state; semanticDecision = fixture.decision; actions = fixture.actions;
+    const before = copy(effects);
+    const beforeMemory = copy(memory);
+    assert.equal((await send(crypto.randomUUID())).status, 503);
+    for (const key of ["semantic", "queue", "push"]) assert.equal(effects[key], before[key]);
+    assert.deepEqual(memory, beforeMemory);
+  }
+  semanticState = { intent: "cancelled", status: "cancelled" };
+  semanticDecision = { type: "cancelled", slot: null };
+  actions = [];
+  replyText = "He retirado esta instrucción. Si la protección ya empezó en el iPhone, detenla desde la app.";
+  for (const text of ["Cancela esta petición.", "Stop."]) {
+    const id = crypto.randomUUID();
+    memory.pending_assistant_action = { id: "prior-pending", status: "queued" };
+    const before = copy(effects);
+    response = await send(id, text);
+    assert.equal(response.status, 200);
+    assert.equal(response.body.turn.status, "completed");
+    assert.equal(response.body.turn.action_id, "");
+    assert.equal(memory.pending_assistant_action, null);
+    assert.equal(memory.conversation_state.semantic_state.intent, "cancelled");
+    assert.equal(effects.semantic - before.semantic, 1);
+    for (const key of ["queue", "push"]) assert.equal(effects[key], before[key]);
+    const after = copy(effects);
+    assert.equal((await send(id, text)).body.idempotent, true);
+    assert.deepEqual(effects, after);
+  }
+  modelUnavailable = false;
+  semanticState = { intent: "block", status: "ready" };
+  semanticDecision = { type: "execute" };
+  actions = originalActions;
+  replyText = "Vamos a proteger tus distracciones.";
+
+  // A durable prepared checkpoint already owns its semantic revision. Recovery
+  // must reuse it without another model call, even during a later model outage.
+  const checkpointId = crypto.randomUUID();
+  fault = "queue_before";
+  assert.equal((await send(checkpointId)).status, 503);
+  const checkpointPayload = copy(rows.get(checkpointId).prepared_payload);
+  const checkpointEffects = copy(effects);
+  modelUnavailable = true;
+  response = await send(checkpointId);
+  assert.equal(response.status, 200);
+  assert.equal(effects.planner, checkpointEffects.planner);
+  assert.equal(effects.semantic, checkpointEffects.semantic);
+  assert.equal(effects.queue - checkpointEffects.queue, 1);
+  assert.equal(response.body.turn.action_id, checkpointPayload.action.id);
+  assert.equal(memory.pending_assistant_action.requested_at, checkpointPayload.action.requested_at);
+  assert.equal(memory.pending_assistant_action.expires_at, checkpointPayload.action.expires_at);
+  modelUnavailable = false;
 
   // Failures at each persistence boundary resume one canonical semantic turn.
   for (const failure of ["planner", "prepare_before", "prepare_after", "queue_before", "queue_after", "complete_before", "complete_after"]) {

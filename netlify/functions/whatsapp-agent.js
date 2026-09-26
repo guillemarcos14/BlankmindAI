@@ -483,7 +483,9 @@ async function callBlankedAgent(prompt, from, linkedConnection = null) {
   if (response.statusCode < 200 || response.statusCode >= 300 || !body.ok) {
     throw new Error(body.error || "blanked_agent_failed");
   }
-  return { plan: body.plan, context };
+  // Keep provider diagnostics internal. App turns need to distinguish a model
+  // fallback from a completed reply without exposing its error text.
+  return { plan: body.plan, context, modelUnavailable: Boolean(body.model_error) };
 }
 
 async function recordAssistantConnection({ channel, connectCode, from, identityLinked = false }) {
