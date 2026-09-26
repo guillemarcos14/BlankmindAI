@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const { isFinalQaWhatsApp, isFinalAppLinkedWhatsApp, privateQaGateConfigured } = require("./_bm_final_qa_access");
 const { identityForConnectCode, normalizePhone } = require("./_identity");
 const { sendAssistantActionPush } = require("./_assistant_push");
-const { json, parseJsonBody } = require("./_membership");
+const { json, parseJsonBody, supabaseFetch } = require("./_membership");
 const {
   attachAssistantUserContext,
   claimAssistantInboundMessage,
@@ -14,6 +14,9 @@ const {
   recordAssistantConversationTurn,
   recordAssistantChannel,
   recordAssistantMemory,
+  recordPendingAssistantAction,
+  transitionPendingAssistantAction,
+  supersededAssistantReply,
   sendWhatsAppMessage,
 } = require("./_assistant_channel");
 const { handler: blankedAgentHandler } = require("./blanked-agent");
@@ -283,17 +286,51 @@ async function deliverPendingAssistantAction(connection, pending, memory = {}) {
   return { action: pending, push, duplicate: true };
 }
 
-async function queuePendingAssistantAction(connection, plan, prompt = "", idPrefix = "wa") {
+async function queuePendingAssistantAction(connection, plan, prompt = "", idPrefix = "wa", preparedAction = null, expectedVersion) {
   if (!connection?.connectCode) return null;
-  const pending = pendingActionFromPlan(plan, prompt, idPrefix);
+  const pending = preparedAction || pendingActionFromPlan(plan, prompt, idPrefix);
   if (!pending) return null;
   let memory = {};
   try {
-    memory = await getAssistantMemory(connection.channel, connection.channelUser);
+    memory = await getAssistantMemory(connection.channel, connection.channelUser, { requireSemantic: Boolean(preparedAction) });
   } catch (error) {
-    if (semanticPersistenceRequired()) throw error;
+    if (preparedAction || semanticPersistenceRequired()) throw error;
   }
   const existing = memory.pending_assistant_action;
+  // App retries resume the exact durable action, including its original expiry.
+  // A newer WhatsApp turn or a terminal receipt must never resurrect it.
+  if (preparedAction) {
+    const outcome = memory.last_assistant_action_outcome;
+    if (outcome?.id === pending.id) return { action: { ...pending, status: outcome.status }, duplicate: true };
+    if (existing?.id === pending.id && !isActivePendingAction(existing)) return { action: existing, duplicate: true };
+    if (memory.semantic_store_version !== pending.semantic_version) {
+      return { action: { ...pending, status: "superseded" }, duplicate: true };
+    }
+    if (existing?.id === pending.id) {
+      return deliverPendingAssistantAction(connection, existing, memory);
+    }
+    if (Date.parse(pending.expires_at || "") <= Date.now()) {
+      return { action: { ...pending, status: "expired" }, duplicate: true };
+    }
+    const result = await supabaseFetch("rpc/enqueue_assistant_app_action", {
+      method: "POST", body: JSON.stringify({ p_auth_user_id: connection.authUserId,
+        p_turn_id: pending.id.slice(4), p_lease_owner: connection.turnLeaseOwner }),
+    });
+    const committed = Array.isArray(result) ? result[0] : result;
+    if (!committed?.action) throw new Error("assistant_app_enqueue_failed");
+    if (!committed.enqueued) return { action: committed.action, duplicate: true };
+    return deliverPendingAssistantAction(connection, committed.action, memory);
+  }
+  if (semanticPersistenceRequired()) {
+    // Every committed provider turn owns a fresh action ID. Reusing an older ID
+    // could resurrect a receipt that arrived after this worker read the inbox.
+    const next = pending;
+    const receipt = await recordPendingAssistantAction({ channel: connection.channel, channelUser: connection.channelUser,
+      pending: next, expectedVersion });
+    if (!receipt.enqueued) return { action: { ...next, status: "superseded" }, duplicate: true };
+    const delivery = await deliverPendingAssistantAction(connection, next, memory);
+    return { ...delivery, duplicate: false };
+  }
   if (existing?.fingerprint === pending.fingerprint && Date.parse(existing.expires_at || "") > Date.now()) {
     return deliverPendingAssistantAction(connection, existing, memory);
   }
@@ -319,40 +356,7 @@ function pendingActionConfirmationPlan(action) {
 }
 
 function whatsappReplyText(plan, delivery = null) {
-  const action = firstPendingAction(plan);
-  const text = cleanText(plan.message_text || plan.response_text, 480)
-    .replace(/(?:https?|blank):\/\/\S+/gi, "")
-    .replace(/(?:open|abre|abrir)\s+(?:blankmind|blanked)[^.?!]*(?:[.?!]|$)/gi, "")
-    .replace(/[^.?!]*(?:review|revisa|revisar)[^.?!]*(?:blankmind|blanked)[^.?!]*(?:[.?!]|$)/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim()
-    .slice(0, 320) || "I can help with that in Blankmind.";
-  if (!action) return text;
-  const spanish = String(plan.response_language || plan.semantic_state?.language || "").toLowerCase().startsWith("es");
-  if (["open_app_picker", "request_screen_time_permission"].includes(action.type)) {
-    return `${text}\n\n${spanish ? "Abre Blankmind para seleccionar las apps. El plan se aplicará al confirmar la selección." : "Open Blankmind to choose the apps. The plan will apply when you confirm the selection."}`;
-  }
-  if (plan.semantic_state?.status === "needs_setup") {
-    return spanish
-      ? "No he enviado ningún bloqueo ni notificación. Abre Blankmind, comprueba que tus distracciones estén seleccionadas, que Screen Time esté autorizado y que WhatsApp esté conectado. Después vuelve a pedírmelo."
-      : "I haven't sent a block or notification. Open Blankmind, check that your distractions are selected, Screen Time is authorized, and WhatsApp is connected. Then ask me again.";
-  }
-  if (!delivery?.action) {
-    return `${text}\n\n${spanish ? "Aún no he enviado ninguna notificación. Conecta este WhatsApp desde Blankmind y vuelve a pedírmelo." : "I haven't sent a notification yet. Connect this WhatsApp in Blankmind, then ask me again."}`;
-  }
-  if (delivery.push?.sent !== true) {
-    return spanish
-      ? "He guardado la solicitud, pero no he podido enviar la notificación. Abre Blankmind y comprueba que las notificaciones estén activadas; después vuelve a pedírmelo."
-      : "I've saved the request, but couldn't send a notification. Open Blankmind and check that notifications are enabled, then ask me again.";
-  }
-  const actionIsReady = plan.semantic_state?.status === "ready" || plan.blocking_ready === true;
-  if (action.type === "start_protection" && actionIsReady) {
-    const duration = Number.isInteger(action.minutes) ? ` de ${action.minutes} minutos` : "";
-    return spanish
-      ? `Pulsa la notificación de Blankmind para iniciar tu bloqueo${duration}.`
-      : `Tap the Blankmind notification to start your${duration ? ` ${action.minutes}-minute ` : " "}block.`;
-  }
-  return `${text}\n\n${spanish ? "Pulsa la notificación de Blankmind para aplicarlo." : "Tap the Blankmind notification to apply it."}`;
+  return require("./_assistant_reply").assistantReplyText(plan, delivery, "whatsapp");
 }
 
 async function sendPlanReply(to, plan, delivery = null) {
@@ -418,9 +422,9 @@ function memoryFactsFromText(text, savedMemory = {}) {
 async function agentContext(from, prompt, linkedConnection = null) {
   let savedMemory = {};
   try {
-    savedMemory = await getAssistantMemory("whatsapp", from);
+    savedMemory = await getAssistantMemory("whatsapp", from, { requireSemantic: linkedConnection?.canonicalMemoryRequired === true });
   } catch (error) {
-    if (semanticPersistenceRequired()) throw error;
+    if (linkedConnection?.canonicalMemoryRequired === true || semanticPersistenceRequired()) throw error;
     savedMemory = {};
   }
   const newFacts = memoryFactsFromText(prompt, savedMemory);
@@ -479,7 +483,9 @@ async function callBlankedAgent(prompt, from, linkedConnection = null) {
   if (response.statusCode < 200 || response.statusCode >= 300 || !body.ok) {
     throw new Error(body.error || "blanked_agent_failed");
   }
-  return { plan: body.plan, context };
+  // Keep provider diagnostics internal. App turns need to distinguish a model
+  // fallback from a completed reply without exposing its error text.
+  return { plan: body.plan, context, modelUnavailable: Boolean(body.model_error) };
 }
 
 async function recordAssistantConnection({ channel, connectCode, from, identityLinked = false }) {
@@ -503,10 +509,12 @@ async function recordAssistantConnection({ channel, connectCode, from, identityL
       memory: {
         proactive_updates_paused: false,
         assistant_connect_code: String(connectCode || "").toUpperCase(),
-        ...(identityLinked ? {} : { pending_assistant_action: null }),
       },
       source: "assistant_channel_connected",
     });
+    if (!identityLinked) await transitionPendingAssistantAction({ channel, channelUser: from,
+      previous: previousMemory.pending_assistant_action, pending: null,
+      expectedVersion: previousMemory.semantic_store_version, invalidateGeneration: true, source: "assistant_channel_connected" });
     const attachedContext = await attachAssistantUserContext({ connectCode, channel, channelUser: from });
     context = attachedContext && Object.keys(attachedContext).length ? attachedContext : previousMemory.user_context || {};
   } catch (error) {
@@ -602,13 +610,16 @@ async function processMessage(message) {
 
   const command = prompt.toLowerCase();
   if (command === "stop" || command === "disconnect") {
+    const stoppedMemory = await getAssistantMemory("whatsapp", message.from);
+    await transitionPendingAssistantAction({ channel: "whatsapp", channelUser: message.from,
+      previous: stoppedMemory.pending_assistant_action, pending: null,
+      expectedVersion: stoppedMemory.semantic_store_version, invalidateGeneration: true, source: "assistant_channel_paused" });
     await recordAssistantMemory({
       channel: "whatsapp",
       channelUser: message.from,
       memory: {
         proactive_updates_paused: true,
         pending_proactive_message: "",
-        pending_assistant_action: null,
       },
       source: "assistant_channel_paused",
     });
@@ -682,16 +693,19 @@ async function processMessage(message) {
   }
   let queued = null;
   try {
-    queued = await queuePendingAssistantAction(linkedConnection, plan, prompt);
+    const committedVersion = result.context.memory?.semantic_store_version + 1;
+    queued = await queuePendingAssistantAction(linkedConnection, plan, prompt, "wa", null, committedVersion);
     const invalidatesQueuedAction = plan.semantic_state?.intent === "cancelled"
       || (plan.semantic_state?.intent === "block" && ["collecting", "awaiting_confirmation"].includes(plan.semantic_state?.status));
     if (!queued && linkedConnection?.connectCode && invalidatesQueuedAction) {
-      await recordAssistantMemory({
+      const invalidation = await recordPendingAssistantAction({
         channel: linkedConnection.channel,
         channelUser: linkedConnection.channelUser,
-        memory: { pending_assistant_action: null },
+        pending: null,
+        expectedVersion: committedVersion,
         source: "assistant_action_invalidated",
       });
+      if (!invalidation.enqueued) return sendWhatsAppMessage(message.from, supersededAssistantReply(plan));
     }
   } catch (error) {
     if (semanticPersistenceRequired()) throw error;

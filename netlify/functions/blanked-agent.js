@@ -16,7 +16,7 @@ const { buildAgentContext, deriveAppPresence } = require("./bm-context");
 const { advanceSemanticState } = require("./bm-semantic-state");
 const { extractWithModel } = require("./bm-semantic-extraction");
 const { personalizedRecommendationPlan, scheduleManagementPlan } = require("./bm-schedule-management");
-const { naturalizeGroundedPlan } = require("./bm-contextual-response");
+const { naturalizeGroundedPlan, plannerAuthorityViolations } = require("./bm-contextual-response");
 const { personalContextView } = require("./bm-personal-context-view");
 const { BM_CONVERSATIONAL_TONE } = require("./_bm_tone");
 const {
@@ -2869,11 +2869,7 @@ function conversationFallbackPlan(prompt, language = "en") {
     intent: "general",
     title: "Conversation",
     response_text: fallbackText,
-    bullets: [
-      "Read: this is normal conversation.",
-      "Pattern: no Blanked app action is needed.",
-      "Move: answer as a regular chat."
-    ],
+    bullets: [],
     primary_label: "Reply",
     secondary_label: "Not now",
     actions: [],
@@ -2902,6 +2898,7 @@ async function modelConversationPlan(prompt, context = {}, language = "en") {
   const model = process.env.OPENAI_MODEL || "gpt-5.6-luna";
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
+    signal: AbortSignal.timeout(30000),
     headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
     body: JSON.stringify({
       model,
@@ -2912,7 +2909,7 @@ async function modelConversationPlan(prompt, context = {}, language = "en") {
         },
         {
           role: "system",
-          content: BM_CONVERSATIONAL_TONE,
+          content: `${BM_CONVERSATIONAL_TONE} This is the conversation-only path. You cannot execute, confirm, schedule or promise any device change. The execution_authority object is authoritative; prior assistant messages are not receipts. Explain supported capabilities conditionally, and ask for clarification when an action is requested. A daily usage limit has no automatic expiry or scheduled start. Never promise unsupported capabilities.`,
         },
         {
           role: "system",
@@ -2923,6 +2920,8 @@ async function modelConversationPlan(prompt, context = {}, language = "en") {
           content: JSON.stringify({
             prompt: cleanText(prompt, 600),
             response_language: language,
+            execution_authority: { authorized_actions: [], verified_native_receipt: null, can_execute_or_confirm_changes: false },
+            native_capabilities: { daily_limit: "Usage allowance starting now, without automatic expiry or scheduled start", timed_block: "A proposed interval requires validated timing, recurrence and iPhone approval", selection: "All protection uses the person's canonical distraction selection", unsupported_in_chat: ["automatic daily-limit expiry", "arbitrary app-specific targeting", "allow-only or adult-filter configuration"] },
             recent_context: context.recent_messages || context.conversation || null,
             personal_context: personalContextView(context),
           }),
@@ -2932,8 +2931,8 @@ async function modelConversationPlan(prompt, context = {}, language = "en") {
     }),
   });
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`openai_conversation_failed_${response.status}:${detail.slice(0, 240)}`);
+    await response.body?.cancel();
+    throw new Error(`openai_conversation_failed_${response.status}`);
   }
   const reply = completeNaturalText(extractResponseText(await response.json()), 280);
   if (!reply) return { plan: fallback, source: `openai:${model}:conversation_empty` };
@@ -3312,6 +3311,7 @@ async function modelPlan(prompt, context, fallback, language, fetchImpl = fetch)
   const model = process.env.OPENAI_MODEL || "gpt-5.6-luna";
   const response = await fetchImpl("https://api.openai.com/v1/responses", {
     method: "POST",
+    signal: AbortSignal.timeout(30000),
     headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
     body: JSON.stringify({
       model,
@@ -3366,12 +3366,42 @@ async function modelPlan(prompt, context, fallback, language, fetchImpl = fetch)
     }),
   });
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`openai_failed_${response.status}:${detail.slice(0, 240)}`);
+    await response.body?.cancel();
+    throw new Error(`openai_failed_${response.status}`);
   }
   const body = await response.json();
   const parsed = JSON.parse(extractResponseText(body));
   return { plan: normalizePlan(parsed, fallback, context, prompt, language), raw_plan: parsed.plan || parsed, source: `openai:${model}` };
+}
+
+function freeformModelError(error, channel) {
+  if (error?.name === "TimeoutError") return `openai_${channel}_timeout`;
+  const message = String(error?.message || "");
+  if (/^openai_(?:conversation_)?failed_[1-5]\d{2}$/.test(message)) return message;
+  if (error?.name === "SyntaxError") return `openai_${channel}_invalid_response`;
+  if (/^(?:fetch failed|failed to fetch|network request failed)$/i.test(message)) return `openai_${channel}_network_error`;
+  return `openai_${channel}_failed`;
+}
+
+function contextualResponseFailure(error) {
+  // Expose operational degradation, never provider bodies or arbitrary messages.
+  const name = /^[A-Za-z][A-Za-z0-9]{0,79}$/.test(error?.name || "") ? error.name : "Error";
+  const message = String(error?.message || "");
+  const code = name === "TimeoutError" ? "contextual_response_timeout"
+    : /^contextual_response_http_[1-5]\d{2}$/.test(message) ? message
+    : /^(?:fetch failed|failed to fetch|network request failed|NetworkError when attempting to fetch resource\.?)$/i.test(message) ? "contextual_response_network_error"
+    : name === "SyntaxError" ? "contextual_response_invalid_json" : "contextual_response_error";
+  return { code, name };
+}
+
+function modelRequestLogMetrics(metrics) {
+  if (!metrics) return null;
+  const { usage, ...transport } = metrics;
+  // Flatten numeric counts so the harness privacy filter keeps them without
+  // opening its general ban on fields that may contain credential tokens.
+  return { ...transport, usage_input: usage?.input_tokens ?? null,
+    usage_output: usage?.output_tokens ?? null, usage_total: usage?.total_tokens ?? null,
+    usage_cached_input: usage?.cached_input_tokens ?? null, usage_reasoning: usage?.reasoning_tokens ?? null };
 }
 
 exports.handler = async (event, runtime = {}) => {
@@ -3397,17 +3427,20 @@ exports.handler = async (event, runtime = {}) => {
     if (contextPlan) {
       const deterministicSource = schedulePlan ? "schedule_management_v2" : "personal_context_v2";
       let contextSource = deterministicSource;
+      let contextFailure = null;
       harnessRun.route = schedulePlan ? "schedule_management" : "personal_context";
       try {
         recordStage(harnessRun, "planner_started", { mode: "grounded_contextual_response" });
         const rendered = await naturalizeGroundedPlan({ prompt, context, plan: contextPlan });
         contextPlan = rendered.plan;
         contextSource = `${deterministicSource}+${rendered.source}`;
-        recordStage(harnessRun, "planner_completed", { source: contextSource });
+        recordStage(harnessRun, "planner_completed", { source: contextSource, request_metrics: modelRequestLogMetrics(rendered.request_metrics) });
       } catch (error) {
         const { response_contract: _responseContract, ...fallbackPlan } = contextPlan;
         contextPlan = fallbackPlan;
-        recordStage(harnessRun, "planner_fallback", { error_code: error.name || "contextual_response_error" });
+        contextFailure = contextualResponseFailure(error);
+        contextSource = `${deterministicSource}+grounded_deterministic_after_model_error`;
+        recordStage(harnessRun, "planner_fallback", { error_code: contextFailure.code, error_name: contextFailure.name, request_metrics: modelRequestLogMetrics(error.model_request_metrics) });
       }
       recordStage(harnessRun, "action_gate", {
         decision: contextPlan.actions.length ? "proposal" : "read",
@@ -3420,7 +3453,7 @@ exports.handler = async (event, runtime = {}) => {
       });
       recordStage(harnessRun, "loop_planned", loopSummary(loop));
       finishRun(harnessRun, { plan:contextPlan, source:contextSource });
-      return json(200, { ok:true, plan:contextPlan, source:contextSource, harness:publicMeta(harnessRun), loop:publicLoop(loop) });
+      return json(200, { ok:true, plan:contextPlan, source:contextSource, model_error:contextFailure?.code || null, contextual_response_failure:contextFailure, harness:publicMeta(harnessRun), loop:publicLoop(loop) });
     }
     const semanticOptions = {
       previousState: context.semantic_state || context.memory?.conversation_state?.semantic_state,
@@ -3429,38 +3462,58 @@ exports.handler = async (event, runtime = {}) => {
     let semantic = advanceSemanticState(semanticOptions);
     let semanticExtraction = null;
     let semanticModelError = null;
+    let semanticModelFailure = null;
+    let semanticRequestMetrics = [];
+    let semanticAttemptExecution = null;
     if (semantic.handled && process.env.OPENAI_API_KEY) {
       try {
         semanticExtraction = await extractWithModel({ prompt, previousState: semanticOptions.previousState, context });
+        semanticRequestMetrics = semanticExtraction.attempt_metrics || [];
+        semanticAttemptExecution = semanticExtraction.trace?.attempt_execution || null;
         semantic = advanceSemanticState({ ...semanticOptions, extraction: semanticExtraction.extraction });
       } catch (error) {
         semanticModelError = error.name === "TimeoutError" ? "semantic_model_timeout" : error.message;
-        recordStage(harnessRun, "planner_fallback", { error_code: semanticModelError });
+        semanticModelFailure = { attempt_count: error.semantic_attempt_count || 1,
+          attempt_errors: error.semantic_attempt_errors || [semanticModelError] };
+        semanticRequestMetrics = error.semantic_attempt_metrics || [];
+        semanticAttemptExecution = error.semantic_attempt_execution || null;
+        recordStage(harnessRun, "planner_fallback", { error_code: semanticModelError, ...semanticModelFailure,
+          request_metrics: modelRequestLogMetrics(semanticRequestMetrics.at(-1)),
+          first_attempt_metrics: semanticRequestMetrics.length > 1 ? modelRequestLogMetrics(semanticRequestMetrics[0]) : null });
       }
     }
     recordStage(harnessRun, "semantic_reduced", {
       revision: semantic.state.revision, intent: semantic.state.intent, status: semantic.state.status,
       pending_slots: semantic.state.pending_slots, errors: semantic.state.errors.map(error => error.code),
+      request_metrics: modelRequestLogMetrics(semanticRequestMetrics.at(-1)),
+      first_attempt_metrics: semanticRequestMetrics.length > 1 ? modelRequestLogMetrics(semanticRequestMetrics[0]) : null,
     });
     if (semantic.handled) {
       harnessRun.route = "semantic";
       let plan = semanticPlan(semantic, language, prompt);
       let contextualResponseSource = "grounded_deterministic";
+      let contextFailure = null;
+      let contextualRequestMetrics = null;
       try {
         recordStage(harnessRun, "planner_started", { mode: "semantic_contextual_response" });
         const rendered = await naturalizeGroundedPlan({ prompt, context, plan });
+        contextualRequestMetrics = rendered.request_metrics || null;
         plan = rendered.plan;
         contextualResponseSource = rendered.source;
-        recordStage(harnessRun, "planner_completed", { source: rendered.source });
+        recordStage(harnessRun, "planner_completed", { source: rendered.source, request_metrics: modelRequestLogMetrics(contextualRequestMetrics) });
       } catch (error) {
         const { response_contract: _responseContract, ...fallbackPlan } = plan;
         plan = fallbackPlan;
         contextualResponseSource = "grounded_deterministic_after_model_error";
-        recordStage(harnessRun, "planner_fallback", { error_code: error.name || "semantic_contextual_response_error" });
+        contextFailure = contextualResponseFailure(error);
+        contextualRequestMetrics = error.model_request_metrics || null;
+        recordStage(harnessRun, "planner_fallback", { error_code: contextFailure.code, error_name: contextFailure.name, request_metrics: modelRequestLogMetrics(contextualRequestMetrics) });
       }
       if (typeof runtime.captureSemanticTrace === "function") runtime.captureSemanticTrace({
         context, previous_state: semanticOptions.previousState || null,
-        extraction: semanticExtraction?.trace || null, deterministic_patch: semantic.patch,
+        extraction: semanticExtraction?.trace || null, extraction_failure: semanticModelFailure, deterministic_patch: semantic.patch,
+        contextual_response_failure: contextFailure,
+        model_requests: { extraction: semanticRequestMetrics, extraction_execution: semanticAttemptExecution, contextual: contextualRequestMetrics },
         extraction_validation: semantic.extractionValidation || null,
         semantic_state: semantic.state, canonical_plan: plan, final_plan: plan,
         postprocessing: "Canonical action facts and response bypass legacy rewriting; the final gate builds actions from validated state.",
@@ -3477,7 +3530,7 @@ exports.handler = async (event, runtime = {}) => {
       recordStage(harnessRun, "loop_planned", loopSummary(loop));
       const source = `${semanticExtraction?.source || "semantic_state_v1"}+${contextualResponseSource}`;
       finishRun(harnessRun, { plan, source });
-      return json(200, { ok: true, plan, semantic_state: semantic.state, source, model_error: semanticModelError, extraction: semanticExtraction ? { model_requested: semanticExtraction.model_requested, model_returned: semanticExtraction.model_returned, rejected: semanticExtraction.rejected, ambiguities: semanticExtraction.ambiguities } : null, harness: publicMeta(harnessRun), loop: publicLoop(loop) });
+      return json(200, { ok: true, plan, semantic_state: semantic.state, source, model_error: semanticModelError || contextFailure?.code || null, extraction_failure: semanticModelFailure, contextual_response_failure: contextFailure, extraction: semanticExtraction ? { model_requested: semanticExtraction.model_requested, model_returned: semanticExtraction.model_returned, rejected: semanticExtraction.rejected, ambiguities: semanticExtraction.ambiguities, attempt_count: semanticExtraction.attempt_count, attempt_errors: semanticExtraction.attempt_errors } : null, harness: publicMeta(harnessRun), loop: publicLoop(loop) });
     }
     if (!useAppLayer) {
       let conversationResult;
@@ -3487,7 +3540,7 @@ exports.handler = async (event, runtime = {}) => {
         recordStage(harnessRun, "planner_completed", { source: conversationResult.source });
       } catch (error) {
         recordStage(harnessRun, "planner_fallback", { error_code: error.name || "planner_error" });
-        conversationResult = { plan: conversationFallbackPlan(prompt, language), source: "deterministic_conversation_fallback_after_model_error", error: error.message };
+        conversationResult = { plan: conversationFallbackPlan(prompt, language), source: "deterministic_conversation_fallback_after_model_error", error: freeformModelError(error, "conversation") };
       }
       conversationResult.plan = appendWebConversionNote(conversationResult.plan, prompt, context, language);
       conversationResult.plan = appendAppPresenceGuidance(conversationResult.plan, prompt, context, language);
@@ -3534,7 +3587,7 @@ exports.handler = async (event, runtime = {}) => {
       result = {
         plan: normalizePlan({ plan: fallback }, fallback, context, prompt, language),
         source: "deterministic_fallback_after_model_error",
-        error: error.message,
+        error: freeformModelError(error, "planner"),
       };
     }
     result.plan = appendAppPresenceGuidance(result.plan, prompt, context, language);
@@ -3583,7 +3636,8 @@ function semanticPlan(result, language, prompt) {
   const requiresScreenTime = executableActions.some((item) => actionNeedsScreenTime(item.type));
   const plan = {
     intent: classify(prompt, {}) === "general" ? "social" : classify(prompt, {}),
-    title: result.state.intent === "advice" ? (language === "es" ? "Tu rutina" : "Your routine")
+    title: result.actionReplaySuppressed ? (language === "es" ? "Solicitud preparada" : "Request prepared")
+      : result.state.intent === "advice" ? (language === "es" ? "Tu rutina" : "Your routine")
       : result.state.intent === "cancelled" ? (language === "es" ? "Propuesta descartada" : "Proposal discarded")
       : language === "es"
       ? result.decision.type === "confirm" ? "Confirmar bloqueo" : result.decision.type === "ready" ? "Enviando bloqueo" : "Detalles del bloqueo"
@@ -3635,8 +3689,17 @@ function semanticResponseContract(result) {
   if (Number.isInteger(knownStart)) allowedMinutes.push(knownStart);
   if (Number.isInteger(knownEnd)) allowedMinutes.push(knownEnd);
   const asksUnknownClock = ["start", "end", "end_or_duration"].includes(slot) && allowedMinutes.length === 0;
-  const requiredAnyGroups = [...(groups[slot] || (decision.type === "confirm" ? groups.confirmation : []))];
-  const requiresPlanFacts = !result.actionReplaySuppressed && ["confirm", "ready"].includes(decision.type);
+  const requiredAnyGroups = [...(slot === "action_type" && state.intent === "advice"
+    ? [["block", "blocking proposal"]] : (groups[slot] || (decision.type === "confirm" ? groups.confirmation : [])))];
+  const requiresPlanFacts = !result.actionReplaySuppressed && ["confirm", "ready", "setup"].includes(decision.type);
+  // A populated slot can still violate a native capability. It is a requested
+  // value, not an executable fact (e.g. a two-minute immediate block).
+  const rejectedRequestedValue = decision.type === "ask" && (state.slots?.[slot]?.value != null || (state.errors || []).length > 0);
+  const capabilityBoundary = Boolean(state.slots?.requested_capability?.value);
+  const executionFlow = result.reviewOnlyAppPresence ? "app_presence"
+    : actions.some(item => item.type === "open_app_picker") ? "notification_picker_accept"
+      : actions.some(item => item.type === "request_screen_time_permission") ? "notification_permission_reply"
+        : actions.length ? "notification_apply" : null;
   const startValue = state.slots?.start?.value;
   const recurrenceValue = state.slots?.recurrence?.value;
   if (requiresPlanFacts && recurrenceValue?.type === "once") requiredAnyGroups.push(["just once", "one time", "one-time"]);
@@ -3647,13 +3710,28 @@ function semanticResponseContract(result) {
   }
   return {
     operation: `semantic_${decision.type || "none"}${slot ? `_${slot}` : ""}`,
+    // Keep cancellation, rejected facts and native capability boundaries exact.
+    // A requested value is not permission to describe it as executable.
+    immutable_reply: decision.type === "cancelled" || rejectedRequestedValue || capabilityBoundary || result.actionReplaySuppressed === true,
+    execution_flow: executionFlow,
+    action_type: state.slots?.action_type?.value || null,
     facts: {
       validated_reply: result.responseText,
       decision: decision.type || "none",
       missing_detail: slot || null,
+      validated_for_execution: decision.type === "ready",
+      rejected_requested_value: rejectedRequestedValue ? { slot, value: state.slots?.[slot]?.value ?? null } : null,
+      execution_flow: executionFlow,
       actions,
+      action_type: state.slots?.action_type?.value || null,
+      hard_mode: state.slots?.hard_mode?.value ?? null,
+      start: startValue || null,
+      end: state.slots?.end?.value ?? null,
+      duration_minutes: state.slots?.duration_minutes?.value ?? null,
+      recurrence: recurrenceValue || null,
+      schedule_horizon_days: state.slots?.schedule_horizon_days?.value ?? null,
     },
-    required_phrases: actions.length || result.actionReplaySuppressed ? ["Blankmind notification"] : [],
+    required_phrases: actions.length && !result.reviewOnlyAppPresence ? ["Blankmind notification"] : [],
     required_any_groups: requiredAnyGroups,
     allowed_minutes: Array.from(new Set(allowedMinutes)),
     required_clock_minutes: requiresPlanFacts && startValue?.type === "time"
@@ -3673,16 +3751,26 @@ function enforceSemanticBoundary(plan, semantic, language) {
   const protectionTypes = new Set(["start_protection", "apply_schedule", "update_schedule", "delete_schedule", "delete_all_schedules", "set_daily_limit", "apply_ai_plan", "enable_allow_only", "enable_adult_filter", "pause_rules", "disable_pause"]);
   const setupCarriesAction = item => ["open_app_picker", "request_screen_time_permission"].includes(item.type)
     && ["minutes", "start_minute", "end_minute", "duration_days", "weekdays", "hard_mode", "name"].some(key => item[key] != null);
-  if ((plan.actions || []).some(item => protectionTypes.has(item.type) || setupCarriesAction(item))) {
-    // The legacy planner cannot create a new blocking intention or pending slot.
-    // Preserve the reducer's decision, including its absence of an authorized plan.
-    if (semantic?.decision?.type === "none" && semantic?.state?.status === "idle") {
-      const text = naturalChannelText(plan.response_text || plan.message_text, 700)
-        || "I can recommend a better phone plan once I have enough recent context.";
-      return { ...plan, actions: [], response_text: text, message_text: text, speech_text: text, followup_text: "", semantic_state: semantic.state, semantic_decision: semantic.decision, blocking_ready: null, blocking_user_request: false, blocking_data: null, blocking_missing_fields: [], requires_selected_apps: false, requires_screen_time_authorization: false };
-    }
-    const text = language === "es" ? "No he podido validar una propuesta ejecutable a partir de esa petición. No he aplicado ningún cambio." : "I couldn't validate an executable proposal from that request. I haven't applied any changes.";
-    return { ...plan, title: language === "es" ? "Petición pendiente" : "Request not applied", actions: [], response_text: text, message_text: text, speech_text: text, followup_text: "", bullets: [], semantic_state: semantic.state, semantic_decision: semantic.decision, blocking_ready: null, blocking_user_request: false, blocking_data: null, blocking_missing_fields: [], requires_selected_apps: false, requires_screen_time_authorization: false };
+  const rejectedAction = (plan.actions || []).some(item => protectionTypes.has(item.type) || setupCarriesAction(item));
+  const violations = plannerAuthorityViolations(plan);
+  if (rejectedAction && !violations.length && semantic?.state?.intent === "advice"
+    && semantic?.state?.status === "idle" && semantic?.decision?.type === "none") {
+    // The reducer recognized advice, not execution. Keep its non-executive
+    // recommendation while discarding every model-supplied control and cue.
+    const text=naturalChannelText(plan.response_text || plan.message_text,700);
+    return { ...plan,actions:[],response_text:text,message_text:text,speech_text:text,followup_text:"",bullets:[],
+      semantic_state:semantic.state,semantic_decision:semantic.decision,blocking_ready:null,blocking_user_request:false,
+      blocking_data:null,blocking_missing_fields:[],requires_selected_apps:false,requires_screen_time_authorization:false,
+      execution_boundary:{decision:"advice_only",reasons:["unvalidated_model_action"]} };
+  }
+  if (rejectedAction || violations.length) {
+    // Reject the entire executable assertion together with its unauthorized
+    // action. Removing an action must never leave a success story behind.
+    const text = language === "es"
+      ? "No tengo una propuesta ejecutable validada ni confirmación del iPhone para esta petición. Podemos aclarar qué quieres cambiar antes de continuar."
+      : "I don't have a validated executable proposal or confirmation from your iPhone for this request. We can clarify what you want to change before continuing.";
+    return { ...plan, title: language === "es" ? "Petición pendiente" : "Request pending", actions: [], response_text: text, message_text: text, speech_text: text, followup_text: "", bullets: [], semantic_state: semantic.state, semantic_decision: semantic.decision, blocking_ready: null, blocking_user_request: false, blocking_data: null, blocking_missing_fields: [], requires_selected_apps: false, requires_screen_time_authorization: false,
+      execution_boundary: { decision:"rejected", reasons:[...(rejectedAction ? ["unvalidated_model_action"] : []),...violations] } };
   }
   return { ...plan, semantic_state: semantic.state, semantic_decision: semantic.decision };
 }

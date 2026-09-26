@@ -7,6 +7,27 @@ const { DIMENSIONS, digest, evaluateTurn, validateExpectation, projectActions, v
 
 const ROOT = path.resolve(__dirname, "..");
 const MODES = ["direct_model", "bm_full", "bm_raw", "bm_canonical", "bm_final"];
+const SOURCE_ROOTS = ["netlify/functions", "tools"];
+function captureSource({ root = ROOT, git = args => execFileSync("git", args, { cwd: root, encoding: "utf8", windowsHide: true }) } = {}) {
+  const snapshot = {};
+  function visit(relative) {
+    const absolute = path.join(root, relative);
+    for (const entry of fs.readdirSync(absolute, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const file = `${relative}/${entry.name}`;
+      if (entry.isDirectory() && entry.name !== "node_modules") visit(file);
+      else if (entry.isFile() && /\.(?:js|json)$/.test(entry.name)) snapshot[file] = digest(fs.readFileSync(path.join(root, file), "utf8"));
+    }
+  }
+  const capturedAt = new Date().toISOString();
+  let revision = "unavailable", dirty = null;
+  try {
+    revision = git(["rev-parse", "HEAD"]).trim();
+    dirty = git(["status", "--porcelain=v1", "--untracked-files=all"]).trim().length > 0;
+  } catch { /* Unknown provenance cannot qualify as clean release evidence. */ }
+  for (const relative of SOURCE_ROOTS) visit(relative);
+  for (const file of ["package.json", "package-lock.json"]) if (fs.existsSync(path.join(root, file))) snapshot[file] = digest(fs.readFileSync(path.join(root, file), "utf8"));
+  return { revision, dirty, snapshot, capture: { version: 1, captured_at: capturedAt, roots: [...SOURCE_ROOTS], before_turns: true } };
+}
 function readJson(file) { return JSON.parse(fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "")); }
 function option(args, key, fallback) {
   const at = args.indexOf(key);
@@ -166,26 +187,33 @@ function reportResults(dataset, runs, options, baseline) {
     const old = oldTurns.get(`${turn.conversation}:${turn.mode}:${turn.repetition}:${turn.turn}`);
     return old && ((old.status === "passed" && turn.status !== "passed") || (old.status !== "failed" && turn.status === "failed"));
   }).map(turn => ({ conversation: turn.conversation, mode: turn.mode, repetition: turn.repetition, turn: turn.turn, issues: turn.issues }));
-  let revision = "unavailable";
-  try { revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8", windowsHide: true }).trim(); } catch {}
   return {
-    evaluator: "bm-semantic-oracle-v1", generated_at: new Date().toISOString(), revision,
+    evaluator: "bm-semantic-oracle-v1", generated_at: new Date().toISOString(), revision: options.sourceStart?.revision || "unavailable",
     dataset: { id: dataset.id, split: dataset.split, sha256: digest(dataset), hash_kind: "canonical_json_sha256", provenance: dataset.provenance || null },
     source_snapshot: options.sourceSnapshot || null,
+    source_dirty: options.sourceStart?.dirty ?? null,
+    source_capture: options.sourceStart?.capture || null,
+    source_changed_during_replay: options.sourceChanged ?? null,
     execution: { endpoint: options.url || "local_handler", model_requested: !!options.model, modes: options.modes, repeats: options.repeats, concurrency: options.concurrency },
-    release_eligible: flat.length > 0 && flat.every(turn => turn.status === "passed"),
+    release_eligible: options.sourceStart?.dirty === false && options.sourceChanged === false && flat.length > 0 && flat.every(turn => turn.status === "passed"),
     summary: { conversations: runs.length, turns: flat.length, active_model_turns: flat.filter(turn => /^openai:/.test(turn.source || "")).length, source_counts: flat.reduce((counts, turn) => { const key = turn.source || "missing"; counts[key] = (counts[key] || 0) + 1; return counts; }, {}), passed: flat.filter(turn => turn.status === "passed").length, failed: flat.filter(turn => turn.status === "failed").length, unverified: flat.filter(turn => turn.status === "unverified").length, dimensions },
     failures: flat.filter(turn => turn.status !== "passed").map(turn => ({ conversation: turn.conversation, turn: turn.turn, repetition: turn.repetition, mode: turn.mode, status: turn.status, expected: turn.expected, actual: turn.actual, probable_causes: turn.issues })),
     error_clusters: [...clusters.values()].sort((a, b) => b.count - a.count), regressions, variability, runs,
     limitations: ["Natural-language equivalence requires independently reviewed exact response and expectation hashes; lexical checks can reject contradictions but cannot prove meaning.", "Channel fixtures exercise shared backend context contracts; they do not replace transport or native-device execution tests.", "Different live calls vary. Only layer_changes within one trace compare transformations of the same model response.", "Soft measurements are descriptive, never used to average away hard failures."],
   };
 }
-async function replay(dataset, options, adapter, reviews = [], baseline = null) {
+async function replay(dataset, options, adapter, reviews = [], baseline = null, dependencies = {}) {
+  const capture = dependencies.captureSource || captureSource;
+  const sourceStart = capture();
   validateDataset(dataset);
-  options = { ...options, sourceSnapshot: Object.fromEntries(["tools/bm_semantic_oracle.js", "tools/bm_semantic_replay.js", "netlify/functions/blanked-agent.js", "netlify/functions/bm-semantic-state.js", "netlify/functions/bm-semantic-extraction.js", "netlify/functions/bm-context.js"].filter(file => fs.existsSync(path.join(ROOT, file))).map(file => [file, digest(fs.readFileSync(path.join(ROOT, file), "utf8"))])) };
+  options = { ...options, sourceStart, sourceSnapshot: sourceStart.snapshot };
+  if (!adapter) adapter = createAdapter(options);
   const jobs = [];
   for (let repetition = 1; repetition <= options.repeats; repetition++) for (const mode of options.modes) for (const conversation of dataset.conversations) jobs.push({ conversation, repetition, mode });
   const runs = await mapConcurrent(jobs, options.concurrency, job => runConversation(job.conversation, job.repetition, job.mode, adapter, reviews));
+  const sourceEnd = capture();
+  options.sourceChanged = sourceStart.revision !== sourceEnd.revision || sourceEnd.dirty !== sourceStart.dirty
+    || digest(sourceStart.snapshot) !== digest(sourceEnd.snapshot);
   return reportResults(dataset, runs, options, baseline);
 }
 async function main() {
@@ -209,7 +237,7 @@ async function main() {
   if (!options.model && !options.adapter && options.modes.some(mode => ["direct_model", "bm_full", "bm_raw"].includes(mode))) throw new Error("differential_model_modes_require_--model");
   const reviewsPath = option(args, "--reviews", null);
   const baselinePath = option(args, "--baseline", null);
-  const report = await replay(readJson(datasetPath), options, createAdapter(options), reviewsPath ? readJson(reviewsPath) : [], baselinePath ? readJson(baselinePath) : null);
+  const report = await replay(readJson(datasetPath), options, null, reviewsPath ? readJson(reviewsPath) : [], baselinePath ? readJson(baselinePath) : null);
   const out = path.resolve(option(args, "--out", "tmp/bm-semantic/replay.json"));
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, `${JSON.stringify(report, null, 2)}\n`);
@@ -217,5 +245,5 @@ async function main() {
   process.exitCode = report.release_eligible ? 0 : 1;
 }
 
-module.exports = { createAdapter, mapConcurrent, replay, reportResults, runConversation, traceDiffs, validateDataset };
+module.exports = { captureSource, createAdapter, mapConcurrent, replay, reportResults, runConversation, traceDiffs, validateDataset };
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 2; });

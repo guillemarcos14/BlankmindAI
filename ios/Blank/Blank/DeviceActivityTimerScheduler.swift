@@ -3,6 +3,7 @@ import Foundation
 #if canImport(DeviceActivity)
 import DeviceActivity
 import FamilyControls
+import ManagedSettings
 #endif
 
 enum DeviceActivityTimerScheduler {
@@ -11,42 +12,63 @@ enum DeviceActivityTimerScheduler {
     static let dailyLimitActivity = "BlankDailyLimit"
     static let dailyLimitEvent = "BlankDailyLimitReached"
 
-    private static let maxRecurringActivities = 8
+    // Apple permits twenty monitored activities across the app and extensions.
+    // Keep one slot for the daily limit and one for an immediate strategy timer.
+    private static let maxScheduleActivities = 18
     static let recurringExpiryActivity = "BlankRecurringScheduleExpiry"
+    static let recurringExpiryPrefix = "\(recurringExpiryActivity):"
+    private static let recurringStoreName = ManagedSettingsStore.Name("BlankRecurringProtection")
+    private static let dailyLimitStoreName = ManagedSettingsStore.Name("BlankDailyLimitProtection")
+
+    static var hasIndependentProtection: Bool {
+        #if canImport(DeviceActivity)
+        return [recurringStoreName, dailyLimitStoreName].contains { name in
+            let shield = ManagedSettingsStore(named: name).shield
+            return shield.applications?.isEmpty == false || shield.applicationCategories != nil
+                || shield.webDomains?.isEmpty == false || shield.webDomainCategories != nil
+        }
+        #else
+        return false
+        #endif
+    }
 
     @discardableResult
-    static func syncRecurringSchedule(_ schedule: BlankFocusSchedule, until expiry: Date? = nil) -> Bool {
+    static func syncRecurringSchedule(_ schedule: BlankFocusSchedule, until _: Date? = nil) -> Bool {
         #if canImport(DeviceActivity)
         let center = DeviceActivityCenter()
-        let activityNames = (0..<maxRecurringActivities).map {
+        let activityNames = (0..<maxScheduleActivities).map {
             DeviceActivityName(rawValue: "\(recurringSchedulePrefix):\($0)")
         }
-        center.stopMonitoring(activityNames + [DeviceActivityName(rawValue: recurringExpiryActivity)])
-
-        guard schedule.enabled else { return true }
-        if let expiry, expiry <= Date() {
+        let expiryNames = (0..<maxScheduleActivities).map {
+            DeviceActivityName(rawValue: "\(recurringExpiryPrefix)\($0)")
+        }
+        guard schedule.enabled else {
+            center.stopMonitoring(activityNames + expiryNames + [DeviceActivityName(rawValue: recurringExpiryActivity)])
+            ManagedSettingsStore(named: recurringStoreName).clearAllSettings()
             return true
         }
-
-        var registered = 0
-        for window in schedule.activeWindows where window.runsEveryDay {
-            for interval in recurringIntervals(for: window) {
-                guard registered < maxRecurringActivities else { break }
-                let name = DeviceActivityName(rawValue: "\(recurringSchedulePrefix):\(registered)")
-                let activity = DeviceActivitySchedule(
-                    intervalStart: interval.start,
-                    intervalEnd: interval.end,
-                    repeats: true
-                )
-                do {
-                    try center.startMonitoring(name, during: activity)
-                    registered += 1
-                } catch {
-                    return false
-                }
+        let now = Date()
+        let intervals = schedule.activeWindows
+            .filter { $0.expiresAt.map { $0 > now } ?? true }
+            .flatMap(recurringIntervals(for:))
+        let expirations = schedule.activeWindows.compactMap(\.expiresAt).filter { $0 > now }
+        guard intervals.count + expirations.count <= maxScheduleActivities else { return false }
+        // Reject an oversized plan before removing working monitors.
+        center.stopMonitoring(activityNames + expiryNames + [DeviceActivityName(rawValue: recurringExpiryActivity)])
+        for (index, interval) in intervals.enumerated() {
+            let name = DeviceActivityName(rawValue: "\(recurringSchedulePrefix):\(index)")
+            let activity = DeviceActivitySchedule(
+                intervalStart: interval.start,
+                intervalEnd: interval.end,
+                repeats: true
+            )
+            do {
+                try center.startMonitoring(name, during: activity)
+            } catch {
+                return false
             }
         }
-        if let expiry, expiry > Date() {
+        for (index, expiry) in expirations.enumerated() {
             let calendar = Calendar.current
             let start = calendar.dateComponents(
                 [.calendar, .timeZone, .year, .month, .day, .hour, .minute, .second],
@@ -58,7 +80,7 @@ enum DeviceActivityTimerScheduler {
             )
             do {
                 try center.startMonitoring(
-                    DeviceActivityName(rawValue: recurringExpiryActivity),
+                    DeviceActivityName(rawValue: "\(recurringExpiryPrefix)\(index)"),
                     during: DeviceActivitySchedule(intervalStart: start, intervalEnd: end, repeats: false)
                 )
             } catch {
@@ -140,6 +162,7 @@ enum DeviceActivityTimerScheduler {
     static func stopDailyLimit() {
         #if canImport(DeviceActivity)
         DeviceActivityCenter().stopMonitoring([DeviceActivityName(rawValue: dailyLimitActivity)])
+        ManagedSettingsStore(named: dailyLimitStoreName).clearAllSettings()
         #endif
     }
 

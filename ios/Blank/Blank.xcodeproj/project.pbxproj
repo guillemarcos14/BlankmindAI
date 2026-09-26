@@ -16,6 +16,7 @@
 		8A0000010000000000000007 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000017 /* SetupView.swift */; };
 		8A0000010000000000000008 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000018 /* HomeView.swift */; };
 		8A00000100000000000000F0 /* AssistantAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A00000100000000000000F1 /* AssistantAppView.swift */; };
+		8A00000100000000000000F2 /* AssistantComposerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A00000100000000000000F3 /* AssistantComposerState.swift */; };
 		8A0000010000000000000009 /* BlankDomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000001B /* BlankDomainModels.swift */; };
 		8A000001000000000000000A /* ReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000001C /* ReportView.swift */; };
 		8A000001000000000000000C /* DeviceActivityTimerScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000001E /* DeviceActivityTimerScheduler.swift */; };
@@ -26,8 +27,6 @@
 		8A000001000000000000000D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000001F /* Assets.xcassets */; };
 		8A000001000000000000000E /* instrument_serif_regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000021 /* instrument_serif_regular.ttf */; };
 		8A000001000000000000000F /* inter_variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000022 /* inter_variable.ttf */; };
-		8A0000030000000000000001 /* blank_background_idle.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 8A0000030000000000000011 /* blank_background_idle.mp4 */; };
-		8A0000030000000000000002 /* blank_background_active.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 8A0000030000000000000012 /* blank_background_active.mp4 */; };
 		8A0000020000000000000001 /* DeviceActivityMonitorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000020000000000000011 /* DeviceActivityMonitorExtension.swift */; };
 		8A0000020000000000000002 /* BlankDeviceActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 8A0000020000000000000010 /* BlankDeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8A0000040000000000000001 /* BlankWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000040000000000000011 /* BlankWidget.swift */; };
@@ -100,6 +99,7 @@
 		8A0000010000000000000017 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		8A0000010000000000000018 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		8A00000100000000000000F1 /* AssistantAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantAppView.swift; sourceTree = "<group>"; };
+		8A00000100000000000000F3 /* AssistantComposerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantComposerState.swift; sourceTree = "<group>"; };
 		8A0000010000000000000019 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8A000001000000000000001A /* Blank.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Blank.entitlements; sourceTree = "<group>"; };
 		8A000001000000000000001B /* BlankDomainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankDomainModels.swift; sourceTree = "<group>"; };
@@ -112,8 +112,6 @@
 		8A0000010000000000000027 /* StoreKitPurchaseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitPurchaseStore.swift; sourceTree = "<group>"; };
 		8A0000010000000000000029 /* HealthKitStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitStore.swift; sourceTree = "<group>"; };
 		8A000001000000000000002B /* BAIProactiveSignalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BAIProactiveSignalEngine.swift; sourceTree = "<group>"; };
-		8A0000030000000000000011 /* blank_background_idle.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = blank_background_idle.mp4; sourceTree = "<group>"; };
-		8A0000030000000000000012 /* blank_background_active.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = blank_background_active.mp4; sourceTree = "<group>"; };
 		8A0000020000000000000010 /* BlankDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BlankDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A0000020000000000000011 /* DeviceActivityMonitorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityMonitorExtension.swift; sourceTree = "<group>"; };
 		8A0000020000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -195,6 +193,7 @@
 				8A0000010000000000000017 /* SetupView.swift */,
 				8A0000010000000000000018 /* HomeView.swift */,
 				8A00000100000000000000F1 /* AssistantAppView.swift */,
+				8A00000100000000000000F3 /* AssistantComposerState.swift */,
 				8A000001000000000000001B /* BlankDomainModels.swift */,
 				8A000001000000000000001C /* ReportView.swift */,
 				8A0000010000000000000027 /* StoreKitPurchaseStore.swift */,
@@ -223,8 +222,6 @@
 		8A0000030000000000000033 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				8A0000030000000000000011 /* blank_background_idle.mp4 */,
-				8A0000030000000000000012 /* blank_background_active.mp4 */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -435,8 +432,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				8A000001000000000000000D /* Assets.xcassets in Resources */,
-				8A0000030000000000000001 /* blank_background_idle.mp4 in Resources */,
-				8A0000030000000000000002 /* blank_background_active.mp4 in Resources */,
 				8A000001000000000000000E /* instrument_serif_regular.ttf in Resources */,
 				8A000001000000000000000F /* inter_variable.ttf in Resources */,
 			);
@@ -487,6 +482,7 @@
 				8A0000010000000000000007 /* SetupView.swift in Sources */,
 				8A0000010000000000000008 /* HomeView.swift in Sources */,
 				8A00000100000000000000F0 /* AssistantAppView.swift in Sources */,
+				8A00000100000000000000F2 /* AssistantComposerState.swift in Sources */,
 				8A0000010000000000000009 /* BlankDomainModels.swift in Sources */,
 				8A000001000000000000000A /* ReportView.swift in Sources */,
 				8A0000010000000000000028 /* StoreKitPurchaseStore.swift in Sources */,

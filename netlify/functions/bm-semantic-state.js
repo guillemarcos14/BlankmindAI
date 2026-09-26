@@ -3,6 +3,7 @@
 // This module owns action facts. Free-form model output is never an action source.
 // Each turn is reduced independently; old user prose is not concatenated into a parser.
 const { createHash } = require("node:crypto");
+const { normalizeSemanticDelivery, applySemanticDelivery, renderSuppressedDelivery } = require("./bm-semantic-delivery");
 const VERSION = 1;
 const TTL_MS = 2 * 60 * 60 * 1000;
 const SLOT_NAMES = ["apps", "app_category", "moment", "action_type", "hard_mode", "requested_capability", "start", "end", "duration_minutes", "recurrence", "schedule_horizon_days", "confirmation"];
@@ -29,7 +30,7 @@ const minute = (n) => Number.isInteger(n) && n >= 0 && n < 1440;
 const usesSingleDistractionBlock = () => true;
 
 function emptyState(language = "en", now = Date.now()) {
-  return { version:VERSION, revision:0, turn:0, updated_at:new Date(now).toISOString(), language:language === "es" ? "es" : "en", intent:"general", slots:Object.fromEntries(SLOT_NAMES.map(k => [k, null])), corrections:[], pending_slots:[], status:"idle", next_question:null, errors:[], last_action_fingerprint:null };
+  return { version:VERSION, revision:0, turn:0, updated_at:new Date(now).toISOString(), language:language === "es" ? "es" : "en", intent:"general", slots:Object.fromEntries(SLOT_NAMES.map(k => [k, null])), corrections:[], pending_slots:[], status:"idle", next_question:null, errors:[], last_action_fingerprint:null, delivery:null };
 }
 
 function validValue(key, v) {
@@ -71,6 +72,7 @@ function normalizeSemanticState(input, now = Date.now()) {
   state.last_action_fingerprint = /^[a-f0-9]{24}$/.test(input.last_action_fingerprint || "") ? input.last_action_fingerprint : null;
   // A stale or edited proposal can never retain its previous confirmation.
   if (value(state, "confirmation")?.fingerprint !== proposalFingerprint(state)) state.slots.confirmation = null;
+  state.delivery = state.slots.confirmation ? normalizeSemanticDelivery(input.delivery, proposalFingerprint(state)) : null;
   return state;
 }
 
@@ -100,6 +102,9 @@ function parseDuration(text) {
   // Word amounts require a separator: "a minute" is a duration, "am" and the
   // Spanish word "ahora" are not "a" + "m/hora". Digits may use compact 30m.
   const matches = [...text.matchAll(pattern)].filter(m => /^\d/.test(m[1]) || /^\s+/.test(m[0].slice(m[1].length)));
+  // A sign belongs to its quantity; stripping it would authorize a different
+  // duration. Reject negative numeric/word amounts before summing units.
+  if (matches.some(m => /[-−]\s*$|\b(?:minus|menos)\s*$/.test(text.slice(0, m.index)))) return { error:"unsupported_duration" };
   const half = /\b(?:half an? hour|half hour|media hora)\b/.test(text);
   const quarter = /\b(?:quarter of an hour|quarter hour|cuarto de hora)\b/.test(text);
   const hourHalf = /\b(?:an? hour and a half|one hour and a half|una hora y media)\b/.test(text);
@@ -144,7 +149,7 @@ function extractApps(text, context) {
     if (regex.test(rest)) { apps.push(name); rest = rest.replace(regex, " "); }
   }
   for (const match of text.matchAll(/["“]([^"”]{1,60})["”]/g)) apps.push(match[1]);
-  if (/\b(?:my selected apps|selected apps|current selection|apps seleccionadas|aplicaciones seleccionadas|seleccion actual)\b/.test(text)) return ["selected_apps"];
+  if (/\b(?:my selected apps|selected apps|my distractions|selected distractions|current selection|apps seleccionadas|aplicaciones seleccionadas|mis distracciones|distracciones seleccionadas|seleccion actual)\b/.test(text)) return ["selected_apps"];
   return [...new Set(apps)].sort();
 }
 
@@ -152,13 +157,18 @@ function parseRecurrence(text, pendingQuestion) {
   const tomorrow = /\b(?:tomorrow|manana)\b/.test(text.replace(/de la manana/g, ""));
   const today = /\b(?:today|tonight|hoy|esta noche)\b/.test(text);
   const explicitDate = text.match(/\b(\d{4}-\d{2}-\d{2})\b/);
-  if (/\b(?:every day|each day|daily|cada dia|todos los dias|diariamente|every night|cada noche)\b/.test(text)) return { type:"daily", weekdays:[1,2,3,4,5,6,7] };
+  if (/\b(?:every day|each day|per day|daily|cada dia|al dia|por dia|todos los dias|diariamente|every night|cada noche)\b/.test(text)) return { type:"daily", weekdays:[1,2,3,4,5,6,7] };
   if (/\b(?:weekdays|monday (?:to|through) friday|entre semana|lunes a viernes)\b/.test(text)) return { type:"weekly", weekdays:[1,2,3,4,5] };
   if (/\b(?:weekends|fines? de semana)\b/.test(text)) return { type:"weekly", weekdays:[6,7] };
   const days = DAYS.flatMap((names, i) => names.some(n => contains(text, n)) || contains(text,names[0]+"s") ? [i+1] : []);
   if (days.length && (pendingQuestion === "recurrence" || /\b(?:every|each|cada|todos los|los lunes|los martes|los miercoles|los jueves|los viernes|los sabados|los domingos)\b/.test(text) || DAYS.some(names => contains(text, names[0] + "s")))) return { type:"weekly", weekdays:days };
   if (/\b(?:once|one time|one off|just this time|solo esta vez|una vez|sin repetir|no repeat)\b/.test(text) || tomorrow || today || explicitDate) return { type:"once", weekdays:[], ...(tomorrow || today ? { relative_date:tomorrow ? "tomorrow" : "today" } : {}), ...(explicitDate ? { date:explicitDate[1] } : {}) };
   return null;
+}
+
+function isLimitInstruction(clause) {
+  return /^(?:please\s+|por favor\s+)?(?:set|apply|enable|put|pon|establece|fija|activa|aplica)\s+(?:(?:a|an|the|that|this|un|el|ese|este)\s+)?(?:(?:daily|usage|screen time)\s+)?(?:limit|limite)\b/.test(clause)
+    || /^(?:i want|i need|quiero|necesito)\s+(?:(?:a|an|un|el)\s+)?(?:(?:daily|usage)\s+)?(?:limit|limite)\b/.test(clause);
 }
 
 function extractSemanticPatch({ prompt, state = emptyState(), context = {} }) {
@@ -168,12 +178,31 @@ function extractSemanticPatch({ prompt, state = emptyState(), context = {} }) {
   const patch = { intent:null, set:{}, clear:[], evidence:original, errors:[], confirmation:false, cancelled:false, meaningful:false };
   const put = (key, v) => { patch.set[key] = v; patch.meaningful = true; };
   const error = (slot, code) => { patch.errors.push({ slot, code, text:original }); patch.clear.push(slot); patch.meaningful = true; };
-  const cancel = /(?:^|[.!?]\s*)(?:(?:please\s+)?(?:cancel|discard|withdraw|drop)(?:\s+(?:it|this|that)|\s+(?:the|this|that|my|our)\s+(?:request|proposal|plan|block|schedule|instruction))?(?:\s+please)?|never mind|nevermind|forget (?:it|that|(?:the|this|that) (?:plan|request|proposal))|stop(?: it| that)?|(?:por favor\s+)?(?:cancela(?:lo)?|descarta|retira|anula)(?:\s+(?:el|la|este|esta|ese|esa|mi)\s+(?:plan|bloqueo|solicitud|propuesta|programacion))?|olvida(?:lo| el plan)|dejalo)[.!]?$/i.test(full);
-  const negatedAction = /\b(?:do not|don't|dont|no quiero|no)\s+(?:block|bloquear|bloquees|schedule|programar)\b/.test(full);
-  // "Don't block A; block B" replaces the target rather than cancelling B.
-  const replacement = negatedAction && original.split(/[;.!?]|\bbut\b|\bpero\b|\bsino\b/i).slice(1).filter(part => /\b(?:block|bloquea|protect|protege|schedule|programa)\b/i.test(part) && !/\b(?:not|don't|dont|no)\b/i.test(part)).pop();
+  // Withdrawal is a speech act on a clause, not a whole-message exact phrase.
+  // Keep its target scoped to this instruction; explanations and thanks may
+  // follow it, while negated cancellation or unrelated objects are not consent.
+  const originalClauses = original.split(/[;.!?]|\b(?:but|pero|sino)\b/i);
+  const clauses = originalClauses.map(part => fold(part).replace(/^no,\s*/, "").replace(/,\s*(please|por favor)$/, " $1"));
+  const cancelClause = /^(?:(?:please\s+)?(?:cancel|discard|withdraw|drop)(?:\s+(?:it|this|that)|\s+(?:the|this|that|my|our)\s+(?:(?:pending|current)\s+)?(?:request|proposal|plan|block|schedule|instruction))?(?:\s+please)?|never mind|nevermind|forget (?:it|that|(?:the|this|that) (?:plan|request|proposal))|stop(?: it| that)?|(?:por favor\s+)?(?:cancela(?:lo)?|descarta|retira|anula)(?:\s+(?:el|la|este|esta|ese|esa|mi)\s+(?:plan|bloqueo|solicitud|peticion|propuesta|programacion|instruccion|orden)(?:\s+(?:pendiente|actual))?)?(?:\s+por favor)?|olvida(?:lo| el plan)|dejalo)$/;
+  let lastWithdrawal = -1;
+  clauses.forEach((clause, index) => {
+    // A reason explains this withdrawal; it is never a second instruction.
+    // "For now" withdraws the current request, without promising future resume.
+    const withdrawalTarget = clause.split(/\s+(?:because|porque)\b/)[0].trim()
+      .replace(/,\s*$/, "").replace(/(?:,\s*|\s+)(?:for now|por ahora)$/, "");
+    const negatedAction = /\b(?:do not|don't|dont|no quiero|no)\s+(?:block|bloquear|bloquees|schedule|programar)\b/.test(withdrawalTarget)
+      || /^(?:(?:please|por favor)\s+)?(?:i\s+)?(?:do not|don't|dont|no quiero|no)\s+(?:apply|execute|send|aplicar|apliques|aplicarla|aplicarlo|ejecutar|ejecutes|ejecutarla|ejecutarlo|enviar|envies)(?:\s+(?:it|this|that|the (?:request|proposal)|(?:esta|esa|la) (?:solicitud|peticion|propuesta)))?$/.test(withdrawalTarget);
+    const withoutNegation = withdrawalTarget.replace(/^(?:(?:please|por favor)\s+)?(?:do not|don't|dont|no)\s+/, "");
+    const negatedLimit = withoutNegation !== withdrawalTarget && isLimitInstruction(withoutNegation);
+    if (cancelClause.test(withdrawalTarget) || negatedAction || negatedLimit) lastWithdrawal = index;
+  });
+  // Only instructions after the last withdrawal can replace it. Preserve the
+  // remaining clauses so later constraints cannot disappear during replacement.
+  const following = clauses.slice(lastWithdrawal + 1);
+  const hasReplacement = following.some(clause => /^(?:(?:please|por favor)\s+)?(?:block|bloquea|protect|protege|schedule|programa)\b/.test(clause) || isLimitInstruction(clause));
+  const replacement = lastWithdrawal >= 0 && hasReplacement && originalClauses.slice(lastWithdrawal + 1).join("; ");
   if (replacement) return { ...extractSemanticPatch({ prompt:replacement, state, context }), evidence:original };
-  if (cancel || negatedAction) return { ...patch, intent:"cancelled", cancelled:true, meaningful:true };
+  if (lastWithdrawal >= 0) return { ...patch, intent:"cancelled", cancelled:true, meaningful:true };
   // Route capabilities and reflection before generic block vocabulary. A past
   // block, a web filter, and apps that must remain available are different intents.
   const explicitNewBlock = /\b(?:block (?:it |them |again )?now|start (?:a )?(?:new )?block|bloquea ahora|inicia (?:un )?(?:nuevo )?bloqueo)\b/.test(full);
@@ -194,9 +223,12 @@ function extractSemanticPatch({ prompt, state = emptyState(), context = {} }) {
   if (/^(?:not|no)\s+[^,;.]+[.!]?$/i.test(full) && !/\b(?:thanks|gracias)\b/.test(full)) {
     const rejectedApps = extractApps(full,context);
     if (rejectedApps.length) patch.clear.push("apps");
-    if (parseDuration(full)) patch.clear.push("duration_minutes","end");
+    const rejectedDuration = parseDuration(full);
+    if (rejectedDuration) patch.clear.push("duration_minutes","end");
     if (parseRecurrence(full,state.next_question)) patch.clear.push("recurrence","schedule_horizon_days");
-    if (/\b(?:at|from|until|start|end|a las|desde|hasta)\b/.test(full) || new RegExp(CLOCK,"i").test(full.replace(/^not\s+/i,""))) {
+    // A duration number is not also a rejected clock. "Not 30 minutes"
+    // withdraws only the quantity, preserving an independently authorized start.
+    if (/\b(?:at|from|until|start|end|a las|desde|hasta)\b/.test(full) || (!rejectedDuration && new RegExp(CLOCK,"i").test(full.replace(/^not\s+/i,"")))) {
       if (/\b(?:end|until|hasta|fin)\b/.test(full)) patch.clear.push("end","duration_minutes");
       else patch.clear.push("start");
     }
@@ -204,13 +236,22 @@ function extractSemanticPatch({ prompt, state = emptyState(), context = {} }) {
   }
   const questionAdvice = /^(?:how (?:can|do|should)|why|what (?:should|can)|can you explain|como (?:puedo|hago)|por que|que (?:puedo|deberia)|explica)/.test(full);
   const modeActivationRequest = usesSingleDistractionBlock(context) && /\b(?:start|activate|use|switch to|inicia|activa|usa|cambia a)\b[^.!?]{0,80}\b(?:mode|modo|profile|perfil)\b/.test(full);
-  const actionRequest = (/\b(?:block|bloquea|bloquear|protect|proteger|protege|schedule|programa|programar|set (?:a |an )?(?:daily |\d+[ -])?limit|limita|limitar|daily limit|limite diario|start protection|start focus|focus now|strict block|inicia un bloqueo|inicia foco|activa foco)\b/.test(full) || modeActivationRequest) && !questionAdvice;
+  // Recognize an explicit limit instruction independently of the nouns used
+  // for its allowance. A question about limits remains advice below.
+  const limitRequest = clauses.some(isLimitInstruction);
+  const actionRequest = (/\b(?:block|bloquea|bloquear|protect|proteger|protege|schedule|programa|programar|set (?:a |an )?(?:daily |\d+[ -])?limit|limita|limitar|daily limit|limite diario|start protection|start focus|focus now|strict block|inicia un bloqueo|inicia foco|activa foco)\b/.test(full) || modeActivationRequest || limitRequest) && !questionAdvice;
   const digitalBehavior = /\b(?:(?:doom)?scroll\w*|phone|screen\w*|apps?|social media|m[oó]vil|pantallas?|redes sociales|distra\w*)\b/.test(full) || extractApps(full,context).length > 0;
   const behaviorGoal = /\b(?:i want|i need|i wish|i keep|i usually|i often|i struggle|i.m trying|i am trying|i can.t stop|too much|less|reduce|stop checking|quiero|necesito|me gustaria|suelo|me cuesta|no puedo parar|demasiado|menos)\b/.test(full);
   const advice = questionAdvice || (!actionRequest && digitalBehavior && behaviorGoal);
   if (advice) { patch.intent = "advice"; patch.meaningful = true; }
-  if (actionRequest) { patch.intent = "block"; put("action_type", /\b(?:daily limit|limite diario|per day|al dia|por dia|limit|limita|limitar)\b/.test(text) ? "daily_limit" : "strict_block"); }
+  if (actionRequest) { patch.intent = "block"; put("action_type", /\b(?:daily limit|limite(?: diario| de uso)?|per day|al dia|por dia|limit|limita|limitar)\b/.test(text) ? "daily_limit" : "strict_block"); }
   if (actionRequest || advice) patch.clear.push("requested_capability");
+  // Daily limits have no native expiry field. Only explicit removal of that
+  // constraint may clear it; a generic yes or changing the start cannot do so.
+  if (value(state,"action_type") === "daily_limit" && value(state,"schedule_horizon_days") != null
+    && /^(?:keep (?:it|the limit) until i remove it|remove the end date|quita la fecha de fin|mantenlo hasta que lo quite)[.!]?$/i.test(full)) {
+    patch.clear.push("schedule_horizon_days"); patch.meaningful = true;
+  }
   const greeting = /^(?:hi|hello|hey|hola|buenas|thanks|thank you|gracias|good morning|buenos dias)[.!]?$/i.test(full);
   if (greeting) return patch;
   if (!actionRequest && !advice && state.intent !== "block" && state.intent !== "advice") return patch;
@@ -236,7 +277,7 @@ function extractSemanticPatch({ prompt, state = emptyState(), context = {} }) {
   if (momentValue) put("moment", momentValue);
   const recurrence = parseRecurrence(text, state.next_question);
   if (recurrence) put("recurrence", recurrence);
-  const horizon = text.match(new RegExp(`\\b(?:for|during|durante|por)\\s+(\\d+|${Object.keys(NUMBER_WORDS).join("|")})\\s+(days?|dias?|weeks?|semanas?)\\b`));
+  const horizon = text.match(new RegExp(`\\b(?:for|during|durante|por)\\s+(?:(?:the\\s+)?(?:next|following)\\s+|(?:los|las)\\s+(?:proximos|proximas|siguientes)\\s+)?(\\d+|${Object.keys(NUMBER_WORDS).join("|")})\\s+(days?|dias?|weeks?|semanas?)\\b`));
   const shortHorizon = state.next_question === "schedule_horizon_days" ? text.match(/^(\d+)\s*(days?|dias?)?[.!]?$/) : null;
   if (horizon || shortHorizon) {
     const matched = horizon || shortHorizon;
@@ -310,6 +351,13 @@ function validateSemanticPatch(candidate, args) {
   const state = args.state || emptyState();
   const fields = Array.isArray(candidate?.fields) ? candidate.fields : [];
   function atomSupports(key, proposed) {
+    // Narrow evidence such as "5 minutes" cannot restore a rejected "-5 minutes".
+    if (grounded.clear.includes(key) || grounded.errors.some(error => error.slot === key)) return false;
+    // A real quote can still describe an observation rather than an instruction.
+    // Capability/review turns deliberately supply no operational slots. Never
+    // supplement that grounded boundary with model-proposed times or durations.
+    if (grounded.set.requested_capability
+      || (!grounded.intent && value(state,"requested_capability"))) return false;
     const field = fields.find(f => f?.slot === key && same(f.value,proposed));
     const quote = clean(field?.evidence || candidate?.evidence?.[key]);
     // Evidence is a current-turn span, not a model-supplied explanation or old quote.
@@ -350,14 +398,22 @@ function reduceSemanticState(previous, patch, { language, now = Date.now() } = {
   state.revision += 1;
   state.updated_at = new Date(now).toISOString();
   if (language) state.language = language === "es" ? "es" : "en";
+  // Answering the offered protection-style choice edits the same proposal.
+  // The word "block" in "Use a normal block" must not discard its schedule.
+  const styleOnlyAmendment = state.intent === "block"
+    && Object.hasOwn(patch.set, "hard_mode")
+    && patch.set.action_type === value(state, "action_type")
+    && Object.keys(patch.set).every(key => ["action_type", "hard_mode"].includes(key));
   const startsNewBlockAfterConfirmation = patch.intent === "block"
     && Object.hasOwn(patch.set, "action_type")
-    && value(state, "confirmation")?.status === "confirmed";
+    && value(state, "confirmation")?.status === "confirmed"
+    && !styleOnlyAmendment;
   if (startsNewBlockAfterConfirmation) {
     // Repeating the same request is a new proposal, not permission to reuse the
     // previous conversational confirmation or facts omitted from this turn.
     state.slots = Object.fromEntries(SLOT_NAMES.map(k => [k, null]));
     state.last_action_fingerprint = null;
+    state.delivery = null;
     state.errors = [];
   }
   if (patch.intent && patch.intent !== state.intent) {
@@ -367,13 +423,14 @@ function reduceSemanticState(previous, patch, { language, now = Date.now() } = {
     } else { state.slots.action_type = null; state.slots.confirmation = null; }
     state.intent = patch.intent;
     state.last_action_fingerprint = null;
+    state.delivery = null;
   }
   if (patch.set.requested_capability) {
     // Unsupported capability/review turns close any actionable proposal. Preserve
     // only current-turn context; a later yes cannot resurrect its confirmation.
-    state.slots = Object.fromEntries(SLOT_NAMES.map(k=>[k,null])); state.last_action_fingerprint=null;
+    state.slots = Object.fromEntries(SLOT_NAMES.map(k=>[k,null])); state.last_action_fingerprint=null; state.delivery=null;
   }
-  if (patch.cancelled) { state.intent = "cancelled"; state.status = "cancelled"; state.slots = Object.fromEntries(SLOT_NAMES.map(k => [k,null])); state.pending_slots = []; state.next_question = null; state.errors = []; state.revision += 1; return state; }
+  if (patch.cancelled) { state.intent = "cancelled"; state.status = "cancelled"; state.slots = Object.fromEntries(SLOT_NAMES.map(k => [k,null])); state.pending_slots = []; state.next_question = null; state.errors = []; state.last_action_fingerprint = null; state.delivery = null; state.revision += 1; return state; }
   const update = (key, replacement, sourceKind = "user", dependsOn) => {
     const prior = value(state,key);
     if (same(prior, replacement)) return;
@@ -402,7 +459,7 @@ function reduceSemanticState(previous, patch, { language, now = Date.now() } = {
   state.errors = state.errors.slice(-12);
   state.corrections = state.corrections.slice(-20);
   const fingerprint = proposalFingerprint(state);
-  if (fingerprint !== oldFingerprint || patch.errors.length) { state.slots.confirmation = null; state.last_action_fingerprint = null; state.revision += 1; }
+  if (fingerprint !== oldFingerprint || patch.errors.length) { state.slots.confirmation = null; state.last_action_fingerprint = null; state.delivery = null; state.revision += 1; }
   if (patch.confirmation && previous?.next_question === "confirmation" && fingerprint === oldFingerprint && previous.status === "awaiting_confirmation" && !state.errors.length) {
     update("confirmation",{ status:"confirmed", fingerprint });
   } else if (state.intent === "block" && patch.meaningful && !state.errors.length) {
@@ -420,12 +477,13 @@ function requiredFields(state, context = {}) {
   const pending = [];
   if (!usesSingleDistractionBlock(context) && !value(state,"apps")?.length) pending.push("apps");
   if (!value(state,"action_type")) pending.push("action_type");
-  if (!value(state,"start")) pending.push("start");
+  if (!value(state,"start") || (value(state,"action_type") === "daily_limit" && value(state,"start")?.type !== "now")) pending.push("start");
   if (value(state,"end") == null && value(state,"duration_minutes") == null) pending.push("end_or_duration");
   const recurrence = value(state,"recurrence");
   if (!recurrence) pending.push("recurrence");
   const start = value(state,"start");
-  if (start?.type === "time" && recurrence && recurrence.type !== "once" && !value(state,"schedule_horizon_days")) pending.push("schedule_horizon_days");
+  if (value(state,"action_type") !== "daily_limit" && start?.type === "time" && recurrence && recurrence.type !== "once" && !value(state,"schedule_horizon_days")) pending.push("schedule_horizon_days");
+  if (value(state,"action_type") === "daily_limit" && value(state,"schedule_horizon_days") != null) pending.push("schedule_horizon_days");
   if (value(state,"hard_mode") === true && (start?.type === "time" || value(state,"action_type") === "daily_limit")) pending.push("hard_mode");
   if (start?.type === "now" && value(state,"duration_minutes") == null && !pending.includes("end_or_duration")) pending.push("end_or_duration");
   if (start?.type === "now" && recurrence && recurrence.type !== "once" && value(state,"action_type") !== "daily_limit") pending.push("start");
@@ -454,6 +512,7 @@ function semanticActionFromFacts(state, context = {}) {
   if (start.type === "now" && (recurrence.date || recurrence.relative_date === "tomorrow")) return [];
   if (value(state,"action_type") === "daily_limit") {
     if (start.type !== "now" || recurrence.type !== "daily" || duration < 5 || duration > 240) return [];
+    if (value(state,"schedule_horizon_days") != null) return [];
     return [{ type:"set_daily_limit", minutes:duration }];
   }
   if (start.type === "now") {
@@ -519,6 +578,9 @@ function decideSemanticState(state, context = {}) {
   return { type:"ready", slot:null };
 }
 
+function isThanksAcknowledgement(prompt) {
+  return /^(?:thanks(?: a lot)?|thank you(?: very much)?|gracias|muchas gracias)$/.test(fold(prompt).replace(/[^a-z0-9]+/g, " ").trim());
+}
 function clockLabel(v) { return `${String(Math.floor(v / 60)).padStart(2,"0")}:${String(v % 60).padStart(2,"0")}`; }
 function clockMeridiemLabel(v) {
   const hour24 = Math.floor(v / 60) % 24;
@@ -548,6 +610,13 @@ function knownFactLead(state, context = {}) {
   const start = value(state,"start");
   const end = value(state,"end");
   const duration = value(state,"duration_minutes");
+  if (value(state,"action_type") === "daily_limit") {
+    const allowance = duration == null ? "" : (es ? ` de ${duration} minutos al día` : ` of ${duration} minutes per day`);
+    const horizon = value(state,"schedule_horizon_days");
+    const requestedStart = start?.type === "time" ? (es ? `, desde las ${clockMeridiemLabel(start.minute)}` : `, starting at ${clockMeridiemLabel(start.minute)}`) : "";
+    const expiry = horizon == null ? "" : (es ? `, durante ${horizon} días` : `, for ${horizon} days`);
+    return es ? `Pides un límite diario${allowance} para ${apps}${requestedStart}${expiry}.` : `You requested a daily limit${allowance} for ${apps}${requestedStart}${expiry}.`;
+  }
   const facts = [];
   if (apps) facts.push(apps);
   if (start?.type === "now") facts.push(es ? "ahora" : "now");
@@ -567,15 +636,66 @@ function renderSemanticResponse(state, decision, context = {}, prompt = "") {
     const studying=/\b(?:study|studying|estudiar|estudio)\b/.test(fold(state.slots.requested_capability.source.text));
     return es ? `Necesitas esa app para ${studying ? "estudiar" : "trabajar"}. Blankmind no distingue ese uso del personal dentro de una misma app; esa restricción necesita revisión manual antes de bloquearla.` : `You need that app for ${studying ? "study" : "work"}. Blankmind cannot distinguish that use from personal use inside the same app; that restriction needs manual review before blocking it.`;
   }
-  if (capability === "past_block_review") return es ? "Hablas de un bloqueo anterior. Podemos revisar qué lo interrumpió y ajustar la próxima propuesta con ese contexto." : "You're describing a previous block. We can review what interrupted it and use that context when discussing a future proposal.";
+  if (capability === "past_block_review") {
+    const acceptedReview = /^(?:yes|yes please|okay|ok|sure|go ahead|si|vale|de acuerdo|adelante)[.!]?$/i.test(fold(prompt));
+    if (acceptedReview) return es
+      ? "¿Qué te llevó a terminar ese bloqueo: una tarea necesaria, algo que querías consultar o una distracción?"
+      : "What led you to end that block: something you needed to do, something you wanted to check, or a distraction?";
+    return es ? "Hablas de un bloqueo anterior. Podemos revisar qué lo interrumpió y ajustar la próxima propuesta con ese contexto." : "You're describing a previous block. We can review what interrupted it and use that context when discussing a future proposal.";
+  }
   if (capability === "weekly_review") {
     const minutes=context.weekly_protected_minutes, breaks=context.weekly_break_count;
     return typeof minutes === "number" && typeof breaks === "number" ? (es ? `Esta semana registras ${minutes} minutos protegidos y ${breaks} interrupciones. Estos datos describen tu semana; no requieren cambiar ningún bloqueo.` : `This week you recorded ${minutes} protected minutes and ${breaks} breaks. Those figures summarize your week without changing any blocks.`) : (es ? "Todavía no tengo tus métricas semanales. Abre Blankmind para sincronizarlas y poder revisar tu semana." : "I don't have your weekly metrics yet. Open Blankmind to sync them so we can review your week.");
   }
-  if (decision.type === "cancelled") return es ? "He descartado la propuesta." : "I've discarded the proposal.";
+  if (decision.type === "cancelled") {
+    if (isThanksAcknowledgement(prompt)) return es ? "De nada." : "You're welcome.";
+    return es
+      ? "He retirado esta instrucción. Si la protección ya empezó en tu dispositivo, tendrás que detenerla allí."
+      : "I've withdrawn this instruction. If protection has already started on your device, you'll need to stop it there.";
+  }
   if (decision.type === "none") return null;
+  if (decision.type === "ask" && decision.slot === "calendar_date") {
+    const recurrence = value(state,"recurrence");
+    const requestedDate = recurrence?.date || (recurrence?.relative_date === "tomorrow" ? (es ? "mañana" : "tomorrow") : (es ? "una fecha única" : "a specific date"));
+    const duration = value(state,"duration_minutes");
+    const start = value(state,"start");
+    const requestedTime = start?.type === "time" ? (es ? ` a las ${clockMeridiemLabel(start.minute)}` : ` at ${clockMeridiemLabel(start.minute)}`) : "";
+    const requestedDuration = duration == null ? "" : (es ? ` durante ${duration} minutos` : ` for ${duration} minutes`);
+    return es
+      ? `Pides bloquear ${semanticTargetLabel(state,context)} para ${requestedDate}${requestedTime}${requestedDuration}. Este tipo de programación no admite una fecha única; no he iniciado ningún bloqueo. ¿Quieres definir un horario recurrente en su lugar?`
+      : `You requested a block for ${semanticTargetLabel(state,context)} on ${requestedDate}${requestedTime}${requestedDuration}. This schedule cannot target a specific one-off date; I have not started a block. Would you like to define a recurring schedule instead?`;
+  }
+  if (decision.type === "ask" && decision.slot === "time_consistency"
+    && value(state,"start")?.type === "time" && value(state,"end") != null && value(state,"duration_minutes") != null) {
+    const start = value(state,"start"), end = value(state,"end"), duration = value(state,"duration_minutes");
+    return es
+      ? `Pides bloquear de ${clockMeridiemLabel(start.minute)} a ${clockMeridiemLabel(end)} y también una duración de ${duration} minutos. Esos datos no coinciden. ¿Quieres conservar las horas o la duración?`
+      : `You requested a block from ${clockMeridiemLabel(start.minute)} to ${clockMeridiemLabel(end)} and also a duration of ${duration} minutes. Those details conflict. Should I keep the clock times or the duration?`;
+  }
+  if (decision.type === "ask" && value(state,"action_type") === "daily_limit" && ["start","schedule_horizon_days"].includes(decision.slot)) {
+    const futureStart = value(state,"start")?.type === "time";
+    const expiry = value(state,"schedule_horizon_days") != null;
+    const limitation = futureStart && expiry
+      ? (es ? "Los límites diarios solo pueden empezar ahora y no pueden caducar automáticamente." : "Daily limits can only start now and cannot expire automatically.")
+      : expiry
+        ? (es ? "Los límites diarios no pueden caducar automáticamente." : "Daily limits cannot expire automatically.")
+        : (es ? "Los límites diarios solo pueden empezar ahora." : "Daily limits can only start now.");
+    const question = expiry
+      ? (es ? "¿Quieres un límite desde ahora hasta que lo quites, o prefieres un bloqueo programado?" : "Would you like a limit starting now until you remove it, or a scheduled block instead?")
+      : (es ? "¿Quieres que empiece ahora o prefieres un bloqueo programado?" : "Should it start now, or would you prefer a scheduled block?");
+    return `${knownFactLead(state,context)} ${limitation} ${question}`;
+  }
   if (decision.type === "confirm") return `${semanticSummary(state,context)}. ${es ? "¿Lo confirmas?" : "Do you confirm?"}`;
-  if (decision.type === "ready") return `${semanticSummary(state,context)}. ${es ? "Lo estoy enviando a tu dispositivo vinculado. Pulsa la notificación de Blankmind para terminar; solo confirmaré el éxito cuando el dispositivo verifique el bloqueo." : "I'm sending it to your linked device. Tap the Blankmind notification to finish; I'll only report success after the device verifies the block."}`;
+  if (decision.type === "ready") {
+    const effect = value(state,"action_type") === "daily_limit" ? (es ? "el límite" : "the limit") : (es ? "el bloqueo" : "the block");
+    return `${semanticSummary(state,context)}. ${es ? `Lo estoy enviando a tu dispositivo vinculado. Pulsa la notificación de Blankmind para terminar; solo confirmaré el éxito cuando el dispositivo verifique ${effect}.` : `I'm sending it to your linked device. Tap the Blankmind notification to finish; I'll only report success after the device verifies ${effect}.`}`;
+  }
+  if (decision.type === "setup" && decision.slot === "permissions") return es
+    ? `${semanticSummary(state,context)}. Pulsa la notificación de Blankmind y concede el permiso de bloqueo; después dime cuando esté listo para continuar. La protección todavía no está verificada.`
+    : `${semanticSummary(state,context)}. Tap the Blankmind notification and grant blocking permission, then tell me when it's ready to continue. Protection is not verified yet.`;
+  if (decision.type === "setup" && decision.slot === "app_selection") return es
+    ? `${semanticSummary(state,context)}. Pulsa la notificación de Blankmind para elegir tus distracciones; al aceptar la selección, el dispositivo intentará aplicar esta propuesta. Solo confirmaré el resultado cuando el dispositivo lo verifique.`
+    : `${semanticSummary(state,context)}. Tap the Blankmind notification to choose your distractions, then confirm the selection so your device can apply this proposal. I'll only confirm the result after the device verifies it.`;
   if (decision.slot === "app_presence" && value(state,"confirmation")?.fingerprint === proposalFingerprint(state)) {
     const followup = /^(?:done|ok(?:ay)?|i have it|i(?:'|’)ve got it|i(?:'|’)ve opened (?:the )?app|i have already opened (?:the )?app|it(?:'|’)s already opened|it(?:'|’)s already open|the app is already open|opened it|already opened(?: (?:the )?app)?|ya está|ya esta|ya está abierta|ya esta abierta|ya la he abierto|ya abrí|ya la abri)$/i.test(clean(prompt, 160));
     if (followup) return es
@@ -593,12 +713,19 @@ function renderSemanticResponse(state, decision, context = {}, prompt = "") {
   const questions = {
     apps:es ? (value(state,"app_category") ? "¿Qué aplicaciones de esa categoría quieres bloquear?" : "¿Qué aplicaciones quieres bloquear?") : (value(state,"app_category") ? "Which apps in that category do you want to block?" : "Which apps do you want to block?"),
     action_type:state.intent === "advice" ? (es ? "¿Quieres convertir estos detalles en una propuesta de bloqueo?" : "Would you like to turn these details into a blocking proposal?") : (es ? "¿Quieres bloquearlas durante una franja o fijar un límite diario?" : "Do you want a blocking window or a daily usage limit?"),
-    start:state.intent === "advice" ? (es ? "¿A qué hora suele empezar ese uso del móvil? Indica mañana o tarde, o usa el formato de 24 horas." : "What time does that scrolling usually start? Include AM/PM or use a 24-hour time.") : (es ? "¿Cuándo debe empezar: ahora o a qué hora exacta? Indica mañana o tarde, o usa el formato de 24 horas." : "When should it start: now or at what exact time? Include AM/PM or use a 24-hour time."),
+    start:value(state,"action_type") === "daily_limit"
+      ? (es ? "Los límites diarios solo pueden empezar ahora. ¿Quieres que empiece ahora o prefieres un bloqueo programado?" : "Daily limits can only start now. Should it start now, or would you prefer a scheduled block?")
+      : state.intent === "advice" ? (es ? "¿A qué hora suele empezar ese uso del móvil? Indica mañana o tarde, o usa el formato de 24 horas." : "What time does that scrolling usually start? Include AM/PM or use a 24-hour time.")
+      : ["daily","weekly"].includes(value(state,"recurrence")?.type)
+        ? (es ? "Un horario recurrente necesita una hora fija. ¿A qué hora exacta debe empezar? Indica mañana o tarde, o usa el formato de 24 horas." : "A recurring schedule needs a fixed time. What exact time should it start? Include AM/PM or use a 24-hour time.")
+        : (es ? "¿Cuándo debe empezar: ahora o a qué hora exacta? Indica mañana o tarde, o usa el formato de 24 horas." : "When should it start: now or at what exact time? Include AM/PM or use a 24-hour time."),
     end:es ? "¿A qué hora exacta debe terminar? Indica mañana o tarde, o usa el formato de 24 horas." : "What exact time should it end? Include AM/PM or use a 24-hour time.",
     end_or_duration:es ? "¿Cuánto debe durar o a qué hora exacta debe terminar?" : "How long should it last, or what exact time should it end?",
     duration_minutes:es ? "¿Qué duración exacta quieres en minutos? El bloqueo inmediato admite de 5 a 240 minutos." : "What exact duration do you want in minutes? An immediate block supports 5 to 240 minutes.",
     recurrence:es ? "¿Es solo esta vez o se repite? Si se repite, ¿qué días?" : "Is this just once or recurring? If recurring, which days?",
-    schedule_horizon_days:es ? "¿Durante cuántos días quieres repetirlo? La app admite de 1 a 14 días por programación." : "For how many days should it repeat? The app supports 1 to 14 days per schedule.",
+    schedule_horizon_days:value(state,"action_type") === "daily_limit"
+      ? (es ? "Los límites diarios no pueden caducar automáticamente. ¿Quieres mantener el límite hasta que lo quites o usar un bloqueo programado?" : "Daily limits cannot expire automatically. Do you want to keep the limit until you remove it, or use a scheduled block?")
+      : (es ? "¿Durante cuántos días quieres repetirlo? La app admite de 1 a 14 días por programación." : "For how many days should it repeat? The app supports 1 to 14 days per schedule."),
     hard_mode:value(state,"action_type") === "daily_limit" ? (es ? "El modo estricto no está disponible para límites diarios. Elige un límite normal o un bloqueo estricto inmediato." : "Hard mode is not available for daily limits. Choose a regular limit or an immediate hard block.") : (es ? "El modo estricto solo admite bloqueos inmediatos. ¿Quieres protección normal programada o iniciar el modo estricto ahora?" : "Hard mode supports immediate blocks only. Do you want regular scheduled protection or to start hard mode now?"),
     time_consistency:es ? "La hora final y la duración no coinciden. ¿Cuál quieres mantener?" : "The end time and duration disagree. Which should I keep?",
     calendar_date:es ? "La app aún no admite una fecha única en este tipo de programación. Puedo ayudarte a revisarla manualmente en Blankmind." : "The app does not yet support a specific one-off date for this schedule. You can review it manually in Blankmind.",
@@ -611,6 +738,11 @@ function renderSemanticResponse(state, decision, context = {}, prompt = "") {
   const question = value(state,"action_type") === "daily_limit" && decision.slot === "end_or_duration"
     ? (es ? "¿Cuántos minutos al día quieres permitir?" : "How many minutes per day should the limit allow?")
     : questions[decision.slot] || (es ? "Necesito aclarar ese dato antes de seguir." : "I need to clarify that detail before continuing.");
+  if (decision.type === "ask" && decision.slot === "recurrence"
+      && /^(?:yes|yeah|yep|yes please|okay|ok|sure|si|si por favor|vale|de acuerdo)[.!?]?$/.test(fold(prompt))) {
+    return es ? "¿Lo quieres solo esta vez, cada día o en días concretos de la semana?"
+      : "Should it happen just once, every day, or on specific days of the week?";
+  }
   const lead = knownFactLead(state,context);
   return lead ? `${lead} ${question}` : question;
 }
@@ -621,13 +753,17 @@ function asBlockingContract(state, context = {}) {
 }
 
 function advanceSemanticState({ previousState, prompt, context = {}, language, now = Date.now(), replayHistory = true, extraction } = {}) {
-  let previous = normalizeSemanticState(previousState || context.semantic_state || context.memory?.conversation_state?.semantic_state || context.memory?.semantic_state, now);
-  if (!previous && replayHistory) {
+  const suppliedState = previousState || context.semantic_state || context.memory?.conversation_state?.semantic_state || context.memory?.semantic_state;
+  let previous = normalizeSemanticState(suppliedState, now);
+  if (!previous && !suppliedState && replayHistory) {
     // Migration trusts user turns only, never old deterministic/model assistant claims.
     const history = Array.isArray(context.recent_messages) ? context.recent_messages : context.memory?.conversation_state?.recent_messages || [];
     const users = history.filter(m => m?.role === "user").slice(-16);
     if (users.length && clean(users[users.length-1].content || users[users.length-1].text) === clean(prompt)) users.pop();
     for (const message of users) previous = advanceSemanticState({ previousState:previous, prompt:message.content || message.text, context, language, now, replayHistory:false }).state;
+    // History migration restores facts, not a delivery receipt or authorization.
+    // A supplied but expired/invalid state must never be resurrected from prose.
+    if (previous) { previous.slots.confirmation = null; previous.last_action_fingerprint = null; previous.delivery = null; }
   }
   const base = previous || emptyState(language || context.language,now);
   const patch = extractSemanticPatch({ prompt, state:base, context });
@@ -639,7 +775,11 @@ function advanceSemanticState({ previousState, prompt, context = {}, language, n
   }
   const state = reduceSemanticState(base,patch,{language,now});
   const decision = decideSemanticState(state,context);
-  const handled = state.intent === "block" || patch.cancelled || Boolean(value(state,"requested_capability")) || (state.intent === "advice" && decision.type === "ask");
+  // Acknowledging a withdrawal must not fall through to free conversation,
+  // where prior messages could be mistaken for a proposal to restart.
+  const cancelledAcknowledgement = state.intent === "cancelled"
+    && (isThanksAcknowledgement(prompt) || /^(?:yes|yeah|yea|yep|yes please|yes do it|confirm|confirmed|do it|go ahead|ok|okay|understood|si|confirmo|hazlo|adelante|vale|entendido)$/.test(fold(prompt).replace(/[^a-z0-9]+/g," ").trim()));
+  const handled = state.intent === "block" || patch.cancelled || cancelledAcknowledgement || Boolean(value(state,"requested_capability")) || (state.intent === "advice" && decision.type === "ask");
   let actions = decision.type === "ready" ? buildSemanticActions(state,context) : [];
   const reviewOnlyAppPresence = decision.type === "setup" && decision.slot === "app_presence";
   if (reviewOnlyAppPresence) actions = buildSemanticReviewAction(state, context);
@@ -654,11 +794,13 @@ function advanceSemanticState({ previousState, prompt, context = {}, language, n
         }]
       : [{type:"open_app_picker",name:"Distractions"}];
   }
-  const actionReplaySuppressed = decision.type === "ready" && state.last_action_fingerprint === proposalFingerprint(state);
-  if (actionReplaySuppressed) actions = [];
-  if (decision.type === "ready" && actions.length) state.last_action_fingerprint = proposalFingerprint(state);
+  const delivery = applySemanticDelivery({ delivery:state.delivery, fingerprint:proposalFingerprint(state), actions, legacyActionFingerprint:state.last_action_fingerprint });
+  const actionReplaySuppressed = delivery.suppressed;
+  actions = delivery.actions;
+  state.delivery = delivery.delivery;
+  if (state.delivery?.sent.includes("execution")) state.last_action_fingerprint = proposalFingerprint(state);
   const responseText = actionReplaySuppressed
-    ? "That same request is already waiting in Blankmind. Tap its notification to continue, and I'll only confirm success after your device verifies it."
+    ? `${semanticSummary(state,context)}. ${renderSuppressedDelivery(state.language, state.delivery)}`
     : renderSemanticResponse(state,decision,context,prompt);
   return { state, handled, decision, actions, actionReplaySuppressed, reviewOnlyAppPresence: reviewOnlyAppPresence && actions.length > 0, blockingContract:asBlockingContract(state,context), responseText, patch, extractionValidation };
 }

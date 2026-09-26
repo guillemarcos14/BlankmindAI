@@ -51,9 +51,26 @@ assert.match(assistantChannel, /status === "verified"/);
 assert.match(assistantChannel, /applied and verified/);
 assert.match(smsAgent, /sendAssistantActionPush/);
 assert.match(whatsappAgent, /sendAssistantActionPush/);
-assert.match(whatsappAgent, /Tap the Blankmind notification to apply it/);
-assert.match(whatsappAgent, /Tap the Blankmind notification to start your/);
-assert.match(whatsappAgent, /Number\.isInteger\(action\.minutes\)/);
+const { whatsappReplyText } = require("../netlify/functions/whatsapp-agent");
+const { whatsappReplyText: smsReplyText } = require("../netlify/functions/sms-agent");
+for (const reply of [whatsappReplyText, (plan, receipt) => smsReplyText(plan, "", receipt)]) {
+  const action = {type:"start_protection",minutes:17};
+  const plan = {message_text:"Tap the Blankmind notification to apply it.",actions:[action],response_language:"en",review_only_actions:false,semantic_state:{status:"ready"}};
+  const delivered = reply(plan,{action,push:{sent:true}});
+  assert.match(delivered,/17-minute block.*Tap the Blankmind notification.*apply/);
+  assert.match(delivered,/only confirm success after.*verifies/);
+  assert.doesNotMatch(delivered,/already blocked|I'm applying it now|is active/i);
+  for (const receipt of [null,{action,push:{sent:false}},{action}]) {
+    const fallback=reply(plan,receipt);
+    assert.match(fallback,/17-minute block.*Open Blankmind/);
+    assert.doesNotMatch(fallback,/tap.*notification/i,"planner text cannot manufacture a push receipt");
+  }
+  for (const setupPlan of [{...plan,review_only_actions:true},{...plan,semantic_state:{status:"needs_setup"}}]) {
+    const setupReply=reply(setupPlan,{action,push:{sent:true}});
+    assert.match(setupReply,/Open Blankmind.*Execution is not verified/);
+    assert.doesNotMatch(setupReply,/tap.*notification/i,"push acceptance does not authorize an unready review action");
+  }
+}
 assert.doesNotMatch(smsAgent, /Open Blankmind to review and apply it/);
 assert.doesNotMatch(whatsappAgent, /Open Blankmind to review and apply it/);
 assert.match(blankApp, /didReceiveRemoteNotification/);
@@ -71,7 +88,7 @@ assert.doesNotMatch(blankApp, /duplicateMode\(named:/);
 assert.match(home, /confirmPendingAssistantAction\(\)/);
 assert.match(home, /blankAssistantApplyNowRequested/);
 assert.match(home, /applyNowRequested/);
-assert.match(home, /guard applyNowRequested else/);
+assert.match(home, /guard currentApplyRequest else/);
 assert.match(home, /Read this after the network round-trip/);
 assert.match(blankApp, /tappedActionIDKey/);
 assert.match(home, /native_state_applied_after_selection/);

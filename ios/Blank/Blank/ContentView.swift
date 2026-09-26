@@ -6,6 +6,18 @@ struct ContentView: View {
     @State private var showingOnboardingDemo = false
 
     var body: some View {
+        #if DEBUG
+        if AssistantAppPreview.enabled {
+            AssistantAppView { _ in }
+        } else {
+            productContent
+        }
+        #else
+        productContent
+        #endif
+    }
+
+    private var productContent: some View {
         ZStack {
             if showingOnboardingDemo || !sessionStore.setupComplete {
                 SetupView {

@@ -1,6 +1,7 @@
 const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const { measureConversationCoverage } = require("./bm_conversation_coverage");
 const report = { version: 3, started_at: new Date().toISOString(), checks: [], legacy_diagnostics: [], production_release_verified: false };
 
 const rawArgs = process.argv.slice(2);
@@ -168,6 +169,7 @@ report.active_model_checked = forceModel || qualityJudge || (hasApiKey && !quick
 report.independent_quality_judge_checked = qualityJudge;
 const developmentReplay = readJson("tmp/bm-semantic/development-gate.json");
 const developmentRepeats = Math.max(1, Number(developmentReplay?.execution?.repeats) || 1);
+const developmentCoverage = measureConversationCoverage(developmentReplay);
 const integrityReport = readJson("tmp/bm-semantic/evaluator-integrity.json");
 const readinessReport = releaseEvidence ? readJson("tmp/bm-release/readiness.json") : null;
 report.coverage = {
@@ -176,8 +178,12 @@ report.coverage = {
     total: report.checks.length,
   },
   semantic_development: {
-    unique_conversations: developmentReplay ? Math.floor((developmentReplay.summary?.conversations || 0) / developmentRepeats) : 0,
-    unique_turns: developmentReplay ? Math.floor((developmentReplay.summary?.turns || 0) / developmentRepeats) : 0,
+    count_kind: "normalized_input_and_expected_trajectories",
+    unique_conversations: developmentCoverage.unique_conversations,
+    unique_turns: developmentCoverage.unique_turns,
+    evidence_complete: developmentCoverage.failures.length === 0,
+    evidence_failures: developmentCoverage.failures,
+    semantic_diversity_requires_independent_audit: true,
     repeats: developmentRepeats,
     executed_turns: developmentReplay?.summary?.turns || 0,
   },
@@ -191,14 +197,14 @@ report.coverage = {
     required: readinessReport?.coverage?.physical_cases_required || 20,
   },
 };
-report.limitations = ["Original evaluator scores are diagnostic, never averaged with semantic checks.", "Automated checks do not verify an unseen holdout, real Postgres concurrency, native compilation or physical execution. Those release requirements remain mandatory."];
+report.limitations = ["Original evaluator scores are diagnostic, never averaged with semantic checks.", "Conversation coverage deduplicates normalized input/expectation trajectories, not semantic meaning; independent diversity review remains required.", "Automated checks do not verify an unseen holdout, real Postgres concurrency, native compilation or physical execution. Those release requirements remain mandatory."];
 const out = path.resolve(rootDir, argValue("--report", "tmp/bm-semantic/release-gate.json"));
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, JSON.stringify(report, null, 2) + "\n");
 console.log(
   `BM check groups ${report.coverage.automated_check_groups.passed}/${report.coverage.automated_check_groups.total}; `
-  + `semantic source ${report.coverage.semantic_development.unique_conversations} unique conversations/`
-  + `${report.coverage.semantic_development.unique_turns} unique turns repeated ${report.coverage.semantic_development.repeats}x; `
+  + `semantic source ${report.coverage.semantic_development.unique_conversations} unique input/expectation trajectories/`
+  + `${report.coverage.semantic_development.unique_turns} turns in those trajectories (${report.coverage.semantic_development.executed_turns} executed; ${report.coverage.semantic_development.repeats} repeats); `
   + `historical incidents ${report.coverage.historical_physical_regressions.incidents}; `
   + `physical release cases ${report.coverage.physical_release_cases.passed}/${report.coverage.physical_release_cases.required}; `
   + `production_release_verified=${report.production_release_verified}. Report: ${out}`,

@@ -94,12 +94,81 @@ function validateExpectation(expectation) {
 
 // These checks only REJECT obvious contradictions. Their absence never proves
 // natural-language equivalence: an independently reviewed hash is required below.
-function surfaceContradictions(plan, expected, context = {}) {
+function referenceFacts(text) {
+  const facts = new Set();
+  const expanded = text.replace(/\b(\d{1,2})\s*[-–]\s*(\d{1,2})\s*([ap])\.?m\.?\b/gi, "$1 $3m to $2 $3m");
+  for (const match of expanded.matchAll(/\b(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?\b|\b(\d{1,2}):(\d{2})\b/gi)) {
+    const hour = Number(match[1] ?? match[4]);
+    const minute = Number(match[2] ?? match[5] ?? 0);
+    facts.add(`clock:${match[3] ? (hour % 12 + (match[3].toLowerCase() === "p" ? 12 : 0)) * 60 + minute : hour * 60 + minute}`);
+  }
+  for (const match of text.matchAll(/\b(\d+(?:[.,]\d+)?)[\s-]*(minutes?|mins?|minutos?|hours?|horas?)\b/gi)) {
+    facts.add(`duration:${Number(match[1].replace(",", ".")) * (/^(hour|hora)/i.test(match[2]) ? 60 : 1)}`);
+  }
+  for (const match of text.matchAll(/\b(?:for|durante|por)\s+(\d+)\s+(?:days|d[ií]as)\b/gi)) facts.add(`horizon:${match[1]}`);
+  if (/\b(?:daily|every day|cada d[ií]a|todos los d[ií]as)\b/i.test(text)) facts.add("recurrence:daily");
+  for (const app of ["Instagram", "TikTok", "YouTube", "Reddit", "Facebook", "Snapchat", "WhatsApp", "Slack", "Duolingo", "Twitter"]) {
+    if (new RegExp(`\\b${app}\\b`, "i").test(text)) facts.add(`app:${app.toLowerCase()}`);
+  }
+  return facts;
+}
+
+function groundedReference(clause, inputs) {
+  const facts = referenceFacts(clause);
+  const evidence = referenceFacts(inputs.join("\n"));
+  return facts.size > 0 && [...facts].every(fact => evidence.has(fact));
+}
+
+function surfaceContradictions(plan, expected, context = {}, inputs = []) {
   const text = allText(plan);
   // Capability range explanations are not proposed durations. They still need
   // independent language review; exclude only their numeric constraint clause.
   const failures = [];
-  let claimText = text.replace(/\b(?:supports|admite)\s+(?:de\s+)?\d+\s+(?:to|a)\s+\d+\s+(?:minutes|minutos)\b/gi, "");
+  const durationRange = (clause, lower, upper) => {
+    const rangeQuestion = expected.state.action_type === "strict_block" && expected.state.start?.type === "now"
+      && expected.state.pending_slots?.includes("duration_minutes") && expected.actions.length === 0;
+    if (rangeQuestion && (Number(lower) !== 5 || Number(upper) !== 240)) failures.push({ code: "visible_duration_capability_range_mismatch", expected: [5, 240], actual: [Number(lower), Number(upper)] });
+    return rangeQuestion && Number(lower) === 5 && Number(upper) === 240 ? "[supported duration range]" : clause;
+  };
+  let claimText = text.replace(/\b(?:an?\s+)?immediate blocks?\s+(?:support(?:s)?|can\s+(?:only\s+)?(?:run for|last|be))\s+(\d+)\s+to\s+(\d+)\s+minutes\b/gi, durationRange)
+    .replace(/\b(?:el\s+)?bloqueo inmediato admite\s+(?:de\s+)?(\d+)\s+a\s+(\d+)\s+minutos\b/gi, durationRange);
+  // Mask only explicit rejected values backed by the user's own correction.
+  // A later positive assertion, even in the same response, remains checked.
+  const currentInput = String(inputs.at(-1) || "");
+  claimText = claimText.replace(/\b(?:not|no)\s+(\d+(?:[.,]\d+)?)[\s-]*(minutes?|mins?|minutos?|hours?|horas?)\b/gi, (clause, raw, unit) => {
+    const value = Number(raw.replace(",", ".")) * (/^(hour|hora)/i.test(unit) ? 60 : 1);
+    const grounded = [...currentInput.matchAll(/\b(?:not|no)\s+(\d+(?:[.,]\d+)?)[\s-]*(minutes?|mins?|minutos?|hours?|horas?)\b/gi)]
+      .some(match => Number(match[1].replace(",", ".")) * (/^(hour|hora)/i.test(match[2]) ? 60 : 1) === value);
+    if (!grounded) return clause;
+    if (value === expected.state.duration_minutes) failures.push({ code: "visible_duration_negates_expected", actual: value, expected: value });
+    return "[user rejected duration]";
+  });
+  claimText = claimText.replace(/\b(?:not (?:daily|every day)|no (?:cada d[ií]a|todos los d[ií]as))\b/gi, clause => {
+    if (!/\b(?:not (?:daily|every day)|no (?:cada d[ií]a|todos los d[ií]as))\b/i.test(currentInput)) return clause;
+    if (expected.state.recurrence?.type === "daily" || expected.state.action_type === "daily_limit") failures.push({ code: "visible_recurrence_negates_expected", expected: expected.state.recurrence });
+    return "[user rejected recurrence]";
+  });
+  const noAction = expected.actions.length === 0 && !(plan.actions || []).length;
+  claimText = claimText.split(/(?<=[.!?])\s+|\n+/).map(clause => {
+    // These complete choice questions ask for an unknown recurrence. Only this
+    // clause is masked; adjacent claims and other surfaces stay checked.
+    const recurrenceChoice = noAction && expected.decision?.type === "ask"
+      && expected.decision.slot === "recurrence" && expected.state.recurrence == null
+      && expected.state.pending_slots?.includes("recurrence")
+      && /^(?:Should it happen just once, every day, or on specific days of the week\?|¿Lo quieres solo esta vez, cada d[ií]a o en d[ií]as concretos de la semana\?)$/i.test(clause.trim());
+    if (recurrenceChoice) return "[unknown recurrence choice question]";
+    // These are references to supplied history, not current slot assertions.
+    // Questions stay subject to independent meaning review; no lexical PASS.
+    const cancelledReference = expected.state.status === "cancelled" && noAction
+      && (/^(?:do you want to (?:set(?: up)?|recreate)|would you like me to (?:set(?: up)?|recreate))\b[^?]*\?$/i.test(clause.trim())
+        || /^(?:the|your)\b[^.!?]*\b(?:remains?|was) withdrawn(?:,?\s+(?:and|so) nothing is active)?\.?$/i.test(clause.trim()))
+      && !/\b(?:but|while|then|I (?:will|am|have))\b/i.test(clause);
+    if (cancelledReference && groundedReference(clause, inputs)) return "[grounded withdrawn proposal reference]";
+    const pastInputs = inputs.filter(input => /\b(?:yesterday|previous|last block|ayer|anterior)\b/i.test(input));
+    const pastReference = noAction && /\bprevious block (?:that )?(?:you )?ended after\b/i.test(clause)
+      && !/\b(?:will|would|should|now|future|instead)\b/i.test(clause);
+    return pastReference && groundedReference(clause, pastInputs) ? "[grounded previous block reference]" : clause;
+  }).join("\n");
   if (expected.state.requested_capability === "weekly_review") {
     // A specific observed metric is not a proposed block duration. Only remove
     // an observation after checking its value against independently supplied
@@ -114,7 +183,7 @@ function surfaceContradictions(plan, expected, context = {}) {
     }
   }
   const allowedClocks = new Set([expected.state.start?.minute, expected.state.end].filter(Number.isInteger));
-  for (const match of text.matchAll(/\b(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?\b|\b(\d{1,2}):(\d{2})\b/gi)) {
+  for (const match of claimText.matchAll(/\b(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?\b|\b(\d{1,2}):(\d{2})\b/gi)) {
     const hour = Number(match[1] ?? match[4]);
     const minute = Number(match[2] ?? match[5] ?? 0);
     const clock = match[3] ? (hour % 12 + (match[3].toLowerCase() === "p" ? 12 : 0)) * 60 + minute : hour * 60 + minute;
@@ -132,13 +201,13 @@ function surfaceContradictions(plan, expected, context = {}) {
   }
   const knownApps = ["Instagram", "TikTok", "YouTube", "Reddit", "Facebook", "Snapchat", "WhatsApp", "Slack", "Duolingo", "Twitter"];
   for (const app of knownApps) {
-    if (new RegExp(`\\b${app}\\b`, "i").test(text) && !(expected.state.apps || []).some(value => value.toLowerCase().includes(app.toLowerCase()))) {
+    if (new RegExp(`\\b${app}\\b`, "i").test(claimText) && !(expected.state.apps || []).some(value => value.toLowerCase().includes(app.toLowerCase()))) {
       failures.push({ code: "visible_app_contradiction", actual: app, expected: expected.state.apps });
     }
   }
   if (/\b(?:I(?:'ve| have)? (?:already )?(?:blocked|scheduled|activated|created|started)|(?:ya )?(?:he bloqueado|he programado|he activado)|(?:is|are) now blocked)\b/i.test(text)
       && context.execution_verified !== true) failures.push({ code: "unverified_execution_claim" });
-  if (/\b(?:every day|daily|cada d[ií]a|todos los d[ií]as)\b/i.test(text) && !["daily"].includes(expected.state.recurrence?.type) && expected.state.action_type !== "daily_limit") {
+  if (/\b(?:every day|daily|cada d[ií]a|todos los d[ií]as)\b/i.test(claimText) && !["daily"].includes(expected.state.recurrence?.type) && expected.state.action_type !== "daily_limit") {
     failures.push({ code: "visible_recurrence_contradiction", expected: expected.state.recurrence });
   }
   return failures;
@@ -221,7 +290,7 @@ function evaluateTurn({ expected, body, inputs = [], context = {}, previousState
     }
   }
   if (body?.model_error) fail("safety", "model_failure_masked_by_fallback", null, body.model_error);
-  for (const contradiction of surfaceContradictions(plan, expected, context)) fail("visible_equivalence", contradiction.code, contradiction.expected, contradiction.actual);
+  for (const contradiction of surfaceContradictions(plan, expected, context, inputs)) fail("visible_equivalence", contradiction.code, contradiction.expected, contradiction.actual);
   const surfaces = visibleSurfaces(plan);
   const responseHash = digest(surfaces);
   const expectationHash = digest(expected);

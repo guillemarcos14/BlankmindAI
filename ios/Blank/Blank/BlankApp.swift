@@ -34,6 +34,9 @@ struct BlankApp: App {
                 .environmentObject(screenTimeBlocker)
                 .environment(\.font, .blankBody)
                 .task {
+                    #if DEBUG
+                    if AssistantAppPreview.enabled { return }
+                    #endif
                     appDelegate.registerForRemoteActions()
                     await purchaseStore.loadProducts()
                     await screenTimeBlocker.restore(selection: sessionStore.selection)
@@ -46,9 +49,15 @@ struct BlankApp: App {
                     sessionStore.refreshDailyLimitMonitoring()
                 }
                 .task {
+                    #if DEBUG
+                    if AssistantAppPreview.enabled { return }
+                    #endif
                     await purchaseStore.observeTransactionUpdates()
                 }
                 .onChange(of: scenePhase) { phase in
+                    #if DEBUG
+                    if AssistantAppPreview.enabled { return }
+                    #endif
                     if phase == .active {
                         appDelegate.registerForRemoteActions()
                         screenTimeBlocker.refreshAuthorizationStatus()

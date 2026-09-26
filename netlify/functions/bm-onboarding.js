@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { getAssistantMemory, recordAssistantMemory } = require("./_assistant_channel");
+const { getAssistantMemory, recordAssistantMemory, transitionPendingAssistantAction } = require("./_assistant_channel");
 const { sendAssistantActionPush } = require("./_assistant_push");
 const { reviewActionLink } = require("./_bm_action_link");
 const { isActivePendingAction } = require("./bm-pending-action");
@@ -124,12 +124,15 @@ async function queueOnboardingPicker({ channel, channelUser, messages }) {
   }
 
   const action = onboardingAction(messages);
-  await recordAssistantMemory({
+  const receipt = await transitionPendingAssistantAction({
     channel,
     channelUser,
-    memory: { pending_assistant_action: action },
+    previous: existing,
+    pending: action,
+    expectedVersion: memory.semantic_store_version,
     source: "assistant_onboarding_picker_pending",
   });
+  if (!receipt.updated) return { action: null, push: { sent: false, reason: "newer_action_preserved" }, button: null, preserved: true };
   let push = { sent: false, reason: "push_not_attempted" };
   try { push = await sendAssistantActionPush(memory.assistant_device_push, action); }
   catch (error) { push = { sent: false, reason: `push_exception:${error.message}` }; }

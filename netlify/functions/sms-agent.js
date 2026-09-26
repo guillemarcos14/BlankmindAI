@@ -40,6 +40,8 @@ const {
   recordAssistantConversationTurn,
   recordAssistantChannel,
   recordAssistantMemory,
+  recordPendingAssistantAction,
+  supersededAssistantReply,
   recordAssistantUserContext,
   sendWhatsAppMessage,
 } = require("./_assistant_channel");
@@ -353,7 +355,10 @@ function actionSentence(actions, appNames = []) {
       ? `This opens Blankmind with a ${first.minutes}-minute app block ready to review.`
       : "This opens Blankmind with an app block ready to review.";
   }
-  if (first.type === "open_app_picker" || first.type === "request_screen_time_permission") {
+  if (first.type === "request_screen_time_permission") {
+    return "This opens Blankmind so you can grant blocking permission, then tell me when it is ready to continue.";
+  }
+  if (first.type === "open_app_picker") {
     return "This opens Blankmind so you can choose the apps to block.";
   }
   if (first.type === "set_daily_limit") {
@@ -525,15 +530,30 @@ function pendingAssistantActionFromPlan(plan, appNames = []) {
   return pendingActionFromPlan(plan, { idPrefix: "wa" });
 }
 
-async function queuePendingAssistantAction(connection, plan, appNames) {
+// Transport-only receipts must not become part of the durable action payload.
+const deliveryPushReceipts = new WeakMap();
+async function queuePendingAssistantAction(connection, plan, appNames, expectedVersion) {
   if (!connection?.connectCode) return null;
   const pending = pendingAssistantActionFromPlan(plan, appNames);
   if (!pending) return null;
   const memory = await getAssistantMemory(connection.channel, connection.channelUser);
   const existing = memory.pending_assistant_action;
+  async function deliver(action) {
+    let push;
+    try { push = await sendAssistantActionPush(memory.assistant_device_push, action); }
+    catch (_) { push = { sent: false, reason: "push_failed" }; }
+    deliveryPushReceipts.set(action, push || { sent: false, reason: "push_receipt_missing" });
+    return action;
+  }
+  if (semanticPersistenceRequired()) {
+    const next = pending;
+    const receipt = await recordPendingAssistantAction({ channel: connection.channel, channelUser: connection.channelUser,
+      pending: next, expectedVersion });
+    if (!receipt.enqueued) return { ...next, status: "superseded" };
+    return deliver(next);
+  }
   if (existing?.fingerprint === pending.fingerprint && Date.parse(existing.expires_at || "") > Date.now()) {
-    try { await sendAssistantActionPush(memory.assistant_device_push, existing); } catch (_) { /* Polling remains the fallback. */ }
-    return existing;
+    return deliver(existing);
   }
   await recordAssistantMemory({
     channel: connection.channel,
@@ -541,36 +561,11 @@ async function queuePendingAssistantAction(connection, plan, appNames) {
     memory: { pending_assistant_action: pending },
     source: "assistant_action_pending",
   });
-  try { await sendAssistantActionPush(memory.assistant_device_push, pending); } catch (_) { /* Polling remains the fallback. */ }
-  return pending;
+  return deliver(pending);
 }
 
-function whatsappReplyText(plan, fallbackText) {
-  const action = firstPendingAction(plan);
-  const clean = naturalReplyText(plan.message_text || plan.response_text || fallbackText)
-    .replace(/(?:https?|blank):\/\/\S+/gi, "")
-    .replace(/(?:open|abre|abrir)\s+(?:blankmind|blanked)[^.?!]*(?:[.?!]|$)/gi, "")
-    .replace(/[^.?!]*(?:review|revisa|revisar)[^.?!]*(?:blankmind|blanked)[^.?!]*(?:[.?!]|$)/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim()
-    .slice(0, 320) || "I can help with that in Blankmind.";
-  if (!action) return clean;
-  const spanish = String(plan.response_language || plan.semantic_state?.language || "").toLowerCase().startsWith("es");
-  if (["open_app_picker", "request_screen_time_permission"].includes(action.type)) {
-    const apps = Array.isArray(plan.blocking_data?.apps) ? plan.blocking_data.apps : [];
-    const link = reviewActionLink(action, apps);
-    return link
-      ? `${clean}\n\n${spanish ? "Selecciona las apps para aplicarlo" : "Select the apps to apply it"}:\n${link}`
-      : `${clean}\n\n${spanish ? "Abre Blankmind para seleccionar las apps." : "Open Blankmind to select the apps."}`;
-  }
-  const actionIsReady = plan.semantic_state?.status === "ready" || plan.blocking_ready === true;
-  if (action.type === "start_protection" && actionIsReady) {
-    const duration = Number.isInteger(action.minutes) ? ` de ${action.minutes} minutos` : "";
-    return spanish
-      ? `Pulsa la notificación de Blankmind para iniciar tu bloqueo${duration}.`
-      : `Tap the Blankmind notification to start your${duration ? ` ${action.minutes}-minute ` : " "}block.`;
-  }
-  return `${clean}\n\n${spanish ? "Pulsa la notificación de Blankmind para aplicarlo." : "Tap the Blankmind notification to apply it."}`;
+function whatsappReplyText(plan, fallbackText, delivery = null, channel = "sms") {
+  return require("./_assistant_reply").assistantReplyText({ ...plan, message_text: plan.message_text || plan.response_text || fallbackText }, delivery, channel);
 }
 
 function whatsappSetupButton(plan, appNames = []) {
@@ -824,22 +819,27 @@ async function askBAI(prompt, from, channel, linkedConnection = null) {
   let queuedAction = null;
   if (channel === "whatsapp" || channel === "sms") {
     try {
-      queuedAction = await queuePendingAssistantAction(linkedConnection, plan, responseApps);
+      queuedAction = await queuePendingAssistantAction(linkedConnection, plan, responseApps, savedMemory.semantic_store_version + 1);
+      if (queuedAction?.status === "superseded") return { text: supersededAssistantReply(plan) };
       const invalidatesQueuedAction = plan.semantic_state?.intent === "cancelled"
         || (plan.semantic_state?.intent === "block" && ["collecting", "awaiting_confirmation"].includes(plan.semantic_state?.status));
       if (!queuedAction && linkedConnection?.connectCode && invalidatesQueuedAction) {
-        await recordAssistantMemory({
+        const invalidation = await recordPendingAssistantAction({
           channel,
           channelUser: from,
-          memory: { pending_assistant_action: null },
+          pending: null,
+          expectedVersion: savedMemory.semantic_store_version + 1,
           source: "assistant_action_invalidated",
         });
+        if (!invalidation.enqueued) return { text: supersededAssistantReply(plan) };
       }
     } catch (error) {
       if (semanticPersistenceRequired()) throw error;
     }
   }
-  const effectivePendingAction = primaryPendingAction || queuedAction || memory.pending_assistant_action;
+  // A cancellation or a capability answer must not resurrect the memory snapshot's old action.
+  const effectivePendingAction = primaryPendingAction || queuedAction;
+  const delivery = queuedAction ? { action: queuedAction, push: deliveryPushReceipts.get(queuedAction) } : null;
   const duplicatePendingRequest = Boolean(
     channel === "whatsapp"
       && primaryPendingAction
@@ -850,12 +850,14 @@ async function askBAI(prompt, from, channel, linkedConnection = null) {
   if (channel === "whatsapp") {
     if (duplicatePendingRequest) {
       try {
-        await recordAssistantMemory({
+        const invalidation = await recordPendingAssistantAction({
           channel,
           channelUser: from,
-          memory: { pending_assistant_action: null },
+          pending: null,
+          expectedVersion: savedMemory.semantic_store_version + 1,
           source: "assistant_action_replaced_by_new_request",
         });
+        if (!invalidation.enqueued) return { text: supersededAssistantReply(plan) };
       } catch (_) {
         // The conversational clarification remains safe even if cleanup is unavailable.
       }
@@ -864,27 +866,15 @@ async function askBAI(prompt, from, channel, linkedConnection = null) {
     }
     const actionButton = queuedAction ? whatsappSetupButton(plan, responseApps) : null;
     const replyPlan = effectivePendingAction && !primaryPendingAction ? { ...plan, actions: [effectivePendingAction] } : plan;
-    const cleanReply = whatsappReplyText(replyPlan, message)
+    const cleanReply = whatsappReplyText(replyPlan, message, delivery, "whatsapp")
       .replace(/\n\n(?:Select the apps to apply it|Selecciona las apps para aplicarlo):\nhttps?:\/\/\S+/i, "")
       .trim();
     if (actionButton) return { text: cleanReply, actionButton };
-    const spanish = String(replyPlan.response_language || replyPlan.semantic_state?.language || "").toLowerCase().startsWith("es");
-    const asksRecurrence = /once or recurring|once or every day|una vez|recurrente|cada d[ií]a/i.test(cleanReply);
-    const tapRequired = effectivePendingAction
-      && !["open_app_picker", "request_screen_time_permission"].includes(effectivePendingAction.type)
-      && !asksRecurrence;
-    const replyText = tapRequired && !/tap the blankmind notification|pulsa la notificación de blankmind/i.test(cleanReply)
-      ? `${cleanReply}\n\n${spanish ? "Pulsa la notificación de Blankmind para aplicarlo." : "Tap the Blankmind notification to apply it."}`
-      : cleanReply;
-    return {
-      text: primaryPendingAction && ["open_app_picker", "request_screen_time_permission"].includes(primaryPendingAction.type)
-        ? `${replyText}\n\n${spanish ? "Abre Blankmind para elegir las apps." : "Open Blankmind to choose the apps."}`
-        : replyText,
-    };
+    return { text: cleanReply };
   }
-  if (channel === "sms" && effectivePendingAction && !["open_app_picker", "request_screen_time_permission"].includes(effectivePendingAction.type)) {
+  if (channel === "sms" && effectivePendingAction) {
     const pendingPlan = primaryPendingAction ? plan : { ...plan, actions: [effectivePendingAction] };
-    return { text: whatsappReplyText(pendingPlan, message) };
+    return { text: whatsappReplyText(pendingPlan, message, delivery) };
   }
   if (channel === "sms" && plan.semantic_state && !actionLink) {
     try {
@@ -1083,7 +1073,7 @@ exports.handler = async (event) => {
       // Never expose the raw setup URL. The queued action remains recoverable
       // from Blankmind and through the APNs notification.
       try {
-        await sendWhatsAppMessage(from, "Open Blankmind to choose the apps and apply the plan.");
+        await sendWhatsAppMessage(from, "Open Blankmind to continue the pending request.");
       } catch (_) {
         if (!String(error?.message || "").includes("twilio_whatsapp_send_failed")) throw error;
       }
@@ -1105,3 +1095,5 @@ exports.pendingActionFromMemory = pendingActionFromMemory;
 exports.pendingAssistantActionFromPlan = pendingAssistantActionFromPlan;
 exports.verifyTwilioSignature = verifyTwilioSignature;
 exports.memoryFactsFromText = memoryFactsFromText;
+exports.queuePendingAssistantAction = queuePendingAssistantAction;
+exports.whatsappReplyText = whatsappReplyText;

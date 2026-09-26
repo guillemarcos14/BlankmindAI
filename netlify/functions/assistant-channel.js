@@ -1,11 +1,14 @@
-const { json, parseJsonBody, requireMethod } = require("./_membership");
+const { json, parseJsonBody, requireMethod, supabaseFetch } = require("./_membership");
 const {
   cleanChannel,
   cleanText,
   findAssistantConnection,
   attachAssistantUserContext,
   recordAssistantMemory,
+  transitionPendingAssistantAction,
   getAssistantMemory,
+  getAssistantActionRecord,
+  isInferredActionOutcome,
   getAssistantUserContext,
   normalizeConnectCode,
   recordAssistantUserContext,
@@ -13,7 +16,7 @@ const {
   proactiveGate,
   sendAssistantMessage,
 } = require("./_assistant_channel");
-const { identityForAppInstall, identityForPhone } = require("./_identity");
+const { identityForAppInstall, identityForPhone, normalizePhone } = require("./_identity");
 const { enrichAssistantContext, persistCanonicalSnapshot } = require("./_bm_user_context");
 const { normalizeDevicePush } = require("./_assistant_push");
 const { PENDING_ASSISTANT_ACTION_TYPES: PENDING_ACTION_TYPES } = require("./bm-pending-action");
@@ -135,7 +138,7 @@ async function syncContext(body) {
     channel: preferredChannel,
     userPhone: body.user_phone || body.phone_number || "",
   });
-  await persistCanonicalSnapshot(connectCode, normalizedContext || mergedContext);
+  const canonicalSnapshot = await persistCanonicalSnapshot(connectCode, normalizedContext || mergedContext);
   const connection = await findAssistantConnection(connectCode, preferredChannel);
   if (connection && normalizedContext) {
     const canonicalContext = await enrichAssistantContext({}, connectCode);
@@ -145,10 +148,29 @@ async function syncContext(body) {
       memory: { user_context: canonicalContext },
       source: "assistant_user_context_sync",
     });
+    const memory = await getAssistantMemory(connection.channel, connection.channelUser);
+    const pending = normalizePendingAction(memory.pending_assistant_action);
+    if (pending && pendingScheduleTargetIsMissing(pending, canonicalContext)) {
+      await transitionPendingAssistantAction({
+        channel: connection.channel,
+        channelUser: connection.channelUser,
+        previous: memory.pending_assistant_action,
+        pending: null,
+        outcome: {
+            id: pending.id,
+            type: pending.type,
+            status: "failed",
+            resolved_at: new Date().toISOString(),
+            detail: "schedule_target_missing_after_app_sync",
+        },
+        source: "assistant_action_invalidated_by_app_context",
+      });
+    }
   }
   return json(200, {
     ok: true,
     synced: Boolean(normalizedContext),
+    canonical_snapshot: Boolean(canonicalSnapshot),
     selection_count: Number(normalizedContext?.selection_count) || 0,
     attached_channel: connection?.channel || "",
   });
@@ -312,6 +334,14 @@ function normalizePendingAction(value) {
   return action;
 }
 
+function pendingScheduleTargetIsMissing(pending, context = {}) {
+  // A delivered delete may sync the missing window before its acknowledgement.
+  // Only an action that has not reached the device can be invalidated here.
+  if (!pending || pending.status !== "queued" || !["update_schedule", "delete_schedule"].includes(pending.type)) return false;
+  const windows = Array.isArray(context.schedule?.windows) ? context.schedule.windows : [];
+  return !windows.some((window) => cleanText(window?.id, 80) === cleanText(pending.window_id, 80));
+}
+
 function normalizeExecutionEvidence(body, pending) {
   const startedAt = cleanText(body.started_at, 40);
   const effectiveUntil = cleanText(body.effective_until, 40);
@@ -351,14 +381,48 @@ async function connectedChannel(body) {
   const preferredChannel = cleanChannel(body.preferred_channel || body.channel);
   if (!preferredChannel) return { error: "missing_channel" };
   let connectCode = normalizeConnectCode(body.connect_code);
-  if (!connectCode) {
-    const identity = await identityForAppInstall(body.app_install_id)
-      || await identityForPhone(body.user_phone || body.phone_number);
-    connectCode = normalizeConnectCode(identity?.assistant_connect_code);
-  }
+  const installation = cleanText(body.app_install_id, 160);
+  // A phone number is public contact data, never an inbox credential. Legacy
+  // clients retain their CONNECT code; app clients can use a linked install.
+  if (!connectCode && !installation) return { error: "installation_not_linked" };
+  const identity = installation ? await identityForAppInstall(installation) : null;
+  if (!connectCode) connectCode = normalizeConnectCode(identity?.assistant_connect_code);
   if (!connectCode) return { error: "installation_not_linked" };
+  if (identity && normalizeConnectCode(identity.assistant_connect_code) !== connectCode) {
+    return { error: "assistant_identity_conflict" };
+  }
   const connection = await findAssistantConnection(connectCode, preferredChannel);
+  if (connection) {
+    // Meta's WhatsApp sender omits "+" while Twilio and account identity use E.164.
+    const connectedPhone = normalizePhone(connection.channelUser).replace(/^\+/, "");
+    const suppliedPhone = normalizePhone(body.user_phone || body.phone_number).replace(/^\+/, "");
+    if ((identity && normalizePhone(identity.phone_e164).replace(/^\+/, "") !== connectedPhone)
+        || (suppliedPhone && suppliedPhone !== connectedPhone)) {
+      return { error: "assistant_identity_conflict" };
+    }
+  }
   return { connectCode, preferredChannel, connection };
+}
+
+async function persistAppActionReceipt(result, body, actionId, status) {
+  const match = /^app_([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(actionId);
+  if (!match) return;
+  const identity = await identityForPhone(result.connection.channelUser);
+  if (result.connection.channel !== "whatsapp" || !identity?.auth_user_id
+      || normalizeConnectCode(identity.assistant_connect_code) !== result.connectCode
+      || !body.app_install_id || identity.app_install_id !== body.app_install_id) {
+    throw new Error("app_receipt_identity_mismatch");
+  }
+  // Store the device outcome before replacing the channel's single last-outcome
+  // slot. Scope by account AND action; another user's UUID can never be updated.
+  // A receipt may replace an inferred expiry/supersession, but not a different
+  // device-confirmed terminal result.
+  const rows = await supabaseFetch(
+    `assistant_app_turns?id=eq.${encodeURIComponent(match[1])}&auth_user_id=eq.${encodeURIComponent(identity.auth_user_id)}`
+      + `&action_id=eq.${encodeURIComponent(actionId)}&or=${encodeURIComponent(`(action_status.is.null,action_status.eq.${status},action_status.in.(expired,superseded))`)}`,
+    { method: "PATCH", headers: { prefer: "return=representation" }, body: JSON.stringify({ action_status: status }) },
+  );
+  if (!rows[0]) throw new Error("app_receipt_not_persisted");
 }
 
 async function pollPendingAction(body) {
@@ -380,16 +444,16 @@ async function pollPendingAction(body) {
           detail: "action_expired_before_execution",
         }
       : null;
-    await recordAssistantMemory({
+    if (expiredOutcome) await persistAppActionReceipt(result, body, expiredOutcome.id, "expired");
+    const expiry = await transitionPendingAssistantAction({
       channel: result.connection.channel,
       channelUser: result.connection.channelUser,
-      memory: {
-        pending_assistant_action: null,
-        ...(expiredOutcome ? { last_assistant_action_outcome: expiredOutcome } : {}),
-      },
+      previous: expired,
+      pending: null,
+      outcome: expiredOutcome,
       source: "assistant_action_expired",
     });
-    if (expiredOutcome) {
+    if (expiredOutcome && expiry.updated) {
       const spanish = String(memory.language || "").toLowerCase().startsWith("es");
       const message = spanish
         ? "La acción caducó antes de llegar al iPhone. No se aplicó ningún cambio. Puedes pedírmela otra vez."
@@ -402,12 +466,14 @@ async function pollPendingAction(body) {
   if (pending && pending.status === "queued") {
     const transition = pendingActionTransition(pending.status, "delivered");
     const delivered = { ...memory.pending_assistant_action, status: transition.next, delivered_at: new Date().toISOString() };
-    await recordAssistantMemory({
+    const receipt = await transitionPendingAssistantAction({
       channel: result.connection.channel,
       channelUser: result.connection.channelUser,
-      memory: { pending_assistant_action: delivered },
+      previous: memory.pending_assistant_action,
+      pending: delivered,
       source: "assistant_action_delivered",
     });
+    if (!receipt.updated) return json(200, { ok: true, linked: true, pending_action: null });
     Object.assign(pending, normalizePendingAction(delivered));
   }
   return json(200, {
@@ -426,14 +492,15 @@ async function acknowledgePendingAction(body) {
   if (!result.connection) return json(200, { ok: true, acknowledged: false, reason: "not_linked" });
 
   const memory = await getAssistantMemory(result.connection.channel, result.connection.channelUser);
-  const rawPending = memory.pending_assistant_action;
-  const pending = normalizePendingAction(rawPending)
+  let rawPending = memory.pending_assistant_action;
+  let pending = normalizePendingAction(rawPending)
     || (cleanText(rawPending?.id, 80) === actionId
       ? normalizePendingAction({ ...rawPending, expires_at: new Date(Date.now() + 60_000).toISOString() })
       : null);
   if (!pending || pending.id !== actionId) {
     const outcome = memory.last_assistant_action_outcome;
-    if (outcome?.id === actionId && TERMINAL_ACTION_STATUSES.has(normalizeActionStatus(outcome.status))) {
+    if (outcome?.id === actionId && !isInferredActionOutcome(outcome) && TERMINAL_ACTION_STATUSES.has(normalizeActionStatus(outcome.status))) {
+      await persistAppActionReceipt(result, body, actionId, normalizeActionStatus(outcome.status));
       return json(200, {
         ok: true,
         acknowledged: true,
@@ -441,7 +508,18 @@ async function acknowledgePendingAction(body) {
         status: normalizeActionStatus(outcome.status),
       });
     }
-    return json(200, { ok: true, acknowledged: false, reason: pending ? "action_mismatch" : "no_pending_action" });
+    if (TERMINAL_ACTION_STATUSES.has(status)) {
+      const historical = await getAssistantActionRecord(result.connection.channel, result.connection.channelUser, actionId);
+      if (historical?.outcome?.id === actionId && !isInferredActionOutcome(historical.outcome) && TERMINAL_ACTION_STATUSES.has(normalizeActionStatus(historical.outcome.status))) {
+        await persistAppActionReceipt(result, body, actionId, normalizeActionStatus(historical.outcome.status));
+        return json(200, { ok: true, acknowledged: true, idempotent: true, status: normalizeActionStatus(historical.outcome.status) });
+      }
+      if (historical?.pending?.id === actionId) {
+        rawPending = historical.pending;
+        pending = normalizePendingAction({ ...rawPending, expires_at: new Date(Date.now() + 60_000).toISOString() });
+      }
+    }
+    if (!pending || pending.id !== actionId) return json(200, { ok: true, acknowledged: false, reason: pending ? "action_mismatch" : "no_pending_action" });
   }
   const transition = pendingActionTransition(pending.status, status);
   if (!transition.allowed) {
@@ -454,6 +532,9 @@ async function acknowledgePendingAction(body) {
     });
   }
   if (transition.idempotent) {
+    if (TERMINAL_ACTION_STATUSES.has(transition.next)) {
+      await persistAppActionReceipt(result, body, actionId, transition.next);
+    }
     return json(200, { ok: true, acknowledged: true, idempotent: true, status: transition.next });
   }
   const now = new Date().toISOString();
@@ -468,28 +549,29 @@ async function acknowledgePendingAction(body) {
   if (status === "delayed" && !(execution.start_delay_seconds > 60)) {
     return json(200, { ok: true, acknowledged: false, reason: "delayed_status_without_measured_delay" });
   }
+  if (terminal) await persistAppActionReceipt(result, body, actionId, status);
   const timestampKey = status === "confirmed" ? "confirmed_at"
     : status === "execution_started" ? "execution_started_at"
       : status === "delivered" ? "delivered_at" : "resolved_at";
-  const updated = { ...memory.pending_assistant_action, status, [timestampKey]: now };
-  await recordAssistantMemory({
+  const updated = { ...rawPending, status, [timestampKey]: now };
+  const receipt = await transitionPendingAssistantAction({
     channel: result.connection.channel,
     channelUser: result.connection.channelUser,
-    memory: terminal
-      ? {
-          pending_assistant_action: null,
-          last_assistant_action_outcome: {
+    previous: rawPending,
+    pending: terminal ? null : updated,
+    outcome: terminal ? {
             id: actionId,
             type: pending.type,
             status,
             resolved_at: now,
             detail: cleanText(body.detail, 240),
             execution,
-          },
-        }
-      : { pending_assistant_action: updated },
+        } : null,
     source: `assistant_action_${status}`,
   });
+  if (!receipt.updated && (!terminal || receipt.status === "status_changed")) {
+    return json(200, { ok: true, acknowledged: false, reason: receipt.status });
+  }
   if (terminal) {
     const spanish = String(memory.language || "").toLowerCase().startsWith("es");
     let message;
@@ -554,3 +636,4 @@ exports.handler = async (event) => {
 exports.normalizePendingAction = normalizePendingAction;
 exports.pendingActionTransition = pendingActionTransition;
 exports.normalizeExecutionEvidence = normalizeExecutionEvidence;
+exports.pendingScheduleTargetIsMissing = pendingScheduleTargetIsMissing;

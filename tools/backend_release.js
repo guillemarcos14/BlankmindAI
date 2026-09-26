@@ -277,6 +277,16 @@ function deploy(args) {
     console.log("No deploy target selected. Add --netlify and/or --supabase after validation.");
     return;
   }
+  if (!args.releaseEvidence) {
+    fail("production deploy requires --release-evidence <path> with the exact candidate's physical release evidence");
+  }
+  // Fail before validation or any remote mutation. Automated checks alone do
+  // not establish a distributed, physically verified iPhone candidate.
+  run(process.execPath, [
+    "tools/bm_release_readiness_gate.js",
+    "--head",
+    "--evidence", args.releaseEvidence,
+  ], { inherit: true });
   validate(args);
   const actions = [];
   if (args.supabase) {
