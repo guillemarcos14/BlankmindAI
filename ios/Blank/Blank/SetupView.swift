@@ -138,15 +138,15 @@ struct SetupView: View {
         }
         .padding(.horizontal, 28)
         .padding(.bottom, 12)
-        .foregroundStyle(Color(uiColor: .label))
-        .tint(Color(uiColor: .label))
-        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
+        .foregroundStyle(BlankColors.charcoal)
+        .tint(BlankColors.charcoal)
+        .background(BlankColors.pureWhite.ignoresSafeArea())
     }
 
     private var deviceContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Prepare this iPhone")
-                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                .font(.blankEditorial(size: 32))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 12)
 
@@ -235,8 +235,8 @@ struct SetupView: View {
             Text(title)
                 .font(.blankInter(size: 16, weight: .semibold, relativeTo: .headline))
                 .frame(maxWidth: .infinity, minHeight: 54)
-                .foregroundStyle(Color(uiColor: .systemBackground))
-                .background(Color(uiColor: .label), in: RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(BlankColors.pureWhite)
+                .background(BlankColors.charcoal, in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)

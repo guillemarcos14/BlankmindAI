@@ -502,8 +502,8 @@ struct AssistantAppView: View {
         #endif
         return sessionStore.isBlankActive
     }
-    private var foreground: Color { dark ? .white : BlankColors.charcoal }
-    private var background: Color { dark ? BlankColors.charcoal : .white }
+    private var foreground: Color { dark ? BlankColors.pureWhite : BlankColors.charcoal }
+    private var background: Color { dark ? BlankColors.charcoal : BlankColors.pureWhite }
     private var draftTooLong: Bool { composer.draft.utf16.count > 4000 }
     private var isSending: Bool { sendRequestID != nil }
     private var waiting: Bool { isSending || composer.pending != nil }
@@ -547,7 +547,7 @@ struct AssistantAppView: View {
                     VStack(alignment: .leading, spacing: 26) {
                         if let latest {
                             Text(latest.assistantText)
-                                .font(.blankInter(size: 28, weight: .regular, relativeTo: .largeTitle))
+                                .font(.blankEditorial(size: 28))
                                 .tracking(-0.5)
                                 .lineSpacing(4)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -579,7 +579,7 @@ struct AssistantAppView: View {
                             Text(requiresVerification
                                  ? (spanish ? "Tu conversación en Blankmind." : "Your conversation in Blankmind.")
                                  : (spanish ? "¿Qué tienes en mente?" : "What is on your mind?"))
-                                .font(.blankInter(size: 28, weight: .regular, relativeTo: .largeTitle))
+                                .font(.blankEditorial(size: 28))
                                 .fixedSize(horizontal: false, vertical: true)
                             if requiresVerification {
                                 Button(spanish ? "Verificar mi teléfono" : "Verify my phone") { showPhoneSignIn = true }

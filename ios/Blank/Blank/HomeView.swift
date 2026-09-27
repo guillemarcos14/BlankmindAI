@@ -1148,7 +1148,7 @@ struct HomeView: View {
             setMessage(for: result)
         } label: {
             Text(title)
-                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .title))
+                .font(.blankEditorial(size: 32, relativeTo: .title))
                 .foregroundStyle(titleColor)
                 .tracking(0)
                 .lineLimit(1)
@@ -2204,7 +2204,7 @@ struct HomeView: View {
 
 private extension View {
     func blankHomeDisplayTextStyle(color: Color) -> some View {
-        font(.blankInter(size: 32, weight: .semibold, relativeTo: .title))
+        font(.blankEditorial(size: 32, relativeTo: .title))
             .foregroundStyle(color)
             .tracking(0)
             .lineLimit(1)
@@ -2411,6 +2411,7 @@ struct SectionBackHeader: View {
             Button(action: action) {
                 Text("back")
                     .font(.blankInter(size: 20, weight: .semibold, relativeTo: .headline))
+                    .underline()
                     .tracking(-0.3)
                     .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.premiumBlue)
                     .frame(minWidth: 44, minHeight: 44, alignment: .leading)
@@ -2446,7 +2447,7 @@ struct SectionHeader: View {
             SectionBackHeader(action: action)
 
             Text(title.lowercased())
-                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                .font(.blankEditorial(size: 32))
                 .tracking(0)
                 .foregroundStyle(resolvedTitleColor)
                 .lineLimit(1)
