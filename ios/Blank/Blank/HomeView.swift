@@ -539,8 +539,14 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .blankAssistantApplyNowRequested)) { _ in
             pollPendingAssistantActionIfNeeded(force: true)
         }
-        .onChange(of: assistantConnectCode) { _ in clearPendingAssistantIdentityState() }
-        .onChange(of: assistantPhoneNumber) { _ in clearPendingAssistantIdentityState() }
+        .onChange(of: assistantConnectCode) { _ in
+            clearPendingAssistantIdentityState()
+            Task { await activateAppChannel() }
+        }
+        .onChange(of: assistantPhoneNumber) { _ in
+            clearPendingAssistantIdentityState()
+            Task { await activateAppChannel() }
+        }
         .onChange(of: homeSpeech.transcript) { transcript in
             if acceptingHomeSpeech { homeChatDraft = homeSpeechPrefix + transcript }
         }
