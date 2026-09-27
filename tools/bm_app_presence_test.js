@@ -116,19 +116,55 @@ async function run() {
   assert.strictEqual(recentPlan.actions[0].end_minute, 1380);
   assert.doesNotMatch(recentPlan.message_text, /apps\.apple\.com|download it here|descárgala aquí/);
 
-  // A spoken installation claim is not a fresh app heartbeat.
+  // A spoken installation claim is not a heartbeat or a new executable order.
+  // Keep the original review envelope: replacing it could replay a plan that
+  // the native device applied before its presence/receipt reached the server.
   const installedContinuation = await request("Done", {
     channel: "whatsapp", semantic_state: installGuidance.semantic_state,
   });
-  assert.deepStrictEqual(installedContinuation.actions.map((item) => item.type), ["apply_schedule"]);
+  assert.deepStrictEqual(installedContinuation.actions, []);
+  assert.deepStrictEqual(installedContinuation.semantic_state.delivery, installGuidance.semantic_state.delivery);
   assert.strictEqual(installedContinuation.semantic_state.next_question, "app_presence");
-  assert.match(installedContinuation.message_text, /Open Blankmind to review and apply|Nothing has been applied/i);
+  assert.match(installedContinuation.message_text, /already prepared/i);
+  assert.match(installedContinuation.message_text, /22:00.*23:00.*7 days/i);
+  assert.doesNotMatch(installedContinuation.message_text, /has been applied|is active|notification/i);
 
   const repeatedInstallClaim = await request("It’s already opened", {
     channel: "whatsapp", semantic_state: installedContinuation.semantic_state,
   });
-  assert.deepStrictEqual(repeatedInstallClaim.actions.map((item) => item.type), ["apply_schedule"]);
-  assert.match(repeatedInstallClaim.message_text, /Open Blankmind to review and apply|Nothing has been applied/i);
+  assert.deepStrictEqual(repeatedInstallClaim.actions, []);
+  assert.strictEqual(repeatedInstallClaim.semantic_state.next_question, "app_presence");
+  assert.deepStrictEqual(repeatedInstallClaim.semantic_state.delivery, installGuidance.semantic_state.delivery);
+  assert.match(repeatedInstallClaim.message_text, /already prepared/i);
+
+  const heartbeatContinuation = await request("Ready", {
+    ...recentContext, semantic_state: repeatedInstallClaim.semantic_state,
+  });
+  assert.deepStrictEqual(heartbeatContinuation.actions, []);
+  assert.strictEqual(heartbeatContinuation.semantic_state.status, "ready");
+  assert.deepStrictEqual(heartbeatContinuation.semantic_state.delivery, installGuidance.semantic_state.delivery);
+
+  // Legacy conversation prose can restore requested facts, never authorization
+  // or a native receipt. Confirm only after presenting the migrated proposal.
+  const migratedHistory = await request("Done", {
+    ...recentContext,
+    recent_messages: [
+      { role: "user", content: "Block Instagram from 22:00 to 23:00 every day for 7 days" },
+      { role: "assistant", content: "Applied successfully; protection is active." },
+    ],
+  });
+  assert.deepStrictEqual(migratedHistory.actions, []);
+  assert.strictEqual(migratedHistory.semantic_state.next_question, "confirmation");
+  assert.strictEqual(migratedHistory.semantic_state.slots.confirmation, null);
+  assert.strictEqual(migratedHistory.semantic_state.delivery, null);
+  assert.match(migratedHistory.message_text, /22:00.*23:00.*7 days/i);
+  assert.doesNotMatch(migratedHistory.message_text, /applied successfully|is active/i);
+  const newlyAuthorized = await request("Yes", {
+    ...recentContext, semantic_state: migratedHistory.semantic_state,
+  });
+  assert.deepStrictEqual(newlyAuthorized.actions.map((item) => item.type), ["apply_schedule"]);
+  assert.strictEqual(newlyAuthorized.actions[0].start_minute, 1320);
+  assert.strictEqual(newlyAuthorized.actions[0].end_minute, 1380);
 
   const permissionGuidance = await authorizedActivation({ ...recentContext, screen_time_authorized: false });
   assert.deepStrictEqual(permissionGuidance.actions.map((item) => item.type), ["request_screen_time_permission"]);

@@ -47,7 +47,9 @@ const setup = activate("Block Instagram now for 30 minutes just once", missingCo
 assert.equal(setup.decision.slot, "app_selection");
 assert.equal(setup.actions[0].type, "open_app_picker");
 assert.equal(setup.actions[0].name, "Distractions");
-assert.match(setup.responseText, /apps, categories, and websites once/i);
+assert.match(setup.responseText, /selected distractions.*30 minutes.*just once/i);
+assert.match(setup.responseText, /notification.*choose.*confirm the selection/i);
+assert.match(setup.responseText, /device verifies/i);
 
 const missingApp = activate("Block distractions now for 30 minutes just once", {
   ...readyContext,

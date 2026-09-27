@@ -14,22 +14,29 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     private let strategyActivityPrefix = "BlankStrategyTimer"
     private let recurringSchedulePrefix = "BlankRecurringSchedule"
     private let recurringExpiryActivity = "BlankRecurringScheduleExpiry"
+    private let recurringExpiryPrefix = "BlankRecurringScheduleExpiry:"
     private let dailyLimitActivity = "BlankDailyLimit"
     private let dailyLimitEvent = "BlankDailyLimitReached"
-    private let store = ManagedSettingsStore()
+    private let strategyStore = ManagedSettingsStore()
+    private let recurringStore = ManagedSettingsStore(named: ManagedSettingsStore.Name("BlankRecurringProtection"))
+    private let dailyLimitStore = ManagedSettingsStore(named: ManagedSettingsStore.Name("BlankDailyLimitProtection"))
 
     override func intervalDidStart(for activity: DeviceActivityName) {
         super.intervalDidStart(for: activity)
         log.info("DeviceActivity interval started: \(activity.rawValue)")
 
-        if activity.rawValue == recurringExpiryActivity {
-            let names = (0..<8).map {
-                DeviceActivityName(rawValue: "\(recurringSchedulePrefix):\($0)")
+        if activity.rawValue == recurringExpiryActivity || activity.rawValue.hasPrefix(recurringExpiryPrefix) {
+            if Self.recurringScheduleIsActive() {
+                applySelectedProtection(to: recurringStore)
+            } else {
+                recurringStore.clearAllSettings()
             }
-            DeviceActivityCenter().stopMonitoring(names)
-            store.clearAllSettings()
         } else if activity.rawValue.hasPrefix(recurringSchedulePrefix) {
-            applySelectedProtection()
+            if Self.recurringScheduleIsActive() {
+                applySelectedProtection(to: recurringStore)
+            } else {
+                recurringStore.clearAllSettings()
+            }
         }
     }
 
@@ -37,15 +44,26 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         super.intervalDidEnd(for: activity)
         log.info("DeviceActivity interval ended: \(activity.rawValue)")
 
-        if activity.rawValue.hasPrefix(strategyActivityPrefix) ||
-            activity.rawValue.hasPrefix(recurringSchedulePrefix) ||
-            activity.rawValue == recurringExpiryActivity ||
-            activity.rawValue == dailyLimitActivity {
-            store.clearAllSettings()
+        if activity.rawValue.hasPrefix(strategyActivityPrefix) {
+            strategyStore.clearAllSettings()
+        } else if activity.rawValue.hasPrefix(recurringSchedulePrefix) {
+            if Self.recurringScheduleIsActive() {
+                applySelectedProtection(to: recurringStore)
+            } else {
+                recurringStore.clearAllSettings()
+            }
+        } else if activity.rawValue == recurringExpiryActivity || activity.rawValue.hasPrefix(recurringExpiryPrefix) {
+            if Self.recurringScheduleIsActive() {
+                applySelectedProtection(to: recurringStore)
+            } else {
+                recurringStore.clearAllSettings()
+            }
+        } else if activity.rawValue == dailyLimitActivity {
+            dailyLimitStore.clearAllSettings()
         }
     }
 
-    private func applySelectedProtection() {
+    private func applySelectedProtection(to store: ManagedSettingsStore) {
         guard let selection = Self.loadSelection() else { return }
         store.shield.applications = selection.applicationTokens
         store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : .specific(selection.categoryTokens)
@@ -59,14 +77,11 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
         guard activity.rawValue == dailyLimitActivity,
               event.rawValue == dailyLimitEvent,
-              let selection = Self.loadSelection() else {
+              Self.loadSelection() != nil else {
             return
         }
 
-        store.shield.applications = selection.applicationTokens
-        store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : .specific(selection.categoryTokens)
-        store.shield.webDomains = selection.webDomainTokens
-        store.webContent.blockedByFilter = Self.adultContentBlockingEnabled ? .auto() : nil
+        applySelectedProtection(to: dailyLimitStore)
 
         Task {
             await sendBAIThresholdAlarm()
@@ -77,6 +92,44 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         let defaults = UserDefaults(suiteName: "group.com.blanknfc.app.ios") ?? .standard
         guard let data = defaults.data(forKey: "familyActivitySelection") else { return nil }
         return try? JSONDecoder().decode(FamilyActivitySelection.self, from: data)
+    }
+
+    private struct StoredSchedule: Decodable {
+        let enabled: Bool
+        let windows: [StoredWindow]
+    }
+
+    private struct StoredWindow: Decodable {
+        let enabled: Bool
+        let startMinute: Int
+        let endMinute: Int
+        let weekdays: [Int]
+        let expiresAt: Date?
+
+        func contains(_ date: Date, calendar: Calendar = .current) -> Bool {
+            guard enabled, expiresAt.map({ $0 > date }) ?? true else { return false }
+            let minute = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
+            var weekday = calendar.component(.weekday, from: date)
+            if startMinute >= endMinute, minute < endMinute {
+                weekday = weekday == 1 ? 7 : weekday - 1
+            }
+            guard weekdays.contains(weekday) else { return false }
+            return startMinute < endMinute
+                ? minute >= startMinute && minute < endMinute
+                : minute >= startMinute || minute < endMinute
+        }
+    }
+
+    private static func recurringScheduleIsActive(at date: Date = Date()) -> Bool {
+        let defaults = sharedDefaults
+        if let pausedUntil = defaults.object(forKey: "blankSchedulePausedUntil") as? TimeInterval,
+           pausedUntil > date.timeIntervalSince1970 { return false }
+        if let vacationUntil = defaults.object(forKey: "blankVacationModeUntil") as? TimeInterval,
+           vacationUntil > date.timeIntervalSince1970 { return false }
+        guard let data = defaults.data(forKey: "blankFocusSchedule"),
+              let schedule = try? JSONDecoder().decode(StoredSchedule.self, from: data),
+              schedule.enabled else { return false }
+        return schedule.windows.contains { $0.contains(date) }
     }
 
     private static var adultContentBlockingEnabled: Bool {

@@ -1119,27 +1119,6 @@ private struct ControlForecast {
     }
 }
 
-private struct ReportLiquidBackground: View {
-    let isActive: Bool
-
-    var body: some View {
-        ZStack {
-            BlankAtmosphericBackground(dimmed: isActive)
-
-            LinearGradient(
-                colors: [
-                    BlankColors.pureWhite.opacity(isActive ? 0.04 : 0.22),
-                    (isActive ? BlankColors.ink : BlankColors.background).opacity(isActive ? 0.22 : 0.28),
-                    BlankColors.pureWhite.opacity(isActive ? 0.03 : 0.14)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-        .ignoresSafeArea()
-    }
-}
-
 private extension View {
     func reportFlatCard(cornerRadius: CGFloat = 18) -> some View {
         modifier(ReportFlatCardModifier(cornerRadius: cornerRadius))

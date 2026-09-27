@@ -34,6 +34,9 @@ struct BlankApp: App {
                 .environmentObject(screenTimeBlocker)
                 .environment(\.font, .blankBody)
                 .task {
+                    #if DEBUG
+                    if AssistantAppPreview.enabled { return }
+                    #endif
                     appDelegate.registerForRemoteActions()
                     await purchaseStore.loadProducts()
                     await screenTimeBlocker.restore(selection: sessionStore.selection)
@@ -46,9 +49,15 @@ struct BlankApp: App {
                     sessionStore.refreshDailyLimitMonitoring()
                 }
                 .task {
+                    #if DEBUG
+                    if AssistantAppPreview.enabled { return }
+                    #endif
                     await purchaseStore.observeTransactionUpdates()
                 }
                 .onChange(of: scenePhase) { phase in
+                    #if DEBUG
+                    if AssistantAppPreview.enabled { return }
+                    #endif
                     if phase == .active {
                         appDelegate.registerForRemoteActions()
                         screenTimeBlocker.refreshAuthorizationStatus()
@@ -450,7 +459,7 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
-        // A WhatsApp/SMS proposal is intentionally inert until the person taps
+        // A remote proposal is intentionally inert until the person taps
         // its visible notification. This callback may be delivered silently by
         // APNs, so it must never acknowledge or execute the pending action.
         completionHandler(.noData)
@@ -460,9 +469,8 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
         let defaults = BlankSharedState.defaults
         let token = defaults.string(forKey: "blankAssistantPushToken") ?? ""
         let code = defaults.string(forKey: "blankAssistantConnectCode") ?? ""
-        let rawChannel = defaults.string(forKey: "blankAssistantPreferredChannel") ?? ""
-        let channel = rawChannel == "whatsApp" ? "whatsapp" : rawChannel.lowercased()
-        guard !token.isEmpty, !code.isEmpty, ["whatsapp", "sms"].contains(channel) else { return }
+        let channel = "app"
+        guard !token.isEmpty, !code.isEmpty else { return }
         let phone = defaults.string(forKey: "blankAssistantPhoneNumber") ?? ""
         #if DEBUG
         let environment = "sandbox"

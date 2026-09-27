@@ -107,7 +107,15 @@ check("immediate_protection_does_not_invent_duration", () => {
 });
 
 check("messaging_actions_wait_for_notification_tap", () => {
-  assert.match(whatsapp, /Tap the Blankmind notification to apply it/);
+  const action={type:"start_protection",minutes:17};
+  const plan={actions:[action],message_text:"I'm applying it now. Tap the Blankmind notification."};
+  const delivered=whatsappModule.whatsappReplyText(plan,{action,push:{sent:true}});
+  assert.match(delivered,/17-minute block.*Tap the Blankmind notification.*apply/);
+  assert.match(delivered,/only confirm success after.*verifies/);
+  assert.doesNotMatch(delivered,/I'm applying it now/);
+  const pending=whatsappModule.whatsappReplyText(plan,{action,push:{sent:false}});
+  assert.match(pending,/saved the request.*couldn't send a notification.*Open Blankmind/);
+  assert.doesNotMatch(pending,/tap.*notification|I'm applying it now/i);
   assert.doesNotMatch(whatsapp, /I'm applying it now/);
   assert.doesNotMatch(whatsapp, /Open Blankmind to review and apply it/);
   assert.match(assistantChannel, /poll_pending_action/);
@@ -144,16 +152,20 @@ check("whatsapp_confirmation_redelivers_existing_action", () => {
   assert.match(whatsapp, /deliverPendingAssistantAction\(linkedConnection, pendingAction, pendingMemory\)/);
 });
 
-check("schedule_crud_does_not_wait_for_screen_time_permission", () => {
+check("schedule_review_preserves_native_permission_preflight", () => {
   const context = {
     schedule: { windows: [{ id: "w1", name: "Lunch", start_minute: 780, end_minute: 840, weekdays: [1, 2, 3, 4, 5, 6, 7] }] },
     recent_messages: [{ role: "user", content: "blocking window" }],
   };
   const plan = scheduleManagementPlan("move the 1:00 PM to 2:00 PM window one hour later", context);
   assert.strictEqual(plan.actions[0].type, "update_schedule");
-  assert.strictEqual(plan.requires_screen_time_authorization, false);
-  assert.match(home, /case \.applySchedule, \.updateSchedule, \.deleteSchedule, \.deleteAllSchedules/);
-  assert.match(home, /case \.startProtection, \.setDailyLimit, \.allowOnly, \.adultFilter/);
+  assert.strictEqual(plan.requires_screen_time_authorization, false, "preparing a review does not require device permission");
+  const policy = blockBetween(home, "private func assistantActionRequiresScreenTime", "private func finishPendingAssistantAction");
+  assert.match(policy, /case \.startProtection, \.setDailyLimit, \.allowOnly, \.adultFilter,[\s\S]*?\.applySchedule, \.updateSchedule,[\s\S]*?return true/, "native schedule activation must require permission");
+  assert.match(policy, /case \.deleteSchedule, \.deleteAllSchedules, \.pauseRules, \.requestScreenTimePermission:\s*return false/, "removal and permission setup must remain available without authorization");
+  const confirmation = blockBetween(home, "private func confirmPendingAssistantAction()", "switch pendingAction");
+  assert.match(confirmation, /if assistantActionRequiresScreenTime\(pendingAction\), screenTimeBlocker\.authorizationStatus != \.approved[\s\S]*?await screenTimeBlocker\.requestAuthorization\(\)/, "permission preflight must precede native application");
+  assert.match(confirmation, /status: "failed",\s*detail: "screen_time_permission_denied",\s*executionStarted: false/, "denied permission must fail without claiming execution");
 });
 
 check("assistant_context_sync_reaches_messaging_identity", () => {

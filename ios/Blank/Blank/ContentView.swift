@@ -6,6 +6,18 @@ struct ContentView: View {
     @State private var showingOnboardingDemo = false
 
     var body: some View {
+        #if DEBUG
+        if AssistantAppPreview.enabled {
+            AssistantAppView { _ in }
+        } else {
+            productContent
+        }
+        #else
+        productContent
+        #endif
+    }
+
+    private var productContent: some View {
         ZStack {
             if showingOnboardingDemo || !sessionStore.setupComplete {
                 SetupView {
@@ -46,6 +58,7 @@ struct AssistantContextSyncClient {
             "connect_code": connectCode,
             "preferred_channel": channel,
             "user_phone": phoneNumber,
+            "app_install_id": BlankSharedState.appInstallId,
             "context": payload,
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: body) else { return false }

@@ -7,6 +7,8 @@ process.env.BLANKED_PUBLIC_APP_LINK_BASE = "https://getblank.netlify.app";
 
 const channel = require("../netlify/functions/_assistant_channel");
 let memory;
+let pushSent = false;
+require("../netlify/functions/_assistant_push").sendAssistantActionPush = async () => ({sent:pushSent,reason:pushSent ? undefined : "missing_device_token"});
 
 const directConnection = channel.connectionForChannelUser([
   {
@@ -50,6 +52,10 @@ channel.ensureAssistantConnectionForPhone = async ({ channel: name, channelUser 
   appInstallId: "install-sms",
 });
 channel.recordAssistantMemory = async ({ memory: patch }) => { memory = { ...memory, ...patch }; };
+channel.recordPendingAssistantAction = async ({ pending }) => {
+  memory.pending_assistant_action = pending;
+  return { enqueued: true, status: pending ? "queued" : "invalidated" };
+};
 channel.recordAssistantConversationTurn = async ({ semanticState, userMessage, assistantMessage }) => {
   memory.conversation_state = {
     semantic_state: semanticState,
@@ -66,10 +72,15 @@ async function send(input) {
 
 async function prepare() {
   reset();
-  await send("Block Instagram now for 18 minutes, once.");
-  const response = await send("Yes");
-  assert.match(response.body, /Tap the Blankmind notification to start your 18-minute block/i);
-  assert.doesNotMatch(response.body, /Reply BLOCK|Open Blankmind|review-action/i);
+  const response = await send("Block Instagram now for 18 minutes, once.");
+  assert.match(response.body, /Block your selected distractions.*18 minutes/i);
+  assert.match(response.body, /couldn(?:'|&apos;)t send a notification/i);
+  assert.match(response.body, /Open Blankmind/i);
+  assert.doesNotMatch(response.body, /Reply BLOCK|Tap.*notification|review-action/i);
+  const acknowledgment = await send("Yes");
+  assert.match(acknowledgment.body, /18 minutes/);
+  assert.match(acknowledgment.body, /already prepared.*Check its result in Blankmind/);
+  assert.doesNotMatch(acknowledgment.body, /Tap.*notification|review-action/i);
   assert.equal(memory.pending_assistant_action.type, "start_protection");
   assert.equal(memory.pending_assistant_action.minutes, 18);
   assert.deepStrictEqual(memory.pending_assistant_action.app_names, []);
@@ -90,6 +101,22 @@ async function run() {
   await prepare();
   await send("Cancel that block.");
   assert.equal(memory.pending_assistant_action, null, "Cancellation must invalidate the queued command");
+
+  reset();
+  memory.user_context.screen_time_authorized=false;
+  const permission=await send("Set a 35-minute daily limit for selected apps now.");
+  assert.match(permission.body,/35 minutes per day/);
+  assert.match(permission.body,/grant blocking permission.*tell me/);
+  assert.doesNotMatch(permission.body,/choose|Tap.*notification/i);
+  assert.equal(memory.pending_assistant_action.type,"request_screen_time_permission");
+
+  reset(); pushSent=true;
+  const delivered=await send("Block selected apps now for 18 minutes, once.");
+  assert.match(delivered.body,/Tap the Blankmind notification/);
+  assert.match(delivered.body,/Block your selected distractions.*18 minutes/);
+  assert.doesNotMatch(delivered.body,/couldn(?:'|&apos;)t send/);
+  assert.equal(Object.hasOwn(memory.pending_assistant_action,"push"),false,"delivery receipts stay out of durable action payloads");
+  pushSent=false;
 
   await prepare();
   memory.pending_assistant_action.expires_at = new Date(Date.now() - 1).toISOString();

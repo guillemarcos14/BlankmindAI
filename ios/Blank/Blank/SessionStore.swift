@@ -133,9 +133,16 @@ final class SessionStore: ObservableObject {
 
     @Published var selection: FamilyActivitySelection {
         didSet {
+            guard selection != oldValue else { return }
+            // A picker opened before protection starts must not change its target.
+            guard canEditSelectedDistractions else {
+                selection = oldValue
+                return
+            }
             saveSelection(selection)
             reloadBlankWidget()
             syncRecurringSchedule()
+            refreshDailyLimitMonitoring()
         }
     }
 
@@ -150,6 +157,7 @@ final class SessionStore: ObservableObject {
     @Published var schedule: BlankFocusSchedule {
         didSet {
             saveSchedule(schedule)
+            adaptiveScheduleExpiresAt = schedule.windows.compactMap(\.expiresAt).max()
             syncRecurringSchedule()
         }
     }
@@ -169,6 +177,9 @@ final class SessionStore: ObservableObject {
     @Published private(set) var deviceActivityTimerScheduled: Bool {
         didSet { defaults.set(deviceActivityTimerScheduled, forKey: Keys.deviceActivityTimerScheduled) }
     }
+
+    @Published private(set) var recurringScheduleRegistered = false
+    @Published private(set) var dailyLimitRegistered = false
 
     @Published var pendingWidgetTimerMinutes: Int? {
         didSet {
@@ -257,6 +268,41 @@ final class SessionStore: ObservableObject {
         } else {
             adaptiveScheduleExpiresAt = nil
         }
+        // Build 80 stored one global expiry. Attach it to legacy windows once,
+        // then prune before Home can publish its first canonical context.
+        if let adaptiveScheduleExpiresAt, schedule.windows.allSatisfy({ $0.expiresAt == nil }) {
+            let migratedWindows = schedule.windows.map { window in
+                BlankHabitWindow(
+                    id: window.id,
+                    name: window.name,
+                    enabled: window.enabled,
+                    startMinute: window.startMinute,
+                    endMinute: window.endMinute,
+                    weekdays: window.weekdays,
+                    expiresAt: adaptiveScheduleExpiresAt
+                )
+            }
+            schedule = BlankFocusSchedule(
+                enabled: migratedWindows.contains(where: { $0.enabled }),
+                startMinute: schedule.startMinute,
+                endMinute: schedule.endMinute,
+                windows: migratedWindows
+            )
+        }
+        let currentWindows = schedule.windows.filter { $0.expiresAt.map { $0 > Date() } ?? true }
+        if currentWindows.count != schedule.windows.count {
+            schedule = BlankFocusSchedule(
+                enabled: currentWindows.contains(where: { $0.enabled }),
+                startMinute: schedule.startMinute,
+                endMinute: schedule.endMinute,
+                windows: currentWindows
+            )
+            schedulePausedUntil = nil
+        }
+        self.adaptiveScheduleExpiresAt = currentWindows.compactMap(\.expiresAt).max()
+        if let data = try? JSONEncoder().encode(schedule) {
+            defaults.set(data, forKey: Keys.schedule)
+        }
 
         defaults.removeObject(forKey: Keys.legacyFocusModes)
         defaults.removeObject(forKey: Keys.legacyCurrentModeId)
@@ -265,6 +311,12 @@ final class SessionStore: ObservableObject {
 
     var hasSelectedApps: Bool {
         selectionCount > 0
+    }
+
+    var canEditSelectedDistractions: Bool {
+        !isBlankActive
+            && !BlankSharedState.loadActiveState(defaults: defaults).isActive
+            && !DeviceActivityTimerScheduler.hasIndependentProtection
     }
 
     var isVacationModeActive: Bool {
@@ -424,6 +476,7 @@ final class SessionStore: ObservableObject {
         }
         let effectiveEnd = blankActiveUntil ?? requestedEnd
         let exactActionApplied = isBlankActive
+            && (blankActiveUntil == nil || deviceActivityTimerScheduled)
             && effectiveEnd >= requestedEnd.addingTimeInterval(-1)
         let delayed = delay > 60
         let status = exactActionApplied ? (delayed ? "delayed" : "verified") : "failed"
@@ -439,7 +492,8 @@ final class SessionStore: ObservableObject {
         defaults.set(result, forKey: "blankLastAssistantExecutionResult")
         return AssistantProtectionExecution(
             status: status,
-            detail: delayed ? "late_delivery_applied_remaining_requested_window" : "exact_remote_action_applied",
+            detail: !exactActionApplied ? "requested_interval_not_applied"
+                : (delayed ? "late_delivery_applied_remaining_requested_window" : "exact_remote_action_applied"),
             requestedAt: requestedAt,
             startedAt: now,
             requestedDurationMinutes: duration,
@@ -519,14 +573,22 @@ final class SessionStore: ObservableObject {
             return
         }
 
-        if let adaptiveScheduleExpiresAt, date >= adaptiveScheduleExpiresAt {
-            schedule = BlankFocusSchedule()
+        let unexpiredWindows = schedule.windows.filter { $0.expiresAt.map { $0 > date } ?? true }
+        if unexpiredWindows.count != schedule.windows.count {
+            schedule = BlankFocusSchedule(
+                enabled: unexpiredWindows.contains(where: { $0.enabled }),
+                startMinute: schedule.startMinute,
+                endMinute: schedule.endMinute,
+                windows: unexpiredWindows
+            )
             schedulePausedUntil = nil
-            self.adaptiveScheduleExpiresAt = nil
-            if isBlankActive, activeSessionStartedBySchedule {
-                _ = deactivateBlank(entryMode: .schedule, endedReason: .schedule)
+            adaptiveScheduleExpiresAt = unexpiredWindows.compactMap(\.expiresAt).max()
+            guard schedule.enabled else {
+                if isBlankActive, activeSessionStartedBySchedule {
+                    _ = deactivateBlank(entryMode: .schedule, endedReason: .schedule)
+                }
+                return
             }
-            return
         }
 
         if let schedulePausedUntil {
@@ -649,14 +711,18 @@ final class SessionStore: ObservableObject {
             "start_minute": schedule.startMinute,
             "end_minute": schedule.endMinute,
             "windows": schedule.windows.map { window in
-                [
+                var payload: [String: Any] = [
                     "id": window.id.uuidString,
                     "name": window.name,
                     "enabled": window.enabled,
                     "start_minute": window.startMinute,
                     "end_minute": window.endMinute,
                     "weekdays": window.weekdays
-                ] as [String: Any]
+                ]
+                if let expiresAt = window.expiresAt {
+                    payload["expires_at"] = expiresAt.timeIntervalSince1970
+                }
+                return payload
             }
         ]
         if let pausedUntil = schedulePausedUntil {
@@ -690,7 +756,7 @@ final class SessionStore: ObservableObject {
         name: String = "AI Plan",
         weekdays: [Int] = Array(1...7)
     ) {
-        adaptiveScheduleExpiresAt = Calendar.current.date(
+        let candidateExpiry = Calendar.current.date(
             byAdding: .day,
             value: max(1, min(14, durationDays)),
             to: Date()
@@ -702,7 +768,8 @@ final class SessionStore: ObservableObject {
             enabled: true,
             startMinute: startMinute,
             endMinute: endMinute,
-            weekdays: normalizedWeekdays.isEmpty ? Array(1...7) : normalizedWeekdays
+            weekdays: normalizedWeekdays.isEmpty ? Array(1...7) : normalizedWeekdays,
+            expiresAt: candidateExpiry
         )
         var windows = schedule.windows
         if let existingIndex = windows.firstIndex(where: {
@@ -716,7 +783,8 @@ final class SessionStore: ObservableObject {
                 enabled: true,
                 startMinute: startMinute,
                 endMinute: endMinute,
-                weekdays: window.weekdays
+                weekdays: window.weekdays,
+                expiresAt: candidateExpiry
             )
         } else {
             windows.append(window)
@@ -727,6 +795,7 @@ final class SessionStore: ObservableObject {
             endMinute: schedule.endMinute,
             windows: windows
         )
+        adaptiveScheduleExpiresAt = windows.compactMap(\.expiresAt).max()
         schedulePausedUntil = nil
         syncRecurringSchedule()
         if activateCurrentWindow {
@@ -757,13 +826,17 @@ final class SessionStore: ObservableObject {
     func refreshDailyLimitMonitoring() {
         guard dailyLimitEnabled, !isVacationModeActive, hasSelectedApps else {
             DeviceActivityTimerScheduler.stopDailyLimit()
+            dailyLimitRegistered = false
             return
         }
-        _ = DeviceActivityTimerScheduler.startDailyLimit(selection: selection, thresholdMinutes: dailyLimitMinutes)
+        dailyLimitRegistered = DeviceActivityTimerScheduler.startDailyLimit(selection: selection, thresholdMinutes: dailyLimitMinutes)
     }
 
     func syncRecurringSchedule() {
-        _ = DeviceActivityTimerScheduler.syncRecurringSchedule(schedule, until: adaptiveScheduleExpiresAt)
+        recurringScheduleRegistered = DeviceActivityTimerScheduler.syncRecurringSchedule(
+            schedule,
+            until: schedule.windows.compactMap(\.expiresAt).max()
+        )
     }
 
     func recordRelapseReview(_ reason: RelapseReviewReason) {
@@ -1034,7 +1107,8 @@ final class SessionStore: ObservableObject {
             enabled: existing.enabled,
             startMinute: min(max(startMinute, 0), 1439),
             endMinute: min(max(endMinute, 0), 1439),
-            weekdays: weekdays
+            weekdays: weekdays,
+            expiresAt: existing.expiresAt
         )
         schedule = BlankFocusSchedule(
             enabled: values.contains(where: { $0.enabled }),
@@ -1058,7 +1132,7 @@ final class SessionStore: ObservableObject {
             endMinute: schedule.endMinute,
             windows: values
         )
-        if values.isEmpty { adaptiveScheduleExpiresAt = nil }
+        adaptiveScheduleExpiresAt = values.compactMap(\.expiresAt).max()
         schedulePausedUntil = nil
         syncRecurringSchedule()
         applyScheduleWindow()

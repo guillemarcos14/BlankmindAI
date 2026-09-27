@@ -1,0 +1,1420 @@
+{
+  "dataset": "tools/datasets/bm_product_journeys_v2.json",
+  "sha256_bytes": "6a5e71c798cd2a9248ccf066d7db075693599522a9107620f531d479cdb69f3d",
+  "predecessor": "tools/datasets/bm_product_journeys_v1.json",
+  "predecessor_sha256_bytes": "a649f2bb67b21762e71b181846e069aa2d07b0fb1a90cfeebdd1ba572a3e3167",
+  "authored_at": "2026-09-26",
+  "split": "development",
+  "independent_holdout": false,
+  "base_journeys": 40,
+  "continuations_per_base": 5,
+  "conversations": 200,
+  "turns": 925,
+  "changed_expected_actions": 85,
+  "unchanged_user_inputs": true,
+  "unchanged_expected_states": true,
+  "changes": [
+    {
+      "conversation": "instant_regular__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "instant_hard__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 45,
+          "hard_mode": true
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "missing_start__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 40,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "missing_duration__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "missing_recurrence__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 50,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "all_operational_missing__amend_while_selection_removed",
+      "turn": 6,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 65,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "duration_before_start__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 25,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "recurrence_before_duration__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 20,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "minimum_duration__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 10,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "maximum_duration__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 230,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "daily_needs_clock__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 540,
+          "end_minute": 575,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 7
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "weekends_need_clock__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 510,
+          "end_minute": 565,
+          "weekdays": [
+            1,
+            7
+          ],
+          "duration_days": 14
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "schedule_hard_unsupported__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 600,
+          "end_minute": 665,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 7
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "limit_hard_unsupported__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "set_daily_limit",
+          "minutes": 35
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "limit_duration_missing__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "set_daily_limit",
+          "minutes": 50
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "limit_scheduled_rejected__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "set_daily_limit",
+          "minutes": 65
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "horizon_missing__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 600,
+          "end_minute": 665,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 9
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "horizon_out_of_range__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 600,
+          "end_minute": 665,
+          "weekdays": [
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "duration_days": 14
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "overnight_weekend__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 1380,
+          "end_minute": 170,
+          "weekdays": [
+            1,
+            7
+          ],
+          "duration_days": 14
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "separated_weekdays__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 555,
+          "end_minute": 635,
+          "weekdays": [
+            2,
+            4
+          ],
+          "duration_days": 6
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "time_duration_conflict__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 600,
+          "end_minute": 665,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 7
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "oneoff_date_unsupported__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 600,
+          "end_minute": 665,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 3
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "tomorrow_not_now__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "presence_not_claim__withdraw_authorization",
+      "turn": 2,
+      "input": "I have it open.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated presence setup reuses the existing transported request."
+    },
+    {
+      "conversation": "presence_not_claim__withdraw_authorization",
+      "turn": 3,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "A heartbeat cannot enqueue the same transported protection again."
+    },
+    {
+      "conversation": "presence_not_claim__amend_authorized_quantity",
+      "turn": 2,
+      "input": "I have it open.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated presence setup reuses the existing transported request."
+    },
+    {
+      "conversation": "presence_not_claim__amend_authorized_quantity",
+      "turn": 3,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "A heartbeat cannot enqueue the same transported protection again."
+    },
+    {
+      "conversation": "presence_not_claim__change_to_unsupported_capability",
+      "turn": 2,
+      "input": "I have it open.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated presence setup reuses the existing transported request."
+    },
+    {
+      "conversation": "presence_not_claim__change_to_unsupported_capability",
+      "turn": 3,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "A heartbeat cannot enqueue the same transported protection again."
+    },
+    {
+      "conversation": "presence_not_claim__amend_while_permission_revoked",
+      "turn": 2,
+      "input": "I have it open.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated presence setup reuses the existing transported request."
+    },
+    {
+      "conversation": "presence_not_claim__amend_while_permission_revoked",
+      "turn": 3,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "A heartbeat cannot enqueue the same transported protection again."
+    },
+    {
+      "conversation": "presence_not_claim__amend_while_selection_removed",
+      "turn": 2,
+      "input": "I have it open.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated presence setup reuses the existing transported request."
+    },
+    {
+      "conversation": "presence_not_claim__amend_while_selection_removed",
+      "turn": 3,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "A heartbeat cannot enqueue the same transported protection again."
+    },
+    {
+      "conversation": "presence_not_claim__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 40,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "permission_denied__withdraw_authorization",
+      "turn": 2,
+      "input": "I said yes.",
+      "previous_actions": [
+        {
+          "type": "request_screen_time_permission"
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated confirmation cannot enqueue the same permission setup again."
+    },
+    {
+      "conversation": "permission_denied__amend_authorized_quantity",
+      "turn": 2,
+      "input": "I said yes.",
+      "previous_actions": [
+        {
+          "type": "request_screen_time_permission"
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated confirmation cannot enqueue the same permission setup again."
+    },
+    {
+      "conversation": "permission_denied__change_to_unsupported_capability",
+      "turn": 2,
+      "input": "I said yes.",
+      "previous_actions": [
+        {
+          "type": "request_screen_time_permission"
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated confirmation cannot enqueue the same permission setup again."
+    },
+    {
+      "conversation": "permission_denied__amend_while_permission_revoked",
+      "turn": 2,
+      "input": "I said yes.",
+      "previous_actions": [
+        {
+          "type": "request_screen_time_permission"
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated confirmation cannot enqueue the same permission setup again."
+    },
+    {
+      "conversation": "permission_denied__amend_while_selection_removed",
+      "turn": 2,
+      "input": "I said yes.",
+      "previous_actions": [
+        {
+          "type": "request_screen_time_permission"
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated confirmation cannot enqueue the same permission setup again."
+    },
+    {
+      "conversation": "permission_denied__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "selection_not_conversation__withdraw_authorization",
+      "turn": 2,
+      "input": "Yes.",
+      "previous_actions": [
+        {
+          "type": "open_app_picker",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated confirmation reuses the existing picker."
+    },
+    {
+      "conversation": "selection_not_conversation__withdraw_authorization",
+      "turn": 3,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Accepting the picker already applies its attached protection; readiness cannot enqueue another."
+    },
+    {
+      "conversation": "selection_not_conversation__amend_authorized_quantity",
+      "turn": 2,
+      "input": "Yes.",
+      "previous_actions": [
+        {
+          "type": "open_app_picker",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated confirmation reuses the existing picker."
+    },
+    {
+      "conversation": "selection_not_conversation__amend_authorized_quantity",
+      "turn": 3,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Accepting the picker already applies its attached protection; readiness cannot enqueue another."
+    },
+    {
+      "conversation": "selection_not_conversation__change_to_unsupported_capability",
+      "turn": 2,
+      "input": "Yes.",
+      "previous_actions": [
+        {
+          "type": "open_app_picker",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated confirmation reuses the existing picker."
+    },
+    {
+      "conversation": "selection_not_conversation__change_to_unsupported_capability",
+      "turn": 3,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Accepting the picker already applies its attached protection; readiness cannot enqueue another."
+    },
+    {
+      "conversation": "selection_not_conversation__amend_while_permission_revoked",
+      "turn": 2,
+      "input": "Yes.",
+      "previous_actions": [
+        {
+          "type": "open_app_picker",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated confirmation reuses the existing picker."
+    },
+    {
+      "conversation": "selection_not_conversation__amend_while_permission_revoked",
+      "turn": 3,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Accepting the picker already applies its attached protection; readiness cannot enqueue another."
+    },
+    {
+      "conversation": "selection_not_conversation__amend_while_selection_removed",
+      "turn": 2,
+      "input": "Yes.",
+      "previous_actions": [
+        {
+          "type": "open_app_picker",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Repeated confirmation reuses the existing picker."
+    },
+    {
+      "conversation": "selection_not_conversation__amend_while_selection_removed",
+      "turn": 3,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 30,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "Accepting the picker already applies its attached protection; readiness cannot enqueue another."
+    },
+    {
+      "conversation": "selection_not_conversation__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "permission_then_selection__withdraw_authorization",
+      "turn": 3,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "set_daily_limit",
+          "minutes": 25
+        }
+      ],
+      "actions": [],
+      "reason": "Accepting the picker already applies its attached daily limit."
+    },
+    {
+      "conversation": "permission_then_selection__amend_authorized_quantity",
+      "turn": 3,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "set_daily_limit",
+          "minutes": 25
+        }
+      ],
+      "actions": [],
+      "reason": "Accepting the picker already applies its attached daily limit."
+    },
+    {
+      "conversation": "permission_then_selection__change_to_unsupported_capability",
+      "turn": 3,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "set_daily_limit",
+          "minutes": 25
+        }
+      ],
+      "actions": [],
+      "reason": "Accepting the picker already applies its attached daily limit."
+    },
+    {
+      "conversation": "permission_then_selection__amend_while_permission_revoked",
+      "turn": 3,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "set_daily_limit",
+          "minutes": 25
+        }
+      ],
+      "actions": [],
+      "reason": "Accepting the picker already applies its attached daily limit."
+    },
+    {
+      "conversation": "permission_then_selection__amend_while_selection_removed",
+      "turn": 3,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "set_daily_limit",
+          "minutes": 25
+        }
+      ],
+      "actions": [],
+      "reason": "Accepting the picker already applies its attached daily limit."
+    },
+    {
+      "conversation": "permission_then_selection__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "set_daily_limit",
+          "minutes": 30
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "all_native_gaps__withdraw_authorization",
+      "turn": 2,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "request_screen_time_permission"
+        }
+      ],
+      "actions": [],
+      "reason": "The first review request already owns the full plan. Native preflight handles permission; a new permission action would supersede that request and race its execution."
+    },
+    {
+      "conversation": "all_native_gaps__withdraw_authorization",
+      "turn": 3,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "open_app_picker",
+          "start_minute": 1080,
+          "end_minute": 1140,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "Native preflight opens selection for the original review request. Do not replace its action ID after it may already have been applied."
+    },
+    {
+      "conversation": "all_native_gaps__withdraw_authorization",
+      "turn": 4,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 1080,
+          "end_minute": 1140,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "The original review request already owns execution; a ready heartbeat cannot enqueue the same schedule again."
+    },
+    {
+      "conversation": "all_native_gaps__amend_authorized_quantity",
+      "turn": 2,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "request_screen_time_permission"
+        }
+      ],
+      "actions": [],
+      "reason": "The first review request already owns the full plan. Native preflight handles permission; a new permission action would supersede that request and race its execution."
+    },
+    {
+      "conversation": "all_native_gaps__amend_authorized_quantity",
+      "turn": 3,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "open_app_picker",
+          "start_minute": 1080,
+          "end_minute": 1140,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "Native preflight opens selection for the original review request. Do not replace its action ID after it may already have been applied."
+    },
+    {
+      "conversation": "all_native_gaps__amend_authorized_quantity",
+      "turn": 4,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 1080,
+          "end_minute": 1140,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "The original review request already owns execution; a ready heartbeat cannot enqueue the same schedule again."
+    },
+    {
+      "conversation": "all_native_gaps__change_to_unsupported_capability",
+      "turn": 2,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "request_screen_time_permission"
+        }
+      ],
+      "actions": [],
+      "reason": "The first review request already owns the full plan. Native preflight handles permission; a new permission action would supersede that request and race its execution."
+    },
+    {
+      "conversation": "all_native_gaps__change_to_unsupported_capability",
+      "turn": 3,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "open_app_picker",
+          "start_minute": 1080,
+          "end_minute": 1140,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "Native preflight opens selection for the original review request. Do not replace its action ID after it may already have been applied."
+    },
+    {
+      "conversation": "all_native_gaps__change_to_unsupported_capability",
+      "turn": 4,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 1080,
+          "end_minute": 1140,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "The original review request already owns execution; a ready heartbeat cannot enqueue the same schedule again."
+    },
+    {
+      "conversation": "all_native_gaps__amend_while_permission_revoked",
+      "turn": 2,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "request_screen_time_permission"
+        }
+      ],
+      "actions": [],
+      "reason": "The first review request already owns the full plan. Native preflight handles permission; a new permission action would supersede that request and race its execution."
+    },
+    {
+      "conversation": "all_native_gaps__amend_while_permission_revoked",
+      "turn": 3,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "open_app_picker",
+          "start_minute": 1080,
+          "end_minute": 1140,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "Native preflight opens selection for the original review request. Do not replace its action ID after it may already have been applied."
+    },
+    {
+      "conversation": "all_native_gaps__amend_while_permission_revoked",
+      "turn": 4,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 1080,
+          "end_minute": 1140,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "The original review request already owns execution; a ready heartbeat cannot enqueue the same schedule again."
+    },
+    {
+      "conversation": "all_native_gaps__amend_while_selection_removed",
+      "turn": 2,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "request_screen_time_permission"
+        }
+      ],
+      "actions": [],
+      "reason": "The first review request already owns the full plan. Native preflight handles permission; a new permission action would supersede that request and race its execution."
+    },
+    {
+      "conversation": "all_native_gaps__amend_while_selection_removed",
+      "turn": 3,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "open_app_picker",
+          "start_minute": 1080,
+          "end_minute": 1140,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "Native preflight opens selection for the original review request. Do not replace its action ID after it may already have been applied."
+    },
+    {
+      "conversation": "all_native_gaps__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Done.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 1080,
+          "end_minute": 1140,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "The original review request already owns execution; a ready heartbeat cannot enqueue the same schedule again."
+    },
+    {
+      "conversation": "all_native_gaps__amend_while_selection_removed",
+      "turn": 6,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 1080,
+          "end_minute": 1145,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "correct_while_collecting__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 50,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "end_crosses_midnight__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 1420,
+          "end_minute": 40,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 4
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "start_keeps_explicit_end__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 500,
+          "end_minute": 605,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 7
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "start_keeps_duration__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 660,
+          "end_minute": 725,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 7
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "reject_recurrence__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 600,
+          "end_minute": 665,
+          "weekdays": [
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "duration_days": 5
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "reject_duration__amend_while_selection_removed",
+      "turn": 6,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 50,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "reject_start__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 660,
+          "end_minute": 725,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 7
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "advice_needs_optin__amend_while_selection_removed",
+      "turn": 6,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "apply_schedule",
+          "start_minute": 600,
+          "end_minute": 665,
+          "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duration_days": 7
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "privacy_does_not_authorize__amend_while_selection_removed",
+      "turn": 4,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "unsupported_to_supported__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 25,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "retrospective_to_new__amend_while_selection_removed",
+      "turn": 5,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 35,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    },
+    {
+      "conversation": "cancel_then_new__amend_while_selection_removed",
+      "turn": 7,
+      "input": "Ready.",
+      "previous_actions": [
+        {
+          "type": "start_protection",
+          "minutes": 25,
+          "hard_mode": false
+        }
+      ],
+      "actions": [],
+      "reason": "The amended plan was attached to the picker on the preceding turn; accepting it must not enqueue a second protection."
+    }
+  ]
+}

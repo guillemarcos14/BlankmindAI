@@ -15,7 +15,7 @@ function recentAssistantMemoryResponse(target, options = {}) {
   if (!String(target).startsWith("https://supabase.test/rest/v1/")) return null;
   if (String(target).includes("/blankmind_identity_links")) {
     const rows = String(target).includes("app_install_id=eq.install-1")
-      ? [{ assistant_connect_code: "ABC123", app_install_id: "install-1" }]
+      ? [{ assistant_connect_code: "ABC123", app_install_id: "install-1", phone_e164: "+34600000000" }]
       : [];
     return { ok: true, status: 200, text: async () => JSON.stringify(rows), json: async () => rows };
   }
@@ -355,8 +355,9 @@ async function twilioButtonTemplateHidesRawUrlFromMainReply() {
     assert.strictEqual(requests.length, 1);
     assert.doesNotMatch(requests[0].Body, /Do you confirm|review-action/i);
     assert.doesNotMatch(requests[0].Body, /https?:\/\//);
-    assert.match(requests[0].Body, /haven't sent a notification yet/i);
-    assert.match(requests[0].Body, /Connect this WhatsApp in Blankmind/i);
+    assert.match(requests[0].Body, /haven't sent the request yet/i);
+    assert.match(requests[0].Body, /Open Blankmind to connect this WhatsApp/i);
+    assert.doesNotMatch(requests[0].Body, /tap.*notification/i);
   } finally {
     global.fetch = originalFetch;
     delete process.env.SUPABASE_URL;

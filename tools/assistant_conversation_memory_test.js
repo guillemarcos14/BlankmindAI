@@ -10,7 +10,7 @@ delete process.env.TWILIO_AUTH_TOKEN;
 delete process.env.TWILIO_FROM_NUMBER;
 delete process.env.TWILIO_MESSAGING_SERVICE_SID;
 
-const { handler: whatsappHandler } = require("../netlify/functions/whatsapp-agent");
+const { handler: whatsappHandler, callBlankedAgent } = require("../netlify/functions/whatsapp-agent");
 const { handler: smsHandler } = require("../netlify/functions/sms-agent");
 const { handler: agentHandler } = require("../netlify/functions/blanked-agent");
 const { buildAgentContext } = require("../netlify/functions/bm-context");
@@ -201,11 +201,56 @@ function expiredConversationIsIgnored() {
   assert.strictEqual(context.memory.conversation_state, undefined);
 }
 
+async function modelFallbackMetadataIsInternal() {
+  await withMemoryStore(async () => {
+    const memoryFetch = global.fetch;
+    const previousKey = process.env.OPENAI_API_KEY;
+    let modelRequests = 0;
+    let privateBodyReads = 0;
+    global.fetch = async (target, options = {}) => {
+      const url = String(target);
+      if (url === "https://api.openai.com/v1/responses") {
+        modelRequests += 1;
+        return { ok: false, status: 429, body: { cancel: async () => {} },
+          text: async () => { privateBodyReads += 1; return "private provider detail"; } };
+      }
+      assert.ok(url.startsWith("https://supabase.test/rest/v1/"), "unexpected external request");
+      return memoryFetch(target, options);
+    };
+    try {
+      process.env.OPENAI_API_KEY = "";
+      const healthy = await callBlankedAgent("Block my selected apps now for 30 minutes once.", "34600000099");
+      assert.strictEqual(healthy.modelUnavailable, false);
+      assert.strictEqual(modelRequests, 0);
+      process.env.OPENAI_API_KEY = "synthetic-test-key-no-network";
+      for (const prompt of ["Block my selected apps now for 30 minutes once.", "Cancel this request.", "Stop."]) {
+        const before = modelRequests;
+        const degraded = await callBlankedAgent(prompt, "34600000099");
+        assert.strictEqual(degraded.modelUnavailable, true, prompt);
+        assert.strictEqual(modelRequests - before, 1, "HTTP 429 remains fail-fast");
+        assert.deepStrictEqual(Object.keys(degraded).sort(), ["context", "modelUnavailable", "plan"]);
+        assert.ok(!JSON.stringify(degraded).includes("private provider detail"));
+        if (prompt !== "Block my selected apps now for 30 minutes once.") {
+          assert.strictEqual(degraded.plan.semantic_state.intent, "cancelled");
+          assert.strictEqual(degraded.plan.semantic_state.status, "cancelled");
+          assert.strictEqual(degraded.plan.semantic_decision.type, "cancelled");
+          assert.deepStrictEqual(degraded.plan.actions, []);
+        }
+      }
+      assert.strictEqual(privateBodyReads, 0);
+    } finally {
+      process.env.OPENAI_API_KEY = previousKey;
+      global.fetch = memoryFetch;
+    }
+  });
+}
+
 (async () => {
   expiredConversationIsIgnored();
   await whatsappKeepsBedtimeQuestion();
   await smsKeepsBedtimeQuestion();
   await webContextKeepsBedtimeQuestion();
+  await modelFallbackMetadataIsInternal();
   console.log("assistant conversation memory tests passed");
 })().catch((error) => {
   console.error(error);

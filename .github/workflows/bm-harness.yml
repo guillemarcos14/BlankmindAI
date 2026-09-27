@@ -25,6 +25,38 @@ on:
   workflow_dispatch:
 
 jobs:
+  assistant-database:
+    name: Conversation recovery on PostgreSQL
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test-only-password
+          POSTGRES_DB: blank_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGDATABASE: blank_test
+      PGPASSWORD: test-only-password
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migrate a disposable database and exercise recovery
+        run: |
+          psql -v ON_ERROR_STOP=1 -f tools/assistant_app_database_setup.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/003_digital_wellness_feature_payloads.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/015_assistant_semantic_conversations.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/022_assistant_app_turns.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/023_assistant_app_recovery.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/024_restore_bm_legacy_context_snapshots.sql
+          psql -v ON_ERROR_STOP=1 -f tools/assistant_app_database_test.sql
   harness:
     name: Contract and runtime gate
     runs-on: ubuntu-latest

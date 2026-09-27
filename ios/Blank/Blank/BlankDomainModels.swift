@@ -375,6 +375,7 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
     var startMinute: Int
     var endMinute: Int
     var weekdays: [Int]
+    var expiresAt: Date?
 
     init(
         id: UUID = UUID(),
@@ -382,7 +383,8 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
         enabled: Bool = true,
         startMinute: Int = 23 * 60 + 30,
         endMinute: Int = 8 * 60,
-        weekdays: [Int] = Array(1...7)
+        weekdays: [Int] = Array(1...7),
+        expiresAt: Date? = nil
     ) {
         self.id = id
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -392,10 +394,11 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
         self.startMinute = min(max(startMinute, 0), 1439)
         self.endMinute = min(max(endMinute, 0), 1439)
         self.weekdays = Self.normalizedWeekdays(weekdays)
+        self.expiresAt = expiresAt
     }
 
     func contains(_ date: Date, calendar: Calendar = .current) -> Bool {
-        guard enabled else { return false }
+        guard enabled, expiresAt.map({ $0 > date }) ?? true else { return false }
         let minute = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
         let activeWeekday = activeWeekday(for: date, minute: minute, calendar: calendar)
         guard weekdays.contains(activeWeekday) else { return false }
@@ -449,6 +452,7 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
         case startMinute
         case endMinute
         case weekdays
+        case expiresAt
     }
 
     init(from decoder: Decoder) throws {
@@ -459,6 +463,7 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
         startMinute = min(max(try container.decodeIfPresent(Int.self, forKey: .startMinute) ?? 23 * 60 + 30, 0), 1439)
         endMinute = min(max(try container.decodeIfPresent(Int.self, forKey: .endMinute) ?? 8 * 60, 0), 1439)
         weekdays = Self.normalizedWeekdays(try container.decodeIfPresent([Int].self, forKey: .weekdays) ?? Array(1...7))
+        expiresAt = try container.decodeIfPresent(Date.self, forKey: .expiresAt)
     }
 }
 

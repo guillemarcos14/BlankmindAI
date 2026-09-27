@@ -1,0 +1,231 @@
+{
+  "dataset": "tools/datasets/bm_product_journeys_v1.json",
+  "sha256_bytes": "a649f2bb67b21762e71b181846e069aa2d07b0fb1a90cfeebdd1ba572a3e3167",
+  "authored_at": "2026-09-26",
+  "split": "development",
+  "independent_holdout": false,
+  "base_journeys": 40,
+  "continuations_per_base": 5,
+  "conversations": 200,
+  "turns": 925,
+  "distinct_text_sequences": 160,
+  "distinct_expected_sequences": 200,
+  "distinct_input_gold_pairs": 249,
+  "turns_asserting_correction_history": 160,
+  "variation_policy": "No expansion by channel, language, identity, app name or numeric substitution. Combinatorial prefixes are reported explicitly. Each continuation starts from inherited state and changes authorization, intent, quantity, permission, or selection.",
+  "limitations": [
+    "Not 200 independent base scenarios.",
+    "English only; does not establish Spanish parity.",
+    "Synthetic planner contexts do not establish native or transport behavior.",
+    "Visible equivalence needs independent judge hashes; no reviews are generated here."
+  ],
+  "bases": [
+    {
+      "id": "instant_regular",
+      "purpose": "A complete one-off request queues once; acknowledgement is not new authorization.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "instant_hard",
+      "purpose": "Explicit strictness survives preparation and duplicate confirmation.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "missing_start",
+      "purpose": "A complete duration and recurrence do not invent a start.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "missing_duration",
+      "purpose": "Immediate intent and one-off recurrence still require duration.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "missing_recurrence",
+      "purpose": "A yes cannot invent whether protection repeats.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "all_operational_missing",
+      "purpose": "Collect start, duration and recurrence separately without asking for another app list.",
+      "prefix_turns": 4
+    },
+    {
+      "id": "duration_before_start",
+      "purpose": "Duration answered before start is retained while start remains missing.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "recurrence_before_duration",
+      "purpose": "A recurrence answer out of question order must not fabricate duration.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "minimum_duration",
+      "purpose": "A subminimum immediate duration is rejected rather than silently clamped.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "maximum_duration",
+      "purpose": "An above-maximum immediate duration needs a correction before action.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "daily_needs_clock",
+      "purpose": "Now is not a recurring local clock; daily protection requires a time and horizon.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "weekends_need_clock",
+      "purpose": "Weekend recurrence preserves Saturday/Sunday while replacing invalid now.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "schedule_hard_unsupported",
+      "purpose": "Scheduled hard mode stays unsupported until the user explicitly chooses normal protection.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "limit_hard_unsupported",
+      "purpose": "A hard daily limit cannot silently lose the requested strictness.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "limit_duration_missing",
+      "purpose": "Daily limit starts now by capability contract but needs an explicit allowance.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "limit_scheduled_rejected",
+      "purpose": "A daily allowance cannot discard a requested future start or expiry; each unsupported constraint needs explicit adjustment.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "horizon_missing",
+      "purpose": "A recurring window must not inherit an implicit seven-day expiry.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "horizon_out_of_range",
+      "purpose": "An unsupported horizon is corrected explicitly rather than truncated.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "overnight_weekend",
+      "purpose": "An overnight interval keeps its next-day end and native weekday mapping.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "separated_weekdays",
+      "purpose": "Nonadjacent weekly days remain a set rather than a contiguous interval.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "time_duration_conflict",
+      "purpose": "An explicit end and incompatible duration are not averaged or guessed.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "oneoff_date_unsupported",
+      "purpose": "A one-off future time cannot become an immediate or repeating block without consent.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "tomorrow_not_now",
+      "purpose": "Tomorrow is preserved until an explicit correction makes the immediate request actionable.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "presence_not_claim",
+      "purpose": "Saying the app is open does not substitute for a trusted device heartbeat.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "permission_denied",
+      "purpose": "The same authorized facts survive denied permission and a later real grant.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "selection_not_conversation",
+      "purpose": "Describing apps does not create a native Screen Time selection.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "permission_then_selection",
+      "purpose": "Permission and native selection are independent prerequisites with ordered recovery.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "all_native_gaps",
+      "purpose": "Presence, permission and selection arrive separately while a recurring plan remains intact.",
+      "prefix_turns": 4
+    },
+    {
+      "id": "correct_while_collecting",
+      "purpose": "A duration correction cannot fill an unrelated missing recurrence slot.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "end_crosses_midnight",
+      "purpose": "An end correction across midnight recalculates duration from the explicit start.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "start_keeps_explicit_end",
+      "purpose": "Moving the start preserves an explicitly requested end and changes duration.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "start_keeps_duration",
+      "purpose": "Moving a start preserves a user-supplied duration and recomputes its derived end.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "reject_recurrence",
+      "purpose": "Rejecting daily recurrence also withdraws its horizon until the replacement is specified.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "reject_duration",
+      "purpose": "Rejecting a duration removes it; a confirmation cannot restore the rejected quantity.",
+      "prefix_turns": 4
+    },
+    {
+      "id": "reject_start",
+      "purpose": "Rejecting the start removes a derived end, while duration and recurrence survive.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "advice_needs_optin",
+      "purpose": "A stated goal and complete facts remain advice until an explicit opt-in.",
+      "prefix_turns": 4
+    },
+    {
+      "id": "privacy_does_not_authorize",
+      "purpose": "A privacy question is conversational; only a later explicit selected-app request acts.",
+      "prefix_turns": 2
+    },
+    {
+      "id": "unsupported_to_supported",
+      "purpose": "An unsupported exception-list request cannot masquerade as broad blocking.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "retrospective_to_new",
+      "purpose": "A previous failed block is an observation, distinct from a new authorized instruction.",
+      "prefix_turns": 3
+    },
+    {
+      "id": "cancel_then_new",
+      "purpose": "A cancellation closes old authorization; a fresh request starts with its own missing fields.",
+      "prefix_turns": 5
+    }
+  ],
+  "continuations": [
+    "withdraw_authorization",
+    "amend_authorized_quantity",
+    "change_to_unsupported_capability",
+    "amend_while_permission_revoked",
+    "amend_while_selection_removed"
+  ]
+}

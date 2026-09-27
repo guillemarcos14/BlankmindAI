@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
+const { measureConversationCoverage } = require("./bm_conversation_coverage");
 
 const ROOT = path.resolve(__dirname, "..");
 const rawArgs = process.argv.slice(2);
@@ -58,6 +59,7 @@ if (rawArgs.includes("--init")) {
 
 const evidence = loadJson(evidencePath);
 const failures = [];
+let conversationCoverage = null;
 const physicalCases = Array.isArray(evidence?.physical_cases) ? evidence.physical_cases : [];
 function requireCondition(condition, code, detail) {
   if (!condition) failures.push({ code, detail });
@@ -102,11 +104,16 @@ if (evidence) {
   const qualityReport = loadJson(evidence.evaluator?.quality_report);
   requireCondition(Boolean(modelReport), "active_model_report_missing", evidence.evaluator?.active_model_report);
   requireCondition(Boolean(qualityReport), "quality_report_missing", evidence.evaluator?.quality_report);
-  const repeats = Math.max(1, Number(modelReport?.execution?.repeats) || 1);
-  const measuredUniqueConversations = Math.floor((modelReport?.summary?.conversations || 0) / repeats);
-  const measuredUniqueTurns = Math.floor((modelReport?.summary?.turns || 0) / repeats);
+  conversationCoverage = measureConversationCoverage(modelReport);
+  failures.push(...conversationCoverage.failures);
+  const measuredUniqueConversations = conversationCoverage.unique_conversations;
+  const measuredUniqueTurns = conversationCoverage.unique_turns;
   if (modelReport) {
     requireCondition(modelReport.revision === candidate.commit, "model_report_commit_mismatch", modelReport.revision);
+    requireCondition(modelReport.source_capture?.version === 1 && modelReport.source_capture?.before_turns === true
+      && isSha(modelReport.source_snapshot?.["netlify/functions/bm-contextual-response.js"]), "model_source_capture_missing", modelReport.source_capture);
+    requireCondition(modelReport.source_dirty === false, "model_source_not_clean", modelReport.source_dirty);
+    requireCondition(modelReport.source_changed_during_replay === false, "model_source_changed_during_replay", modelReport.source_changed_during_replay);
     requireCondition(modelReport.execution?.model_requested === true, "model_not_requested", modelReport.execution?.model_requested);
     requireCondition(modelReport.release_eligible === true, "model_report_not_release_eligible", modelReport.release_eligible);
     requireCondition(modelReport.summary?.failed === 0, "model_hard_failures", modelReport.summary?.failed);
@@ -167,6 +174,10 @@ const report = {
   evidence_path: evidencePath,
   ready: failures.length === 0,
   coverage: {
+    conversation_count_kind: "normalized_input_and_expected_trajectories",
+    unique_conversations: conversationCoverage?.unique_conversations ?? 0,
+    unique_turns: conversationCoverage?.unique_turns ?? 0,
+    semantic_diversity_requires_independent_audit: true,
     physical_cases_passed: physicalCases.filter((item) => item?.result === "passed").length,
     physical_cases_total: physicalCases.length,
     physical_cases_required: contract.minimums.physical_cases,
