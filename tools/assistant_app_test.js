@@ -33,9 +33,20 @@ membership.getSupabaseUser = async (event) => {
 };
 identity.identityForAuthUser = async () => identityRecord;
 semantic.semanticPersistenceRequired = () => true;
-channel.getAssistantMemory = async () => {
+channel.getAssistantMemory = async (channelName) => {
+  assert.equal(channelName, "app");
   if (memoryUnavailable) throw new Error("private memory unavailable");
   return copy(memory);
+};
+let activated = false;
+channel.findAssistantConnection = async (_code, channelName) => {
+  assert.equal(channelName, "app");
+  return activated ? { channel: "app", channelUser: identityRecord.phone_e164 } : null;
+};
+channel.recordAssistantChannel = async (connection) => {
+  assert.equal(connection.channel, "app");
+  assert.equal(connection.channelUser, identityRecord.phone_e164);
+  activated = true;
 };
 channel.recordAssistantMemory = async ({ memory: next }) => {
   if (next.pending_assistant_action) { faultOnce("queue_before"); effects.queue += 1; }
@@ -151,6 +162,11 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
   assert.equal((await send(crypto.randomUUID(), { text: "not a string" })).status, 400);
   assert.equal((await send(crypto.randomUUID(), "x".repeat(4001))).status, 400);
   assert.equal((await request({ action: "history", before: "v1.bm90LWpzb24" })).status, 400);
+  assert.equal((await request({ action: "activate" }, "invalid")).status, 401);
+  assert.equal((await request({ action: "activate", app_install_id: "other-install" })).status, 403);
+  assert.equal((await request({ action: "activate" })).status, 200);
+  assert.equal(activated, true);
+  assert.equal((await request({ action: "activate" })).status, 200);
 
   const firstId = crypto.randomUUID();
   let response = await send(firstId);

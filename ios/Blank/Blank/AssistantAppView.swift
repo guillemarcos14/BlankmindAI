@@ -214,6 +214,10 @@ struct AssistantAppClient {
     var baseURL: URL?
     var sessionRefresh: AssistantAppSessionRefresh = .shared
 
+    func activate() async throws {
+        _ = try await request(action: "activate", extra: [:])
+    }
+
     func history(before: String? = nil) async throws -> AssistantAppHistoryPage {
         let result = try await request(action: "history", extra: before.map { ["before": $0] } ?? [:])
         return AssistantAppHistoryPage(turns: result.turns ?? [], nextBefore: result.nextBefore)
@@ -457,7 +461,6 @@ final class AssistantSpeechInput: ObservableObject {
 struct AssistantAppView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject private var speech = AssistantSpeechInput()
@@ -477,9 +480,10 @@ struct AssistantAppView: View {
     @State private var canRetry = true
     @State private var showHistory = false
     @State private var showPhoneSignIn = false
-    @State private var showWhatsApp = false
     @State private var saveTask: Task<Void, Never>?
+    @State private var initialMessageHandled = false
 
+    var initialMessage: String? = nil
     var onOpenControls: (HomeSection?) -> Void = { _ in }
     let onApplyAction: (String) -> Void
 
@@ -506,26 +510,33 @@ struct AssistantAppView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Menu {
-                Button(spanish ? "Historial" : "Conversation history", systemImage: "clock.arrow.circlepath") { showHistory = true }
-                Section {
-                    Button(spanish ? "Distracciones" : "Distractions", systemImage: "apps.iphone") { openControls(.distractions) }
-                    Button(spanish ? "Horarios" : "Schedules", systemImage: "calendar") { openControls(.schedule) }
-                    Button(spanish ? "Progreso" : "Progress", systemImage: "chart.bar") { openControls(.report) }
-                    Button(spanish ? "Ajustes" : "Settings", systemImage: "gearshape") { openControls(.settings) }
+            HStack {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 19, weight: .semibold))
+                        .frame(width: 48, height: 48)
                 }
-                Section {
-                    Button(spanish ? "Conexión WhatsApp" : "WhatsApp connection", systemImage: "message") { showWhatsApp = true }
+                .accessibilityLabel(spanish ? "Volver a Inicio" : "Back to Home")
+                Spacer(minLength: 0)
+                Menu {
+                    Button(spanish ? "Historial" : "Conversation history", systemImage: "clock.arrow.circlepath") { showHistory = true }
+                    Section {
+                        Button(spanish ? "Distracciones" : "Distractions", systemImage: "apps.iphone") { openControls(.distractions) }
+                        Button(spanish ? "Horarios" : "Schedules", systemImage: "calendar") { openControls(.schedule) }
+                        Button(spanish ? "Progreso" : "Progress", systemImage: "chart.bar") { openControls(.report) }
+                        Button(spanish ? "Ajustes" : "Settings", systemImage: "gearshape") { openControls(.settings) }
+                    }
                     Button(spanish ? "Verificar teléfono" : "Verify phone", systemImage: "iphone") { showPhoneSignIn = true }
-                    Button(spanish ? "Controles de protección" : "Protection controls", systemImage: "hand.raised") { openControls(nil) }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 23, weight: .bold))
+                        .frame(width: 48, height: 48)
+                        .contentShape(Rectangle())
                 }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 23, weight: .bold))
-                    .frame(width: 48, height: 48)
-                    .contentShape(Rectangle())
+                .accessibilityLabel(spanish ? "Menú de Blankmind" : "Blankmind menu")
+                Spacer(minLength: 0)
+                Color.clear.frame(width: 48, height: 48)
             }
-            .accessibilityLabel(spanish ? "Menú de Blankmind" : "Blankmind menu")
             .frame(height: 56)
             .layoutPriority(1)
             .background(background)
@@ -566,7 +577,7 @@ struct AssistantAppView: View {
                                 .font(.blankInter(size: 15)).tint(foreground)
                         } else {
                             Text(requiresVerification
-                                 ? (spanish ? "Tu conversación, en la app y en WhatsApp." : "Your conversation, here and on WhatsApp.")
+                                 ? (spanish ? "Tu conversación en Blankmind." : "Your conversation in Blankmind.")
                                  : (spanish ? "¿Qué tienes en mente?" : "What is on your mind?"))
                                 .font(.blankInter(size: 28, weight: .regular, relativeTo: .largeTitle))
                                 .fixedSize(horizontal: false, vertical: true)
@@ -600,6 +611,12 @@ struct AssistantAppView: View {
             #endif
             restoreOwner()
             await reload()
+            if !initialMessageHandled, let text = initialMessage?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
+                initialMessageHandled = true
+                composer.draft = text
+                persist()
+                if composer.pending == nil { await send() }
+            }
         }
         .onChange(of: speech.transcript) { transcript in
             if acceptingSpeech { composer.draft = speechPrefix + transcript }
@@ -647,13 +664,6 @@ struct AssistantAppView: View {
         }
         .sheet(isPresented: $showPhoneSignIn, onDismiss: { Task { restoreOwner(); await reload() } }) {
             AppPhoneSignInSheet(initialPhone: BlankSharedState.defaults.string(forKey: "blankAssistantPhoneNumber") ?? "")
-        }
-        .sheet(isPresented: $showWhatsApp, onDismiss: { Task { await reload() } }) {
-            AssistantConnectSheet(
-                whatsAppNumber: Bundle.main.object(forInfoDictionaryKey: "BlankWhatsAppPhoneNumber") as? String,
-                smsNumber: Bundle.main.object(forInfoDictionaryKey: "BlankSMSPhoneNumber") as? String,
-                openURL: openURL, initialContext: [:]
-            )
         }
     }
 

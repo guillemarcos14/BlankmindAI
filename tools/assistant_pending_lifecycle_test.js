@@ -25,7 +25,7 @@ membership.supabaseFetch = async (path, options = {}) => {
   }
   if (path.startsWith("digital_wellness_feature_payloads?")) {
     const query = new URLSearchParams(path.split("?")[1]);
-    assert.equal(query.get("anonymous_user_id"), `eq.${channel.assistantChannelUserId("whatsapp", owner.phone_e164)}`);
+    assert.equal(query.get("anonymous_user_id"), `eq.${channel.assistantChannelUserId("app", owner.phone_e164)}`);
     if (query.has("or") && historicalOutcome) return [{ payload: { properties: { memory: { last_assistant_action_outcome: historicalOutcome } } } }];
     const snapshot = history.get(actionId);
     return snapshot ? [{ payload: { properties: { memory: { pending_assistant_action: snapshot } } } }] : [];
@@ -54,7 +54,7 @@ membership.supabaseFetch = async (path, options = {}) => {
 };
 const channel = require("../netlify/functions/_assistant_channel");
 channel.getAssistantMemory = async () => structuredClone(memory);
-channel.findAssistantConnection = async () => ({ channel: "whatsapp", channelUser: owner.phone_e164 });
+channel.findAssistantConnection = async () => ({ channel: "app", channelUser: owner.phone_e164 });
 channel.sendAssistantMessage = async () => { throw new Error("App receipts must not send WhatsApp messages"); };
 identity.identityForAppInstall = async () => owner;
 identity.identityForPhone = async () => owner;
@@ -63,7 +63,7 @@ const { handler } = require("../netlify/functions/assistant-channel");
 const { queueOnboardingPicker } = require("../netlify/functions/bm-onboarding");
 const action = (id = actionId, status = "queued") => ({ id, status, type: "delete_schedule", window_id: "window-1", expires_at: new Date(Date.now() + 60_000).toISOString() });
 const request = (fields) => handler({ httpMethod: "POST", body: JSON.stringify({
-  connect_code: owner.assistant_connect_code, app_install_id: owner.app_install_id, channel: "whatsapp", ...fields,
+  connect_code: owner.assistant_connect_code, app_install_id: owner.app_install_id, channel: "app", ...fields,
 }) });
 function reset(pending) { memory = { pending_assistant_action: pending, semantic_store_version: 3 }; savedReceipt = null; beforeTransition = null; historicalOutcome = null; history.clear(); operations.length = 0; }
 const installB = () => { memory.pending_assistant_action = action("wa_B"); };

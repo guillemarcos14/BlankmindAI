@@ -58,6 +58,7 @@ struct AssistantContextSyncClient {
             "connect_code": connectCode,
             "preferred_channel": channel,
             "user_phone": phoneNumber,
+            "app_install_id": BlankSharedState.appInstallId,
             "context": payload,
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: body) else { return false }

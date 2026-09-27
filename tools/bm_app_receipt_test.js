@@ -13,7 +13,7 @@ let failWrite = false;
 let foreignRow = false;
 let receipt = null;
 const operations = [];
-channel.findAssistantConnection = async () => ({ channel: "whatsapp", channelUser: "+15555550101" });
+channel.findAssistantConnection = async () => ({ channel: "app", channelUser: "+15555550101" });
 channel.getAssistantMemory = async () => structuredClone(memory);
 channel.recordAssistantMemory = async ({ memory: patch }) => {
   operations.push("memory");
@@ -46,7 +46,7 @@ const { handler } = require("../netlify/functions/assistant-channel");
 const pending = () => ({ id: actionId, type: "delete_schedule", window_id: "window-1", status: "execution_started",
   expires_at: new Date(Date.now() + 60_000).toISOString() });
 const request = (fields = {}) => handler({ httpMethod: "POST", body: JSON.stringify({
-  action: "ack_pending_action", action_id: actionId, status: "verified", channel: "whatsapp",
+  action: "ack_pending_action", action_id: actionId, status: "verified", channel: "app",
   connect_code: owner.assistant_connect_code, app_install_id: owner.app_install_id, ...fields,
 }) });
 

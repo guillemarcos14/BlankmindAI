@@ -9,10 +9,10 @@ let installed = record;
 let channelPhone = record.phone_e164;
 identity.identityForAppInstall = async () => { counters.install += 1; return installed; };
 identity.identityForPhone = async () => { counters.phone += 1; throw new Error("A phone must not resolve an inbox credential"); };
-channel.findAssistantConnection = async (code) => {
+channel.findAssistantConnection = async (code, preferred) => {
   counters.connection += 1;
   assert.equal(code, record.assistant_connect_code);
-  return { channel: "whatsapp", channelUser: channelPhone };
+  return { channel: preferred === "app" ? "app" : "whatsapp", channelUser: channelPhone };
 };
 channel.getAssistantMemory = async () => { counters.memory += 1; return {}; };
 channel.recordAssistantMemory = async () => { counters.write += 1; };
@@ -52,6 +52,12 @@ const snapshot = () => ({ ...counters });
   assert.equal(unknown.statusCode, 400, "unknown install cannot fall back to a phone");
   assert.equal(counters.memory, beforeWrongCode);
   assert.equal((await request({ action: "poll_pending_action", connect_code: record.assistant_connect_code, app_install_id: "old-unclaimed-install" })).statusCode, 200, "an existing CONNECT credential remains valid before account migration");
+  installed = record;
+  assert.equal((await request({ action: "register_preference", channel: "app", connect_code: record.assistant_connect_code })).statusCode, 403,
+    "public channel preference must not activate an app identity");
+  assert.equal((await request({ action: "poll_pending_action", channel: "app", connect_code: record.assistant_connect_code })).statusCode, 400,
+    "app actions require the verified installation");
+  assert.equal((await request({ action: "poll_pending_action", channel: "app", app_install_id: record.app_install_id })).statusCode, 200);
   assert.equal(counters.phone, 0);
   assert.equal(counters.write, 0);
   console.log("Assistant inbox identity: phone-only requests rejected before lookup; linked identity consistency and legacy CONNECT compatibility passed");

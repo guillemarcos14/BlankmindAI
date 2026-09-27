@@ -1,7 +1,7 @@
 const crypto = require("node:crypto");
 const { getSupabaseUser, json, parseJsonBody, requireMethod, supabaseFetch } = require("./_membership");
 const { identityForAuthUser } = require("./_identity");
-const { assistantChannelUserId, getAssistantMemory, recordConversationTurnState } = require("./_assistant_channel");
+const { assistantChannelUserId, findAssistantConnection, getAssistantMemory, recordAssistantChannel, recordConversationTurnState } = require("./_assistant_channel");
 const { pendingActionFromPlan } = require("./bm-pending-action");
 const { callBlankedAgent, queuePendingAssistantAction } = require("./whatsapp-agent");
 
@@ -9,6 +9,7 @@ const TABLE = "assistant_app_turns";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/;
 const TERMINAL = new Set(["verified", "delayed", "failed", "dismissed", "expired", "superseded"]);
+const APP_CHANNEL = "app";
 
 async function authenticatedIdentity(event, body) {
   const user = await getSupabaseUser(event);
@@ -19,8 +20,24 @@ async function authenticatedIdentity(event, body) {
     return { error: "installation_not_verified", status: 403 };
   }
   return { user, identity, connection: {
-    channel: "whatsapp", channelUser: identity.phone_e164, connectCode: identity.assistant_connect_code, canonicalMemoryRequired: true,
+    channel: APP_CHANNEL, channelUser: identity.phone_e164, connectCode: identity.assistant_connect_code, canonicalMemoryRequired: true,
   } };
+}
+
+async function activate(auth) {
+  const code = auth.identity.assistant_connect_code;
+  const existing = await findAssistantConnection(code, APP_CHANNEL);
+  if (existing?.channel !== APP_CHANNEL || existing.channelUser !== auth.identity.phone_e164) {
+    await recordAssistantChannel({
+      event: "assistant_app_activated",
+      channel: APP_CHANNEL,
+      preferredChannel: APP_CHANNEL,
+      connectCode: code,
+      channelUser: auth.identity.phone_e164,
+      userPhone: auth.identity.phone_e164,
+    });
+  }
+  return json(200, { ok: true, activated: true });
 }
 
 function turnPath(userId, turnId) {
@@ -64,7 +81,7 @@ function presentWithAvailableMemory(row, memory) {
 
 async function presentWithMemory(auth, row) {
   // A transient memory read failure must not hide an already committed reply.
-  const memory = await getAssistantMemory("whatsapp", auth.identity.phone_e164, { requireSemantic: true }).catch(() => null);
+  const memory = await getAssistantMemory(APP_CHANNEL, auth.identity.phone_e164, { requireSemantic: true }).catch(() => null);
   return presentWithAvailableMemory(row, memory);
 }
 
@@ -98,7 +115,7 @@ async function history(auth, body) {
   );
   const page = rows.slice(0, 60);
   const last = page[page.length - 1];
-  const memory = await getAssistantMemory("whatsapp", auth.identity.phone_e164, { requireSemantic: true }).catch(() => null);
+  const memory = await getAssistantMemory(APP_CHANNEL, auth.identity.phone_e164, { requireSemantic: true }).catch(() => null);
   return json(200, {
     ok: true,
     turns: page.reverse().map((row) => presentWithAvailableMemory(row, memory)),
@@ -206,7 +223,7 @@ async function prepare(auth, row, leaseOwner, prompt) {
   };
   const result = await supabaseFetch("rpc/prepare_assistant_app_turn", {
     method: "POST", body: JSON.stringify({ p_auth_user_id: auth.user.id, p_turn_id: row.id, p_lease_owner: leaseOwner,
-      p_anonymous_user_id: assistantChannelUserId("whatsapp", auth.identity.phone_e164),
+      p_anonymous_user_id: assistantChannelUserId(APP_CHANNEL, auth.identity.phone_e164),
       p_expected_version: version, p_state: state, p_payload: payload }),
   });
   const prepared = Array.isArray(result) ? result[0] : result;
@@ -290,6 +307,7 @@ exports.handler = async (event) => {
   try {
     const auth = await authenticatedIdentity(event, body);
     if (auth.error) return json(auth.status, { error: auth.error });
+    if (body.action === "activate") return await activate(auth);
     if (body.action === "history") return await history(auth, body);
     if (body.action === "status") return await status(auth, body);
     if (body.action === "send") return await send(auth, body);

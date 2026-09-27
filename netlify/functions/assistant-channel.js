@@ -27,6 +27,7 @@ async function registerPreference(body) {
   if (!connectCode || !preferredChannel) {
     return json(400, { error: "missing_connect_code_or_channel" });
   }
+  if (preferredChannel === "app") return json(403, { error: "app_activation_requires_auth" });
 
   await recordAssistantChannel({
     event: "assistant_channel_preference_set",
@@ -123,6 +124,13 @@ async function syncContext(body) {
     ? body.context
     : null;
   if (!connectCode || !context) return json(400, { error: "missing_connect_code_or_context" });
+  if (preferredChannel === "app") {
+    const identity = await identityForAppInstall(body.app_install_id);
+    if (!identity || normalizeConnectCode(identity.assistant_connect_code) !== connectCode
+        || normalizePhone(identity.phone_e164) !== normalizePhone(body.user_phone || body.phone_number)) {
+      return json(403, { error: "installation_not_verified" });
+    }
+  }
 
   const previousContext = await getAssistantUserContext(connectCode);
   const mergedContext = {
@@ -230,6 +238,9 @@ async function completeOnboarding(body) {
     && context.notification_authorized === true
     && Boolean(memory.assistant_device_push?.token);
   if (!ready) return json(200, { ok: true, ready: false, reason: "device_setup_incomplete" });
+  if (status.connection.channel === "app") {
+    return json(200, { ok: true, ready: true });
+  }
   if (memory.assistant_activation_ready_sent_at) return json(200, { ok: true, ready: true, already_sent: true });
   const spanish = /^es(?:$|[-_])/i.test(String(context.locale || context.language || ""));
   const channelName = status.connection.channel === "sms" ? "SMS" : "WhatsApp";
@@ -391,7 +402,11 @@ async function connectedChannel(body) {
   if (identity && normalizeConnectCode(identity.assistant_connect_code) !== connectCode) {
     return { error: "assistant_identity_conflict" };
   }
+  if (preferredChannel === "app" && !identity) return { error: "installation_not_verified" };
   const connection = await findAssistantConnection(connectCode, preferredChannel);
+  if (preferredChannel === "app" && connection?.channel !== "app") {
+    return { error: "app_channel_not_activated" };
+  }
   if (connection) {
     // Meta's WhatsApp sender omits "+" while Twilio and account identity use E.164.
     const connectedPhone = normalizePhone(connection.channelUser).replace(/^\+/, "");
@@ -408,7 +423,7 @@ async function persistAppActionReceipt(result, body, actionId, status) {
   const match = /^app_([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(actionId);
   if (!match) return;
   const identity = await identityForPhone(result.connection.channelUser);
-  if (result.connection.channel !== "whatsapp" || !identity?.auth_user_id
+  if (result.connection.channel !== "app" || !identity?.auth_user_id
       || normalizeConnectCode(identity.assistant_connect_code) !== result.connectCode
       || !body.app_install_id || identity.app_install_id !== body.app_install_id) {
     throw new Error("app_receipt_identity_mismatch");

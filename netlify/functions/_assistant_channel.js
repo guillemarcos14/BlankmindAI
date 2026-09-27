@@ -12,7 +12,7 @@ function cleanText(value, maxLength = 240) {
 
 function cleanChannel(value) {
   const channel = cleanText(value, 20).toLowerCase();
-  return channel === "whatsapp" || channel === "sms" ? channel : "";
+  return channel === "whatsapp" || channel === "sms" || channel === "app" ? channel : "";
 }
 
 function connectCodeFromText(text) {

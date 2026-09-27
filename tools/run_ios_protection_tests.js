@@ -38,7 +38,7 @@ const permissionOnly = activation.slice(activation.indexOf('        case .reques
 assert(permissionOnly.indexOf('guard assistantIdentityMatches(') > permissionOnly.indexOf('await screenTimeBlocker.requestAuthorization()')
   && permissionOnly.indexOf('pendingAssistantActionId == actionID') < permissionOnly.indexOf('finishPendingAssistantAction('),
   'Permission completion must not acknowledge a different account or action');
-const pickerDismissal = between(home, '        .onChange(of: showingContextualAppPicker)', '        .fullScreenCover(isPresented: $showingAssistantConnect)');
+const pickerDismissal = between(home, '        .onChange(of: showingContextualAppPicker)', '        .fullScreenCover(isPresented: $showingAssistantChat');
 assert.match(pickerDismissal, /let selectionConfirmed = permissionApproved &&/,
   'Permission revoked while the picker was open must prevent applying its plan');
 assert(pickerDismissal.indexOf('screenTimeBlocker.refreshAuthorizationStatus()') < pickerDismissal.indexOf('sessionStore.selection = contextualPlanSelection'));
@@ -53,7 +53,6 @@ const extensionModel = between(monitor, '    private struct StoredWindow:', '   
 const fixtures = `
 final class IdentityFixture {
     var assistantConnectCode = "code-A"
-    var assistantPreferredChannel = "whatsApp"
     var assistantPhoneNumber = "+34000000000"
 ${between(home, '    private func assistantIdentityMatches(', '    private func clearPendingAssistantIdentityState()')}
     func matches(code: String, channel: String, phone: String) -> Bool {

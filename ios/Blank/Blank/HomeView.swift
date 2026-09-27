@@ -414,7 +414,6 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     @AppStorage("blankAssistantConnectCode", store: BlankSharedState.defaults) private var assistantConnectCode = ""
-    @AppStorage("blankAssistantPreferredChannel", store: BlankSharedState.defaults) private var assistantPreferredChannel = ""
     @AppStorage("blankAssistantPhoneNumber", store: BlankSharedState.defaults) private var assistantPhoneNumber = ""
 
     @State private var now = Date()
@@ -422,7 +421,12 @@ struct HomeView: View {
     @State private var messageAction: HomeMessageAction?
     @State private var showingPicker = false
     @State private var activeSection: HomeSection?
-    @State private var showingAssistantConnect = true
+    @State private var showingAssistantChat = false
+    @State private var chatLaunchMessage: String?
+    @State private var homeChatDraft = ""
+    @State private var homeSpeechPrefix = ""
+    @State private var acceptingHomeSpeech = false
+    @StateObject private var homeSpeech = AssistantSpeechInput()
     @State private var assistantNotificationsAuthorized = false
     @State private var showingContextualAppPicker = false
     @State private var contextualPlanSelection = FamilyActivitySelection()
@@ -537,7 +541,14 @@ struct HomeView: View {
         }
         .onChange(of: assistantConnectCode) { _ in clearPendingAssistantIdentityState() }
         .onChange(of: assistantPhoneNumber) { _ in clearPendingAssistantIdentityState() }
+        .onChange(of: homeSpeech.transcript) { transcript in
+            if acceptingHomeSpeech { homeChatDraft = homeSpeechPrefix + transcript }
+        }
+        .onChange(of: homeSpeech.error) { error in
+            if let error { message = error }
+        }
         .onAppear {
+            Task { await activateAppChannel() }
             sessionStore.syncFromSharedDefaults(now: now)
             applyScreenTimeControls()
             screenTimeBlocker.refreshAuthorizationStatus()
@@ -550,7 +561,14 @@ struct HomeView: View {
             pollPendingAssistantActionIfNeeded(force: true)
         }
         .onChange(of: scenePhase) { phase in
-            guard phase == .active else { return }
+            guard phase == .active else {
+                if phase == .background {
+                    acceptingHomeSpeech = false
+                    homeSpeech.stop()
+                }
+                return
+            }
+            Task { await activateAppChannel() }
             sessionStore.syncFromSharedDefaults()
             applyScreenTimeControls()
             screenTimeBlocker.refreshAuthorizationStatus()
@@ -561,6 +579,10 @@ struct HomeView: View {
             syncAssistantContext()
             refreshAssistantNotificationAuthorization()
             pollPendingAssistantActionIfNeeded(force: true)
+        }
+        .onDisappear {
+            acceptingHomeSpeech = false
+            homeSpeech.stop()
         }
         .familyActivityPicker(isPresented: $showingPicker, selection: $sessionStore.selection)
         .onChange(of: sessionStore.canEditSelectedDistractions) { canEdit in
@@ -683,8 +705,10 @@ struct HomeView: View {
                 }
             }
         }
-        .fullScreenCover(isPresented: $showingAssistantConnect) {
-            AssistantAppView(onOpenControls: { section in
+        .fullScreenCover(isPresented: $showingAssistantChat, onDismiss: {
+            chatLaunchMessage = nil
+        }) {
+            AssistantAppView(initialMessage: chatLaunchMessage, onOpenControls: { section in
                 if let section { openSection(section) }
             }) { actionId in
                 BlankSharedState.defaults.set(true, forKey: AssistantRemoteNotification.pollAfterOpenKey)
@@ -716,7 +740,7 @@ struct HomeView: View {
                 intervention: relapseIntervention,
                 onEmergencyUnlock: performEmergencyUnlock,
                 onOpenSection: openSection,
-                onOpenAssistant: { showingAssistantConnect = true },
+                onOpenAssistant: { openAssistantChat() },
                 onRequestScreenTimePermission: {
                     Task {
                         _ = await screenTimeBlocker.requestAuthorization()
@@ -882,10 +906,6 @@ struct HomeView: View {
             Spacer(minLength: 0)
 
             VStack(alignment: .leading, spacing: -8) {
-                minimalHomeRow("blankmind", color: BlankColors.homeLightInk) {
-                    showingAssistantConnect = true
-                }
-
                 minimalStartRow
 
                 minimalHomeRow("progress", color: BlankColors.homeLightOption) {
@@ -900,7 +920,13 @@ struct HomeView: View {
                     openSection(.settings)
                 }
 
+                minimalHomeRow("chat", color: BlankColors.homeLightOption) {
+                    openAssistantChat()
+                }
+
                 minimalStatus
+
+                homeChatComposer
 
                 #if targetEnvironment(simulator)
                 HStack(spacing: 18) {
@@ -1062,6 +1088,9 @@ struct HomeView: View {
             minimalHomeRow("settings", color: BlankColors.homeDarkSecondary) {
                 openSection(.settings)
             }
+            minimalHomeRow("chat", color: BlankColors.homeDarkSecondary) {
+                openAssistantChat()
+            }
 
             Button {
                 withAnimation(.easeInOut(duration: 0.35)) {
@@ -1176,6 +1205,72 @@ struct HomeView: View {
             .foregroundStyle(BlankColors.homeLightSecondary)
             .frame(minWidth: 44, minHeight: 44, alignment: .leading)
             .buttonStyle(.plain)
+    }
+
+    private var homeChatComposer: some View {
+        HStack(alignment: .bottom, spacing: 4) {
+            TextField("", text: $homeChatDraft,
+                      prompt: Text("Ask Blankmind…").foregroundColor(BlankColors.homeLightSecondary),
+                      axis: .vertical)
+                .font(.blankInter(size: 16, relativeTo: .body))
+                .lineLimit(1...3)
+                .submitLabel(.send)
+                .onSubmit(sendHomeChatMessage)
+                .padding(.leading, 18)
+                .padding(.vertical, 14)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel("Message Blankmind")
+
+            Button {
+                if !homeSpeech.isRecording && !homeSpeech.isStarting {
+                    let prefix = homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                    homeSpeechPrefix = prefix.isEmpty ? "" : "\(prefix) "
+                    acceptingHomeSpeech = true
+                } else {
+                    acceptingHomeSpeech = false
+                }
+                homeSpeech.toggle()
+            } label: {
+                Image(systemName: homeSpeech.isRecording || homeSpeech.isStarting ? "stop.circle.fill" : "mic")
+                    .font(.system(size: 21))
+                    .frame(width: 44, height: 50)
+            }
+            .accessibilityLabel(homeSpeech.isRecording || homeSpeech.isStarting ? "Stop dictation" : "Dictate message")
+
+            if !homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Button(action: sendHomeChatMessage) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 28))
+                        .frame(width: 44, height: 50)
+                }
+                .disabled(homeChatDraft.utf16.count > 4000)
+                .accessibilityLabel("Send message")
+            }
+        }
+        .foregroundStyle(BlankColors.homeLightInk)
+        .background(RoundedRectangle(cornerRadius: 26).fill(BlankColors.homeLightInk.opacity(0.06)))
+        .padding(.top, 22)
+    }
+
+    private func openAssistantChat() {
+        acceptingHomeSpeech = false
+        homeSpeech.stop()
+        chatLaunchMessage = nil
+        showingAssistantChat = true
+    }
+
+    private func sendHomeChatMessage() {
+        let text = homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        guard text.utf16.count <= 4000 else {
+            message = "Keep your message under 4,000 characters."
+            return
+        }
+        acceptingHomeSpeech = false
+        homeSpeech.stop()
+        homeChatDraft = ""
+        chatLaunchMessage = text
+        showingAssistantChat = true
     }
 
     private func centerContent(maxWidth: CGFloat, actionWidth: CGFloat) -> some View {
@@ -1534,7 +1629,7 @@ struct HomeView: View {
         if assistantActionRequiresScreenTime(pendingAction), screenTimeBlocker.authorizationStatus != .approved {
             assistantActionExecutionInFlight = true
             let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-            let channel = assistantPreferredChannel == "whatsApp" ? "whatsapp" : assistantPreferredChannel.lowercased()
+            let channel = "app"
             let phone = assistantPhoneNumber
             let actionID = pendingAssistantActionId
             Task {
@@ -1697,7 +1792,7 @@ struct HomeView: View {
             )
         case .requestScreenTimePermission:
             let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-            let channel = assistantPreferredChannel == "whatsApp" ? "whatsapp" : assistantPreferredChannel.lowercased()
+            let channel = "app"
             let phone = assistantPhoneNumber
             let actionID = pendingAssistantActionId
             Task {
@@ -1734,8 +1829,8 @@ struct HomeView: View {
     ) {
         let actionId = pendingAssistantActionId
         let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        let channel = assistantPreferredChannel == "whatsApp" ? "whatsapp" : assistantPreferredChannel.lowercased()
-        guard !actionId.isEmpty, channel == "whatsapp" || channel == "sms" else {
+        let channel = "app"
+        guard !actionId.isEmpty else {
             assistantActionExecutionInFlight = false
             return
         }
@@ -1806,18 +1901,6 @@ struct HomeView: View {
         aiSystem.forecast.riskWindow
     }
 
-    private func configuredWhatsAppNumber() -> String? {
-        guard let rawValue = Bundle.main.object(forInfoDictionaryKey: "BlankWhatsAppPhoneNumber") as? String else { return nil }
-        let digits = rawValue.filter(\.isNumber)
-        return digits.isEmpty ? nil : digits
-    }
-
-    private func configuredSMSNumber() -> String? {
-        guard let rawValue = Bundle.main.object(forInfoDictionaryKey: "BlankSMSPhoneNumber") as? String else { return nil }
-        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty || trimmed.contains("$(") ? nil : trimmed
-    }
-
     private func assistantContextPayload() -> [String: Any] {
         let system = aiSystem
         let generatedAt = Date()
@@ -1866,8 +1949,8 @@ struct HomeView: View {
 
     private func syncAssistantContext() {
         let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        let channel = assistantPreferredChannel == "whatsApp" ? "whatsapp" : assistantPreferredChannel.lowercased()
-        guard !code.isEmpty, channel == "whatsapp" || channel == "sms" else { return }
+        let channel = "app"
+        guard !code.isEmpty else { return }
         let payload = assistantContextPayload()
         Task {
             _ = await AssistantContextSyncClient().sync(
@@ -1901,8 +1984,7 @@ struct HomeView: View {
               !showingContextualAppPicker,
               sessionStore.pendingAssistantAction == nil else { return }
         let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        let channel = assistantPreferredChannel == "whatsApp" ? "whatsapp" : assistantPreferredChannel.lowercased()
-        guard channel == "whatsapp" || channel == "sms" else { return }
+        let channel = "app"
         lastAssistantActionPollAt = now
         assistantActionPollInFlight = true
         let phoneNumber = assistantPhoneNumber
@@ -1970,8 +2052,26 @@ struct HomeView: View {
         BlankSharedState.defaults.removeObject(forKey: AssistantRemoteNotification.tappedActionIDKey)
     }
 
+    private func activateAppChannel() async {
+        do { try await AssistantAppClient().activate() } catch { return }
+        syncAssistantContext()
+        let token = BlankSharedState.defaults.string(forKey: "blankAssistantPushToken") ?? ""
+        guard !token.isEmpty, !assistantConnectCode.isEmpty else { return }
+        #if DEBUG
+        let environment = "sandbox"
+        #else
+        let environment = "production"
+        #endif
+        let registered = await AssistantActionInboxClient().registerDevicePush(
+            token: token, environment: environment, connectCode: assistantConnectCode,
+            channel: "app", phoneNumber: assistantPhoneNumber
+        )
+        BlankSharedState.defaults.set(registered, forKey: "blankAssistantPushRegistered")
+        if registered { syncAssistantContext() }
+    }
+
     private func assistantIdentityMatches(code: String, channel: String, phone: String) -> Bool {
-        let currentChannel = assistantPreferredChannel == "whatsApp" ? "whatsapp" : assistantPreferredChannel.lowercased()
+        let currentChannel = "app"
         return code == assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
             && channel == currentChannel && phone == assistantPhoneNumber
     }
@@ -2405,7 +2505,7 @@ private struct SettingsScreen: View {
 
                 settingsRow(
                     title: "assistant",
-                    detail: "whatsapp · sms · connection code",
+                    detail: "conversation and account",
                     action: onOpenAssistant
                 )
             }
@@ -3367,251 +3467,6 @@ private struct DistractionsScreen: View {
     }
 }
 
-struct AssistantConnectSheet: View {
-    @EnvironmentObject private var sessionStore: SessionStore
-    @Environment(\.blankMinimalAppearance) private var minimalAppearance
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage("blankAssistantPhoneNumber", store: BlankSharedState.defaults) private var phoneNumber = ""
-    @AppStorage("blankAssistantConnectCode", store: BlankSharedState.defaults) private var connectCode = ""
-    @AppStorage("blankAssistantPreferredChannel", store: BlankSharedState.defaults) private var preferredChannel = ""
-    @AppStorage("blankAssistantConnectedAt", store: BlankSharedState.defaults) private var connectedAt = ""
-    @AppStorage("blankAssistantPhoneVerified", store: BlankSharedState.defaults) private var phoneVerified = false
-    @State private var copiedCode = false
-    @State private var showingPhoneSignIn = false
-
-    let whatsAppNumber: String?
-    let smsNumber: String?
-    let openURL: OpenURLAction
-    let initialContext: [String: Any]
-
-    var body: some View {
-        GeometryReader { proxy in
-            let contentWidth = min(max(0, proxy.size.width - 48), 360)
-
-            ZStack {
-                if minimalAppearance {
-                    BlankAtmosphericBackground(dimmed: sessionStore.isBlankActive)
-                } else {
-                    AppBackground(isActive: sessionStore.isBlankActive)
-                        .ignoresSafeArea()
-                }
-
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 22) {
-                        HStack(alignment: .center) {
-                            VStack(alignment: .leading, spacing: 7) {
-                                Text(minimalAppearance ? "assistant" : "Assistant")
-                                    .font(.blankInter(size: minimalAppearance ? 40 : 34, weight: minimalAppearance ? .bold : .medium, relativeTo: .largeTitle))
-                                    .tracking(minimalAppearance ? -0.6 : 0)
-                                    .lineLimit(1)
-
-                                Text(minimalAppearance ? "use blankmind from whatsapp or sms." : "Use Blankmind from WhatsApp or SMS.")
-                                    .font(.blankInter(size: 15, weight: .medium, relativeTo: .subheadline))
-                                    .foregroundStyle(secondaryColor)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-
-                            Spacer(minLength: 16)
-
-                            Button {
-                                dismiss()
-                            } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .frame(width: 44, height: 44)
-                                    .background { Circle().fill(textColor.opacity(0.10)) }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Close Assistant")
-                        }
-
-                        VStack(alignment: .leading, spacing: 9) {
-                            Text(minimalAppearance ? "your phone" : "Your phone")
-                                .font(.blankInter(size: 13, weight: .semibold, relativeTo: .caption))
-                                .foregroundStyle(secondaryColor)
-                            Text(phoneVerified ? phoneNumber : "Verify your phone to continue")
-                                .font(.blankInter(size: 16, weight: .medium, relativeTo: .body))
-                                .padding(.horizontal, 16)
-                                .frame(height: 52)
-                                .blankGlassCard(cornerRadius: 16, tintOpacity: 0.28)
-                            Text("This verified number must match your WhatsApp account.")
-                                .font(.blankInter(size: 12, weight: .medium, relativeTo: .caption))
-                                .foregroundStyle(secondaryColor.opacity(0.82))
-
-                            Button("Sign in with your phone") {
-                                showingPhoneSignIn = true
-                            }
-                            .font(.blankInter(size: 13, weight: .semibold, relativeTo: .footnote))
-                            .foregroundStyle(textColor)
-                            .buttonStyle(.plain)
-                        }
-
-                        VStack(spacing: 10) {
-                            AssistantChannelButton(
-                                title: "Connect WhatsApp",
-                                subtitle: "Recommended",
-                                systemImage: "message.fill",
-                                usesWhatsAppLogo: true,
-                                enabled: whatsAppNumber != nil && phoneVerified && !connectCode.isEmpty && !phoneNumber.isEmpty,
-                                textColor: textColor,
-                                secondaryColor: secondaryColor
-                            ) {
-                                openAssistantChannel(.whatsApp)
-                            }
-
-                            AssistantChannelButton(
-                                title: "Connect SMS",
-                                subtitle: "Same code, same assistant",
-                                systemImage: "message",
-                                usesWhatsAppLogo: false,
-                                enabled: smsNumber != nil && phoneVerified && !connectCode.isEmpty && !phoneNumber.isEmpty,
-                                textColor: textColor,
-                                secondaryColor: secondaryColor
-                            ) {
-                                openAssistantChannel(.sms)
-                            }
-                        }
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(minimalAppearance ? "code" : "Code")
-                                    .font(.blankInter(size: 12, weight: .semibold, relativeTo: .caption2))
-                                    .foregroundStyle(secondaryColor)
-                                Spacer()
-                                Button(copiedCode ? (minimalAppearance ? "copied" : "Copied") : (minimalAppearance ? "copy" : "Copy")) {
-                                    UIPasteboard.general.string = connectMessage
-                                    copiedCode = true
-                                }
-                                .font(.blankInter(size: 12, weight: .semibold, relativeTo: .caption2))
-                                .foregroundStyle(secondaryColor)
-                                .buttonStyle(.plain)
-                            }
-
-                            Text(connectMessage)
-                                .font(.blankInter(size: 17, weight: .semibold, relativeTo: .body))
-                                .monospacedDigit()
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 16)
-                                .frame(height: 54)
-                                .blankGlassCard(cornerRadius: 18, tintOpacity: 0.22)
-
-                            Text(statusText)
-                                .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
-                                .foregroundStyle(secondaryColor)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.top, 36)
-                    .padding(.bottom, 24)
-                    .frame(width: contentWidth, alignment: .topLeading)
-                    .frame(minHeight: proxy.size.height, alignment: .topLeading)
-                    .frame(maxWidth: .infinity, alignment: .top)
-                }
-                .scrollDismissesKeyboard(.interactively)
-            }
-            .frame(width: proxy.size.width, height: proxy.size.height)
-        }
-        .foregroundStyle(textColor)
-        .environment(\.blankMinimalAppearance, true)
-        .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
-        .sheet(isPresented: $showingPhoneSignIn) {
-            AppPhoneSignInSheet(initialPhone: phoneNumber)
-                .environmentObject(sessionStore)
-        }
-    }
-
-    private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
-    private var secondaryColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.70) : BlankColors.mutedInk }
-
-    private var statusText: String {
-        if !phoneVerified || connectCode.isEmpty { return "Verify your phone before connecting a chat channel." }
-        if !connectedAt.isEmpty { return "Connected to \(preferredChannelName)." }
-        return "Send this code from your verified \(preferredChannelName) number."
-    }
-
-    private var preferredChannelName: String {
-        preferredChannel == AssistantChannel.whatsApp.rawValue ? "WhatsApp" : "SMS"
-    }
-
-    private var connectMessage: String {
-        connectCode.isEmpty ? "Verify phone first" : "CONNECT \(connectCode)"
-    }
-
-    private func openAssistantChannel(_ channel: AssistantChannel) {
-        guard phoneVerified, !connectCode.isEmpty, !phoneNumber.isEmpty else {
-            showingPhoneSignIn = true
-            return
-        }
-        preferredChannel = channel.rawValue
-        let cleanedUserPhone = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        let message = connectMessage
-        let encodedMessage = message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? message
-
-        switch channel {
-        case .whatsApp:
-            guard let whatsAppNumber, let url = URL(string: "https://wa.me/\(whatsAppNumber)?text=\(encodedMessage)") else { return }
-            openURL(url)
-        case .sms:
-            guard let smsNumber, let url = URL(string: "sms:\(smsNumber)&body=\(encodedMessage)") else { return }
-            openURL(url)
-        }
-        Task {
-            await registerAssistantPreference(
-                channel: channel,
-                connectCode: connectCode,
-                userPhone: cleanedUserPhone,
-                context: initialContext
-            )
-            await BlankFunnelAnalytics.track(
-                "assistant_channel_connect_started",
-                properties: [
-                    "channel": channel.rawValue,
-                    "has_user_phone": !cleanedUserPhone.isEmpty,
-                    "connect_code": connectCode
-                ]
-            )
-        }
-        dismiss()
-    }
-
-    private func registerAssistantPreference(
-        channel: AssistantChannel,
-        connectCode: String,
-        userPhone: String,
-        context: [String: Any]
-    ) async {
-        guard let baseURL = configuredBaseURL() else { return }
-        var request = URLRequest(url: baseURL.appendingPathComponent("assistant-channel"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 8
-        let payload: [String: Any] = [
-            "action": "register_preference",
-            "connect_code": connectCode,
-            "preferred_channel": channel == .whatsApp ? "whatsapp" : "sms",
-            "user_phone": userPhone,
-            "context": context
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
-        _ = try? await URLSession.shared.data(for: request)
-    }
-
-    private func configuredBaseURL() -> URL? {
-        guard let rawValue = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String else {
-            return nil
-        }
-        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !trimmed.contains("$(") else {
-            return nil
-        }
-        return URL(string: trimmed)
-    }
-}
-
 struct AppPhoneSignInSheet: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.dismiss) private var dismiss
@@ -3675,7 +3530,7 @@ struct AppPhoneSignInSheet: View {
                 .listRowBackground(Color.clear)
             } else {
                 Section {
-                    Text("We’ll send a one-time code by SMS. After setup, you can talk to Blankmind in your connected channel.")
+                    Text("We’ll send a one-time code by SMS. After setup, you can talk to Blankmind in this app.")
                         .font(.blankInter(size: 15, weight: .medium, relativeTo: .body))
                         .foregroundStyle(.secondary)
                 }
@@ -3688,7 +3543,7 @@ struct AppPhoneSignInSheet: View {
             }
 
             Section {
-                Toggle("Link this number and iPhone to my Blankmind account for WhatsApp and device protection.", isOn: $dataConsent)
+                Toggle("Link this number and iPhone to my Blankmind account for in-app chat and device protection.", isOn: $dataConsent)
             }
 
             if verificationStarted {
@@ -3775,7 +3630,7 @@ struct AppPhoneSignInSheet: View {
             }
             phoneNumber = linkedPhone
             connectCode = linkedCode
-            preferredChannel = "whatsapp"
+            preferredChannel = "app"
             phoneVerified = true
             onVerified?()
             if showsCancel { dismiss() }
@@ -3834,95 +3689,6 @@ private enum AppPhoneSignInError: LocalizedError {
         if case let .message(value) = self { return value }
         return nil
     }
-}
-
-private struct AssistantChannelButton: View {
-    let title: String
-    let subtitle: String
-    let systemImage: String
-    let usesWhatsAppLogo: Bool
-    let enabled: Bool
-    let textColor: Color
-    let secondaryColor: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle().fill(textColor.opacity(0.10))
-                    if usesWhatsAppLogo {
-                        WhatsAppMark()
-                            .stroke(textColor, style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                            .frame(width: 17, height: 17)
-                    } else {
-                        Image(systemName: systemImage)
-                            .font(.system(size: 15, weight: .semibold))
-                    }
-                }
-                .frame(width: 34, height: 34)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.blankInter(size: 15, weight: .semibold, relativeTo: .subheadline))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.82)
-                    Text(subtitle)
-                        .font(.blankInter(size: 12, weight: .medium, relativeTo: .caption))
-                        .foregroundStyle(secondaryColor)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-                }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "arrow.up.forward")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(secondaryColor)
-            }
-            .foregroundStyle(textColor)
-            .padding(.horizontal, 16)
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .blankControlSurface(cornerRadius: 18, tintOpacity: enabled ? 0.12 : 0.06)
-            .opacity(enabled ? 1 : 0.46)
-        }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
-    }
-}
-
-private struct WhatsAppMark: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let bubble = CGRect(
-            x: rect.minX + rect.width * 0.05,
-            y: rect.minY + rect.height * 0.05,
-            width: rect.width * 0.90,
-            height: rect.height * 0.82
-        )
-        path.addEllipse(in: bubble)
-        path.move(to: CGPoint(x: rect.minX + rect.width * 0.30, y: rect.minY + rect.height * 0.78))
-        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.18, y: rect.minY + rect.height * 0.96))
-        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.42, y: rect.minY + rect.height * 0.84))
-
-        path.move(to: CGPoint(x: rect.minX + rect.width * 0.36, y: rect.minY + rect.height * 0.32))
-        path.addCurve(
-            to: CGPoint(x: rect.minX + rect.width * 0.68, y: rect.minY + rect.height * 0.62),
-            control1: CGPoint(x: rect.minX + rect.width * 0.42, y: rect.minY + rect.height * 0.52),
-            control2: CGPoint(x: rect.minX + rect.width * 0.54, y: rect.minY + rect.height * 0.62)
-        )
-        path.move(to: CGPoint(x: rect.minX + rect.width * 0.35, y: rect.minY + rect.height * 0.32))
-        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.42, y: rect.minY + rect.height * 0.42))
-        path.move(to: CGPoint(x: rect.minX + rect.width * 0.68, y: rect.minY + rect.height * 0.62))
-        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.57, y: rect.minY + rect.height * 0.54))
-        return path
-    }
-}
-
-private enum AssistantChannel: String {
-    case whatsApp
-    case sms
 }
 
 private func formatMinute(_ minuteOfDay: Int) -> String {
