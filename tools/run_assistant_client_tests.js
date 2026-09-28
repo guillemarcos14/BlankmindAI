@@ -20,6 +20,7 @@ const viewFixture = `
 @MainActor final class ConversationFixture {
     var owner = "A"
     var preview = false
+    var simulatorGuest = false
     var spanish = false
     var acceptingSpeech = false
     var speech = SpeechFixture()
