@@ -55,6 +55,15 @@ struct SetupView: View {
         }
         .familyActivityPicker(isPresented: $showingPicker, selection: $sessionStore.selection)
         #if targetEnvironment(simulator)
+        .overlay(alignment: .topLeading) {
+            Button(currentStep == .account ? "Next" : "Back") {
+                currentStep = currentStep == .account ? .device : .account
+                message = nil
+            }
+            .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
+            .padding(20)
+            .accessibilityLabel(currentStep == .account ? "Preview device setup" : "Preview account sign-in")
+        }
         .overlay(alignment: .topTrailing) {
             Button("Home") { skipToHomeForQA() }
                 .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
