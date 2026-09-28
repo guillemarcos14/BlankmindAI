@@ -23,15 +23,26 @@ let memoryUnavailable = false;
 let semanticConflict = false;
 let queueRace = false;
 let receiptRace = false;
-const identityRecord = { app_install_id: "verified-install", assistant_connect_code: "ABCDEFGHIJ", phone_e164: "+34123456789" };
+const identityRecord = { auth_user_id: userId, app_install_id: "", assistant_connect_code: "ABCDEFGHIJ", phone_e164: null };
+const otherIdentity = { auth_user_id: otherId, app_install_id: "other-install", assistant_connect_code: "KLMNOPQRST", phone_e164: null };
 const copy = (value) => structuredClone(value);
 const faultOnce = (name) => { if (fault === name) { fault = ""; throw new Error("private storage detail must not leak"); } };
 
 membership.getSupabaseUser = async (event) => {
   const token = event.headers?.authorization;
-  return token === "Bearer valid" ? { id: userId } : token === "Bearer other" ? { id: otherId } : null;
+  const appMetadata = { provider: "apple", providers: ["apple"] };
+  return token === "Bearer valid" ? { id: userId, app_metadata: appMetadata }
+    : token === "Bearer other" ? { id: otherId, app_metadata: appMetadata }
+      : token === "Bearer phone-only" ? { id: userId, app_metadata: { provider: "phone", providers: ["phone"] } } : null;
 };
-identity.identityForAuthUser = async () => identityRecord;
+identity.identityForAuthUser = async (id) => id === userId ? identityRecord : (id === otherId ? otherIdentity : null);
+identity.ensureIdentityForAuthUser = async ({ authUserId }) => authUserId === userId ? identityRecord : otherIdentity;
+identity.linkAppInstall = async ({ authUserId, appInstallId }) => {
+  const owner = authUserId === userId ? identityRecord : otherIdentity;
+  if (appInstallId !== "verified-install" || authUserId !== userId) throw new Error("identity_app_install_conflict");
+  owner.app_install_id = appInstallId;
+  return owner;
+};
 semantic.semanticPersistenceRequired = () => true;
 channel.getAssistantMemory = async (channelName) => {
   assert.equal(channelName, "app");
@@ -41,11 +52,11 @@ channel.getAssistantMemory = async (channelName) => {
 let activated = false;
 channel.findAssistantConnection = async (_code, channelName) => {
   assert.equal(channelName, "app");
-  return activated ? { channel: "app", channelUser: identityRecord.phone_e164 } : null;
+  return activated ? { channel: "app", channelUser: userId } : null;
 };
 channel.recordAssistantChannel = async (connection) => {
   assert.equal(connection.channel, "app");
-  assert.equal(connection.channelUser, identityRecord.phone_e164);
+  assert.equal(connection.channelUser, userId);
   activated = true;
 };
 channel.recordAssistantMemory = async ({ memory: next }) => {
@@ -156,17 +167,19 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
 
 (async () => {
   assert.equal((await request({ action: "history" }, "invalid")).status, 401);
+  assert.equal((await request({ action: "history" }, "phone-only")).body.error, "apple_identity_required");
   assert.equal((await request({ action: "history", app_install_id: "other-install" })).status, 403);
   assert.equal((await handler({ ...event({}), body: "null" })).statusCode, 400);
   assert.equal((await handler({ ...event({}), body: "{" })).statusCode, 400);
-  assert.equal((await send(crypto.randomUUID(), { text: "not a string" })).status, 400);
-  assert.equal((await send(crypto.randomUUID(), "x".repeat(4001))).status, 400);
-  assert.equal((await request({ action: "history", before: "v1.bm90LWpzb24" })).status, 400);
   assert.equal((await request({ action: "activate" }, "invalid")).status, 401);
   assert.equal((await request({ action: "activate", app_install_id: "other-install" })).status, 403);
+  assert.equal((await request({ action: "history" })).status, 403, "a signed-in account must activate its install first");
   assert.equal((await request({ action: "activate" })).status, 200);
   assert.equal(activated, true);
   assert.equal((await request({ action: "activate" })).status, 200);
+  assert.equal((await send(crypto.randomUUID(), { text: "not a string" })).status, 400);
+  assert.equal((await send(crypto.randomUUID(), "x".repeat(4001))).status, 400);
+  assert.equal((await request({ action: "history", before: "v1.bm90LWpzb24" })).status, 400);
 
   const firstId = crypto.randomUUID();
   let response = await send(firstId);
@@ -180,9 +193,9 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
   assert.equal((await send(firstId)).body.idempotent, true);
   assert.deepEqual(effects, firstEffects);
   assert.equal((await send(firstId, "different text")).body.error, "turn_payload_conflict");
-  assert.equal((await send(firstId, undefined, "other")).body.error, "turn_payload_conflict");
-  assert.equal((await request({ action: "status", turn_id: firstId }, "other")).status, 404);
-  assert.equal((await request({ action: "history" }, "other")).body.turns.length, 0);
+  assert.equal((await send(firstId, undefined, "other")).status, 403);
+  assert.equal((await request({ action: "status", turn_id: firstId }, "other")).status, 403);
+  assert.equal((await request({ action: "history" }, "other")).status, 403);
 
   replyText = "Ya están bloqueadas tus distracciones.";
   const guarded = await send(crypto.randomUUID());
@@ -218,7 +231,10 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
     assert.equal((await request({ action: "status", turn_id: degradedId })).body.turn.status, "failed");
   }
   assert.equal((await send(degradedId, "a replacement payload")).status, 409);
-  assert.equal((await request({ action: "status", turn_id: degradedId }, "other")).status, 404);
+  // Non-Apple sessions are rejected before turn lookup; the other Apple user
+  // exercises account-scoped not-found behavior.
+  assert.equal((await request({ action: "status", turn_id: degradedId }, "phone-only")).status, 403);
+  assert.equal((await request({ action: "status", turn_id: degradedId, app_install_id: "other-install" }, "other")).status, 404);
   modelUnavailable = false;
   replyText = "Vamos a proteger tus distracciones.";
   response = await send(degradedId);

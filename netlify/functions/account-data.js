@@ -103,6 +103,7 @@ async function deleteData(event) {
   const identity = await identityForAuthUser(authUserId);
   if (identity?.assistant_connect_code) ids.push(`connect:${identity.assistant_connect_code}`);
   if (identity?.anonymous_user_id) ids.push(identity.anonymous_user_id);
+  ids.push(assistantChannelUserId("app", authUserId));
   if (identity?.phone_e164) {
     ids.push(assistantChannelUserId("whatsapp", identity.phone_e164));
     ids.push(assistantChannelUserId("sms", identity.phone_e164));
@@ -111,6 +112,10 @@ async function deleteData(event) {
   const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
 
   await revokeWearableTokens(uniqueIds);
+  await supabaseFetch(`assistant_app_turns?auth_user_id=eq.${encodeURIComponent(authUserId)}`, {
+    method: "DELETE",
+    headers: { prefer: "return=minimal" },
+  });
   for (const anonymousUserId of uniqueIds) {
     for (const table of DATA_TABLES) {
       await supabaseFetch(`${table}?anonymous_user_id=eq.${encodeURIComponent(anonymousUserId)}`, {

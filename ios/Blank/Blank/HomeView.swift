@@ -1,4 +1,6 @@
 import FamilyControls
+import AuthenticationServices
+import CryptoKit
 import LocalAuthentication
 import SwiftUI
 import UIKit
@@ -268,13 +270,9 @@ enum AssistantActionReceiptStore {
 }
 
 struct AssistantActionInboxClient {
-    func poll(connectCode: String, channel: String, phoneNumber: String) async -> AssistantInboxPollResult {
-        guard let data = try? await request(
-            action: "poll_pending_action",
-            connectCode: connectCode,
-            channel: channel,
-            phoneNumber: phoneNumber
-        ), let response = try? JSONDecoder().decode(AssistantInboxResponse.self, from: data) else {
+    func poll(connectCode: String, channel: String) async -> AssistantInboxPollResult {
+        guard let data = try? await request(action: "poll_pending_action", connectCode: connectCode, channel: channel),
+              let response = try? JSONDecoder().decode(AssistantInboxResponse.self, from: data) else {
             return .retry
         }
         return .success(response.pendingAction)
@@ -285,7 +283,6 @@ struct AssistantActionInboxClient {
         status: String,
         connectCode: String,
         channel: String,
-        phoneNumber: String,
         detail: String = "",
         evidence: AssistantActionReceipt? = nil
     ) async -> AssistantLifecycleAcknowledgement {
@@ -293,7 +290,6 @@ struct AssistantActionInboxClient {
             action: "ack_pending_action",
             connectCode: connectCode,
             channel: channel,
-            phoneNumber: phoneNumber,
             actionId: actionId,
             status: status,
             detail: detail,
@@ -309,24 +305,21 @@ struct AssistantActionInboxClient {
     func acknowledgeLifecycle(
         receipt: AssistantActionReceipt,
         connectCode: String,
-        channel: String,
-        phoneNumber: String
+        channel: String
     ) async -> AssistantLifecycleAcknowledgement {
         if receipt.executionStarted {
             let confirmed = await acknowledge(
                 actionId: receipt.actionId,
                 status: "confirmed",
                 connectCode: connectCode,
-                channel: channel,
-                phoneNumber: phoneNumber
+                channel: channel
             )
             guard confirmed == .acknowledged else { return confirmed }
             let started = await acknowledge(
                 actionId: receipt.actionId,
                 status: "execution_started",
                 connectCode: connectCode,
-                channel: channel,
-                phoneNumber: phoneNumber
+                channel: channel
             )
             guard started == .acknowledged else { return started }
         }
@@ -335,18 +328,16 @@ struct AssistantActionInboxClient {
             status: receipt.status,
             connectCode: connectCode,
             channel: channel,
-            phoneNumber: phoneNumber,
             detail: receipt.detail,
             evidence: receipt
         )
     }
 
-    func registerDevicePush(token: String, environment: String, connectCode: String, channel: String, phoneNumber: String) async -> Bool {
+    func registerDevicePush(token: String, environment: String, connectCode: String, channel: String) async -> Bool {
         guard let data = try? await request(
             action: "register_device_push",
             connectCode: connectCode,
             channel: channel,
-            phoneNumber: phoneNumber,
             deviceToken: token,
             environment: environment
         ), let response = try? JSONDecoder().decode(AssistantPushRegistrationResponse.self, from: data) else { return false }
@@ -357,7 +348,6 @@ struct AssistantActionInboxClient {
         action: String,
         connectCode: String,
         channel: String,
-        phoneNumber: String,
         actionId: String? = nil,
         status: String? = nil,
         detail: String? = nil,
@@ -365,22 +355,10 @@ struct AssistantActionInboxClient {
         deviceToken: String? = nil,
         environment: String? = nil
     ) async throws -> Data {
-        guard let rawBaseURL = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String else {
-            throw URLError(.badURL)
-        }
-        let base = rawBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !base.isEmpty, !base.contains("$("), let baseURL = URL(string: base) else {
-            throw URLError(.badURL)
-        }
-        var request = URLRequest(url: baseURL.appendingPathComponent("assistant-channel"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 8
         var body: [String: Any] = [
             "action": action,
             "connect_code": connectCode,
             "preferred_channel": channel,
-            "user_phone": phoneNumber,
             "app_install_id": BlankSharedState.appInstallId,
         ]
         if let actionId { body["action_id"] = actionId }
@@ -398,9 +376,11 @@ struct AssistantActionInboxClient {
         }
         if let deviceToken, !deviceToken.isEmpty { body["device_token"] = deviceToken }
         if let environment, !environment.isEmpty { body["environment"] = environment }
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+        let payload = try JSONSerialization.data(withJSONObject: body)
+        let (data, response) = try await AssistantAppClient().postAuthorized(
+            path: "assistant-channel", payload: payload, timeout: 8
+        )
+        guard (200..<300).contains(response.statusCode) else {
             throw URLError(.badServerResponse)
         }
         return data
@@ -414,7 +394,6 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     @AppStorage("blankAssistantConnectCode", store: BlankSharedState.defaults) private var assistantConnectCode = ""
-    @AppStorage("blankAssistantPhoneNumber", store: BlankSharedState.defaults) private var assistantPhoneNumber = ""
 
     @State private var now = Date()
     @State private var message: String?
@@ -540,10 +519,6 @@ struct HomeView: View {
             pollPendingAssistantActionIfNeeded(force: true)
         }
         .onChange(of: assistantConnectCode) { _ in
-            clearPendingAssistantIdentityState()
-            Task { await activateAppChannel() }
-        }
-        .onChange(of: assistantPhoneNumber) { _ in
             clearPendingAssistantIdentityState()
             Task { await activateAppChannel() }
         }
@@ -1636,12 +1611,12 @@ struct HomeView: View {
             assistantActionExecutionInFlight = true
             let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
             let channel = "app"
-            let phone = assistantPhoneNumber
+            let accountID = AssistantAppSession.userID
             let actionID = pendingAssistantActionId
             Task {
                 _ = await screenTimeBlocker.requestAuthorization()
                 await MainActor.run {
-                    guard assistantIdentityMatches(code: code, channel: channel, phone: phone),
+                    guard assistantIdentityMatches(code: code, channel: channel, owner: accountID),
                           pendingAssistantActionId == actionID else { return }
                     if screenTimeBlocker.authorizationStatus == .approved {
                         confirmPendingAssistantAction()
@@ -1799,12 +1774,12 @@ struct HomeView: View {
         case .requestScreenTimePermission:
             let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
             let channel = "app"
-            let phone = assistantPhoneNumber
+            let accountID = AssistantAppSession.userID
             let actionID = pendingAssistantActionId
             Task {
                 _ = await screenTimeBlocker.requestAuthorization()
                 await MainActor.run {
-                    guard assistantIdentityMatches(code: code, channel: channel, phone: phone),
+                    guard assistantIdentityMatches(code: code, channel: channel, owner: accountID),
                           pendingAssistantActionId == actionID else { return }
                     applyScreenTimeControls()
                     finishPendingAssistantAction(
@@ -1840,7 +1815,7 @@ struct HomeView: View {
             assistantActionExecutionInFlight = false
             return
         }
-        let phoneNumber = assistantPhoneNumber
+        let accountID = AssistantAppSession.userID
         let receipt = AssistantActionReceipt(
             actionId: actionId,
             status: status,
@@ -1873,8 +1848,7 @@ struct HomeView: View {
             let acknowledgement = await AssistantActionInboxClient().acknowledgeLifecycle(
                 receipt: receipt,
                 connectCode: code,
-                channel: channel,
-                phoneNumber: phoneNumber
+                channel: channel
             )
             await MainActor.run {
                 assistantActionExecutionInFlight = false
@@ -1962,7 +1936,6 @@ struct HomeView: View {
             _ = await AssistantContextSyncClient().sync(
                 connectCode: code,
                 channel: channel,
-                phoneNumber: assistantPhoneNumber,
                 payload: payload
             )
         }
@@ -1993,7 +1966,7 @@ struct HomeView: View {
         let channel = "app"
         lastAssistantActionPollAt = now
         assistantActionPollInFlight = true
-        let phoneNumber = assistantPhoneNumber
+        let accountID = AssistantAppSession.userID
         let applyNowRequested = BlankSharedState.defaults.bool(forKey: AssistantRemoteNotification.pollAfterOpenKey)
         // An old receipt must not starve an explicitly requested newer action.
         if !applyNowRequested, let receipt = AssistantActionReceiptStore.load() {
@@ -2001,12 +1974,11 @@ struct HomeView: View {
                 let acknowledgement = await AssistantActionInboxClient().acknowledgeLifecycle(
                     receipt: receipt,
                     connectCode: code,
-                    channel: channel,
-                    phoneNumber: phoneNumber
+                    channel: channel
                 )
                 await MainActor.run {
                     assistantActionPollInFlight = false
-                    guard assistantIdentityMatches(code: code, channel: channel, phone: phoneNumber) else { return }
+                    guard assistantIdentityMatches(code: code, channel: channel, owner: accountID) else { return }
                     if acknowledgement == .acknowledged || acknowledgement == .stale {
                         AssistantActionReceiptStore.clear(actionId: receipt.actionId)
                         if pendingAssistantActionId == receipt.actionId {
@@ -2021,12 +1993,11 @@ struct HomeView: View {
         Task {
             let pollResult = await AssistantActionInboxClient().poll(
                 connectCode: code,
-                channel: channel,
-                phoneNumber: phoneNumber
+                channel: channel
             )
             await MainActor.run {
                 assistantActionPollInFlight = false
-                guard assistantIdentityMatches(code: code, channel: channel, phone: phoneNumber) else { return }
+                guard assistantIdentityMatches(code: code, channel: channel, owner: accountID) else { return }
                 // Read this after the network round-trip. On a cold launch the
                 // notification response can arrive while the initial poll is
                 // already in flight; reading it before the request loses the tap.
@@ -2059,7 +2030,9 @@ struct HomeView: View {
     }
 
     private func activateAppChannel() async {
-        do { try await AssistantAppClient().activate() } catch { return }
+        let activatedCode: String
+        do { activatedCode = try await AssistantAppClient().activate() } catch { return }
+        assistantConnectCode = activatedCode
         syncAssistantContext()
         let token = BlankSharedState.defaults.string(forKey: "blankAssistantPushToken") ?? ""
         guard !token.isEmpty, !assistantConnectCode.isEmpty else { return }
@@ -2070,16 +2043,16 @@ struct HomeView: View {
         #endif
         let registered = await AssistantActionInboxClient().registerDevicePush(
             token: token, environment: environment, connectCode: assistantConnectCode,
-            channel: "app", phoneNumber: assistantPhoneNumber
+            channel: "app"
         )
         BlankSharedState.defaults.set(registered, forKey: "blankAssistantPushRegistered")
         if registered { syncAssistantContext() }
     }
 
-    private func assistantIdentityMatches(code: String, channel: String, phone: String) -> Bool {
+    private func assistantIdentityMatches(code: String, channel: String, owner: String?) -> Bool {
         let currentChannel = "app"
         return code == assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-            && channel == currentChannel && phone == assistantPhoneNumber
+            && channel == currentChannel && owner == AssistantAppSession.userID
     }
 
     private func clearPendingAssistantIdentityState() {
@@ -3474,36 +3447,27 @@ private struct DistractionsScreen: View {
     }
 }
 
-struct AppPhoneSignInSheet: View {
+struct AppAccountSignInSheet: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("blankAssistantPhoneNumber", store: BlankSharedState.defaults) private var phoneNumber = ""
-    @AppStorage("blankAssistantConnectCode", store: BlankSharedState.defaults) private var connectCode = ""
-    @AppStorage("blankAssistantPreferredChannel", store: BlankSharedState.defaults) private var preferredChannel = ""
-    @AppStorage("blankAssistantPhoneVerified", store: BlankSharedState.defaults) private var phoneVerified = false
-    @State private var code = ""
-    @State private var inputPhone = ""
-    @State private var verificationStarted = false
-    @State private var dataConsent = false
+    @State private var rawNonce: String?
     @State private var isWorking = false
     @State private var errorMessage: String?
 
-    let initialPhone: String
     let showsCancel: Bool
-    var onVerified: (() -> Void)?
+    var onSignedIn: (() -> Void)?
 
-    init(initialPhone: String, showsCancel: Bool = true, onVerified: (() -> Void)? = nil) {
-        self.initialPhone = initialPhone
+    init(showsCancel: Bool = true, onSignedIn: (() -> Void)? = nil) {
         self.showsCancel = showsCancel
-        self.onVerified = onVerified
+        self.onSignedIn = onSignedIn
     }
 
     var body: some View {
         Group {
             if showsCancel {
                 NavigationStack {
-                    phoneForm
-                        .navigationTitle("Verify phone")
+                    accountForm
+                        .navigationTitle("Your account")
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
@@ -3512,184 +3476,165 @@ struct AppPhoneSignInSheet: View {
                         }
                 }
             } else {
-                phoneForm
+                accountForm
             }
         }
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
     }
 
-    private var phoneForm: some View {
-        Form {
-            if !showsCancel {
-                Section {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("blank")
-                            .font(.blankInter(size: 18, weight: .semibold, relativeTo: .headline))
-                            .padding(.bottom, 34)
-                        Text("Link your iPhone")
-                            .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
-                        Text("We’ll send a one-time code by SMS to verify your number.")
-                            .font(.blankInter(size: 16, relativeTo: .body))
-                            .foregroundStyle(.secondary)
+    private var accountForm: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            Text("blank")
+                .font(.blankInter(size: 18, weight: .semibold, relativeTo: .headline))
+                .padding(.bottom, 22)
+            Text("Your account")
+                .font(.blankEditorial(size: 34))
+            Text("Continue with Apple to keep your chat and setup connected to your account.")
+                .font(.blankInter(size: 16, relativeTo: .body))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
+                Text("This will connect Apple to your existing Blank account and preserve its chat history.")
+                    .font(.blankInter(size: 14, relativeTo: .footnote))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            SignInWithAppleButton(.continue, onRequest: { request in
+                let nonce = Self.makeNonce()
+                rawNonce = nonce
+                request.requestedScopes = []
+                request.nonce = Self.hashNonce(nonce)
+            }, onCompletion: finishAppleAuthorization)
+                .signInWithAppleButtonStyle(.black)
+                .frame(height: 54)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .disabled(isWorking)
+                .overlay {
+                    if isWorking {
+                        ProgressView().tint(.white)
                     }
-                    .padding(.vertical, 16)
                 }
-                .listRowBackground(Color.clear)
-            } else {
-                Section {
-                    Text("We’ll send a one-time code by SMS. After setup, you can talk to Blankmind in this app.")
-                        .font(.blankInter(size: 15, weight: .medium, relativeTo: .body))
-                        .foregroundStyle(.secondary)
-                }
-            }
 
-            Section("Phone") {
-                TextField("+34 600 000 000", text: $inputPhone)
-                    .keyboardType(.phonePad)
-                    .textContentType(.telephoneNumber)
+            HStack(spacing: 18) {
+                Link("Privacy Policy", destination: URL(string: "https://blanked.app/privacy")!)
+                Link("Terms", destination: URL(string: "https://blanked.app/terms")!)
             }
-
-            Section {
-                Toggle("Link this number and iPhone to my Blankmind account for in-app chat and device protection.", isOn: $dataConsent)
-            }
-
-            if verificationStarted {
-                Section("Verification code") {
-                    TextField("123456", text: $code)
-                        .keyboardType(.numberPad)
-                        .textContentType(.oneTimeCode)
-                    Button(isWorking ? "Verifying…" : "Verify phone") {
-                        Task { await verifyCode() }
-                    }
-                    .disabled(isWorking || !dataConsent || code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            } else {
-                Section {
-                    Button(isWorking ? "Sending…" : "Send verification code") {
-                        Task { await requestCode() }
-                    }
-                    .disabled(isWorking || inputPhone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-
-            Section {
-                HStack(spacing: 18) {
-                    Link("Privacy Policy", destination: URL(string: "https://blanked.app/privacy")!)
-                    Link("Terms", destination: URL(string: "https://blanked.app/terms")!)
-                }
-                .font(.blankInter(size: 13, relativeTo: .footnote))
-            }
+            .font(.blankInter(size: 13, relativeTo: .footnote))
 
             if let errorMessage {
-                Section {
-                    Text(errorMessage)
-                        .foregroundStyle(BlankColors.red)
-                }
+                Text(errorMessage)
+                    .font(.blankInter(size: 14, relativeTo: .footnote))
+                    .foregroundStyle(BlankColors.red)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: 0)
         }
-        .scrollContentBackground(.hidden)
+        .padding(.horizontal, 28)
+        .padding(.top, 42)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(uiColor: .systemBackground))
-        .tint(Color(uiColor: .label))
-        .onAppear {
-            inputPhone = phoneNumber.isEmpty ? initialPhone : phoneNumber
+    }
+
+    private func finishAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let tokenData = credential.identityToken,
+                  let idToken = String(data: tokenData, encoding: .utf8),
+                  let nonce = rawNonce else {
+                errorMessage = "Apple did not return a valid account token. Try again."
+                return
+            }
+            Task { await signIn(idToken: idToken, nonce: nonce) }
+        case .failure(let error as ASAuthorizationError) where error.code == .canceled:
+            rawNonce = nil
+        case .failure:
+            errorMessage = "Apple sign-in did not complete. Try again."
+            rawNonce = nil
         }
     }
 
-    private func requestCode() async {
-        await performRequest(action: "request_otp", payload: [
-            "phone": inputPhone,
-        ])
-        if errorMessage == nil { verificationStarted = true }
-    }
-
-    private func verifyCode() async {
+    @MainActor
+    private func signIn(idToken: String, nonce: String) async {
+        isWorking = true
+        errorMessage = nil
+        defer { isWorking = false; rawNonce = nil }
         do {
-            isWorking = true
-            errorMessage = nil
-            let auth = try await postJSON(path: "app-auth", payload: [
-                "action": "verify_otp",
-                "phone": inputPhone,
-                "token": code,
-            ])
-            guard let accessToken = auth["access_token"] as? String, !accessToken.isEmpty else {
-                throw AppPhoneSignInError.message("Blankmind did not return a session.")
+            let existingAccess = AssistantAppSession.token("access")
+            let shouldLinkExistingAccount = existingAccess != nil && !AssistantAppSession.hasAppleIdentity
+            var payload: [String: Any] = [
+                "action": "sign_in_with_apple",
+                "id_token": idToken,
+                "nonce": nonce,
+            ]
+            if shouldLinkExistingAccount, let refresh = AssistantAppSession.token("refresh") {
+                payload["refresh_token"] = refresh
             }
-            let linked = try await postJSON(
-                path: "app-handoff",
-                payload: [
-                    "action": "claim_identity",
-                    "app_install_id": BlankSharedState.appInstallId,
-                    "data_consent": dataConsent,
-                ],
-                bearerToken: accessToken
+            let auth = try await postJSON(
+                path: "app-auth",
+                payload: payload,
+                bearerToken: shouldLinkExistingAccount ? existingAccess : nil
             )
-            guard let linkedCode = linked["assistant_connect_code"] as? String, !linkedCode.isEmpty else {
-                throw AppPhoneSignInError.message("The account was verified but the assistant link was not created.")
+            guard let accessToken = auth["access_token"] as? String, !accessToken.isEmpty,
+                  let refreshToken = auth["refresh_token"] as? String, !refreshToken.isEmpty else {
+                throw AppAccountSignInError.message("Blank did not return a secure account session. Try again.")
             }
-            guard let linkedPhone = linked["phone_e164"] as? String, !linkedPhone.isEmpty else {
-                throw AppPhoneSignInError.message("The account was verified but no phone number was returned.")
+            guard AssistantAppSession.save(accessToken: accessToken, refreshToken: refreshToken) else {
+                throw AppAccountSignInError.message("Could not securely save your account on this iPhone. Try again.")
             }
-            guard AssistantAppSession.save(
-                accessToken: accessToken,
-                refreshToken: auth["refresh_token"] as? String ?? ""
-            ) else {
-                throw AppPhoneSignInError.message("Could not securely save your session on this iPhone. Try verifying again.")
-            }
-            phoneNumber = linkedPhone
-            connectCode = linkedCode
-            preferredChannel = "app"
-            phoneVerified = true
-            onVerified?()
+            _ = try await AssistantAppClient().activate()
+            let defaults = BlankSharedState.defaults
+            defaults.removeObject(forKey: "blankAssistantPhoneNumber")
+            defaults.removeObject(forKey: "blankAssistantPhoneVerified")
+            defaults.set("app", forKey: "blankAssistantPreferredChannel")
+            onSignedIn?()
             if showsCancel { dismiss() }
         } catch {
             errorMessage = error.localizedDescription
         }
-        isWorking = false
     }
 
-    private func performRequest(action: String, payload: [String: Any]) async {
-        do {
-            isWorking = true
-            errorMessage = nil
-            var body = payload
-            body["action"] = action
-            _ = try await postJSON(path: "app-auth", payload: body)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-        isWorking = false
-    }
-
-    private func postJSON(path: String, payload: [String: Any], bearerToken: String? = nil) async throws -> [String: Any] {
+    private func postJSON(path: String, payload: [String: Any], bearerToken: String?) async throws -> [String: Any] {
         guard let baseURL = configuredBaseURL() else {
-            throw AppPhoneSignInError.message("Blankmind connection is not configured in this build.")
+            throw AppAccountSignInError.message("Blankmind connection is not configured in this build.")
         }
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 20
         if let bearerToken { request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization") }
-        request.timeoutInterval = 12
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         let (data, response) = try await URLSession.shared.data(for: request)
-        let result = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
-        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
-            let detail = result["detail"] as? String ?? result["error"] as? String ?? "Request failed."
-            throw AppPhoneSignInError.message(detail.replacingOccurrences(of: "_", with: " "))
+        let body = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            let code = body["error"] as? String ?? "account_sign_in_failed"
+            let message = code == "app_auth_unavailable"
+                ? "Sign-in is unavailable right now. Try again in a moment."
+                : "Could not connect this Apple Account to Blank. Check the Apple Account and try again."
+            throw AppAccountSignInError.message(message)
         }
-        return result
+        return body
     }
 
     private func configuredBaseURL() -> URL? {
-        guard let rawValue = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String else {
-            return nil
-        }
+        guard let rawValue = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String else { return nil }
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !trimmed.contains("$(") else { return nil }
         return URL(string: trimmed)
     }
+
+    private static func makeNonce() -> String {
+        UUID().uuidString + UUID().uuidString
+    }
+
+    private static func hashNonce(_ nonce: String) -> String {
+        SHA256.hash(data: Data(nonce.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
 }
 
-private enum AppPhoneSignInError: LocalizedError {
+private enum AppAccountSignInError: LocalizedError {
     case message(String)
 
     var errorDescription: String? {

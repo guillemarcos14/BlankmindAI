@@ -5,12 +5,12 @@ import UIKit
 import UserNotifications
 
 private enum OnboardingStep: Int {
-    case phone
+    case account
     case device
 
     var analyticsName: String {
         switch self {
-        case .phone: return "phone_verification"
+        case .account: return "account_sign_in"
         case .device: return "device_setup"
         }
     }
@@ -23,7 +23,7 @@ struct SetupView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
 
-    @State private var currentStep: OnboardingStep = .phone
+    @State private var currentStep: OnboardingStep = .account
     @State private var showingPicker = false
     @State private var completionInFlight = false
     @State private var notificationReady = false
@@ -33,9 +33,7 @@ struct SetupView: View {
     @AppStorage("blankOnboardingStepRaw", store: BlankSharedState.defaults) private var savedStepRaw = 0
     @AppStorage("blankOnboardingFlowVersion", store: BlankSharedState.defaults) private var onboardingFlowVersion = 0
     @AppStorage("blankOnboardingAnonymousUserId", store: BlankSharedState.defaults) private var onboardingAnonymousUserId = ""
-    @AppStorage("blankAssistantPhoneNumber", store: BlankSharedState.defaults) private var assistantPhoneNumber = ""
     @AppStorage("blankAssistantConnectCode", store: BlankSharedState.defaults) private var assistantConnectCode = ""
-    @AppStorage("blankAssistantPhoneVerified", store: BlankSharedState.defaults) private var assistantPhoneVerified = false
 
     var onFinishForQA: (() -> Void)?
 
@@ -45,8 +43,8 @@ struct SetupView: View {
 
     var body: some View {
         Group {
-            if currentStep == .phone {
-                AppPhoneSignInSheet(initialPhone: assistantPhoneNumber, showsCancel: false) {
+            if currentStep == .account {
+                AppAccountSignInSheet(showsCancel: false) {
                     message = nil
                     currentStep = .device
                 }
@@ -65,14 +63,13 @@ struct SetupView: View {
         }
         #endif
         .task {
-            if onboardingFlowVersion != 4 {
-                savedStepRaw = assistantPhoneVerified ? OnboardingStep.device.rawValue : OnboardingStep.phone.rawValue
-                onboardingFlowVersion = 4
+            if onboardingFlowVersion != 5 {
+                savedStepRaw = OnboardingStep.account.rawValue
+                onboardingFlowVersion = 5
             }
-            if !sessionStore.setupComplete, let savedStep = OnboardingStep(rawValue: savedStepRaw) {
-                currentStep = assistantPhoneVerified ? savedStep : .phone
-            }
-            if currentStep == .phone && assistantPhoneVerified && !assistantConnectCode.isEmpty {
+            if !AssistantAppSession.hasAppleIdentity || assistantConnectCode.isEmpty {
+                currentStep = .account
+            } else if !sessionStore.setupComplete {
                 currentStep = .device
             }
             await refreshDeviceState()
@@ -186,13 +183,6 @@ struct SetupView: View {
                 action: requestNotifications
             )
 
-            Button("Change phone number") {
-                message = nil
-                currentStep = .phone
-            }
-            .font(.blankInter(size: 14, weight: .medium, relativeTo: .footnote))
-            .frame(minHeight: 44)
-            .padding(.top, 14)
         }
     }
 
@@ -245,7 +235,7 @@ struct SetupView: View {
     }
 
     private var deviceReady: Bool {
-        assistantPhoneVerified && !assistantPhoneNumber.isEmpty && !assistantConnectCode.isEmpty
+        !assistantConnectCode.isEmpty
             && screenTimeBlocker.authorizationStatus == .approved
             && sessionStore.hasSelectedApps && notificationReady
     }
@@ -320,7 +310,7 @@ struct SetupView: View {
         completionInFlight = true
         defer { completionInFlight = false }
         do {
-            try await AssistantAppClient().activate()
+            _ = try await AssistantAppClient().activate()
             guard await syncAssistantContext(deviceReady: false) else {
                 message = "Could not save this iPhone's setup. Try again."
                 return
@@ -342,7 +332,7 @@ struct SetupView: View {
             #endif
             guard await AssistantActionInboxClient().registerDevicePush(
                 token: token, environment: environment, connectCode: assistantConnectCode,
-                channel: "app", phoneNumber: assistantPhoneNumber
+                channel: "app"
             ) else {
                 message = "This iPhone could not register for notifications. Try again."
                 return
@@ -357,7 +347,7 @@ struct SetupView: View {
                 message = "Blankmind is still checking this iPhone. Try again in a moment."
                 return
             }
-            savedStepRaw = OnboardingStep.phone.rawValue
+            savedStepRaw = OnboardingStep.account.rawValue
             await purchaseStore.registerReferredActivation(referredUserId: currentAnonymousUserId())
             sessionStore.finishSetup()
             onFinishForQA?()
@@ -371,7 +361,6 @@ struct SetupView: View {
         await AssistantContextSyncClient().sync(
             connectCode: assistantConnectCode,
             channel: "app",
-            phoneNumber: assistantPhoneNumber,
             payload: [
                 "locale": Locale.current.identifier,
                 "has_selected_apps": sessionStore.hasSelectedApps,
@@ -389,21 +378,16 @@ struct SetupView: View {
 
     @MainActor
     private func postAssistantChannel(_ action: String) async throws -> [String: Any] {
-        guard let rawBase = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String,
-              !rawBase.contains("$("), let baseURL = URL(string: rawBase) else { throw URLError(.badURL) }
-        var request = URLRequest(url: baseURL.appendingPathComponent("assistant-channel"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 12
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
+        let payload = try JSONSerialization.data(withJSONObject: [
             "action": action,
             "connect_code": assistantConnectCode,
             "preferred_channel": "app",
-            "user_phone": assistantPhoneNumber,
             "app_install_id": BlankSharedState.appInstallId,
         ])
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+        let (data, response) = try await AssistantAppClient().postAuthorized(
+            path: "assistant-channel", payload: payload, timeout: 12
+        )
+        guard (200..<300).contains(response.statusCode),
               let result = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw URLError(.badServerResponse)
         }
@@ -418,7 +402,7 @@ struct SetupView: View {
     }
 
     private var analyticsProperties: [String: Any] {
-        ["flow_version": 4,
+        ["flow_version": 5,
          "channel": "app",
          "screen_time_status": screenTimeBlocker.authorizationStatusLabel,
          "selection_count": sessionStore.selectionCount]

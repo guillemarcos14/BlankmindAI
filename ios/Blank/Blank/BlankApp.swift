@@ -90,11 +90,6 @@ struct BlankApp: App {
             purchaseStore.captureReferral(from: url)
             return
         }
-        if action == "handoff" {
-            let token = components?.stringQueryItem("token") ?? ""
-            Task { await claimAppHandoff(token) }
-            return
-        }
         if action == "timer" || action == "schedule-timer" {
             sessionStore.requestWidgetTimerSelector()
             return
@@ -335,46 +330,6 @@ struct BlankApp: App {
         return url.path == "/open" || url.path == "/open.html"
     }
 
-    private func claimAppHandoff(_ token: String) async {
-        guard !token.isEmpty,
-              let baseURL = configuredMembershipBaseURL() else { return }
-        var request = URLRequest(url: baseURL.appendingPathComponent("app-handoff"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 8
-        let payload: [String: Any] = [
-            "action": "claim",
-            "handoff_token": token,
-            "app_install_id": BlankSharedState.appInstallId,
-            "data_consent": true,
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
-        guard let (data, response) = try? await URLSession.shared.data(for: request),
-              let httpResponse = response as? HTTPURLResponse,
-              (200..<300).contains(httpResponse.statusCode),
-              let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
-
-        let defaults = BlankSharedState.defaults
-        if let connectCode = result["assistant_connect_code"] as? String, !connectCode.isEmpty {
-            defaults.set(connectCode, forKey: "blankAssistantConnectCode")
-        }
-        if let phone = result["phone_e164"] as? String, !phone.isEmpty {
-            defaults.set(phone, forKey: "blankAssistantPhoneNumber")
-        }
-        if !(defaults.string(forKey: "blankAssistantConnectCode") ?? "").isEmpty,
-           !(defaults.string(forKey: "blankAssistantPhoneNumber") ?? "").isEmpty {
-            defaults.set(true, forKey: "blankAssistantPhoneVerified")
-        }
-    }
-
-    private func configuredMembershipBaseURL() -> URL? {
-        guard let rawValue = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String else {
-            return nil
-        }
-        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !trimmed.contains("$(") else { return nil }
-        return URL(string: trimmed)
-    }
 }
 
 @MainActor
@@ -470,8 +425,7 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
         let token = defaults.string(forKey: "blankAssistantPushToken") ?? ""
         let code = defaults.string(forKey: "blankAssistantConnectCode") ?? ""
         let channel = "app"
-        guard !token.isEmpty, !code.isEmpty else { return }
-        let phone = defaults.string(forKey: "blankAssistantPhoneNumber") ?? ""
+        guard !token.isEmpty, !code.isEmpty, AssistantAppSession.userID != nil else { return }
         #if DEBUG
         let environment = "sandbox"
         #else
@@ -482,8 +436,7 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
                 token: token,
                 environment: environment,
                 connectCode: code,
-                channel: channel,
-                phoneNumber: phone
+                channel: channel
             )
             defaults.set(registered, forKey: "blankAssistantPushRegistered")
         }

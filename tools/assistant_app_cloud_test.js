@@ -45,8 +45,8 @@ function configuration(env = process.env, requireCredentials = true) {
   return { supabase, netlify, extraHeaders, serviceKey, anonKey };
 }
 
-function memoryIdentity(phone) {
-  return `assistant:${crypto.createHash("sha256").update(`whatsapp:${phone}`).digest("hex").slice(0,32)}`;
+function memoryIdentity(channel, user) {
+  return `assistant:${crypto.createHash("sha256").update(`${channel}:${user}`).digest("hex").slice(0,32)}`;
 }
 
 async function run(config, output, { infrastructureOnly = false } = {}) {
@@ -88,8 +88,8 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
     body: { app_install_id: user?.install, ...body },
   });
   const inbox = (user, body) => request(config.netlify, "/.netlify/functions/assistant-channel", {
-    method: "POST", headers: config.extraHeaders,
-    body: { connect_code: user.connect, app_install_id: user.install, preferred_channel: "whatsapp", ...body },
+    method: "POST", headers: { ...config.extraHeaders, authorization: `Bearer ${user.token}` },
+    body: { connect_code: user.connect, app_install_id: user.install, preferred_channel: "app", ...body },
   });
   async function semantic(user) {
     const rows = ok(await db(`assistant_semantic_conversations?anonymous_user_id=eq.${user.memory}&select=storage_version,state`), "semantic_read");
@@ -110,25 +110,31 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
     return response.body.turn;
   }
   async function seed(index) {
-    const user = { install: `qa-cloud-${runId}-${index}`, anonymous: `qa-cloud:${runId}:${index}`,
-      phone: `+1999${crypto.randomInt(100000000,999999999)}${index}`,
-      connect: crypto.randomBytes(5).toString("hex").toUpperCase() };
-    user.memory = memoryIdentity(user.phone);
-    // .invalid is a reserved non-deliverable domain. Admin confirmation bypasses
-    // email delivery, and phone is only a fabricated identity-table fixture.
+    const user = { install: `qa-cloud-${runId}-${index}`, anonymous: `qa-cloud:${runId}:${index}` };
+    // .invalid is a reserved non-deliverable domain. Admin confirmation bypasses email delivery.
     const email = `blank-qa-${runId}-${index}@example.invalid`;
     const password = `Qa!${crypto.randomBytes(24).toString("base64url")}`;
     const created = ok(await admin("users", { method: "POST", body: { email, password, email_confirm: true,
-      app_metadata: { blank_qa_cloud_run: runId }, user_metadata: { synthetic_qa: true } } }), "auth_seed");
+      app_metadata: { blank_qa_cloud_run: runId, provider: "apple", providers: ["apple"] }, user_metadata: { synthetic_qa: true } } }), "auth_seed");
     expect(typeof created?.id === "string", "auth_seed_missing_id");
     user.id = created.id; users.push(user); // Register immediately for cleanup.
-    ok(await db("blankmind_identity_links", { method: "POST", body: { auth_user_id: user.id,
-      phone_e164: user.phone, app_install_id: user.install, assistant_connect_code: user.connect, anonymous_user_id: user.anonymous } }), "identity_seed");
+    const signedIn = ok(await request(config.supabase, "/auth/v1/token?grant_type=password", {
+      method: "POST", headers: { apikey: config.anonKey }, body: { email, password },
+    }), "password_sign_in");
+    expect(typeof signedIn?.access_token === "string", "sign_in_missing_token"); user.token = signedIn.access_token;
+    const activation = ok(await app(user, { action: "activate" }), "app_activation");
+    user.connect = activation.assistant_connect_code;
+    expect(typeof user.connect === "string" && user.connect.length === 10, "activation_missing_connect_code");
+    user.memory = memoryIdentity("app", user.id);
+    const identityRows = ok(await db(`blankmind_identity_links?auth_user_id=eq.${encodeURIComponent(user.id)}&select=phone_e164,app_install_id,assistant_connect_code`), "identity_read");
+    expect(identityRows.length === 1 && identityRows[0].phone_e164 == null
+      && identityRows[0].app_install_id === user.install && identityRows[0].assistant_connect_code === user.connect,
+    "apple_account_identity_requires_phone");
     // A collision or orphan from an older QA run must not make cleanup delete
     // somebody else's channel data, even if the new identity insert succeeded.
     const oldSemantic = ok(await db(`assistant_semantic_conversations?anonymous_user_id=eq.${user.memory}&select=anonymous_user_id`), "namespace_preflight");
     expect(oldSemantic.length === 0, "synthetic_namespace_already_exists");
-    for (const id of [user.memory, `connect:${user.connect}`, user.anonymous]) {
+    for (const id of [user.memory, user.anonymous]) {
       const rows = ok(await db(`digital_wellness_feature_payloads?anonymous_user_id=eq.${encodeURIComponent(id)}&select=id&limit=1`), "namespace_preflight");
       expect(rows.length === 0, "synthetic_namespace_already_exists");
     }
@@ -141,16 +147,6 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
         app_presence: { app_present: true, app_ready: true, last_seen_at: now },
         app_presence_state: "recently_seen", app_presence_recent: true,
       } } }), "context_seed");
-    ok(await db("digital_wellness_feature_payloads", { method: "POST", body: {
-      anonymous_user_id: `connect:${user.connect}`, schema_version: 1, platform: "whatsapp", data_consent: true,
-      consent_text: "Synthetic staging QA only", submitted_at: now,
-      payload: { event: "assistant_channel_connected", properties: { channel: "whatsapp", preferred_channel: "whatsapp",
-        connect_code: user.connect, channel_user: user.phone } }, insight: { event: "assistant_channel_connected" },
-    } }), "connection_seed");
-    const signedIn = ok(await request(config.supabase, "/auth/v1/token?grant_type=password", {
-      method: "POST", headers: { apikey: config.anonKey }, body: { email, password },
-    }), "password_sign_in");
-    expect(typeof signedIn?.access_token === "string", "sign_in_missing_token"); user.token = signedIn.access_token;
     return user;
   }
   try {
@@ -183,7 +179,7 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
       expect(first.action_id === `app_${first.id}` && !["verified","delayed"].includes(first.action_status), "action_identity_or_unverified_status_invalid");
       expect(first.assistant_text.length > 0, "reply_missing");
       const state = await semantic(a);
-      expect(state.state?.semantic_state?.slots?.duration_minutes?.value === 25, "shared_whatsapp_state_missing_app_turn");
+      expect(state.state?.semantic_state?.slots?.duration_minutes?.value === 25, "assistant_state_missing_app_turn");
       const queued = await pending(a);
       expect(queued?.id === first.action_id && queued.minutes === 25, "canonical_pending_action_missing");
       const events = await memoryEvents(a);
@@ -213,7 +209,7 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
       const own = await app(a, { action: "history" });
       expect(own.status === 200 && own.body?.turns?.length === 1 && own.body.turns[0].id === first.id, "own_history_missing");
     });
-    await check("cancellation_updates_shared_whatsapp_state_and_clears_inbox", async () => {
+    await check("cancellation_updates_assistant_state_and_clears_inbox", async () => {
       const cancelled = await send(a, "Please cancel this request.");
       expect(!cancelled.action_id, "cancellation_created_action");
       expect((await semantic(a)).state?.semantic_state?.intent === "cancelled", "shared_state_not_cancelled");
@@ -225,7 +221,7 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
       const turn = await send(a, "Block my selected apps now for 20 minutes, just once.");
       expect(turn.action_id === `app_${turn.id}`, "second_action_missing");
       const denied = await inbox(b, { action: "ack_pending_action", connect_code: a.connect, action_id: turn.action_id, status: "failed" });
-      expect(denied.status === 400 && denied.body?.error === "assistant_identity_conflict", "foreign_receipt_not_rejected");
+      expect(denied.status === 403 && denied.body?.error === "installation_not_verified", "foreign_receipt_not_rejected");
       // Simulate the native protocol's delivered -> failed transition. Polling
       // this synthetic inbox is not evidence of a real iPhone receiving it.
       const delivered = await inbox(a, { action: "poll_pending_action" });

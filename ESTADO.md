@@ -1,5 +1,8 @@
 # Estado del proyecto
 
+- [candidato actualizado] 2026-09-27: En `codex/ios-web-identity-current-2026-09-27` (`ec7b3a9`), el onboarding iOS usa Sign in with Apple en vez de OTP; la sesión telefónica heredada puede vincular Apple conservando el usuario Supabase e historial. Las rutas app usan JWT + instalación y memoria por UUID. Early Access mantiene SMS/WhatsApp web por `waitlist-auth`; los enlaces antiguos `handoff` llevan a App Store sin token. Sin merge/deploy, build firmada ni prueba física; pendiente validar Supabase/Apple y cuentas nueva/heredada.
+- Revisión final: comprobaciones estáticas de JavaScript, entitlement plist y diff limpias. Product harness `62/63`; único fallo `release_gate_quick` por replay con 2 trayectorias/8 turnos únicos y evidencia física 0/20. No aprueba release.
+
 - [cerrada] 2026-09-27: El producto iOS usa conversación dentro de la app. El alta termina en la Home tras verificar teléfono y preparar el iPhone; WhatsApp queda reservado al recorrido de Early Access. La Home muestra acceso a chat y una entrada rápida de texto/dictado que abre el chat al enviar. El canal interno de acciones y memoria del producto pasa a `app`.
 - 2026-09-27: Implementado en `codex/product-next-2026-09-26`: onboarding de dos pasos, llegada a Home, acceso Chat abajo a la izquierda y compositor de texto/dictado en Home. La activación autenticada, memoria, APNs y acciones usan `app`; se retira la ruta pública que enviaba cuentas de producto a WhatsApp aunque se activase su flag anterior. Contratos dirigidos correctos. Harness con baseline y `--enforce-scope`: 62/63; el gate restante exige evidencias de ejecución física ausentes (48/48 turnos sintéticos pasan). Sin build iOS firmada, prueba física ni distribución.
 

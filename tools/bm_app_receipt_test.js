@@ -13,7 +13,9 @@ let failWrite = false;
 let foreignRow = false;
 let receipt = null;
 const operations = [];
-channel.findAssistantConnection = async () => ({ channel: "app", channelUser: "+15555550101" });
+membership.getSupabaseUser = async (event) => event.headers?.authorization === "Bearer app-session"
+  ? { id: owner.auth_user_id, app_metadata: { provider: "apple", providers: ["apple"] } } : null;
+channel.findAssistantConnection = async () => ({ channel: "app", channelUser: owner.auth_user_id });
 channel.getAssistantMemory = async () => structuredClone(memory);
 channel.recordAssistantMemory = async ({ memory: patch }) => {
   operations.push("memory");
@@ -25,9 +27,10 @@ channel.transitionPendingAssistantAction = async ({ pending: next, outcome }) =>
 };
 channel.sendAssistantMessage = async () => { throw new Error("App receipt must not send a WhatsApp message"); };
 identity.identityForPhone = async (phone) => {
-  assert.equal(phone, "+15555550101", "receipt owner comes from resolved connection, not supplied user phone");
+  assert.equal(phone, "+15555550101", "app receipt should not use the legacy phone lookup");
   return linked;
 };
+identity.identityForAuthUser = async () => linked;
 identity.identityForAppInstall = async () => linked;
 membership.supabaseFetch = async (path, options) => {
   operations.push("receipt");
@@ -45,7 +48,7 @@ membership.supabaseFetch = async (path, options) => {
 const { handler } = require("../netlify/functions/assistant-channel");
 const pending = () => ({ id: actionId, type: "delete_schedule", window_id: "window-1", status: "execution_started",
   expires_at: new Date(Date.now() + 60_000).toISOString() });
-const request = (fields = {}) => handler({ httpMethod: "POST", body: JSON.stringify({
+const request = (fields = {}) => handler({ httpMethod: "POST", headers: { authorization: "Bearer app-session" }, body: JSON.stringify({
   action: "ack_pending_action", action_id: actionId, status: "verified", channel: "app",
   connect_code: owner.assistant_connect_code, app_install_id: owner.app_install_id, ...fields,
 }) });
@@ -76,7 +79,7 @@ const request = (fields = {}) => handler({ httpMethod: "POST", body: JSON.string
   failWrite = false;
   assert.equal((await request()).statusCode, 200);
 
-  for (const [mismatched, expectedStatus] of [[{ ...owner, auth_user_id: "" }, 500], [{ ...owner, assistant_connect_code: "ZZZZZZZZ99" }, 400], [{ ...owner, app_install_id: "someone-else" }, 500]]) {
+  for (const [mismatched, expectedStatus] of [[{ ...owner, auth_user_id: "" }, 403], [{ ...owner, assistant_connect_code: "ZZZZZZZZ99" }, 403], [{ ...owner, app_install_id: "someone-else" }, 403]]) {
     linked = mismatched;
     memory = { pending_assistant_action: pending() };
     const count = operations.length;

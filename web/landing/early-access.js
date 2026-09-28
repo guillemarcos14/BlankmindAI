@@ -40,12 +40,12 @@
     phoneForm.querySelector("button").disabled = true;
     setStatus("I’m sending your verification code now.");
     try {
-      const result = await post("app-auth", { action: "request_otp", phone, channel });
+      const result = await post("waitlist-auth", { action: "request_otp", phone, channel });
       phone = result.phone_e164 || phone;
       phoneForm.hidden = true;
       codeForm.hidden = false;
       codeInput.focus();
-      setStatus(`I sent the code to ${channel === "sms" ? "Messages" : "WhatsApp"}. Enter it here when it arrives.`);
+      setStatus("I sent the verification code by SMS. Enter it here when it arrives.");
     } catch (error) {
       setStatus(error.message, true);
       phoneForm.querySelector("button").disabled = false;
@@ -57,7 +57,7 @@
     codeForm.querySelector("button").disabled = true;
     setStatus("I’m verifying your number.");
     try {
-      const verified = await post("app-auth", {
+      const verified = await post("waitlist-auth", {
         action: "verify_otp",
         phone,
         code: codeInput.value.trim(),

@@ -36,7 +36,7 @@ Desde el worktree candidato:
 node tools/backend_staging.js --dry-run
 ```
 
-El comando predeterminado solo trabaja en local. Genera wrappers que importan los handlers del worktree, empaqueta sus dependencias con `esbuild` y conserva exactamente cuatro ZIP: `app-auth`, `assistant-app`, `assistant-channel` y `blanked-agent`. Registra SHA de Git, limpieza del árbol, hashes de las fuentes transitivas y de los ZIP en `tmp/cloud-stage/package-*.json`. Un paquete de un árbol modificado queda marcado como no desplegable. Las credenciales no se leen ni se incluyen en el paquete local.
+El comando predeterminado solo trabaja en local. Genera wrappers que importan los handlers del worktree, empaqueta sus dependencias con `esbuild` y conserva exactamente cinco ZIP: `app-auth`, `assistant-app`, `assistant-channel`, `blanked-agent` y `waitlist-auth`. Este último mantiene la verificación OTP SMS de Early Access fuera de la autenticación del producto iOS. Registra SHA de Git, limpieza del árbol, hashes de las fuentes transitivas y de los ZIP en `tmp/cloud-stage/package-*.json`. Un paquete de un árbol modificado queda marcado como no desplegable. Las credenciales no se leen ni se incluyen en el paquete local.
 
 Los ZIP se guardan en un directorio temporal aislado de los repositorios. Netlify CLI acepta esos ZIP y los copia sin reempaquetarlos; esto permite comparar su SHA-256 con el digest remoto. El directorio aislado evita recoger `netlify.toml`, caches, cron o funciones internas de otro proyecto. Los módulos de transporte que necesita internamente la app pueden formar parte del bundle, pero no se publican como endpoints ni se configuran sus credenciales.
 
@@ -48,7 +48,7 @@ node tools/backend_staging.js --deploy
 
 `--source <worktree>` permite seleccionar otro candidato y `--netlify-cli <run.js>` selecciona el runtime instalado. El site de destino está fijado a QA y rechaza producción. Antes de la única llamada de despliegue, el script comprueba contraseña anónima tanto en la página como en una ruta de función, URL de la base aislada, ausencia de credenciales de transporte, routing desactivado y fuente sin cambios desde el empaquetado. Las claves enmascaradas por Netlify se registran como no inspeccionadas; su validez se comprueba con el smoke autenticado. `--prod` del comando interno solo publica en el site privado de QA; no usa `--context`, incompatible con `--no-build` en este CLI.
 
-Al terminar, compara los cuatro digests remotos, ausencia de schedules, deploy activo y protección privada. El informe solo marca `private_deploy_verified` si todo coincide. Un fallo después de solicitar el despliegue queda como resultado desconocido o desplegado sin verificar; no se reintenta automáticamente. El script no aplica SQL, no ejecuta el modelo ni sustituye las pruebas físicas o el gate de producción.
+Al terminar, compara los cinco digests remotos, ausencia de schedules, deploy activo y protección privada. El informe solo marca `private_deploy_verified` si todo coincide. Un fallo después de solicitar el despliegue queda como resultado desconocido o desplegado sin verificar; no se reintenta automáticamente. El script no aplica SQL, no ejecuta el modelo ni sustituye las pruebas físicas o el gate de producción.
 
 Si el proveedor publicó el candidato y falló la verificación posterior, se verifica el mismo deploy sin volver a empaquetar ni publicar:
 
@@ -56,7 +56,7 @@ Si el proveedor publicó el candidato y falló la verificación posterior, se ve
 node tools/backend_staging.js --verify-report <ruta-al-package-report.json>
 ```
 
-Esta modalidad solo realiza lecturas remotas. Exige que los cuatro ZIP originales sigan presentes y coincidan con sus hashes y tamaños; conserva el SHA de fuente, los hashes transitivos y el informe original sin modificarlo. Escribe un recibo `*.verification-*.json` ligado al hash del informe original, y comprueba de nuevo deploy activo, base aislada, privacidad, ausencia de transportes/schedules y los cuatro digests remotos. Acepta el inventario real de Netlify como objeto de grupo y el formato histórico como lista, rechazando formas desconocidas, grupos ambiguos, entradas duplicadas o hashes distintos. El runtime informado por Netlify se registra aparte del target de compilación del bundle. Ningún fallo provoca redeploy automático.
+Esta modalidad solo realiza lecturas remotas. Exige que los cinco ZIP originales sigan presentes y coincidan con sus hashes y tamaños; conserva el SHA de fuente, los hashes transitivos y el informe original sin modificarlo. Escribe un recibo `*.verification-*.json` ligado al hash del informe original, y comprueba de nuevo deploy activo, base aislada, privacidad, ausencia de transportes/schedules y los cinco digests remotos. Acepta el inventario real de Netlify como objeto de grupo y el formato histórico como lista, rechazando formas desconocidas, grupos ambiguos, entradas duplicadas o hashes distintos. El runtime informado por Netlify se registra aparte del target de compilación del bundle. Ningún fallo provoca redeploy automático.
 
 La regresión local del empaquetador se ejecuta con `node tools/backend_staging_test.js` y comprueba allowlists, ausencia de llamadas remotas por defecto, fuente limpia, privacidad, base aislada y comparación de hashes.
 
