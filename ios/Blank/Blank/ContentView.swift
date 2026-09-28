@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @State private var showingOnboardingDemo = false
+    @State private var simulatorGuestHome = false
 
     var body: some View {
         #if DEBUG
@@ -19,15 +20,18 @@ struct ContentView: View {
 
     private var productContent: some View {
         ZStack {
-            if showingOnboardingDemo || !sessionStore.setupComplete || !AssistantAppSession.hasAppleIdentity {
+            if showingOnboardingDemo || (!simulatorGuestHome && (!sessionStore.setupComplete || !AssistantAppSession.hasAppleIdentity)) {
                 SetupView {
                     withAnimation(.easeInOut(duration: 0.35)) {
                         showingOnboardingDemo = false
+                        #if targetEnvironment(simulator)
+                        simulatorGuestHome = true
+                        #endif
                     }
                 }
                 .transition(.opacity)
             } else {
-                HomeView {
+                HomeView(simulatorGuest: simulatorGuestHome && !AssistantAppSession.hasAppleIdentity) {
                     withAnimation(.easeInOut(duration: 0.35)) {
                         showingOnboardingDemo = true
                     }

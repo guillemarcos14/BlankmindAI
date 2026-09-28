@@ -428,8 +428,10 @@ struct HomeView: View {
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let homeTagline = "Your plan adapts\nbefore the scroll\npulls you back."
     let onOpenOnboardingDemo: () -> Void
+    let simulatorGuest: Bool
 
-    init(_ onOpenOnboardingDemo: @escaping () -> Void = {}) {
+    init(simulatorGuest: Bool = false, _ onOpenOnboardingDemo: @escaping () -> Void = {}) {
+        self.simulatorGuest = simulatorGuest
         self.onOpenOnboardingDemo = onOpenOnboardingDemo
     }
 
@@ -689,7 +691,7 @@ struct HomeView: View {
         .fullScreenCover(isPresented: $showingAssistantChat, onDismiss: {
             chatLaunchMessage = nil
         }) {
-            AssistantAppView(initialMessage: chatLaunchMessage, onOpenControls: { section in
+            AssistantAppView(initialMessage: chatLaunchMessage, simulatorGuest: simulatorGuest, onOpenControls: { section in
                 if let section { openSection(section) }
             }) { actionId in
                 BlankSharedState.defaults.set(true, forKey: AssistantRemoteNotification.pollAfterOpenKey)
@@ -1427,10 +1429,14 @@ struct HomeView: View {
 
     private func openOnboardingDemo() {
         withAnimation(.easeInOut(duration: 0.45)) {
+            #if !targetEnvironment(simulator)
             _ = sessionStore.deactivateBlank(entryMode: .app, endedReason: .manual)
             sessionStore.setupComplete = false
+            #endif
         }
+        #if !targetEnvironment(simulator)
         screenTimeBlocker.clear()
+        #endif
         message = nil
         messageAction = nil
         onOpenOnboardingDemo()
@@ -3483,7 +3489,8 @@ struct AppAccountSignInSheet: View {
     }
 
     private var accountForm: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .center, spacing: 22) {
+            Spacer(minLength: 24)
             Text("blank")
                 .font(.blankInter(size: 18, weight: .semibold, relativeTo: .headline))
                 .padding(.bottom, 22)
@@ -3492,12 +3499,14 @@ struct AppAccountSignInSheet: View {
             Text("Continue with Apple to keep your chat and setup connected to your account.")
                 .font(.blankInter(size: 16, relativeTo: .body))
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
                 Text("This will connect Apple to your existing Blank account and preserve its chat history.")
                     .font(.blankInter(size: 14, relativeTo: .footnote))
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -3527,13 +3536,13 @@ struct AppAccountSignInSheet: View {
                 Text(errorMessage)
                     .font(.blankInter(size: 14, relativeTo: .footnote))
                     .foregroundStyle(BlankColors.red)
+                    .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 24)
         }
         .padding(.horizontal, 28)
-        .padding(.top, 42)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .background(Color(uiColor: .systemBackground))
     }
 

@@ -101,55 +101,56 @@ struct SetupView: View {
     }
 
     private var functionalStep: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("blank")
-                    .font(.blankInter(size: 18, weight: .semibold, relativeTo: .headline))
-                Spacer()
-                Text("2 / 2")
-                    .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.top, 24)
-            .padding(.bottom, 44)
-
+        GeometryReader { geometry in
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .center, spacing: 0) {
+                    VStack(spacing: 8) {
+                        Text("blank")
+                            .font(.blankInter(size: 18, weight: .semibold, relativeTo: .headline))
+                        Text("2 / 2")
+                            .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.bottom, 32)
+
                     deviceContent
+
+                    if let message {
+                        Text(message)
+                            .font(.blankInter(size: 14, relativeTo: .footnote))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .multilineTextAlignment(.center)
+                            .padding(.bottom, 14)
+                            .accessibilityAddTraits(.updatesFrequently)
+                    }
+
+                    primaryButton(completionInFlight ? "Preparing Blank…" : "Go to Home", enabled: deviceReady && !completionInFlight) {
+                        Task { await completeSetup() }
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            if let message {
-                Text(message)
-                    .font(.blankInter(size: 14, relativeTo: .footnote))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 14)
-                    .accessibilityAddTraits(.updatesFrequently)
-            }
-
-            primaryButton(completionInFlight ? "Preparing Blank…" : "Go to Home", enabled: deviceReady && !completionInFlight) {
-                Task { await completeSetup() }
+                .padding(.horizontal, 28)
+                .padding(.vertical, 24)
+                .frame(minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .padding(.horizontal, 28)
-        .padding(.bottom, 12)
         .foregroundStyle(BlankColors.charcoal)
         .tint(BlankColors.charcoal)
         .background(BlankColors.pureWhite.ignoresSafeArea())
     }
 
     private var deviceContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .center, spacing: 0) {
             Text("Prepare this iPhone")
                 .font(.blankEditorial(size: 32))
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 12)
 
             Text("Prepare protection on this iPhone, then talk to Blankmind directly in the app.")
                 .font(.blankInter(size: 16, relativeTo: .body))
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 28)
 
@@ -194,11 +195,10 @@ struct SetupView: View {
         showActionWhenReady: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
+        VStack(alignment: .center, spacing: 4) {
+            VStack(spacing: 4) {
                 Text(title)
                     .font(.blankInter(size: 17, weight: .semibold, relativeTo: .headline))
-                Spacer(minLength: 8)
                 Text(ready ? "Ready" : "Needed")
                     .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
                     .foregroundStyle(ready ? Color(uiColor: .label) : Color(uiColor: .secondaryLabel))
@@ -206,6 +206,7 @@ struct SetupView: View {
             Text(detail)
                 .font(.blankInter(size: 14, relativeTo: .subheadline))
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             if !ready || showActionWhenReady {
@@ -215,7 +216,7 @@ struct SetupView: View {
                     .buttonStyle(.plain)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, 17)
         .overlay(alignment: .bottom) { Divider() }
     }
@@ -410,7 +411,6 @@ struct SetupView: View {
 
     private func skipToHomeForQA() {
         message = nil
-        sessionStore.finishSetup()
         onFinishForQA?()
     }
 }

@@ -519,6 +519,7 @@ struct AssistantAppView: View {
     @State private var initialMessageHandled = false
 
     var initialMessage: String? = nil
+    var simulatorGuest = false
     var onOpenControls: (HomeSection?) -> Void = { _ in }
     let onApplyAction: (String) -> Void
 
@@ -616,6 +617,11 @@ struct AssistantAppView: View {
                                  : (spanish ? "¿Qué tienes en mente?" : "What is on your mind?"))
                                 .font(.blankEditorial(size: 28))
                                 .fixedSize(horizontal: false, vertical: true)
+                            if simulatorGuest {
+                                Text("Simulator navigation preview")
+                                    .font(.blankInter(size: 14, relativeTo: .footnote))
+                                    .foregroundStyle(foreground.opacity(0.65))
+                            }
                             if requiresVerification {
                                 Button(spanish ? "Iniciar sesión con Apple" : "Sign in with Apple") { showAccountSignIn = true }
                                     .font(.blankInter(size: 17, weight: .semibold))
@@ -641,6 +647,13 @@ struct AssistantAppView: View {
         .background(background.ignoresSafeArea())
         .preferredColorScheme(dark ? .dark : .light)
         .task {
+            #if targetEnvironment(simulator)
+            if simulatorGuest {
+                isLoading = false
+                composer.draft = initialMessage ?? ""
+                return
+            }
+            #endif
             #if DEBUG
             if preview { loadPreview(); return }
             #endif
@@ -670,13 +683,13 @@ struct AssistantAppView: View {
             }
         }
         .onReceive(Timer.publish(every: 8, on: .main, in: .common).autoconnect()) { _ in
-            guard scenePhase == .active, !preview, !isSending else { return }
+            guard scenePhase == .active, !preview, !simulatorGuest, !isSending else { return }
             if composer.pending != nil || latest.map({ !$0.actionId.isEmpty && !AssistantActionCopy.terminal.contains($0.actionStatus) }) == true {
                 Task { await reload() }
             }
         }
         .onChange(of: scenePhase) { phase in
-            if phase == .active && !preview { Task { restoreOwner(); await reload() } }
+            if phase == .active && !preview && !simulatorGuest { Task { restoreOwner(); await reload() } }
             else {
                 // Permission alerts temporarily deactivate the scene. Keep that
                 // pending request; stop audio when leaving or while interrupted.
@@ -688,7 +701,7 @@ struct AssistantAppView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
-            guard !preview, restoreOwner() else { return }
+            guard !preview, !simulatorGuest, restoreOwner() else { return }
             Task { await reload() }
         }
         .onDisappear { acceptingSpeech = false; speech.stop(); saveTask?.cancel(); persist() }
@@ -783,7 +796,7 @@ struct AssistantAppView: View {
                 .onSubmit { if composer.pending == nil { Task { await send() } } }
                 .padding(.vertical, 14)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                .disabled(requiresVerification)
+                .disabled(requiresVerification || simulatorGuest)
                 .accessibilityLabel(spanish ? "Mensaje para Blankmind" : "Message Blankmind")
     }
 
@@ -811,7 +824,7 @@ struct AssistantAppView: View {
                         .frame(width: 44, height: 50)
                 }
                 .fixedSize(horizontal: true, vertical: false)
-                .disabled(waiting || draftTooLong || requiresVerification)
+                .disabled(waiting || draftTooLong || requiresVerification || simulatorGuest)
                 .opacity(waiting || draftTooLong || requiresVerification ? 0.45 : 1)
                 .accessibilityLabel(spanish ? "Enviar mensaje" : "Send message")
             }
@@ -909,7 +922,7 @@ struct AssistantAppView: View {
     }
 
     private func send() async {
-        guard !preview, !isSending, !requiresVerification else { return }
+        guard !preview, !simulatorGuest, !isSending, !requiresVerification else { return }
         acceptingSpeech = false
         speech.stop()
         let before = composer
