@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-- 2026-09-28: Corregido el acceso Home desde onboarding en simulador sin persistir una identidad o alta ficticia; Chat se abre como vista de navegación sin backend. Onboarding de cuenta y preparación centrado en ambos ejes. Harness 62/63; el gate físico de release sigue pendiente. Falta compilar y revisar visualmente este cambio en Xcode.
+- 2026-09-28: Corregido el acceso Home desde onboarding en simulador sin persistir una identidad o alta ficticia; Chat se abre como vista de navegación sin backend. Ambas pantallas de onboarding son recorribles por controles QA y su contenido está centrado. Harness 63/63 y build CI de simulador correctos en `9503fb9`; pendiente revisión visual. Sin firma ni distribución.
 
 - [candidato actualizado] 2026-09-27: En `codex/ios-web-identity-current-2026-09-27` (`ec7b3a9`), el onboarding iOS usa Sign in with Apple en vez de OTP; la sesión telefónica heredada puede vincular Apple conservando el usuario Supabase e historial. Las rutas app usan JWT + instalación y memoria por UUID. Early Access mantiene SMS/WhatsApp web por `waitlist-auth`; los enlaces antiguos `handoff` llevan a App Store sin token. Sin merge/deploy, build firmada ni prueba física; pendiente validar Supabase/Apple y cuentas nueva/heredada.
 - Revisión final: comprobaciones estáticas de JavaScript, entitlement plist y diff limpias. Product harness `62/63`; único fallo `release_gate_quick` por replay con 2 trayectorias/8 turnos únicos y evidencia física 0/20. No aprueba release.
