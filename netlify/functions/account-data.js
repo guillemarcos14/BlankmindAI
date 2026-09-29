@@ -9,6 +9,7 @@ const {
 const { decryptToken, revokeToken } = require("./_wearable_oauth");
 const { ensureIdentityForAuthUser, identityForAuthUser } = require("./_identity");
 const { assistantChannelUserId } = require("./_assistant_channel");
+const { revokeAppleAuthorization } = require("./_apple_revoke");
 
 const DATA_TABLES = [
   "digital_wellness_feature_payloads",
@@ -97,10 +98,19 @@ async function revokeWearableTokens(anonymousIds) {
   }
 }
 
-async function deleteData(event) {
+async function deleteData(event, requireAppleRevocation = false) {
   const user = await requireUser(event);
   if (!user) return json(401, { error: "authentication_required" });
   const authUserId = userId(user);
+  if (requireAppleRevocation) {
+    const appleIdentity = (user.identities || []).find((item) => item.provider === "apple");
+    const appleSubject = appleIdentity?.identity_data?.sub || appleIdentity?.id;
+    if (!appleSubject) return json(409, { error: "apple_identity_unavailable" });
+    await revokeAppleAuthorization({
+      authorizationCode: parseJsonBody(event).apple_authorization_code,
+      expectedSubject: appleSubject,
+    });
+  }
   const ids = await linkedAnonymousIds(authUserId);
   const identity = await identityForAuthUser(authUserId);
   if (identity?.assistant_connect_code) ids.push(`connect:${identity.assistant_connect_code}`);
@@ -172,8 +182,10 @@ exports.handler = async (event) => {
     const action = cleanText(parseJsonBody(event).action, 40) || "link";
     if (action === "link") return await linkIdentity(event);
     if (action === "delete") return await deleteData(event);
+    if (action === "delete_apple") return await deleteData(event, true);
     return json(400, { error: "unsupported_action" });
   } catch (error) {
+    if (error.appleAuth) return json(error.status, { error: error.code });
     return json(500, { error: "account_data_request_failed", detail: error.message });
   }
 };
