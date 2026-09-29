@@ -64,12 +64,6 @@ struct SetupView: View {
             .padding(20)
             .accessibilityLabel(currentStep == .account ? "Preview device setup" : "Preview account sign-in")
         }
-        .overlay(alignment: .topTrailing) {
-            Button("Home") { skipToHomeForQA() }
-                .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
-                .padding(20)
-                .accessibilityLabel("Skip onboarding and open Home")
-        }
         #endif
         .task {
             if onboardingFlowVersion != 5 {
@@ -113,15 +107,6 @@ struct SetupView: View {
         GeometryReader { geometry in
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .center, spacing: 0) {
-                    VStack(spacing: 8) {
-                        Text("blank")
-                            .font(.blankInter(size: 18, weight: .semibold, relativeTo: .headline))
-                        Text("2 / 2")
-                            .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.bottom, 32)
-
                     deviceContent
 
                     if let message {
@@ -134,9 +119,10 @@ struct SetupView: View {
                             .accessibilityAddTraits(.updatesFrequently)
                     }
 
-                    primaryButton(completionInFlight ? "Preparing Blank…" : "Go to Home", enabled: deviceReady && !completionInFlight) {
+                    primaryButton(completionInFlight ? "Preparing…" : "Go to Home", enabled: deviceReady && !completionInFlight) {
                         Task { await completeSetup() }
                     }
+                    .padding(.top, 24)
                 }
                 .padding(.horizontal, 28)
                 .padding(.vertical, 24)
@@ -154,49 +140,43 @@ struct SetupView: View {
                 .font(.blankEditorial(size: 32))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 12)
-
-            Text("Prepare protection on this iPhone, then talk to Blankmind directly in the app.")
-                .font(.blankInter(size: 16, relativeTo: .body))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 28)
 
-            setupRow(
-                title: "Screen Time",
-                detail: "Allows blocking on this iPhone.",
-                ready: screenTimeBlocker.authorizationStatus == .approved,
-                actionTitle: screenTimeBlocker.authorizationStatus == .denied ? "Open Settings" : "Allow Screen Time",
-                action: authorizeScreenTime
-            )
-            setupRow(
-                title: "Apps and websites",
-                detail: sessionStore.hasSelectedApps
-                    ? "\(sessionStore.selectionCount) selected for future blocks."
-                    : "Choose apps for one reusable protection list.",
-                ready: sessionStore.hasSelectedApps,
-                actionTitle: sessionStore.hasSelectedApps ? "Edit selection" : "Choose apps",
-                showActionWhenReady: true
-            ) {
-                if screenTimeBlocker.authorizationStatus == .approved {
-                    showingPicker = true
-                } else {
-                    message = "Allow Screen Time before choosing apps."
+            VStack(spacing: 12) {
+                setupCard(
+                    title: "Screen Time",
+                    detail: "Block distracting apps on this iPhone.",
+                    ready: screenTimeBlocker.authorizationStatus == .approved,
+                    actionTitle: screenTimeBlocker.authorizationStatus == .denied ? "Open Settings" : "Allow Screen Time",
+                    action: authorizeScreenTime
+                )
+                setupCard(
+                    title: "Apps and websites",
+                    detail: sessionStore.hasSelectedApps
+                        ? "\(sessionStore.selectionCount) selected."
+                        : "Choose what Blankmind can block.",
+                    ready: sessionStore.hasSelectedApps,
+                    actionTitle: sessionStore.hasSelectedApps ? "Edit apps" : "Choose apps",
+                    showActionWhenReady: true
+                ) {
+                    if screenTimeBlocker.authorizationStatus == .approved {
+                        showingPicker = true
+                    } else {
+                        message = "Allow Screen Time before choosing apps."
+                    }
                 }
+                setupCard(
+                    title: "Notifications",
+                    detail: "Get alerts to apply blocks from chat.",
+                    ready: notificationReady,
+                    actionTitle: notificationDenied ? "Open Settings" : "Enable notifications",
+                    action: requestNotifications
+                )
             }
-            setupRow(
-                title: "Notifications",
-                detail: "Tap an alert to apply a block from chat.",
-                ready: notificationReady,
-                actionTitle: notificationDenied ? "Open Settings" : "Enable notifications",
-                action: requestNotifications
-            )
-
         }
     }
 
-    private func setupRow(
+    private func setupCard(
         title: String,
         detail: String,
         ready: Bool,
@@ -204,30 +184,39 @@ struct SetupView: View {
         showActionWhenReady: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .center, spacing: 4) {
-            VStack(spacing: 4) {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
                 Text(title)
                     .font(.blankInter(size: 17, weight: .semibold, relativeTo: .headline))
-                Text(ready ? "Ready" : "Needed")
-                    .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
-                    .foregroundStyle(ready ? Color(uiColor: .label) : Color(uiColor: .secondaryLabel))
+                Spacer(minLength: 8)
+                if ready {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .accessibilityLabel("Completed")
+                }
             }
             Text(detail)
                 .font(.blankInter(size: 14, relativeTo: .subheadline))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.78))
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 6)
 
             if !ready || showActionWhenReady {
-                Button(actionTitle, action: action)
-                    .font(.blankInter(size: 15, weight: .medium, relativeTo: .body))
-                    .frame(minHeight: 44)
-                    .buttonStyle(.plain)
+                Button(action: action) {
+                    Text(actionTitle)
+                        .font(.blankInter(size: 15, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 18)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.vertical, 17)
-        .overlay(alignment: .bottom) { Divider() }
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(.black, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func primaryButton(_ title: String, enabled: Bool, action: @escaping () -> Void) -> some View {
@@ -235,12 +224,11 @@ struct SetupView: View {
             Text(title)
                 .font(.blankInter(size: 16, weight: .semibold, relativeTo: .headline))
                 .frame(maxWidth: .infinity, minHeight: 54)
-                .foregroundStyle(BlankColors.pureWhite)
-                .background(BlankColors.charcoal, in: RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(enabled ? Color.white : BlankColors.stoneGray)
+                .background(enabled ? Color.black : Color(uiColor: .systemGray5), in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
-        .opacity(enabled ? 1 : 0.42)
         .padding(.bottom, 4)
     }
 
@@ -418,8 +406,4 @@ struct SetupView: View {
          "selection_count": sessionStore.selectionCount]
     }
 
-    private func skipToHomeForQA() {
-        message = nil
-        onFinishForQA?()
-    }
 }
