@@ -67,15 +67,14 @@ struct ProtectionTests {
         state.selection = 2
         expect(state.saved == 1, "Equivalent selection update should be inert")
         let identity = IdentityFixture()
-        expect(identity.matches(code: "code-A", channel: "whatsapp", phone: "+34000000000"), "Legacy WhatsApp casing must normalize")
+        expect(identity.matches(code: "code-A", channel: "app", owner: "account-A"), "The app channel matches its account identity")
         identity.assistantConnectCode = "code-B"
-        expect(!identity.matches(code: "code-A", channel: "whatsapp", phone: "+34000000000"), "An old account's poll must not execute after linking a new account")
+        expect(!identity.matches(code: "code-A", channel: "app", owner: "account-A"), "An old connection's poll must not execute after linking a new account")
         identity.assistantConnectCode = "code-A"
-        identity.assistantPhoneNumber = "+34000000001"
-        expect(!identity.matches(code: "code-A", channel: "whatsapp", phone: "+34000000000"), "Changed verified phone accepted a stale action")
-        identity.assistantPhoneNumber = "+34000000000"
-        identity.assistantPreferredChannel = "sms"
-        expect(!identity.matches(code: "code-A", channel: "whatsapp", phone: "+34000000000"), "Changed channel accepted a stale action")
+        AssistantAppSession.userID = "account-B"
+        expect(!identity.matches(code: "code-A", channel: "app", owner: "account-A"), "Changed account accepted a stale action")
+        AssistantAppSession.userID = "account-A"
+        expect(!identity.matches(code: "code-A", channel: "whatsapp", owner: "account-A"), "External channel accepted an app action")
         let requestedSchedule = PendingPlanSchedule(name: "Work", startMinute: 540, endMinute: 600, weekdays: [2], durationDays: 7)
         let activatingActions: [AssistantPendingAction] = [
             .startProtection(minutes: 30, hardMode: false, appNames: []),

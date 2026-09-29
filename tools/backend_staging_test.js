@@ -90,7 +90,7 @@ function dependencies({ dirty = false, protectedSite = true, extraFunction = fal
   const dry = dependencies();
   const packaged = await staging.main(args, dry);
   assert.equal(packaged.report.deploy_id, null);
-  assert.equal(packaged.report.functions.length, 4);
+  assert.equal(packaged.report.functions.length, 6);
   assert(packaged.report.source_inputs.some((input) => input.file.endsWith("dependency.js")));
   assert(dry.operations.every((operation) => operation.command === "git"), "dry-run performed a remote read or mutation");
   const scheduled = dependencies();

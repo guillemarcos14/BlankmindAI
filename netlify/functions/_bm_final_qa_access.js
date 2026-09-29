@@ -16,16 +16,8 @@ function isFinalQaWhatsApp(channel, sender) {
 }
 
 async function isFinalAppLinkedWhatsApp(channel, sender, text = "") {
-  if (process.env.BM_FINAL_APP_LINKED_ROUTING_ENABLED !== "true" || channel !== "whatsapp") return false;
-  const phone = phoneForStorage(sender);
-  if (!phone) return false;
-  const { identityForPhone } = require("./_identity");
-  const identity = await identityForPhone(phone);
-  if (!identity?.app_install_id || !identity?.assistant_connect_code) return false;
-  const { connectCodeFromText, findAssistantConnectionForChannelUser } = require("./_assistant_channel");
-  if (connectCodeFromText(text) === identity.assistant_connect_code) return true;
-  const connection = await findAssistantConnectionForChannelUser("whatsapp", phone);
-  return connection?.connectCode === identity.assistant_connect_code;
+  // Production app conversations stay in the authenticated in-app channel.
+  return false;
 }
 
 module.exports = { isFinalQaWhatsApp, isFinalAppLinkedWhatsApp, qaPhone, privateQaGateConfigured };

@@ -5,8 +5,8 @@ import SwiftUI
 import WidgetKit
 
 private enum BlankWidgetPalette {
-    static let charcoal = Color(red: 51 / 255.0, green: 59 / 255.0, blue: 65 / 255.0)
-    static let powderGray = Color(red: 228 / 255.0, green: 235 / 255.0, blue: 239 / 255.0)
+    static let charcoal = Color(red: 48 / 255.0, green: 49 / 255.0, blue: 42 / 255.0)
+    static let powderGray = Color(red: 248 / 255.0, green: 249 / 255.0, blue: 244 / 255.0)
     static let pureWhite = Color.white
 }
 
@@ -151,7 +151,7 @@ struct BlankWidgetView: View {
 
     private var widgetTitle: some View {
         Text(title)
-            .font(.custom("Inter", size: 19.5, relativeTo: .headline).weight(.semibold))
+            .font(.custom("HelveticaNeue", size: 19.5, relativeTo: .headline).weight(.semibold))
             .foregroundStyle(titleColor)
             .lineLimit(1)
             .minimumScaleFactor(0.72)

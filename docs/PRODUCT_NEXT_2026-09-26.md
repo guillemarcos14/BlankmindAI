@@ -12,7 +12,7 @@ Una respuesta posterior sin acción ya no hace inaccesible una orden pendiente a
 
 | Recorrido | Problema comprobado | Resolución / evidencia requerida |
 | --- | --- | --- |
-| Identidad y onboarding | Tres pantallas candidatas todavía no distribuidas; sesión concurrente podía competir al renovar tokens | Se conserva OTP/consentimiento, preparación nativa y WhatsApp verificado; renovación única y cambio de cuenta protegido. Falta alta física en build firmada. |
+| Identidad y onboarding | Tres pantallas candidatas todavía no distribuidas; sesión concurrente podía competir al renovar tokens | Revisión 2026-09-27: OTP/consentimiento y preparación nativa terminan en Home. El canal de producto es el chat autenticado dentro de la app; WhatsApp permanece en Early Access. Falta alta física en build firmada. |
 | Conversación y memoria | Failed quedaba sin recuperación, reintento podía cambiar texto/UUID y una respuesta antigua sobrescribir otra nueva | Turno durable, lease por usuario, checkpoint transaccional con memoria compartida BM Final, reintento del mismo payload y control de revisiones en iOS. |
 | Historial | Empates de fecha podían omitir turnos; error al cargar se ocultaba; acuse podía perderse al cambiar de acción; una respuesta posterior ocultaba el CTA pendiente anterior | Cursor compuesto, errores visibles, recibos terminales durables y CTA recuperable en su turno anterior. Snapshot actualizado al abrir y consulta de estado con ID exacto antes de aplicar; JWT, instalación y dueño verificados en cada lectura. |
 | Voz | Tap de audio huérfano y permisos/callbacks tardíos podían reiniciar o detener otra grabación | Inicio/cancelación por generación, limpieza del tap independiente del motor y revisión antes de enviar. Micrófono real pendiente. |

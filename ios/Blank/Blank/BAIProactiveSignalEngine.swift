@@ -21,7 +21,6 @@ struct BAIProactiveSignalEngine {
         let message = await resolveBAIMessage(signal: signal, system: system, selectionCount: selectionCount) ?? signal.fallbackMessage
         saveLatestAlert(body: message, signal: signal, defaults: defaults)
         await notify(body: message, signal: signal)
-        await sendToPreferredAssistantChannel(body: message, signal: signal, defaults: defaults)
         if signal.kind == "low_recovery" {
             await BlankFunnelAnalytics.track(
                 "proactive_health_alert",
@@ -236,31 +235,6 @@ struct BAIProactiveSignalEngine {
             trigger: nil
         )
         try? await UNUserNotificationCenter.current().add(request)
-    }
-
-    private static func sendToPreferredAssistantChannel(
-        body: String,
-        signal: BAIProactiveSignal,
-        defaults: UserDefaults
-    ) async {
-        guard let baseURL = configuredBaseURL() else { return }
-        let connectCode = defaults.string(forKey: "blankAssistantConnectCode")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let preferredChannel = defaults.string(forKey: "blankAssistantPreferredChannel")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !connectCode.isEmpty, preferredChannel == "sms" || preferredChannel == "whatsApp" else { return }
-
-        var request = URLRequest(url: baseURL.appendingPathComponent("assistant-channel"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 8
-        let payload: [String: Any] = [
-            "action": "send_proactive",
-            "connect_code": connectCode,
-            "preferred_channel": preferredChannel == "whatsApp" ? "whatsapp" : "sms",
-            "message": body,
-            "signal_type": signal.kind
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
-        _ = try? await URLSession.shared.data(for: request)
     }
 
     private static func cleanNotificationText(_ value: String?) -> String? {

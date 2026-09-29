@@ -420,9 +420,10 @@ function memoryFactsFromText(text, savedMemory = {}) {
 }
 
 async function agentContext(from, prompt, linkedConnection = null) {
+  const channel = linkedConnection?.channel === "app" ? "app" : "whatsapp";
   let savedMemory = {};
   try {
-    savedMemory = await getAssistantMemory("whatsapp", from, { requireSemantic: linkedConnection?.canonicalMemoryRequired === true });
+    savedMemory = await getAssistantMemory(channel, from, { requireSemantic: linkedConnection?.canonicalMemoryRequired === true });
   } catch (error) {
     if (linkedConnection?.canonicalMemoryRequired === true || semanticPersistenceRequired()) throw error;
     savedMemory = {};
@@ -447,15 +448,15 @@ async function agentContext(from, prompt, linkedConnection = null) {
   );
     if (Object.keys(newFacts).length || savedMemory.language !== language) {
       try {
-        await recordAssistantMemory({ channel: "whatsapp", channelUser: from, memory: { ...newFacts, language }, source: prompt });
+        await recordAssistantMemory({ channel, channelUser: from, memory: { ...newFacts, language }, source: prompt });
     } catch (_) {
       // Memory must never block a reply.
     }
   }
   return {
     ...userContext,
-    channel: "whatsapp",
-    assistant_channel: "whatsapp",
+    channel,
+    assistant_channel: channel,
     language,
     allow_spanish_response: true,
     is_blank_active: userContext.is_blank_active === undefined ? false : userContext.is_blank_active,

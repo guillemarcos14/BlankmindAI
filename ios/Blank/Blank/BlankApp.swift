@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 import UIKit
 import UserNotifications
@@ -38,6 +39,7 @@ struct BlankApp: App {
                     if AssistantAppPreview.enabled { return }
                     #endif
                     appDelegate.registerForRemoteActions()
+                    checkAppleCredentialState()
                     await purchaseStore.loadProducts()
                     await screenTimeBlocker.restore(selection: sessionStore.selection)
                     sessionStore.syncRecurringSchedule()
@@ -60,6 +62,7 @@ struct BlankApp: App {
                     #endif
                     if phase == .active {
                         appDelegate.registerForRemoteActions()
+                        checkAppleCredentialState()
                         screenTimeBlocker.refreshAuthorizationStatus()
                         sessionStore.syncRecurringSchedule()
                         screenTimeBlocker.updateAdvancedControls(
@@ -72,6 +75,15 @@ struct BlankApp: App {
                 .onOpenURL { url in
                     handleDeepLink(url)
                 }
+        }
+    }
+
+    private func checkAppleCredentialState() {
+        guard let appleUserID = AssistantAppSession.appleUserID else { return }
+        ASAuthorizationAppleIDProvider().getCredentialState(forUserID: appleUserID) { state, error in
+            guard error == nil, state == .revoked || state == .notFound,
+                  AssistantAppSession.appleUserID == appleUserID else { return }
+            AssistantAppSession.clear()
         }
     }
 
@@ -88,11 +100,6 @@ struct BlankApp: App {
 
         if action == "referral" {
             purchaseStore.captureReferral(from: url)
-            return
-        }
-        if action == "handoff" {
-            let token = components?.stringQueryItem("token") ?? ""
-            Task { await claimAppHandoff(token) }
             return
         }
         if action == "timer" || action == "schedule-timer" {
@@ -335,46 +342,6 @@ struct BlankApp: App {
         return url.path == "/open" || url.path == "/open.html"
     }
 
-    private func claimAppHandoff(_ token: String) async {
-        guard !token.isEmpty,
-              let baseURL = configuredMembershipBaseURL() else { return }
-        var request = URLRequest(url: baseURL.appendingPathComponent("app-handoff"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 8
-        let payload: [String: Any] = [
-            "action": "claim",
-            "handoff_token": token,
-            "app_install_id": BlankSharedState.appInstallId,
-            "data_consent": true,
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
-        guard let (data, response) = try? await URLSession.shared.data(for: request),
-              let httpResponse = response as? HTTPURLResponse,
-              (200..<300).contains(httpResponse.statusCode),
-              let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
-
-        let defaults = BlankSharedState.defaults
-        if let connectCode = result["assistant_connect_code"] as? String, !connectCode.isEmpty {
-            defaults.set(connectCode, forKey: "blankAssistantConnectCode")
-        }
-        if let phone = result["phone_e164"] as? String, !phone.isEmpty {
-            defaults.set(phone, forKey: "blankAssistantPhoneNumber")
-        }
-        if !(defaults.string(forKey: "blankAssistantConnectCode") ?? "").isEmpty,
-           !(defaults.string(forKey: "blankAssistantPhoneNumber") ?? "").isEmpty {
-            defaults.set(true, forKey: "blankAssistantPhoneVerified")
-        }
-    }
-
-    private func configuredMembershipBaseURL() -> URL? {
-        guard let rawValue = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String else {
-            return nil
-        }
-        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !trimmed.contains("$(") else { return nil }
-        return URL(string: trimmed)
-    }
 }
 
 @MainActor
@@ -459,7 +426,7 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
-        // A WhatsApp/SMS proposal is intentionally inert until the person taps
+        // A remote proposal is intentionally inert until the person taps
         // its visible notification. This callback may be delivered silently by
         // APNs, so it must never acknowledge or execute the pending action.
         completionHandler(.noData)
@@ -469,10 +436,8 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
         let defaults = BlankSharedState.defaults
         let token = defaults.string(forKey: "blankAssistantPushToken") ?? ""
         let code = defaults.string(forKey: "blankAssistantConnectCode") ?? ""
-        let rawChannel = defaults.string(forKey: "blankAssistantPreferredChannel") ?? ""
-        let channel = rawChannel == "whatsApp" ? "whatsapp" : rawChannel.lowercased()
-        guard !token.isEmpty, !code.isEmpty, ["whatsapp", "sms"].contains(channel) else { return }
-        let phone = defaults.string(forKey: "blankAssistantPhoneNumber") ?? ""
+        let channel = "app"
+        guard !token.isEmpty, !code.isEmpty, AssistantAppSession.userID != nil else { return }
         #if DEBUG
         let environment = "sandbox"
         #else
@@ -483,8 +448,7 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
                 token: token,
                 environment: environment,
                 connectCode: code,
-                channel: channel,
-                phoneNumber: phone
+                channel: channel
             )
             defaults.set(registered, forKey: "blankAssistantPushRegistered")
         }

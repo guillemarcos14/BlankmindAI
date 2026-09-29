@@ -1,4 +1,4 @@
-const { json, parseJsonBody, requireMethod, supabaseFetch } = require("./_membership");
+const { getSupabaseUser, json, parseJsonBody, requireMethod, supabaseFetch } = require("./_membership");
 const {
   cleanChannel,
   cleanText,
@@ -16,10 +16,26 @@ const {
   proactiveGate,
   sendAssistantMessage,
 } = require("./_assistant_channel");
-const { identityForAppInstall, identityForPhone, normalizePhone } = require("./_identity");
+const { authUserHasAppleIdentity, identityForAppInstall, identityForAuthUser, normalizePhone } = require("./_identity");
 const { enrichAssistantContext, persistCanonicalSnapshot } = require("./_bm_user_context");
 const { normalizeDevicePush } = require("./_assistant_push");
 const { PENDING_ASSISTANT_ACTION_TYPES: PENDING_ACTION_TYPES } = require("./bm-pending-action");
+
+async function authenticatedAppIdentity(event, body) {
+  const user = await getSupabaseUser(event);
+  if (!user?.id) return { error: "authentication_required", status: 401 };
+  if (!authUserHasAppleIdentity(user)) return { error: "apple_identity_required", status: 403 };
+  const appInstallId = typeof body.app_install_id === "string" ? body.app_install_id.trim() : "";
+  if (!appInstallId || appInstallId.length > 160) return { error: "installation_not_verified", status: 403 };
+  const identity = await identityForAuthUser(user.id);
+  const suppliedCode = normalizeConnectCode(body.connect_code);
+  if (!identity?.auth_user_id || identity.auth_user_id !== user.id
+      || !identity.assistant_connect_code || identity.app_install_id !== appInstallId
+      || (suppliedCode && suppliedCode !== normalizeConnectCode(identity.assistant_connect_code))) {
+    return { error: "installation_not_verified", status: 403 };
+  }
+  return { user, identity, connectCode: normalizeConnectCode(identity.assistant_connect_code) };
+}
 
 async function registerPreference(body) {
   const connectCode = normalizeConnectCode(body.connect_code);
@@ -27,6 +43,7 @@ async function registerPreference(body) {
   if (!connectCode || !preferredChannel) {
     return json(400, { error: "missing_connect_code_or_channel" });
   }
+  if (preferredChannel === "app") return json(403, { error: "app_activation_requires_auth" });
 
   await recordAssistantChannel({
     event: "assistant_channel_preference_set",
@@ -63,6 +80,7 @@ async function sendProactive(body) {
   if (!connectCode || !message) {
     return json(400, { error: "missing_connect_code_or_message" });
   }
+  if (preferredChannel === "app") return json(403, { error: "app_delivery_not_supported" });
 
   const connection = await findAssistantConnection(connectCode, preferredChannel);
   const gate = await proactiveGate(connectCode, message, connection?.channel || preferredChannel, body.update_key || body.signal_id || "", connection?.channelUser || "");
@@ -116,13 +134,14 @@ async function sendProactive(body) {
   });
 }
 
-async function syncContext(body) {
-  const connectCode = normalizeConnectCode(body.connect_code);
+async function syncContext(body, appAuth = null) {
   const preferredChannel = cleanChannel(body.preferred_channel || body.channel);
+  const connectCode = preferredChannel === "app" ? appAuth?.connectCode : normalizeConnectCode(body.connect_code);
   const context = body.context && typeof body.context === "object" && !Array.isArray(body.context)
     ? body.context
     : null;
   if (!connectCode || !context) return json(400, { error: "missing_connect_code_or_context" });
+  if (preferredChannel === "app" && !appAuth) return json(401, { error: "authentication_required" });
 
   const previousContext = await getAssistantUserContext(connectCode);
   const mergedContext = {
@@ -176,13 +195,16 @@ async function syncContext(body) {
   });
 }
 
-async function registerDevicePush(body) {
-  const result = await connectedChannel(body);
+async function registerDevicePush(body, appAuth = null) {
+  const result = await connectedChannel(body, appAuth);
   if (result.error) return json(400, { error: result.error });
   if (!result.connection) return json(200, { ok: true, registered: false, reason: "not_linked" });
-  const identity = await identityForAppInstall(body.app_install_id);
+  const identity = result.identity || await identityForAppInstall(body.app_install_id);
+  const channelIdentityMatches = result.connection.channel === "app"
+    ? Boolean(appAuth && result.connection.channelUser === appAuth.user.id && identity?.auth_user_id === appAuth.user.id)
+    : normalizePhone(result.connection.channelUser) === identity?.phone_e164;
   if (!identity || normalizeConnectCode(identity.assistant_connect_code) !== result.connectCode
-      || require("./_identity").normalizePhone(result.connection.channelUser) !== identity.phone_e164) {
+      || !channelIdentityMatches) {
     return json(403, { error: "installation_not_verified" });
   }
   const devicePush = normalizeDevicePush({
@@ -201,25 +223,29 @@ async function registerDevicePush(body) {
   return json(200, { ok: true, registered: true, environment: devicePush.environment });
 }
 
-async function connectionStatus(body) {
-  const result = await connectedChannel(body);
+async function connectionStatus(body, appAuth = null) {
+  const result = await connectedChannel(body, appAuth);
   if (result.error) return json(400, { error: result.error });
   const identity = await identityForAppInstall(body.app_install_id);
   if (!identity || normalizeConnectCode(identity.assistant_connect_code) !== result.connectCode) {
     return json(403, { error: "installation_not_verified" });
   }
   const linked = result.connection?.channel === result.preferredChannel
-    && require("./_identity").normalizePhone(result.connection.channelUser) === identity.phone_e164;
+    && (result.preferredChannel === "app"
+      ? Boolean(appAuth && result.connection.channelUser === appAuth.user.id && identity.auth_user_id === appAuth.user.id)
+      : normalizePhone(result.connection.channelUser) === identity.phone_e164);
   return json(200, { ok: true, linked: Boolean(linked), channel: result.preferredChannel });
 }
 
-async function completeOnboarding(body) {
-  const status = await connectedChannel(body);
+async function completeOnboarding(body, appAuth = null) {
+  const status = await connectedChannel(body, appAuth);
   if (status.error) return json(400, { error: status.error });
   const identity = await identityForAppInstall(body.app_install_id);
   if (!identity || normalizeConnectCode(identity.assistant_connect_code) !== status.connectCode
       || status.connection?.channel !== status.preferredChannel
-      || require("./_identity").normalizePhone(status.connection.channelUser) !== identity.phone_e164) {
+      || (status.preferredChannel === "app"
+        ? (!appAuth || status.connection.channelUser !== appAuth.user.id || identity.auth_user_id !== appAuth.user.id)
+        : normalizePhone(status.connection.channelUser) !== identity.phone_e164)) {
     return json(403, { error: "channel_not_verified_for_installation" });
   }
   const context = await getAssistantUserContext(status.connectCode);
@@ -230,6 +256,9 @@ async function completeOnboarding(body) {
     && context.notification_authorized === true
     && Boolean(memory.assistant_device_push?.token);
   if (!ready) return json(200, { ok: true, ready: false, reason: "device_setup_incomplete" });
+  if (status.connection.channel === "app") {
+    return json(200, { ok: true, ready: true });
+  }
   if (memory.assistant_activation_ready_sent_at) return json(200, { ok: true, ready: true, already_sent: true });
   const spanish = /^es(?:$|[-_])/i.test(String(context.locale || context.language || ""));
   const channelName = status.connection.channel === "sms" ? "SMS" : "WhatsApp";
@@ -377,38 +406,53 @@ function normalizeExecutionEvidence(body, pending) {
   };
 }
 
-async function connectedChannel(body) {
+async function connectedChannel(body, appAuth = null) {
   const preferredChannel = cleanChannel(body.preferred_channel || body.channel);
   if (!preferredChannel) return { error: "missing_channel" };
-  let connectCode = normalizeConnectCode(body.connect_code);
+  let connectCode = preferredChannel === "app" ? appAuth?.connectCode : normalizeConnectCode(body.connect_code);
   const installation = cleanText(body.app_install_id, 160);
   // A phone number is public contact data, never an inbox credential. Legacy
   // clients retain their CONNECT code; app clients can use a linked install.
+  if (preferredChannel === "app" && !appAuth) return { error: "authentication_required" };
+  if (preferredChannel === "app" && appAuth.identity.app_install_id !== installation) {
+    return { error: "installation_not_verified" };
+  }
   if (!connectCode && !installation) return { error: "installation_not_linked" };
-  const identity = installation ? await identityForAppInstall(installation) : null;
+  const identity = preferredChannel === "app" ? appAuth?.identity : (installation ? await identityForAppInstall(installation) : null);
   if (!connectCode) connectCode = normalizeConnectCode(identity?.assistant_connect_code);
   if (!connectCode) return { error: "installation_not_linked" };
   if (identity && normalizeConnectCode(identity.assistant_connect_code) !== connectCode) {
     return { error: "assistant_identity_conflict" };
   }
+  if (preferredChannel === "app" && !identity) return { error: "installation_not_verified" };
   const connection = await findAssistantConnection(connectCode, preferredChannel);
+  if (preferredChannel === "app" && connection?.channel !== "app") {
+    return { error: "app_channel_not_activated" };
+  }
   if (connection) {
-    // Meta's WhatsApp sender omits "+" while Twilio and account identity use E.164.
-    const connectedPhone = normalizePhone(connection.channelUser).replace(/^\+/, "");
-    const suppliedPhone = normalizePhone(body.user_phone || body.phone_number).replace(/^\+/, "");
-    if ((identity && normalizePhone(identity.phone_e164).replace(/^\+/, "") !== connectedPhone)
-        || (suppliedPhone && suppliedPhone !== connectedPhone)) {
-      return { error: "assistant_identity_conflict" };
+    if (preferredChannel === "app") {
+      if (connection.channelUser !== appAuth.user.id || identity?.auth_user_id !== appAuth.user.id) {
+        return { error: "assistant_identity_conflict" };
+      }
+    } else {
+      // Meta's WhatsApp sender omits "+" while Twilio and account identity use E.164.
+      const connectedPhone = normalizePhone(connection.channelUser).replace(/^\+/, "");
+      const suppliedPhone = normalizePhone(body.user_phone || body.phone_number).replace(/^\+/, "");
+      if ((identity && normalizePhone(identity.phone_e164).replace(/^\+/, "") !== connectedPhone)
+          || (suppliedPhone && suppliedPhone !== connectedPhone)) {
+        return { error: "assistant_identity_conflict" };
+      }
     }
   }
-  return { connectCode, preferredChannel, connection };
+  return { connectCode, preferredChannel, connection, identity, appAuth };
 }
 
 async function persistAppActionReceipt(result, body, actionId, status) {
   const match = /^app_([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(actionId);
   if (!match) return;
-  const identity = await identityForPhone(result.connection.channelUser);
-  if (result.connection.channel !== "whatsapp" || !identity?.auth_user_id
+  const identity = result.identity;
+  if (result.connection.channel !== "app" || !identity?.auth_user_id
+      || !result.appAuth || result.appAuth.user.id !== identity.auth_user_id
       || normalizeConnectCode(identity.assistant_connect_code) !== result.connectCode
       || !body.app_install_id || identity.app_install_id !== body.app_install_id) {
     throw new Error("app_receipt_identity_mismatch");
@@ -425,9 +469,9 @@ async function persistAppActionReceipt(result, body, actionId, status) {
   if (!rows[0]) throw new Error("app_receipt_not_persisted");
 }
 
-async function pollPendingAction(body) {
-  const result = await connectedChannel(body);
-  if (result.error) return json(400, { error: result.error });
+async function pollPendingAction(body, appAuth = null) {
+  const result = await connectedChannel(body, appAuth);
+  if (result.error) return json(result.error === "authentication_required" ? 401 : 400, { error: result.error });
   if (!result.connection) return json(200, { ok: true, linked: false, pending_action: null });
 
   const memory = await getAssistantMemory(result.connection.channel, result.connection.channelUser);
@@ -483,11 +527,11 @@ async function pollPendingAction(body) {
   });
 }
 
-async function acknowledgePendingAction(body) {
-  const result = await connectedChannel(body);
+async function acknowledgePendingAction(body, appAuth = null) {
+  const result = await connectedChannel(body, appAuth);
   const actionId = cleanText(body.action_id, 80);
   const status = normalizeActionStatus(body.status);
-  if (result.error || !actionId) return json(400, { error: result.error || "missing_action_id" });
+  if (result.error || !actionId) return json(result.error === "authentication_required" ? 401 : 400, { error: result.error || "missing_action_id" });
   if (!ACTION_STATUS_TRANSITIONS[status]) return json(400, { error: "invalid_action_status" });
   if (!result.connection) return json(200, { ok: true, acknowledged: false, reason: "not_linked" });
 
@@ -616,14 +660,24 @@ exports.handler = async (event) => {
   try {
     const body = parseJsonBody(event);
     const action = cleanText(body.action, 60).toLowerCase();
+    const channel = cleanChannel(body.preferred_channel || body.channel);
+    const appScopedActions = new Set([
+      "sync_context", "register_device_push", "connection_status", "complete_onboarding",
+      "poll_pending_action", "ack_pending_action",
+    ]);
+    let appAuth = null;
+    if (channel === "app" && appScopedActions.has(action)) {
+      appAuth = await authenticatedAppIdentity(event, body);
+      if (appAuth.error) return json(appAuth.status, { error: appAuth.error });
+    }
     if (action === "register_preference") return await registerPreference(body);
-    if (action === "sync_context") return await syncContext(body);
-    if (action === "register_device_push") return await registerDevicePush(body);
-    if (action === "connection_status") return await connectionStatus(body);
-    if (action === "complete_onboarding") return await completeOnboarding(body);
+    if (action === "sync_context") return await syncContext(body, appAuth);
+    if (action === "register_device_push") return await registerDevicePush(body, appAuth);
+    if (action === "connection_status") return await connectionStatus(body, appAuth);
+    if (action === "complete_onboarding") return await completeOnboarding(body, appAuth);
     if (action === "send_proactive") return await sendProactive(body);
-    if (action === "poll_pending_action") return await pollPendingAction(body);
-    if (action === "ack_pending_action") return await acknowledgePendingAction(body);
+    if (action === "poll_pending_action") return await pollPendingAction(body, appAuth);
+    if (action === "ack_pending_action") return await acknowledgePendingAction(body, appAuth);
     return json(400, { error: "unsupported_action" });
   } catch (error) {
     if (String(error.message || "").includes("bm_anonymous_identity_conflict")) {

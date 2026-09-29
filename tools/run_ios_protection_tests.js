@@ -27,10 +27,10 @@ assert.match(store, /blankActiveUntil == nil \|\| deviceActivityTimerScheduled/)
 const capacity = scheduler.indexOf('guard intervals.count + expirations.count <= maxScheduleActivities');
 assert(capacity >= 0 && scheduler.indexOf('center.stopMonitoring', capacity) > capacity);
 const polling = between(home, '    private func pollPendingAssistantActionIfNeeded', '    private func clearAssistantNotificationRequest');
-assert.equal((polling.match(/guard assistantIdentityMatches\(code: code, channel: channel, phone: phoneNumber\)/g) || []).length, 2);
-const signIn = between(home, '    private func verifyCode() async', '    private func performRequest(');
+assert.equal((polling.match(/guard assistantIdentityMatches\(code: code, channel: channel, owner: accountID\)/g) || []).length, 2);
+const signIn = between(home, '    private func signIn(idToken:', '    private func postJSON(');
 assert(signIn.indexOf('guard AssistantAppSession.save(') >= 0
-  && signIn.indexOf('guard AssistantAppSession.save(') < signIn.indexOf('phoneVerified = true'), 'Secure session must persist before verification is shown');
+  && signIn.indexOf('guard AssistantAppSession.save(') < signIn.indexOf('onSignedIn?()'), 'Secure session must persist before sign-in completes');
 const activation = between(home, '    private func confirmPendingAssistantAction()', '    private func assistantActionRequiresScreenTime(');
 assert(activation.indexOf('if assistantActionRequiresScreenTime(pendingAction)') < activation.indexOf('switch pendingAction'),
   'Permission must be requested before schedule, selection or protection mutations');
@@ -38,7 +38,7 @@ const permissionOnly = activation.slice(activation.indexOf('        case .reques
 assert(permissionOnly.indexOf('guard assistantIdentityMatches(') > permissionOnly.indexOf('await screenTimeBlocker.requestAuthorization()')
   && permissionOnly.indexOf('pendingAssistantActionId == actionID') < permissionOnly.indexOf('finishPendingAssistantAction('),
   'Permission completion must not acknowledge a different account or action');
-const pickerDismissal = between(home, '        .onChange(of: showingContextualAppPicker)', '        .fullScreenCover(isPresented: $showingAssistantConnect)');
+const pickerDismissal = between(home, '        .onChange(of: showingContextualAppPicker)', '        .fullScreenCover(isPresented: $showingAssistantChat');
 assert.match(pickerDismissal, /let selectionConfirmed = permissionApproved &&/,
   'Permission revoked while the picker was open must prevent applying its plan');
 assert(pickerDismissal.indexOf('screenTimeBlocker.refreshAuthorizationStatus()') < pickerDismissal.indexOf('sessionStore.selection = contextualPlanSelection'));
@@ -53,11 +53,10 @@ const extensionModel = between(monitor, '    private struct StoredWindow:', '   
 const fixtures = `
 final class IdentityFixture {
     var assistantConnectCode = "code-A"
-    var assistantPreferredChannel = "whatsApp"
-    var assistantPhoneNumber = "+34000000000"
+    var accountID = "account-A"
 ${between(home, '    private func assistantIdentityMatches(', '    private func clearPendingAssistantIdentityState()')}
-    func matches(code: String, channel: String, phone: String) -> Bool {
-        assistantIdentityMatches(code: code, channel: channel, phone: phone)
+    func matches(code: String, channel: String, owner: String?) -> Bool {
+        assistantIdentityMatches(code: code, channel: channel, owner: owner)
     }
 ${between(home, '    private func assistantActionRequiresScreenTime(', '    private func finishPendingAssistantAction(')}
     func requiresPermission(_ action: AssistantPendingAction) -> Bool {
@@ -69,6 +68,7 @@ enum BlankSharedState {
     struct ActiveState { let isActive: Bool }
     static func loadActiveState(defaults: UserDefaults) -> ActiveState { ActiveState(isActive: sharedActive) }
 }
+enum AssistantAppSession { static var userID: String? = "account-A" }
 enum DeviceActivityTimerScheduler {
     static var hasIndependentProtection = false
 ${intervals}
