@@ -154,7 +154,7 @@ struct SetupView: View {
                     title: "Apps and websites",
                     detail: sessionStore.hasSelectedApps
                         ? "\(sessionStore.selectionCount) selected."
-                        : "Choose what Blankmind can block.",
+                        : "Choose apps for one reusable protection list.",
                     ready: sessionStore.hasSelectedApps,
                     actionTitle: sessionStore.hasSelectedApps ? "Edit apps" : "Choose apps",
                     showActionWhenReady: true
