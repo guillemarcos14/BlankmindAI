@@ -13,7 +13,7 @@ const ROOT = path.resolve(__dirname, "..");
 const SITE_ID = "2ef5a74e-af70-4893-a5f6-63fb2537720d";
 const SITE_URL = "https://blank-product-staging-20260926.netlify.app";
 const SUPABASE_REF = "njqbovsmoowkhhsqmitn";
-const ENTRIES = Object.freeze(["app-auth", "assistant-app", "assistant-channel", "blanked-agent", "waitlist-auth"]);
+const ENTRIES = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-channel", "blanked-agent", "waitlist-auth"]);
 const RELEASE_BRANCH = /^codex\/backend-release-[a-z0-9][a-z0-9-]*$/;
 const DEFAULT_CLI = path.resolve(ROOT, "../../tmp/netlify-cli-runtime/node_modules/netlify-cli/bin/run.js");
 
@@ -22,7 +22,7 @@ function sha256(file) { return crypto.createHash("sha256").update(fs.readFileSyn
 function inside(parent, child) { const relative = path.relative(parent, child); return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative)); }
 function assertSite(site) { if (site !== SITE_ID) fail("Only the reserved private staging site is allowed"); }
 function assertEntries(names) {
-  if (JSON.stringify([...names].sort()) !== JSON.stringify(ENTRIES)) fail("Function allowlist must contain exactly the five private staging entries");
+  if (JSON.stringify([...names].sort()) !== JSON.stringify(ENTRIES)) fail("Function allowlist must contain exactly the six private staging entries");
 }
 
 function parseArgs(argv) {
@@ -218,7 +218,7 @@ async function verifyDeployment(report, token, fetcher) {
   const deployment = await apiGet(`/deploys/${report.deploy_id}`, token, fetcher);
   if (deployment.site_id !== SITE_ID || deployment.state !== "ready" || deployment.function_schedules?.length) fail("Staging deploy is not ready or contains scheduled functions");
   const remote = productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
-  if (remote.some((fn) => fn.schedule || (fn.d || fn.sha) !== report.functions.find((item) => item.name === (fn.n || fn.name))?.sha256)) fail("Remote function digests differ from the five packaged ZIPs");
+  if (remote.some((fn) => fn.schedule || (fn.d || fn.sha) !== report.functions.find((item) => item.name === (fn.n || fn.name))?.sha256)) fail("Remote function digests differ from the six packaged ZIPs");
   await requirePrivateSite(fetcher);
   const finalSite = await apiGet(`/sites/${SITE_ID}`, token, fetcher);
   if (finalSite.id !== SITE_ID || finalSite.published_deploy?.id !== report.deploy_id) fail("The active staging deploy changed during verification");
