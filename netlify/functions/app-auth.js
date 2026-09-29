@@ -43,12 +43,17 @@ function bearerToken(event) {
 }
 
 function sessionResponse(session) {
+  const appleIdentity = (session.user?.identities || []).find((identity) => identity.provider === "apple");
+  const appleEmail = appleIdentity?.identity_data?.email
+    || (session.user?.app_metadata?.provider === "apple" ? session.user?.email : "")
+    || "";
   return {
     ok: true,
     access_token: session.access_token || "",
     refresh_token: session.refresh_token || "",
     expires_in: session.expires_in || 0,
     user: session.user || null,
+    apple_email: appleEmail,
   };
 }
 

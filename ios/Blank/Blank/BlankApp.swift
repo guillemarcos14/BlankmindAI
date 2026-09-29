@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 import UIKit
 import UserNotifications
@@ -38,6 +39,7 @@ struct BlankApp: App {
                     if AssistantAppPreview.enabled { return }
                     #endif
                     appDelegate.registerForRemoteActions()
+                    checkAppleCredentialState()
                     await purchaseStore.loadProducts()
                     await screenTimeBlocker.restore(selection: sessionStore.selection)
                     sessionStore.syncRecurringSchedule()
@@ -60,6 +62,7 @@ struct BlankApp: App {
                     #endif
                     if phase == .active {
                         appDelegate.registerForRemoteActions()
+                        checkAppleCredentialState()
                         screenTimeBlocker.refreshAuthorizationStatus()
                         sessionStore.syncRecurringSchedule()
                         screenTimeBlocker.updateAdvancedControls(
@@ -72,6 +75,15 @@ struct BlankApp: App {
                 .onOpenURL { url in
                     handleDeepLink(url)
                 }
+        }
+    }
+
+    private func checkAppleCredentialState() {
+        guard let appleUserID = AssistantAppSession.appleUserID else { return }
+        ASAuthorizationAppleIDProvider().getCredentialState(forUserID: appleUserID) { state, error in
+            guard error == nil, state == .revoked || state == .notFound,
+                  AssistantAppSession.appleUserID == appleUserID else { return }
+            AssistantAppSession.clear()
         }
     }
 

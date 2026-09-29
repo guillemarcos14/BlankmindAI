@@ -2447,6 +2447,7 @@ struct SectionHeader: View {
 private struct SettingsScreen: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
+    @State private var showingAccount = false
 
     let onClose: () -> Void
     let onOpenEmergency: () -> Void
@@ -2494,11 +2495,21 @@ private struct SettingsScreen: View {
                     detail: "conversation and account",
                     action: onOpenAssistant
                 )
+
+                settingsRow(
+                    title: "account",
+                    detail: "Apple sign-in and account controls",
+                    action: { showingAccount = true }
+                )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, sectionHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .sheet(isPresented: $showingAccount) {
+            AccountSettingsSheet()
+                .environmentObject(sessionStore)
+        }
     }
 
     private func settingsRow(
@@ -3491,9 +3502,6 @@ struct AppAccountSignInSheet: View {
     private var accountForm: some View {
         VStack(alignment: .center, spacing: 22) {
             Spacer(minLength: 24)
-            Text("blank")
-                .font(.blankInter(size: 18, weight: .semibold, relativeTo: .headline))
-                .padding(.bottom, 22)
             Text("Your account")
                 .font(.blankEditorial(size: 34))
             Text("Continue with Apple to keep your chat and setup connected to your account.")
@@ -3513,7 +3521,7 @@ struct AppAccountSignInSheet: View {
             SignInWithAppleButton(.continue, onRequest: { request in
                 let nonce = Self.makeNonce()
                 rawNonce = nonce
-                request.requestedScopes = []
+                request.requestedScopes = [.email]
                 request.nonce = Self.hashNonce(nonce)
             }, onCompletion: finishAppleAuthorization)
                 .signInWithAppleButtonStyle(.black)
@@ -3526,12 +3534,6 @@ struct AppAccountSignInSheet: View {
                     }
                 }
 
-            HStack(spacing: 18) {
-                Link("Privacy Policy", destination: URL(string: "https://blanked.app/privacy")!)
-                Link("Terms", destination: URL(string: "https://blanked.app/terms")!)
-            }
-            .font(.blankInter(size: 13, relativeTo: .footnote))
-
             if let errorMessage {
                 Text(errorMessage)
                     .font(.blankInter(size: 14, relativeTo: .footnote))
@@ -3543,6 +3545,16 @@ struct AppAccountSignInSheet: View {
         }
         .padding(.horizontal, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            HStack(spacing: 18) {
+                Link("Privacy Policy", destination: URL(string: "https://blanked.app/privacy")!)
+                Link("Terms", destination: URL(string: "https://blanked.app/terms")!)
+            }
+            .font(.blankInter(size: 13, relativeTo: .footnote))
+            .padding(.bottom, 12)
+            .frame(maxWidth: .infinity)
+            .background(Color(uiColor: .systemBackground))
+        }
         .background(Color(uiColor: .systemBackground))
     }
 
@@ -3556,7 +3568,7 @@ struct AppAccountSignInSheet: View {
                 errorMessage = "Apple did not return a valid account token. Try again."
                 return
             }
-            Task { await signIn(idToken: idToken, nonce: nonce) }
+            Task { await signIn(idToken: idToken, nonce: nonce, appleUserID: credential.user) }
         case .failure(let error as ASAuthorizationError) where error.code == .canceled:
             rawNonce = nil
         case .failure:
@@ -3566,7 +3578,7 @@ struct AppAccountSignInSheet: View {
     }
 
     @MainActor
-    private func signIn(idToken: String, nonce: String) async {
+    private func signIn(idToken: String, nonce: String, appleUserID: String) async {
         isWorking = true
         errorMessage = nil
         defer { isWorking = false; rawNonce = nil }
@@ -3590,7 +3602,9 @@ struct AppAccountSignInSheet: View {
                   let refreshToken = auth["refresh_token"] as? String, !refreshToken.isEmpty else {
                 throw AppAccountSignInError.message("Blank did not return a secure account session. Try again.")
             }
-            guard AssistantAppSession.save(accessToken: accessToken, refreshToken: refreshToken) else {
+            let email = auth["apple_email"] as? String
+            guard AssistantAppSession.save(accessToken: accessToken, refreshToken: refreshToken,
+                                           appleUserID: appleUserID, email: email) else {
                 throw AppAccountSignInError.message("Could not securely save your account on this iPhone. Try again.")
             }
             _ = try await AssistantAppClient().activate()
@@ -3640,6 +3654,80 @@ struct AppAccountSignInSheet: View {
 
     private static func hashNonce(_ nonce: String) -> String {
         SHA256.hash(data: Data(nonce.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+private struct AccountSettingsSheet: View {
+    @EnvironmentObject private var sessionStore: SessionStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingDeleteConfirmation = false
+    @State private var isDeleting = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Apple account") {
+                    if let email = AssistantAppSession.email, !email.isEmpty {
+                        LabeledContent("Email shared by Apple", value: email)
+                    } else {
+                        Text("Apple has not shared an email with this account.")
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Blank never receives your Apple password.")
+                        .foregroundStyle(.secondary)
+                }
+                Section("Subscription") {
+                    Link("Manage in the App Store", destination: URL(string: "https://apps.apple.com/account/subscriptions")!)
+                }
+                Section {
+                    Button("Sign out") {
+                        AssistantAppSession.clear()
+                        dismiss()
+                    }
+                    Button("Delete account and cloud data", role: .destructive) {
+                        showingDeleteConfirmation = true
+                    }
+                    .disabled(isDeleting)
+                } footer: {
+                    Text("Deleting your Blank account does not cancel an App Store subscription. Cancel it in the App Store first.")
+                }
+                if let errorMessage {
+                    Section { Text(errorMessage).foregroundStyle(.red) }
+                }
+            }
+            .navigationTitle("Account")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
+            .confirmationDialog("Delete your Blank account and cloud data?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+                Button("Delete account", role: .destructive) { Task { await deleteAccount() } }
+            } message: {
+                Text("This cannot be undone. Your App Store subscription must be canceled separately.")
+            }
+            .overlay { if isDeleting { ProgressView().controlSize(.large) } }
+        }
+    }
+
+    @MainActor
+    private func deleteAccount() async {
+        guard !isDeleting else { return }
+        isDeleting = true
+        errorMessage = nil
+        defer { isDeleting = false }
+        do {
+            let payload = try JSONSerialization.data(withJSONObject: ["action": "delete"])
+            let (_, response) = try await AssistantAppClient().postAuthorized(
+                path: "account-data", payload: payload, timeout: 30
+            )
+            guard (200..<300).contains(response.statusCode) else {
+                throw AppAccountSignInError.message("Could not delete your account. Try again or contact support.")
+            }
+            AssistantAppSession.clear()
+            BlankSharedState.defaults.removeObject(forKey: "blankAssistantConnectCode")
+            sessionStore.setupComplete = false
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 

@@ -11,12 +11,39 @@ enum AssistantAppSession {
     private struct Credentials: Codable {
         let access: String
         let refresh: String
+        let appleUserID: String?
+        let email: String?
     }
 
-    @discardableResult static func save(accessToken: String, refreshToken: String) -> Bool {
+    @discardableResult static func save(accessToken: String, refreshToken: String, appleUserID: String? = nil, email: String? = nil) -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        return saveCredentials(accessToken: accessToken, refreshToken: refreshToken)
+        return saveCredentials(accessToken: accessToken, refreshToken: refreshToken, appleUserID: appleUserID, email: email)
+    }
+
+    static var appleUserID: String? { credentialValue(\.appleUserID) }
+    static var email: String? { credentialValue(\.email) }
+
+    private static func credentialValue(_ keyPath: KeyPath<Credentials, String?>) -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let data = readData(account: "credentials"),
+              let credentials = try? JSONDecoder().decode(Credentials.self, from: data) else { return nil }
+        return credentials[keyPath: keyPath]
+    }
+
+    static func clear() {
+        lock.lock()
+        defer { lock.unlock() }
+        for account in ["credentials", "access", "refresh"] {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: account,
+            ]
+            SecItemDelete(query as CFDictionary)
+        }
+        notifyChange()
     }
 
     static func token(_ account: String) -> String? {
@@ -55,7 +82,9 @@ enum AssistantAppSession {
         lock.lock()
         defer { lock.unlock() }
         guard readToken("access") == expected else { return readToken("access") }
-        _ = saveCredentials(accessToken: accessToken, refreshToken: refreshToken)
+        let previous = readData(account: "credentials").flatMap { try? JSONDecoder().decode(Credentials.self, from: $0) }
+        _ = saveCredentials(accessToken: accessToken, refreshToken: refreshToken,
+                            appleUserID: previous?.appleUserID, email: previous?.email)
         return readToken("access")
     }
 
@@ -81,9 +110,10 @@ enum AssistantAppSession {
         return result as? Data
     }
 
-    private static func saveCredentials(accessToken: String, refreshToken: String) -> Bool {
+    private static func saveCredentials(accessToken: String, refreshToken: String, appleUserID: String?, email: String?) -> Bool {
         guard !accessToken.isEmpty, !refreshToken.isEmpty,
-              let data = try? JSONEncoder().encode(Credentials(access: accessToken, refresh: refreshToken)) else { return false }
+              let data = try? JSONEncoder().encode(Credentials(access: accessToken, refresh: refreshToken,
+                                                                 appleUserID: appleUserID, email: email)) else { return false }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

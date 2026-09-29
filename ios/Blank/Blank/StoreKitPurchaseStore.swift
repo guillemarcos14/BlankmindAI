@@ -90,6 +90,12 @@ final class StoreKitPurchaseStore: ObservableObject {
     }
 
     func purchase(productId: String) async -> Bool {
+        guard let accountID = AssistantAppSession.userID,
+              AssistantAppSession.hasAppleIdentity,
+              let accountToken = UUID(uuidString: accountID) else {
+            message = "Sign in with Apple before subscribing."
+            return false
+        }
         if products.isEmpty {
             await loadProducts()
         }
@@ -103,7 +109,7 @@ final class StoreKitPurchaseStore: ObservableObject {
         defer { isPurchasing = false }
 
         do {
-            let result = try await product.purchase()
+            let result = try await product.purchase(options: [.appAccountToken(accountToken)])
             switch result {
             case .success(let verification):
                 let transaction = try checkVerified(verification)
@@ -264,12 +270,20 @@ final class StoreKitPurchaseStore: ObservableObject {
         products.first { $0.id == productId }
     }
 
-    private func updateCustomerProductStatus() async {
+    func updateCustomerProductStatus() async {
         var activeProductIds = Set<String>()
+        guard let accountID = AssistantAppSession.userID,
+              AssistantAppSession.hasAppleIdentity,
+              let accountToken = UUID(uuidString: accountID) else {
+            purchasedProductIds = []
+            return
+        }
 
         for await result in Transaction.currentEntitlements {
             guard let transaction = try? checkVerified(result) else { continue }
             guard productIds.contains(transaction.productID) else { continue }
+            // Purchases made before account tokens existed remain restorable.
+            if let owner = transaction.appAccountToken, owner != accountToken { continue }
             activeProductIds.insert(transaction.productID)
         }
 

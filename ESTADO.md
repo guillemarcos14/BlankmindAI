@@ -1,4 +1,8 @@
 # Estado del proyecto
+- 2026-09-29: Candidato iOS Apple-only ampliado: solicita `email` a Apple, conserva el correo devuelto por Supabase en Keychain, comprueba revocación de credencial, ofrece cierre/borrado de cuenta en Ajustes y asocia compras nuevas al UUID mediante `appAccountToken`. Borrado backend ampliado a datos de conversación/loop/waitlist vinculados. Validación local de sintaxis/diff correcta; harness con baseline y `--enforce-scope` 62/63, fallo preexistente `release_gate_quick` por evidencia física ausente. Falta build CI de esta iteración, firma, integración del backend y prueba física Apple/StoreKit. Revocación del token de Apple en el servidor requiere configurar credenciales Apple Developer.
+- 2026-09-29: Ajustada la pantalla de cuenta del onboarding: eliminado el texto `blank` y anclados `Privacy Policy`/`Terms` al pie. Product harness con baseline y `--enforce-scope`: 62/63; el único fallo es `release_gate_quick`, sin casos físicos de release (0/20). Pendiente build y revisión visual de esta iteración; no hay firma ni distribución.
+- 2026-09-29: MacinCloud FF368 compiló, instaló y abrió `592b777` desde el checkout `/Users/user301201/blankmvp-visual/ios/Blank`; `BUILD SUCCEEDED`. Revisión visual en iPhone 17 Pro iOS 26.3 confirma controles `Next`/`Home` y onboarding centrado. Falta probar su toque; sin firma ni distribución.
+
 
 - 2026-09-28: Corregido el acceso Home desde onboarding en simulador sin persistir una identidad o alta ficticia; Chat se abre como vista de navegación sin backend. Ambas pantallas de onboarding son recorribles por controles QA y su contenido está centrado. Harness 63/63 y build CI de simulador correctos en `9503fb9`; pendiente revisión visual. Sin firma ni distribución.
 

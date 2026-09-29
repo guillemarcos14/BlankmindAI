@@ -3,8 +3,10 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
     @State private var showingOnboardingDemo = false
     @State private var simulatorGuestHome = false
+    @State private var accountRevision = 0
 
     var body: some View {
         #if DEBUG
@@ -19,6 +21,7 @@ struct ContentView: View {
     }
 
     private var productContent: some View {
+        let _ = accountRevision
         ZStack {
             if showingOnboardingDemo || (!simulatorGuestHome && (!sessionStore.setupComplete || !AssistantAppSession.hasAppleIdentity)) {
                 SetupView {
@@ -41,6 +44,10 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.35), value: showingOnboardingDemo)
         .environment(\.blankMinimalAppearance, true)
+        .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
+            accountRevision += 1
+            Task { await purchaseStore.updateCustomerProductStatus() }
+        }
     }
 }
 
