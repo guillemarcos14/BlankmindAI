@@ -12,10 +12,6 @@
 	<string>Blankmind</string>
 	<key>BlankMembershipAPIBaseURL</key>
 	<string>$(BLANK_MEMBERSHIP_API_BASE_URL)</string>
-	<key>BlankWhatsAppPhoneNumber</key>
-	<string>$(BLANK_WHATSAPP_PHONE_NUMBER)</string>
-	<key>BlankSMSPhoneNumber</key>
-	<string>$(BLANK_SMS_PHONE_NUMBER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleLocalizations</key>

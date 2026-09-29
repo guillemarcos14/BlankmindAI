@@ -5,15 +5,13 @@ import UIKit
 import UserNotifications
 
 private enum OnboardingStep: Int {
-    case phone
+    case account
     case device
-    case whatsApp
 
     var analyticsName: String {
         switch self {
-        case .phone: return "phone_verification"
+        case .account: return "account_sign_in"
         case .device: return "device_setup"
-        case .whatsApp: return "whatsapp_connection"
         }
     }
 }
@@ -25,9 +23,9 @@ struct SetupView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
 
-    @State private var currentStep: OnboardingStep = .phone
+    @State private var currentStep: OnboardingStep = .account
     @State private var showingPicker = false
-    @State private var connectionInFlight = false
+    @State private var completionInFlight = false
     @State private var notificationReady = false
     @State private var notificationDenied = false
     @State private var message: String?
@@ -35,10 +33,7 @@ struct SetupView: View {
     @AppStorage("blankOnboardingStepRaw", store: BlankSharedState.defaults) private var savedStepRaw = 0
     @AppStorage("blankOnboardingFlowVersion", store: BlankSharedState.defaults) private var onboardingFlowVersion = 0
     @AppStorage("blankOnboardingAnonymousUserId", store: BlankSharedState.defaults) private var onboardingAnonymousUserId = ""
-    @AppStorage("blankAssistantPhoneNumber", store: BlankSharedState.defaults) private var assistantPhoneNumber = ""
     @AppStorage("blankAssistantConnectCode", store: BlankSharedState.defaults) private var assistantConnectCode = ""
-    @AppStorage("blankAssistantPhoneVerified", store: BlankSharedState.defaults) private var assistantPhoneVerified = false
-    @AppStorage("blankAssistantPreferredChannel", store: BlankSharedState.defaults) private var assistantPreferredChannel = ""
 
     var onFinishForQA: (() -> Void)?
 
@@ -48,8 +43,8 @@ struct SetupView: View {
 
     var body: some View {
         Group {
-            if currentStep == .phone {
-                AppPhoneSignInSheet(initialPhone: assistantPhoneNumber, showsCancel: false) {
+            if currentStep == .account {
+                AppAccountSignInSheet(showsCancel: false) {
                     message = nil
                     currentStep = .device
                 }
@@ -60,6 +55,15 @@ struct SetupView: View {
         }
         .familyActivityPicker(isPresented: $showingPicker, selection: $sessionStore.selection)
         #if targetEnvironment(simulator)
+        .overlay(alignment: .topLeading) {
+            Button(currentStep == .account ? "Next" : "Back") {
+                currentStep = currentStep == .account ? .device : .account
+                message = nil
+            }
+            .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
+            .padding(20)
+            .accessibilityLabel(currentStep == .account ? "Preview device setup" : "Preview account sign-in")
+        }
         .overlay(alignment: .topTrailing) {
             Button("Home") { skipToHomeForQA() }
                 .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
@@ -68,14 +72,13 @@ struct SetupView: View {
         }
         #endif
         .task {
-            if onboardingFlowVersion != 3 {
-                savedStepRaw = assistantPhoneVerified ? OnboardingStep.device.rawValue : OnboardingStep.phone.rawValue
-                onboardingFlowVersion = 3
+            if onboardingFlowVersion != 5 {
+                savedStepRaw = OnboardingStep.account.rawValue
+                onboardingFlowVersion = 5
             }
-            if !sessionStore.setupComplete, let savedStep = OnboardingStep(rawValue: savedStepRaw) {
-                currentStep = assistantPhoneVerified ? savedStep : .phone
-            }
-            if currentStep == .phone && assistantPhoneVerified && !assistantConnectCode.isEmpty {
+            if !AssistantAppSession.hasAppleIdentity || assistantConnectCode.isEmpty {
+                currentStep = .account
+            } else if !sessionStore.setupComplete {
                 currentStep = .device
             }
             await refreshDeviceState()
@@ -86,7 +89,6 @@ struct SetupView: View {
             guard phase == .active else { return }
             Task {
                 await refreshDeviceState()
-                if currentStep == .whatsApp { await checkWhatsAppConnection() }
             }
         }
         .onChange(of: currentStep) { step in
@@ -108,68 +110,56 @@ struct SetupView: View {
     }
 
     private var functionalStep: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("blank")
-                    .font(.blankInter(size: 18, weight: .semibold, relativeTo: .headline))
-                Spacer()
-                Text(currentStep == .device ? "2 / 3" : "3 / 3")
-                    .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.top, 24)
-            .padding(.bottom, 44)
-
+        GeometryReader { geometry in
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    if currentStep == .device { deviceContent } else { connectionContent }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+                VStack(alignment: .center, spacing: 0) {
+                    VStack(spacing: 8) {
+                        Text("blank")
+                            .font(.blankInter(size: 18, weight: .semibold, relativeTo: .headline))
+                        Text("2 / 2")
+                            .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.bottom, 32)
 
-            if let message {
-                Text(message)
-                    .font(.blankInter(size: 14, relativeTo: .footnote))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 14)
-                    .accessibilityAddTraits(.updatesFrequently)
-            }
+                    deviceContent
 
-            if currentStep == .device {
-                primaryButton("Connect WhatsApp", enabled: deviceReady) {
-                    message = nil
-                    currentStep = .whatsApp
+                    if let message {
+                        Text(message)
+                            .font(.blankInter(size: 14, relativeTo: .footnote))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .multilineTextAlignment(.center)
+                            .padding(.bottom, 14)
+                            .accessibilityAddTraits(.updatesFrequently)
+                    }
+
+                    primaryButton(completionInFlight ? "Preparing Blank…" : "Go to Home", enabled: deviceReady && !completionInFlight) {
+                        Task { await completeSetup() }
+                    }
                 }
-            } else {
-                primaryButton(connectionInFlight ? "Checking connection…" : "Open WhatsApp", enabled: !connectionInFlight) {
-                    Task { await startWhatsAppConnection() }
-                }
-                Button("I've sent the message") {
-                    Task { await checkWhatsAppConnection() }
-                }
-                .font(.blankInter(size: 15, weight: .medium, relativeTo: .body))
-                .frame(maxWidth: .infinity, minHeight: 48)
-                .disabled(connectionInFlight)
+                .padding(.horizontal, 28)
+                .padding(.vertical, 24)
+                .frame(minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .padding(.horizontal, 28)
-        .padding(.bottom, 12)
-        .foregroundStyle(Color(uiColor: .label))
-        .tint(Color(uiColor: .label))
-        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
+        .foregroundStyle(BlankColors.charcoal)
+        .tint(BlankColors.charcoal)
+        .background(BlankColors.pureWhite.ignoresSafeArea())
     }
 
     private var deviceContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .center, spacing: 0) {
             Text("Prepare this iPhone")
-                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                .font(.blankEditorial(size: 32))
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 12)
 
-            Text("Three settings let Blankmind apply the protections you request in chat.")
+            Text("Prepare protection on this iPhone, then talk to Blankmind directly in the app.")
                 .font(.blankInter(size: 16, relativeTo: .body))
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 28)
 
@@ -203,41 +193,6 @@ struct SetupView: View {
                 action: requestNotifications
             )
 
-            Button("Change phone number") {
-                message = nil
-                currentStep = .phone
-            }
-            .font(.blankInter(size: 14, weight: .medium, relativeTo: .footnote))
-            .frame(minHeight: 44)
-            .padding(.top, 14)
-        }
-    }
-
-    private var connectionContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button("Back to iPhone setup") {
-                message = nil
-                currentStep = .device
-            }
-            .font(.blankInter(size: 14, weight: .medium, relativeTo: .footnote))
-            .frame(minHeight: 44)
-            .padding(.bottom, 20)
-
-            Text("Connect WhatsApp")
-                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 12)
-
-            Text("Send the prepared message from your verified number. Return here when it has sent.")
-                .font(.blankInter(size: 16, relativeTo: .body))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 28)
-
-            Text("Your iPhone will be ready only after the connection and device settings are confirmed.")
-                .font(.blankInter(size: 14, relativeTo: .footnote))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -249,11 +204,10 @@ struct SetupView: View {
         showActionWhenReady: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
+        VStack(alignment: .center, spacing: 4) {
+            VStack(spacing: 4) {
                 Text(title)
                     .font(.blankInter(size: 17, weight: .semibold, relativeTo: .headline))
-                Spacer(minLength: 8)
                 Text(ready ? "Ready" : "Needed")
                     .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
                     .foregroundStyle(ready ? Color(uiColor: .label) : Color(uiColor: .secondaryLabel))
@@ -261,6 +215,7 @@ struct SetupView: View {
             Text(detail)
                 .font(.blankInter(size: 14, relativeTo: .subheadline))
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             if !ready || showActionWhenReady {
@@ -270,7 +225,7 @@ struct SetupView: View {
                     .buttonStyle(.plain)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, 17)
         .overlay(alignment: .bottom) { Divider() }
     }
@@ -280,8 +235,8 @@ struct SetupView: View {
             Text(title)
                 .font(.blankInter(size: 16, weight: .semibold, relativeTo: .headline))
                 .frame(maxWidth: .infinity, minHeight: 54)
-                .foregroundStyle(Color(uiColor: .systemBackground))
-                .background(Color(uiColor: .label), in: RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(BlankColors.pureWhite)
+                .background(BlankColors.charcoal, in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
@@ -290,7 +245,7 @@ struct SetupView: View {
     }
 
     private var deviceReady: Bool {
-        assistantPhoneVerified && !assistantPhoneNumber.isEmpty && !assistantConnectCode.isEmpty
+        !assistantConnectCode.isEmpty
             && screenTimeBlocker.authorizationStatus == .approved
             && sessionStore.hasSelectedApps && notificationReady
     }
@@ -355,54 +310,19 @@ struct SetupView: View {
     }
 
     @MainActor
-    private func startWhatsAppConnection() async {
-        guard !connectionInFlight else { return }
+    private func completeSetup() async {
+        guard !completionInFlight else { return }
         await refreshDeviceState()
         guard deviceReady else {
-            currentStep = .device
-            message = "Finish the three iPhone settings before connecting WhatsApp."
+            message = "Finish the three iPhone settings before continuing."
             return
         }
-        guard let rawNumber = Bundle.main.object(forInfoDictionaryKey: "BlankWhatsAppPhoneNumber") as? String,
-              !rawNumber.filter(\.isNumber).isEmpty else {
-            message = "The WhatsApp number is missing from this build."
-            return
-        }
-        connectionInFlight = true
-        defer { connectionInFlight = false }
+        completionInFlight = true
+        defer { completionInFlight = false }
         do {
-            assistantPreferredChannel = "whatsapp"
-            _ = try await postAssistantChannel("register_preference")
+            _ = try await AssistantAppClient().activate()
             guard await syncAssistantContext(deviceReady: false) else {
                 message = "Could not save this iPhone's setup. Try again."
-                return
-            }
-            let text = "CONNECT \(assistantConnectCode)"
-            let encoded = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? text
-            let number = rawNumber.filter(\.isNumber)
-            guard let url = URL(string: "https://wa.me/\(number)?text=\(encoded)") else { return }
-            openURL(url)
-            message = "Send the message in WhatsApp, then return here."
-        } catch {
-            message = "Could not prepare WhatsApp. Try again."
-        }
-    }
-
-    @MainActor
-    private func checkWhatsAppConnection() async {
-        guard currentStep == .whatsApp, !connectionInFlight else { return }
-        connectionInFlight = true
-        defer { connectionInFlight = false }
-        do {
-            let status = try await postAssistantChannel("connection_status")
-            guard status["linked"] as? Bool == true else {
-                message = "Waiting for the message from your verified number."
-                return
-            }
-            await refreshDeviceState()
-            guard deviceReady else {
-                currentStep = .device
-                message = "An iPhone setting needs attention before blocking can work."
                 return
             }
             UIApplication.shared.registerForRemoteNotifications()
@@ -412,7 +332,7 @@ struct SetupView: View {
                 token = BlankSharedState.defaults.string(forKey: "blankAssistantPushToken") ?? ""
             }
             guard !token.isEmpty else {
-                message = "Waiting for iPhone notifications. Tap 'I've sent the message' again in a moment."
+                message = "Waiting for iPhone notifications. Try again in a moment."
                 return
             }
             #if DEBUG
@@ -422,7 +342,7 @@ struct SetupView: View {
             #endif
             guard await AssistantActionInboxClient().registerDevicePush(
                 token: token, environment: environment, connectCode: assistantConnectCode,
-                channel: "whatsapp", phoneNumber: assistantPhoneNumber
+                channel: "app"
             ) else {
                 message = "This iPhone could not register for notifications. Try again."
                 return
@@ -437,13 +357,12 @@ struct SetupView: View {
                 message = "Blankmind is still checking this iPhone. Try again in a moment."
                 return
             }
-            BlankSharedState.defaults.set(Date.now.formatted(date: .abbreviated, time: .shortened), forKey: "blankAssistantConnectedAt")
-            savedStepRaw = OnboardingStep.phone.rawValue
+            savedStepRaw = OnboardingStep.account.rawValue
             await purchaseStore.registerReferredActivation(referredUserId: currentAnonymousUserId())
             sessionStore.finishSetup()
             onFinishForQA?()
         } catch {
-            message = "Could not confirm WhatsApp. Check your message and try again."
+            message = "Could not prepare Blankmind on this iPhone. Try again."
         }
     }
 
@@ -451,8 +370,7 @@ struct SetupView: View {
     private func syncAssistantContext(deviceReady: Bool) async -> Bool {
         await AssistantContextSyncClient().sync(
             connectCode: assistantConnectCode,
-            channel: "whatsapp",
-            phoneNumber: assistantPhoneNumber,
+            channel: "app",
             payload: [
                 "locale": Locale.current.identifier,
                 "has_selected_apps": sessionStore.hasSelectedApps,
@@ -470,21 +388,16 @@ struct SetupView: View {
 
     @MainActor
     private func postAssistantChannel(_ action: String) async throws -> [String: Any] {
-        guard let rawBase = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String,
-              !rawBase.contains("$("), let baseURL = URL(string: rawBase) else { throw URLError(.badURL) }
-        var request = URLRequest(url: baseURL.appendingPathComponent("assistant-channel"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 12
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
+        let payload = try JSONSerialization.data(withJSONObject: [
             "action": action,
             "connect_code": assistantConnectCode,
-            "preferred_channel": "whatsapp",
-            "user_phone": assistantPhoneNumber,
+            "preferred_channel": "app",
             "app_install_id": BlankSharedState.appInstallId,
         ])
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+        let (data, response) = try await AssistantAppClient().postAuthorized(
+            path: "assistant-channel", payload: payload, timeout: 12
+        )
+        guard (200..<300).contains(response.statusCode),
               let result = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw URLError(.badServerResponse)
         }
@@ -499,15 +412,14 @@ struct SetupView: View {
     }
 
     private var analyticsProperties: [String: Any] {
-        ["flow_version": 3,
-         "channel": "whatsapp",
+        ["flow_version": 5,
+         "channel": "app",
          "screen_time_status": screenTimeBlocker.authorizationStatusLabel,
          "selection_count": sessionStore.selectionCount]
     }
 
     private func skipToHomeForQA() {
         message = nil
-        sessionStore.finishSetup()
         onFinishForQA?()
     }
 }

@@ -387,6 +387,9 @@
 							com.apple.Push = {
 								enabled = 1;
 							};
+							com.apple.SignInWithApple = {
+								enabled = 1;
+							};
 						};
 					};
 					8A0000020000000000000040 = {
@@ -675,8 +678,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				BLANK_MEMBERSHIP_API_BASE_URL = "https://getblank.netlify.app/.netlify/functions";
-				BLANK_SMS_PHONE_NUMBER = "+13478366767";
-				BLANK_WHATSAPP_PHONE_NUMBER = 13478366767;
 				CODE_SIGN_ENTITLEMENTS = Blank/Blank.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 80;
@@ -708,8 +709,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				BLANK_MEMBERSHIP_API_BASE_URL = "https://getblank.netlify.app/.netlify/functions";
-				BLANK_SMS_PHONE_NUMBER = "+13478366767";
-				BLANK_WHATSAPP_PHONE_NUMBER = 13478366767;
 				CODE_SIGN_ENTITLEMENTS = Blank/Blank.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 80;

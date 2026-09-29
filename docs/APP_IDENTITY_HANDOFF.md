@@ -1,23 +1,17 @@
-# Blankmind Web/App Identity Handoff
+# Blankmind Web/App identity
 
-## Flujo principal
+## Current production iOS flow
 
-1. El usuario verifica su teléfono en la web con Supabase OTP.
-2. `account-data` crea una identidad única por teléfono y un `assistant_connect_code` interno.
-3. Al abrir un conector nativo, el workspace crea un handoff aleatorio con una hora de vida.
-4. `blankmind.ai/open?action=handoff&token=...` abre la app por Universal Link/App Link.
-5. La app consume el token una sola vez y guarda el código interno; no reutiliza el OTP web.
-6. El siguiente mensaje desde ese mismo teléfono en WhatsApp/SMS se asocia automáticamente a la identidad.
+- iOS signs in through Sign in with Apple using Supabase native ID-token exchange and a nonce. The app requests no Apple email/name scopes.
+- If Keychain already holds an authenticated legacy phone session, the app links Apple to that Supabase user. This preserves the stable Supabase user ID and existing app chat history. New accounts have no phone requirement.
+- After sign-in, `assistant-app?action=activate` binds `app_install_id` to the authenticated identity and returns an internal connect code. App turns and app-channel memory use the Supabase auth user ID; app routes require JWT plus the matching installation.
+- iOS no longer handles `action=handoff`, calls `app-handoff?action=claim_identity`, requests OTP, or receives a phone number from the handoff route.
+- Old `/open?action=handoff` links now show the App Store listing without forwarding their token to iOS. The legacy backend endpoint remains available for compatibility, but the current production flow does not call it.
 
-## Entrada directa desde App Store
+## External Early Access
 
-La app mantiene un fallback explícito `Sign in with your phone`. Pide un OTP nuevo, verifica contra Supabase y llama a `app-handoff?action=claim_identity` para enlazar el `app_install_id`.
+The website keeps its separate waitlist flow. It uses `waitlist-auth` to verify a phone by SMS, then starts the selected WhatsApp or SMS conversation. This OTP path is not part of the production app authentication surface. Existing `app-handoff` endpoints remain for legacy compatibility but are not called by the current iOS app.
 
-El código `CONNECT` antiguo sigue operativo para instalaciones y usuarios que aún no han migrado.
+## Release setup
 
-## Operación
-
-- Aplicar `supabase/migrations/013_identity_handoffs.sql` antes de desplegar las funciones.
-- Configurar `SUPABASE_ANON_KEY` o `SUPABASE_PUBLISHABLE_KEY` en Netlify para el OTP directo desde app.
-- Publicar el AASA y `assetlinks.json` en `blankmind.ai/.well-known/`.
-- Validar con una cuenta real: web OTP → Open in app → mensaje WhatsApp → reinstalación/entrada directa.
+Supabase production `blank-membership` has Apple enabled with Client IDs `com.blanknfc.web,com.blanknfc.app.ios` and manual identity linking enabled. Private staging has Apple enabled with Client IDs `com.blanknfc.app.ios`, no OAuth secret, and manual linking enabled (dashboard verified after reload 2026-09-27). Apple Developer confirms Sign in with Apple is enabled as the primary capability for `com.blanknfc.app.ios`. The four existing app/extension development and App Store provisioning profiles were regenerated and verified valid; they have not been installed on MacinCloud or used for a signed build. Verify legacy account-linking and fresh Apple accounts on iPhone before release. No phone or WhatsApp prompt belongs in production iOS onboarding or Home.

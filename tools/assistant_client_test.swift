@@ -1,5 +1,8 @@
 // The runner prepends the actual production models, errors and HTTP client.
-enum BlankSharedState { static let appInstallId = "fixture-install" }
+enum BlankSharedState {
+    static let appInstallId = "fixture-install"
+    static let defaults = UserDefaults.standard
+}
 
 enum AssistantAppSession {
     private static let lock = NSLock()
@@ -84,7 +87,7 @@ struct AssistantClientTests {
         check(pages.count == 2 && refreshes == 1, "Concurrent 401s must refresh once")
         check(appRequests >= 3 && AssistantAppSession.token("refresh") == "rotated-A", "Refreshed credentials must persist")
 
-        // An OTP login that finishes during refresh owns the session. The old
+        // An account login that finishes during refresh owns the session. The old
         // request must not run under that other user's identity or expose history.
         AssistantAppSession.save(accessToken: "expired#A", refreshToken: "refresh-A")
         appRequests = 0
@@ -115,7 +118,7 @@ struct AssistantClientTests {
         }
         do { _ = try await client.history(); fatalError("Expected transient refresh failure") }
         catch let error as AssistantAppError {
-            check(error.isRetryable && !error.requiresPhoneVerification, "A server outage must not force phone verification")
+            check(error.isRetryable && !error.requiresAccountSignIn, "A server outage must not force account sign-in")
         }
         _ = try await client.history()
         check(refreshes == 2, "A failed refresh prevented later recovery")
@@ -130,7 +133,7 @@ struct AssistantClientTests {
             TransportStub.respond = { _ in .init(status: status, body: "{\"error\":\"\(code)\",\"detail\":\"SECRET INTERNAL TRACE\"}") }
             do { _ = try await client.history(); fatalError("Expected HTTP error \(status)") }
             catch let error as AssistantAppError {
-                check(error.code == code && error.isRetryable == retryable && error.requiresPhoneVerification == verify, "Incorrect recovery for \(code)")
+                check(error.code == code && error.isRetryable == retryable && error.requiresAccountSignIn == verify, "Incorrect recovery for \(code)")
                 check(!error.localizedDescription.contains("SECRET") && !error.localizedDescription.contains(code), "Raw backend error exposed")
             }
         }

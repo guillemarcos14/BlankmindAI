@@ -11,12 +11,39 @@ enum AssistantAppSession {
     private struct Credentials: Codable {
         let access: String
         let refresh: String
+        let appleUserID: String?
+        let email: String?
     }
 
-    @discardableResult static func save(accessToken: String, refreshToken: String) -> Bool {
+    @discardableResult static func save(accessToken: String, refreshToken: String, appleUserID: String? = nil, email: String? = nil) -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        return saveCredentials(accessToken: accessToken, refreshToken: refreshToken)
+        return saveCredentials(accessToken: accessToken, refreshToken: refreshToken, appleUserID: appleUserID, email: email)
+    }
+
+    static var appleUserID: String? { credentialValue(\.appleUserID) }
+    static var email: String? { credentialValue(\.email) }
+
+    private static func credentialValue(_ keyPath: KeyPath<Credentials, String?>) -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let data = readData(account: "credentials"),
+              let credentials = try? JSONDecoder().decode(Credentials.self, from: data) else { return nil }
+        return credentials[keyPath: keyPath]
+    }
+
+    static func clear() {
+        lock.lock()
+        defer { lock.unlock() }
+        for account in ["credentials", "access", "refresh"] {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: account,
+            ]
+            SecItemDelete(query as CFDictionary)
+        }
+        notifyChange()
     }
 
     static func token(_ account: String) -> String? {
@@ -38,11 +65,26 @@ enum AssistantAppSession {
         return id
     }
 
+    static var hasAppleIdentity: Bool {
+        guard let access = token("access") else { return false }
+        let parts = access.split(separator: ".")
+        guard parts.count == 3 else { return false }
+        var encoded = String(parts[1]).replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        encoded += String(repeating: "=", count: (4 - encoded.count % 4) % 4)
+        guard let data = Data(base64Encoded: encoded),
+              let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let metadata = payload["app_metadata"] as? [String: Any] else { return false }
+        if metadata["provider"] as? String == "apple" { return true }
+        return (metadata["providers"] as? [String] ?? []).contains("apple")
+    }
+
     static func replace(accessToken: String, refreshToken: String, ifCurrent expected: String) -> String? {
         lock.lock()
         defer { lock.unlock() }
         guard readToken("access") == expected else { return readToken("access") }
-        _ = saveCredentials(accessToken: accessToken, refreshToken: refreshToken)
+        let previous = readData(account: "credentials").flatMap { try? JSONDecoder().decode(Credentials.self, from: $0) }
+        _ = saveCredentials(accessToken: accessToken, refreshToken: refreshToken,
+                            appleUserID: previous?.appleUserID, email: previous?.email)
         return readToken("access")
     }
 
@@ -68,9 +110,10 @@ enum AssistantAppSession {
         return result as? Data
     }
 
-    private static func saveCredentials(accessToken: String, refreshToken: String) -> Bool {
+    private static func saveCredentials(accessToken: String, refreshToken: String, appleUserID: String?, email: String?) -> Bool {
         guard !accessToken.isEmpty, !refreshToken.isEmpty,
-              let data = try? JSONEncoder().encode(Credentials(access: accessToken, refresh: refreshToken)) else { return false }
+              let data = try? JSONEncoder().encode(Credentials(access: accessToken, refresh: refreshToken,
+                                                                 appleUserID: appleUserID, email: email)) else { return false }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -115,6 +158,7 @@ private struct AssistantAppEnvelope: Decodable {
     let turns: [AssistantAppTurn]?
     let turn: AssistantAppTurn?
     let nextBefore: String?
+    let assistantConnectCode: String?
 }
 
 struct AssistantAppHistoryPage {
@@ -145,9 +189,10 @@ enum AssistantAppError: LocalizedError {
         }
     }
 
-    var requiresPhoneVerification: Bool {
+    var requiresAccountSignIn: Bool {
         switch self {
         case .authenticationRequired, .installationNotVerified, .sessionChanged: return true
+        case .server(_, "apple_identity_required"): return true
         default: return false
         }
     }
@@ -166,9 +211,11 @@ enum AssistantAppError: LocalizedError {
         let spanish = Locale.current.languageCode == "es"
         switch self {
         case .authenticationRequired, .sessionChanged:
-            return spanish ? "Verifica tu teléfono para continuar. Tu mensaje sigue guardado." : "Verify your phone to continue. Your message is still saved."
+            return spanish ? "Inicia sesión con Apple para continuar. Tu mensaje sigue guardado." : "Sign in with Apple to continue. Your message is still saved."
+        case .server(_, "apple_identity_required"):
+            return spanish ? "Inicia sesión con Apple para continuar con Blankmind." : "Sign in with Apple to continue using Blankmind."
         case .installationNotVerified:
-            return spanish ? "Verifica tu teléfono para vincular este iPhone con tu cuenta." : "Verify your phone to link this iPhone to your account."
+            return spanish ? "Vuelve a iniciar sesión con Apple para vincular este iPhone." : "Sign in with Apple again to link this iPhone."
         case .network:
             return spanish ? "No hay conexión. Tu mensaje está guardado; reintenta cuando vuelvas a tener internet." : "You are offline. Your message is saved; retry when you have a connection."
         case .timeout:
@@ -214,6 +261,15 @@ struct AssistantAppClient {
     var baseURL: URL?
     var sessionRefresh: AssistantAppSessionRefresh = .shared
 
+    func activate() async throws -> String {
+        let result = try await request(action: "activate", extra: [:])
+        guard let code = result.assistantConnectCode, !code.isEmpty else {
+            throw AssistantAppError.invalidResponse
+        }
+        BlankSharedState.defaults.set(code, forKey: "blankAssistantConnectCode")
+        return code
+    }
+
     func history(before: String? = nil) async throws -> AssistantAppHistoryPage {
         let result = try await request(action: "history", extra: before.map { ["before": $0] } ?? [:])
         return AssistantAppHistoryPage(turns: result.turns ?? [], nextBefore: result.nextBefore)
@@ -241,27 +297,40 @@ struct AssistantAppClient {
               base.scheme == "https", base.host != nil else {
             throw AssistantAppError.notConfigured
         }
-        guard let access = AssistantAppSession.token("access") else {
+        guard AssistantAppSession.token("access") != nil else {
             throw AssistantAppError.authenticationRequired
         }
-        let userID = AssistantAppSession.userID
         var body = extra
         body["action"] = action
         body["app_install_id"] = BlankSharedState.appInstallId
         let payload = try JSONSerialization.data(withJSONObject: body)
-        let first = try await post(base: base, path: "assistant-app", payload: payload, token: access)
-        guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
-        if first.1.statusCode == 401 {
-            let refreshed = try await sessionRefresh.accessToken(rejected: access) {
-                try await refresh(base: base, rejectedToken: access)
-            }
-            guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
-            try Task.checkCancellation()
-            let retried = try await post(base: base, path: "assistant-app", payload: payload, token: refreshed)
-            guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
-            return try decode(retried)
+        return try decode(await postAuthorized(base: base, path: "assistant-app", payload: payload, timeout: 60))
+    }
+
+    func postAuthorized(path: String, payload: Data, timeout: TimeInterval = 12) async throws -> (Data, HTTPURLResponse) {
+        let raw = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String ?? ""
+        guard let base = baseURL ?? (raw.contains("$(") ? nil : URL(string: raw)),
+              base.scheme == "https", base.host != nil else {
+            throw AssistantAppError.notConfigured
         }
-        return try decode(first)
+        return try await postAuthorized(base: base, path: path, payload: payload, timeout: timeout)
+    }
+
+    private func postAuthorized(base: URL, path: String, payload: Data, timeout: TimeInterval) async throws -> (Data, HTTPURLResponse) {
+        guard let access = AssistantAppSession.token("access"), let userID = AssistantAppSession.userID else {
+            throw AssistantAppError.authenticationRequired
+        }
+        let first = try await post(base: base, path: path, payload: payload, token: access, timeout: timeout)
+        guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+        guard first.1.statusCode == 401 else { return first }
+        let refreshed = try await sessionRefresh.accessToken(rejected: access) {
+            try await refresh(base: base, rejectedToken: access)
+        }
+        guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+        try Task.checkCancellation()
+        let retried = try await post(base: base, path: path, payload: payload, token: refreshed, timeout: timeout)
+        guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+        return retried
     }
 
     private func refresh(base: URL, rejectedToken: String) async throws -> String {
@@ -277,18 +346,18 @@ struct AssistantAppClient {
               let access = data["access_token"] as? String, !access.isEmpty else {
             throw AssistantAppError.invalidResponse
         }
-        // A completed OTP sign-in wins over an older refresh still in flight.
+        // A completed account sign-in wins over an older refresh still in flight.
         guard let saved = AssistantAppSession.replace(accessToken: access,
             refreshToken: data["refresh_token"] as? String ?? refresh, ifCurrent: rejectedToken),
               saved != rejectedToken else { throw AssistantAppError.authenticationRequired }
         return saved
     }
 
-    private func post(base: URL, path: String, payload: Data, token: String?) async throws -> (Data, HTTPURLResponse) {
+    private func post(base: URL, path: String, payload: Data, token: String?, timeout: TimeInterval = 60) async throws -> (Data, HTTPURLResponse) {
         var request = URLRequest(url: base.appendingPathComponent(path))
         request.httpMethod = "POST"
         request.httpBody = payload
-        request.timeoutInterval = 60
+        request.timeoutInterval = timeout
         request.cachePolicy = .reloadIgnoringLocalCacheData
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
@@ -457,7 +526,6 @@ final class AssistantSpeechInput: ObservableObject {
 struct AssistantAppView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject private var speech = AssistantSpeechInput()
@@ -476,10 +544,12 @@ struct AssistantAppView: View {
     @State private var requiresVerification = false
     @State private var canRetry = true
     @State private var showHistory = false
-    @State private var showPhoneSignIn = false
-    @State private var showWhatsApp = false
+    @State private var showAccountSignIn = false
     @State private var saveTask: Task<Void, Never>?
+    @State private var initialMessageHandled = false
 
+    var initialMessage: String? = nil
+    var simulatorGuest = false
     var onOpenControls: (HomeSection?) -> Void = { _ in }
     let onApplyAction: (String) -> Void
 
@@ -498,34 +568,41 @@ struct AssistantAppView: View {
         #endif
         return sessionStore.isBlankActive
     }
-    private var foreground: Color { dark ? .white : BlankColors.charcoal }
-    private var background: Color { dark ? BlankColors.charcoal : .white }
+    private var foreground: Color { dark ? BlankColors.pureWhite : BlankColors.charcoal }
+    private var background: Color { dark ? BlankColors.charcoal : BlankColors.pureWhite }
     private var draftTooLong: Bool { composer.draft.utf16.count > 4000 }
     private var isSending: Bool { sendRequestID != nil }
     private var waiting: Bool { isSending || composer.pending != nil }
 
     var body: some View {
         VStack(spacing: 0) {
-            Menu {
-                Button(spanish ? "Historial" : "Conversation history", systemImage: "clock.arrow.circlepath") { showHistory = true }
-                Section {
-                    Button(spanish ? "Distracciones" : "Distractions", systemImage: "apps.iphone") { openControls(.distractions) }
-                    Button(spanish ? "Horarios" : "Schedules", systemImage: "calendar") { openControls(.schedule) }
-                    Button(spanish ? "Progreso" : "Progress", systemImage: "chart.bar") { openControls(.report) }
-                    Button(spanish ? "Ajustes" : "Settings", systemImage: "gearshape") { openControls(.settings) }
+            HStack {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 19, weight: .semibold))
+                        .frame(width: 48, height: 48)
                 }
-                Section {
-                    Button(spanish ? "Conexión WhatsApp" : "WhatsApp connection", systemImage: "message") { showWhatsApp = true }
-                    Button(spanish ? "Verificar teléfono" : "Verify phone", systemImage: "iphone") { showPhoneSignIn = true }
-                    Button(spanish ? "Controles de protección" : "Protection controls", systemImage: "hand.raised") { openControls(nil) }
+                .accessibilityLabel(spanish ? "Volver a Inicio" : "Back to Home")
+                Spacer(minLength: 0)
+                Menu {
+                    Button(spanish ? "Historial" : "Conversation history", systemImage: "clock.arrow.circlepath") { showHistory = true }
+                    Section {
+                        Button(spanish ? "Distracciones" : "Distractions", systemImage: "apps.iphone") { openControls(.distractions) }
+                        Button(spanish ? "Horarios" : "Schedules", systemImage: "calendar") { openControls(.schedule) }
+                        Button(spanish ? "Progreso" : "Progress", systemImage: "chart.bar") { openControls(.report) }
+                        Button(spanish ? "Ajustes" : "Settings", systemImage: "gearshape") { openControls(.settings) }
+                    }
+                    Button(spanish ? "Iniciar sesión con Apple" : "Sign in with Apple", systemImage: "apple.logo") { showAccountSignIn = true }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 23, weight: .bold))
+                        .frame(width: 48, height: 48)
+                        .contentShape(Rectangle())
                 }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 23, weight: .bold))
-                    .frame(width: 48, height: 48)
-                    .contentShape(Rectangle())
+                .accessibilityLabel(spanish ? "Menú de Blankmind" : "Blankmind menu")
+                Spacer(minLength: 0)
+                Color.clear.frame(width: 48, height: 48)
             }
-            .accessibilityLabel(spanish ? "Menú de Blankmind" : "Blankmind menu")
             .frame(height: 56)
             .layoutPriority(1)
             .background(background)
@@ -536,7 +613,7 @@ struct AssistantAppView: View {
                     VStack(alignment: .leading, spacing: 26) {
                         if let latest {
                             Text(latest.assistantText)
-                                .font(.blankInter(size: 28, weight: .regular, relativeTo: .largeTitle))
+                                .font(.blankEditorial(size: 28))
                                 .tracking(-0.5)
                                 .lineSpacing(4)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -566,12 +643,17 @@ struct AssistantAppView: View {
                                 .font(.blankInter(size: 15)).tint(foreground)
                         } else {
                             Text(requiresVerification
-                                 ? (spanish ? "Tu conversación, en la app y en WhatsApp." : "Your conversation, here and on WhatsApp.")
+                                 ? (spanish ? "Tu conversación en Blankmind." : "Your conversation in Blankmind.")
                                  : (spanish ? "¿Qué tienes en mente?" : "What is on your mind?"))
-                                .font(.blankInter(size: 28, weight: .regular, relativeTo: .largeTitle))
+                                .font(.blankEditorial(size: 28))
                                 .fixedSize(horizontal: false, vertical: true)
+                            if simulatorGuest {
+                                Text("Simulator navigation preview")
+                                    .font(.blankInter(size: 14, relativeTo: .footnote))
+                                    .foregroundStyle(foreground.opacity(0.65))
+                            }
                             if requiresVerification {
-                                Button(spanish ? "Verificar mi teléfono" : "Verify my phone") { showPhoneSignIn = true }
+                                Button(spanish ? "Iniciar sesión con Apple" : "Sign in with Apple") { showAccountSignIn = true }
                                     .font(.blankInter(size: 17, weight: .semibold))
                                     .frame(minHeight: 44)
                             }
@@ -595,11 +677,24 @@ struct AssistantAppView: View {
         .background(background.ignoresSafeArea())
         .preferredColorScheme(dark ? .dark : .light)
         .task {
+            #if targetEnvironment(simulator)
+            if simulatorGuest {
+                isLoading = false
+                composer.draft = initialMessage ?? ""
+                return
+            }
+            #endif
             #if DEBUG
             if preview { loadPreview(); return }
             #endif
             restoreOwner()
             await reload()
+            if !initialMessageHandled, let text = initialMessage?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
+                initialMessageHandled = true
+                composer.draft = text
+                persist()
+                if composer.pending == nil { await send() }
+            }
         }
         .onChange(of: speech.transcript) { transcript in
             if acceptingSpeech { composer.draft = speechPrefix + transcript }
@@ -618,13 +713,13 @@ struct AssistantAppView: View {
             }
         }
         .onReceive(Timer.publish(every: 8, on: .main, in: .common).autoconnect()) { _ in
-            guard scenePhase == .active, !preview, !isSending else { return }
+            guard scenePhase == .active, !preview, !simulatorGuest, !isSending else { return }
             if composer.pending != nil || latest.map({ !$0.actionId.isEmpty && !AssistantActionCopy.terminal.contains($0.actionStatus) }) == true {
                 Task { await reload() }
             }
         }
         .onChange(of: scenePhase) { phase in
-            if phase == .active && !preview { Task { restoreOwner(); await reload() } }
+            if phase == .active && !preview && !simulatorGuest { Task { restoreOwner(); await reload() } }
             else {
                 // Permission alerts temporarily deactivate the scene. Keep that
                 // pending request; stop audio when leaving or while interrupted.
@@ -636,7 +731,7 @@ struct AssistantAppView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
-            guard !preview, restoreOwner() else { return }
+            guard !preview, !simulatorGuest, restoreOwner() else { return }
             Task { await reload() }
         }
         .onDisappear { acceptingSpeech = false; speech.stop(); saveTask?.cancel(); persist() }
@@ -645,15 +740,8 @@ struct AssistantAppView: View {
                 foreground: foreground, background: background, onApplyAction: applyAction)
                 .preferredColorScheme(dark ? .dark : .light)
         }
-        .sheet(isPresented: $showPhoneSignIn, onDismiss: { Task { restoreOwner(); await reload() } }) {
-            AppPhoneSignInSheet(initialPhone: BlankSharedState.defaults.string(forKey: "blankAssistantPhoneNumber") ?? "")
-        }
-        .sheet(isPresented: $showWhatsApp, onDismiss: { Task { await reload() } }) {
-            AssistantConnectSheet(
-                whatsAppNumber: Bundle.main.object(forInfoDictionaryKey: "BlankWhatsAppPhoneNumber") as? String,
-                smsNumber: Bundle.main.object(forInfoDictionaryKey: "BlankSMSPhoneNumber") as? String,
-                openURL: openURL, initialContext: [:]
-            )
+        .sheet(isPresented: $showAccountSignIn, onDismiss: { Task { restoreOwner(); await reload() } }) {
+            AppAccountSignInSheet()
         }
     }
 
@@ -670,7 +758,7 @@ struct AssistantAppView: View {
                         .accessibilityLabel((spanish ? "Mensaje pendiente: " : "Pending message: ") + pending.text)
                 }
                 if requiresVerification {
-                    if latest != nil { Button(spanish ? "Verificar teléfono" : "Verify phone") { showPhoneSignIn = true }.frame(minHeight: 44) }
+                    Button(spanish ? "Iniciar sesión con Apple" : "Sign in with Apple") { showAccountSignIn = true }.frame(minHeight: 44)
                 } else if canRetry {
                     Button(spanish ? "Reintentar" : "Try again") {
                         Task {
@@ -738,7 +826,7 @@ struct AssistantAppView: View {
                 .onSubmit { if composer.pending == nil { Task { await send() } } }
                 .padding(.vertical, 14)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                .disabled(requiresVerification)
+                .disabled(requiresVerification || simulatorGuest)
                 .accessibilityLabel(spanish ? "Mensaje para Blankmind" : "Message Blankmind")
     }
 
@@ -766,7 +854,7 @@ struct AssistantAppView: View {
                         .frame(width: 44, height: 50)
                 }
                 .fixedSize(horizontal: true, vertical: false)
-                .disabled(waiting || draftTooLong || requiresVerification)
+                .disabled(waiting || draftTooLong || requiresVerification || simulatorGuest)
                 .opacity(waiting || draftTooLong || requiresVerification ? 0.45 : 1)
                 .accessibilityLabel(spanish ? "Enviar mensaje" : "Send message")
             }
@@ -864,7 +952,7 @@ struct AssistantAppView: View {
     }
 
     private func send() async {
-        guard !preview, !isSending, !requiresVerification else { return }
+        guard !preview, !simulatorGuest, !isSending, !requiresVerification else { return }
         acceptingSpeech = false
         speech.stop()
         let before = composer
@@ -907,7 +995,7 @@ struct AssistantAppView: View {
         if failure is CancellationError { return }
         error = failure.localizedDescription
         let typed = failure as? AssistantAppError
-        requiresVerification = typed?.requiresPhoneVerification == true
+        requiresVerification = typed?.requiresAccountSignIn == true
         canRetry = typed?.isRetryable ?? true
     }
 

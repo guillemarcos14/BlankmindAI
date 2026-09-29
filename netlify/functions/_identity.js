@@ -21,6 +21,12 @@ function newConnectCode() {
   return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
 }
 
+function authUserHasAppleIdentity(user) {
+  const metadata = user?.app_metadata && typeof user.app_metadata === "object" ? user.app_metadata : {};
+  return metadata.provider === "apple"
+    || (Array.isArray(metadata.providers) && metadata.providers.includes("apple"));
+}
+
 async function identityForAuthUser(authUserId) {
   const rows = await supabaseFetch(
     `blankmind_identity_links?auth_user_id=eq.${encodeURIComponent(authUserId)}&select=*`,
@@ -123,6 +129,7 @@ async function linkAppInstall({ authUserId, appInstallId }) {
 
 module.exports = {
   cleanText,
+  authUserHasAppleIdentity,
   ensureIdentityForAuthUser,
   identityForAppInstall,
   identityForAuthUser,

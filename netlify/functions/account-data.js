@@ -23,6 +23,8 @@ const DATA_TABLES = [
   "bai_user_memory_signals",
   "bai_learning_changes",
   "assistant_semantic_conversations",
+  "assistant_inbound_messages",
+  "bm_loop_runs",
 ];
 
 function cleanText(value, maxLength = 120) {
@@ -103,6 +105,7 @@ async function deleteData(event) {
   const identity = await identityForAuthUser(authUserId);
   if (identity?.assistant_connect_code) ids.push(`connect:${identity.assistant_connect_code}`);
   if (identity?.anonymous_user_id) ids.push(identity.anonymous_user_id);
+  ids.push(assistantChannelUserId("app", authUserId));
   if (identity?.phone_e164) {
     ids.push(assistantChannelUserId("whatsapp", identity.phone_e164));
     ids.push(assistantChannelUserId("sms", identity.phone_e164));
@@ -111,6 +114,16 @@ async function deleteData(event) {
   const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
 
   await revokeWearableTokens(uniqueIds);
+  await supabaseFetch(`assistant_app_turns?auth_user_id=eq.${encodeURIComponent(authUserId)}`, {
+    method: "DELETE",
+    headers: { prefer: "return=minimal" },
+  });
+  if (identity?.assistant_connect_code) {
+    await supabaseFetch(`bm_legacy_context_snapshots?connect_code=eq.${encodeURIComponent(identity.assistant_connect_code)}`, {
+      method: "DELETE",
+      headers: { prefer: "return=minimal" },
+    });
+  }
   for (const anonymousUserId of uniqueIds) {
     for (const table of DATA_TABLES) {
       await supabaseFetch(`${table}?anonymous_user_id=eq.${encodeURIComponent(anonymousUserId)}`, {
@@ -140,9 +153,12 @@ async function deleteData(event) {
     method: "DELETE",
     headers: { prefer: "return=minimal" },
   });
+  await supabaseFetch(`waitlist_users?auth_user_id=eq.${encodeURIComponent(authUserId)}`, {
+    method: "DELETE",
+    headers: { prefer: "return=minimal" },
+  });
 
-  // Remove the authenticated account too. The operation is only exposed after
-  // the browser has explicitly confirmed the destructive action.
+  // The client confirms the destructive action before calling this endpoint.
   await supabaseAuthFetch(`admin/users/${encodeURIComponent(authUserId)}`, {
     method: "DELETE",
   });
