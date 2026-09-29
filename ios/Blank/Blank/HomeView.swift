@@ -3661,6 +3661,7 @@ private struct AccountSettingsSheet: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.dismiss) private var dismiss
     @State private var showingDeleteConfirmation = false
+    @State private var isVerifyingDeletion = false
     @State private var isDeleting = false
     @State private var errorMessage: String?
 
@@ -3689,6 +3690,16 @@ private struct AccountSettingsSheet: View {
                         showingDeleteConfirmation = true
                     }
                     .disabled(isDeleting)
+                    if isVerifyingDeletion {
+                        Text("Verify with Apple to finish deleting your account.")
+                            .foregroundStyle(.secondary)
+                        SignInWithAppleButton(.signIn, onRequest: { request in
+                            request.requestedScopes = []
+                        }, onCompletion: finishDeleteAuthorization)
+                            .signInWithAppleButtonStyle(.black)
+                            .frame(height: 48)
+                            .disabled(isDeleting)
+                    }
                 } footer: {
                     Text("Deleting your Blank account does not cancel an App Store subscription. Cancel it in the App Store first.")
                 }
@@ -3699,7 +3710,7 @@ private struct AccountSettingsSheet: View {
             .navigationTitle("Account")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
             .confirmationDialog("Delete your Blank account and cloud data?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
-                Button("Delete account", role: .destructive) { Task { await deleteAccount() } }
+                Button("Continue to Apple verification", role: .destructive) { isVerifyingDeletion = true }
             } message: {
                 Text("This cannot be undone. Your App Store subscription must be canceled separately.")
             }
@@ -3708,13 +3719,33 @@ private struct AccountSettingsSheet: View {
     }
 
     @MainActor
-    private func deleteAccount() async {
+    private func finishDeleteAuthorization(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let codeData = credential.authorizationCode,
+                  let code = String(data: codeData, encoding: .utf8), !code.isEmpty else {
+                errorMessage = "Apple did not return a deletion authorization. Try again."
+                return
+            }
+            Task { await deleteAccount(authorizationCode: code) }
+        case .failure(let error as ASAuthorizationError) where error.code == .canceled:
+            break
+        case .failure:
+            errorMessage = "Apple verification did not complete. Try again."
+        }
+    }
+
+    @MainActor
+    private func deleteAccount(authorizationCode: String) async {
         guard !isDeleting else { return }
         isDeleting = true
         errorMessage = nil
         defer { isDeleting = false }
         do {
-            let payload = try JSONSerialization.data(withJSONObject: ["action": "delete"])
+            let payload = try JSONSerialization.data(withJSONObject: [
+                "action": "delete_apple", "apple_authorization_code": authorizationCode,
+            ])
             let (_, response) = try await AssistantAppClient().postAuthorized(
                 path: "account-data", payload: payload, timeout: 30
             )
@@ -3722,6 +3753,7 @@ private struct AccountSettingsSheet: View {
                 throw AppAccountSignInError.message("Could not delete your account. Try again or contact support.")
             }
             AssistantAppSession.clear()
+            isVerifyingDeletion = false
             BlankSharedState.defaults.removeObject(forKey: "blankAssistantConnectCode")
             sessionStore.setupComplete = false
             dismiss()
