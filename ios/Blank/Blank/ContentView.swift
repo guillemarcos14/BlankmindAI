@@ -22,7 +22,7 @@ struct ContentView: View {
 
     private var productContent: some View {
         let _ = accountRevision
-        ZStack {
+        return ZStack {
             if showingOnboardingDemo || (!simulatorGuestHome && (!sessionStore.setupComplete || !AssistantAppSession.hasAppleIdentity)) {
                 SetupView {
                     withAnimation(.easeInOut(duration: 0.35)) {
