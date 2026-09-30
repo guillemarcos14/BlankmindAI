@@ -26,6 +26,7 @@ struct SetupView: View {
     @State private var currentStep: OnboardingStep = .account
     @State private var showingPicker = false
     @State private var completionInFlight = false
+    @State private var automaticCompletionAttempted = false
     @State private var notificationReady = false
     @State private var notificationDenied = false
     @State private var message: String?
@@ -89,6 +90,14 @@ struct SetupView: View {
             savedStepRaw = step.rawValue
             BlankFunnelAnalytics.trackStepOnce(step.analyticsName, properties: analyticsProperties)
         }
+        .task(id: canAutomaticallyComplete) {
+            guard canAutomaticallyComplete, !automaticCompletionAttempted else { return }
+            automaticCompletionAttempted = true
+            await completeSetup()
+        }
+        .onChange(of: deviceReady) { ready in
+            if !ready { automaticCompletionAttempted = false }
+        }
         .onChange(of: sessionStore.selection) { selection in
             screenTimeBlocker.updateSelection(selection, isBlankActive: sessionStore.isBlankActive)
             if sessionStore.hasSelectedApps { message = nil }
@@ -109,25 +118,19 @@ struct SetupView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     deviceContent
 
-                    if let message {
-                        Text(message)
-                            .font(.blankInter(size: 14, relativeTo: .footnote))
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .multilineTextAlignment(.leading)
-                            .padding(.bottom, 14)
+                    if completionInFlight {
+                        AccountJustifiedCopy(text: NSAttributedString(string: "Finishing setup…"))
+                            .padding(.top, 24)
                             .accessibilityAddTraits(.updatesFrequently)
-                    }
-
-                    primaryButton(completionInFlight ? "Preparingâ€¦" : "Go to Home", enabled: deviceReady && !completionInFlight) {
-                        Task { await completeSetup() }
-                    }
-                    .padding(.top, 24)
-
-                    if !deviceReady, let requirement = pendingRequirement {
-                        AccountJustifiedCopy(text: NSAttributedString(string: requirement))
-                            .padding(.top, 8)
+                    } else if let message {
+                        AccountJustifiedCopy(text: NSAttributedString(string: message))
+                            .padding(.top, 24)
                             .accessibilityAddTraits(.updatesFrequently)
+                        if deviceReady && automaticCompletionAttempted {
+                            Button("Retry") { Task { await completeSetup() } }
+                                .font(.custom("ArialMT", size: 15, relativeTo: .body))
+                                .frame(minHeight: 44)
+                        }
                     }
                 }
                 .frame(maxWidth: 400, alignment: .leading)
@@ -144,129 +147,105 @@ struct SetupView: View {
 
     private var deviceContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Prepare this iPhone")
+            Text("Set up Blankmind")
                 .font(.blankEditorial(size: 32, relativeTo: .title))
                 .tracking(-0.9)
-                .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 28)
 
-            VStack(alignment: .leading, spacing: 28) {
-                setupCard(
-                    title: "Screen Time",
-                    detail: "Block distracting apps on this iPhone.",
-                    ready: screenTimeBlocker.authorizationStatus == .approved,
-                    completedTitle: "Enabled",
-                    actionTitle: screenTimeBlocker.authorizationStatus == .denied ? "Open Settings" : "Allow Screen Time",
-                    action: authorizeScreenTime
-                )
-                setupCard(
-                    title: "Apps and websites",
-                    detail: sessionStore.hasSelectedApps
-                        ? "\(sessionStore.selectionCount) selected."
-                        : "Choose apps for one reusable protection list.",
-                    ready: sessionStore.hasSelectedApps,
-                    completedTitle: "Apps selected",
-                    actionTitle: "Choose apps",
-                    showActionWhenReady: true
-                ) {
-                    if screenTimeBlocker.authorizationStatus == .approved {
-                        showingPicker = true
-                    } else {
-                        message = "Allow Screen Time before choosing apps."
-                    }
+            setupRow(
+                title: "Screen Time",
+                detail: "Block distracting apps on this iPhone.",
+                ready: screenTimeBlocker.authorizationStatus == .approved,
+                actionTitle: screenTimeBlocker.authorizationStatus == .denied ? "Settings" : "Allow",
+                action: authorizeScreenTime
+            )
+            rowDivider
+            setupRow(
+                title: "Apps and websites",
+                detail: sessionStore.hasSelectedApps
+                    ? "\(sessionStore.selectionCount) selected"
+                    : "Choose apps for one reusable protection list.",
+                ready: sessionStore.hasSelectedApps,
+                actionTitle: sessionStore.hasSelectedApps ? "Edit" : "Choose",
+                editable: true
+            ) {
+                if screenTimeBlocker.authorizationStatus == .approved {
+                    showingPicker = true
+                } else {
+                    message = "Allow Screen Time before choosing apps."
                 }
-                setupCard(
-                    title: "Notifications",
-                    detail: "Get alerts to apply blocks from chat.",
-                    ready: notificationReady,
-                    completedTitle: "Enabled",
-                    actionTitle: notificationDenied ? "Open Settings" : "Enable notifications",
-                    action: requestNotifications
-                )
             }
+            rowDivider
+            setupRow(
+                title: "Notifications",
+                detail: "Get alerts to apply blocks from chat.",
+                ready: notificationReady,
+                actionTitle: notificationDenied ? "Settings" : "Enable",
+                action: requestNotifications
+            )
         }
+        .disabled(completionInFlight)
     }
 
-    private func setupCard(
+    private var rowDivider: some View {
+        Rectangle()
+            .fill(Color.black.opacity(0.1))
+            .frame(height: 0.5)
+            .padding(.vertical, 24)
+    }
+
+    private func setupRow(
         title: String,
         detail: String,
         ready: Bool,
-        completedTitle: String,
         actionTitle: String,
-        showActionWhenReady: Bool = false,
+        editable: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(title)
                     .font(.blankEditorial(size: 22, relativeTo: .headline))
                     .tracking(-0.3)
-                Spacer(minLength: 8)
+                    .fixedSize(horizontal: false, vertical: true)
+                AccountJustifiedCopy(text: NSAttributedString(string: detail))
             }
-            AccountJustifiedCopy(text: NSAttributedString(string: detail))
-                .padding(.top, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
+            if ready && !editable {
+                HStack(spacing: 6) {
+                    Text("Enabled")
+                    Image(systemName: "checkmark").accessibilityHidden(true)
+                }
+                .font(.custom("ArialMT", size: 14, relativeTo: .body))
+                .fixedSize()
+                .accessibilityLabel("\(title), enabled")
+            } else {
                 Button(action: action) {
-                    HStack(spacing: 8) {
-                        Text(ready ? completedTitle : actionTitle)
-                        if ready {
-                            Image(systemName: "checkmark")
-                                .accessibilityHidden(true)
-                        }
-                    }
-                        .font(.custom("ArialMT", size: 15, relativeTo: .body))
-                        .foregroundStyle(.white)
-                        .frame(width: setupTitleWidth, height: 44)
-                        .background(.black, in: RoundedRectangle(cornerRadius: 4))
+                    Text(actionTitle)
+                        .font(.custom("ArialMT", size: 14, relativeTo: .body))
+                        .foregroundStyle(ready ? Color.black : Color.white)
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 44)
+                        .background(ready ? Color.clear : Color.black, in: RoundedRectangle(cornerRadius: 4))
                 }
                 .buttonStyle(.plain)
-                .disabled(ready && !showActionWhenReady)
-                .accessibilityHint(ready && showActionWhenReady ? "Edit selected apps and websites" : "")
-                .padding(.top, 16)
+                .fixedSize()
+                .accessibilityLabel("\(actionTitle) \(title)")
+            }
         }
-        .foregroundStyle(.black)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func primaryButton(_ title: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.custom("ArialMT", size: 15, relativeTo: .body))
-                .frame(width: setupTitleWidth, height: 44)
-                .foregroundStyle(enabled ? Color.white : BlankColors.stoneGray)
-                .background(enabled ? Color.black : Color(uiColor: .systemGray5), in: RoundedRectangle(cornerRadius: 4))
-        }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
-        .padding(.bottom, 4)
-    }
-
-    private var setupTitleWidth: CGFloat {
-        let font = UIFontMetrics(forTextStyle: .title1).scaledFont(for: UIFont(name: "TimesNewRomanPSMT", size: 32)!)
-        return ceil(NSAttributedString(string: "Prepare this iPhone", attributes: [.font: font, .kern: -0.9]).size().width)
+    private var canAutomaticallyComplete: Bool {
+        currentStep == .device && deviceReady && !showingPicker
+            && scenePhase == .active && !sessionStore.setupComplete
     }
 
     private var deviceReady: Bool {
         !assistantConnectCode.isEmpty
             && screenTimeBlocker.authorizationStatus == .approved
             && sessionStore.hasSelectedApps && notificationReady
-    }
-
-    private var pendingRequirement: String? {
-        if screenTimeBlocker.authorizationStatus != .approved {
-            return "Allow Screen Time to continue."
-        }
-        if !sessionStore.hasSelectedApps {
-            return "Choose apps to continue."
-        }
-        if !notificationReady {
-            return "Enable notifications to continue."
-        }
-        if assistantConnectCode.isEmpty {
-            return "Sign in to continue."
-        }
-        return nil
     }
 
     private func authorizeScreenTime() {
@@ -330,14 +309,15 @@ struct SetupView: View {
 
     @MainActor
     private func completeSetup() async {
-        guard !completionInFlight else { return }
+        guard !completionInFlight, !sessionStore.setupComplete else { return }
+        completionInFlight = true
+        message = nil
+        defer { completionInFlight = false }
         await refreshDeviceState()
         guard deviceReady else {
             message = "Finish the three iPhone settings before continuing."
             return
         }
-        completionInFlight = true
-        defer { completionInFlight = false }
         do {
             _ = try await AssistantAppClient().activate()
             guard await syncAssistantContext(deviceReady: false) else {
