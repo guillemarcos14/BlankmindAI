@@ -3500,62 +3500,84 @@ struct AppAccountSignInSheet: View {
     }
 
     private var accountForm: some View {
-        VStack(alignment: .center, spacing: 22) {
-            Spacer(minLength: 24)
-            Text("Your account")
-                .font(.blankEditorial(size: 34))
-            Text("Continue with Apple to keep your chat and setup connected to your account.")
-                .font(.blankInter(size: 16, relativeTo: .body))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
-                Text("This will connect Apple to your existing Blank account and preserve its chat history.")
-                    .font(.blankInter(size: 14, relativeTo: .footnote))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            SignInWithAppleButton(.continue, onRequest: { request in
-                let nonce = Self.makeNonce()
-                rawNonce = nonce
-                request.requestedScopes = [.email]
-                request.nonce = Self.hashNonce(nonce)
-            }, onCompletion: finishAppleAuthorization)
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 54)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .disabled(isWorking)
-                .overlay {
-                    if isWorking {
-                        ProgressView().tint(.white)
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Sign in to Blankmind")
+                        .font(.blankEditorial(size: 28, relativeTo: .title))
+                        .tracking(-0.6)
+                        .foregroundStyle(Color.black)
+                        .padding(.bottom, 12)
+                    Text("Chat with Blankmind and manage distractions, all in this app.")
+                        .font(.blankInter(size: 14, relativeTo: .body))
+                        .foregroundStyle(Color(red: 100 / 255.0, green: 116 / 255.0, blue: 139 / 255.0))
+                        .multilineTextAlignment(.leading)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 28)
+        
+                    if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
+                        Text("This will connect Apple to your existing Blank account and preserve its chat history.")
+                            .font(.blankInter(size: 14, relativeTo: .footnote))
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.bottom, 16)
+                    }
+        
+                    SignInWithAppleButton(.continue, onRequest: { request in
+                        let nonce = Self.makeNonce()
+                        rawNonce = nonce
+                        request.requestedScopes = [.email]
+                        request.nonce = Self.hashNonce(nonce)
+                    }, onCompletion: finishAppleAuthorization)
+                        .signInWithAppleButtonStyle(.black)
+                        .frame(height: 44)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .disabled(isWorking)
+                        .overlay {
+                            if isWorking {
+                                ProgressView().tint(.white)
+                            }
+                        }
+                        .padding(.bottom, 20)
+        
+                    Text(accountLegalText)
+                        .font(.blankInter(size: 13, relativeTo: .footnote))
+                        .foregroundStyle(Color(red: 107 / 255.0, green: 114 / 255.0, blue: 128 / 255.0))
+                        .tint(Color(red: 75 / 255.0, green: 85 / 255.0, blue: 99 / 255.0))
+                        .lineSpacing(5)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+        
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.blankInter(size: 14, relativeTo: .footnote))
+                            .foregroundStyle(BlankColors.red)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 16)
                     }
                 }
+                .frame(maxWidth: 400, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+                .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
+            }
+        }
+        .background(Color.white)
+        .preferredColorScheme(.light)
+    }
 
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.blankInter(size: 14, relativeTo: .footnote))
-                    .foregroundStyle(BlankColors.red)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
+    private var accountLegalText: AttributedString {
+        var text = AttributedString("By clicking the buttons below, I agree to Blankmind's Terms of Service and SMS Terms, and acknowledge the Privacy Policy.")
+        for (label, path) in [("Terms of Service", "terms"), ("SMS Terms", "legal/sms-terms"), ("Privacy Policy", "privacy")] {
+            if let range = text.range(of: label) {
+                text[range].link = URL(string: "https://blankmind.ai/\(path)")
+                text[range].underlineStyle = .single
             }
-            Spacer(minLength: 24)
         }
-        .padding(.horizontal, 28)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            HStack(spacing: 18) {
-                Link("Privacy Policy", destination: URL(string: "https://blanked.app/privacy")!)
-                Link("Terms", destination: URL(string: "https://blanked.app/terms")!)
-            }
-            .font(.blankInter(size: 13, relativeTo: .footnote))
-            .padding(.bottom, 12)
-            .frame(maxWidth: .infinity)
-            .background(Color(uiColor: .systemBackground))
-        }
-        .background(Color(uiColor: .systemBackground))
+        return text
     }
 
     private func finishAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
