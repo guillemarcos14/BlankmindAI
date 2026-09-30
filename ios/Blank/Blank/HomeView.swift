@@ -3909,7 +3909,13 @@ private struct AccountJustifiedCopy: UIViewRepresentable {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     func makeUIView(context: Context) -> UITextView {
-        let view = UITextView()
+        let storage = NSTextStorage()
+        let layout = AccountLegalLayoutManager()
+        let container = NSTextContainer(size: .zero)
+        container.widthTracksTextView = true
+        storage.addLayoutManager(layout)
+        layout.addTextContainer(container)
+        let view = UITextView(frame: .zero, textContainer: container)
         view.isEditable = false
         view.isScrollEnabled = false
         view.backgroundColor = .clear
@@ -3927,16 +3933,21 @@ private struct AccountJustifiedCopy: UIViewRepresentable {
         let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "ArialMT", size: 14)!)
         let styled = NSMutableAttributedString(attributedString: text)
         styled.addAttributes([.font: font, .foregroundColor: color, .paragraphStyle: paragraph], range: NSRange(location: 0, length: styled.length))
-        let linkFont = UIFont.systemFont(ofSize: font.pointSize, weight: .semibold)
         text.enumerateAttribute(.link, in: NSRange(location: 0, length: text.length)) { link, range, _ in
-            if link != nil { styled.addAttribute(.font, value: linkFont, range: range) }
+            if link != nil { styled.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range) }
         }
-        view.linkTextAttributes = [.foregroundColor: color, .underlineStyle: 0]
+        view.linkTextAttributes = [.foregroundColor: color, .underlineStyle: NSUnderlineStyle.single.rawValue]
         view.attributedText = styled
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
         guard let width = proposal.width else { return nil }
         return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+    }
+}
+
+private final class AccountLegalLayoutManager: NSLayoutManager {
+    override func drawUnderline(forGlyphRange glyphRange: NSRange, underlineType underlineVal: NSUnderlineStyle, baselineOffset: CGFloat, lineFragmentRect lineRect: CGRect, lineFragmentGlyphRange lineGlyphRange: NSRange, containerOrigin: CGPoint) {
+        super.drawUnderline(forGlyphRange: glyphRange, underlineType: underlineVal, baselineOffset: baselineOffset - 2, lineFragmentRect: lineRect, lineFragmentGlyphRange: lineGlyphRange, containerOrigin: containerOrigin)
     }
 }
