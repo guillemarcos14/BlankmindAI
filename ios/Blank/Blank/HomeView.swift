@@ -3564,7 +3564,7 @@ struct AppAccountSignInSheet: View {
     }
 
     private var accountLegalText: NSAttributedString {
-        let text = NSMutableAttributedString(string: "By clicking the button, you are accepting the Terms of Service and acknowledging the Privacy Policy.")
+        let text = NSMutableAttributedString(string: "By clicking the button above, I agree to Blankmind's Terms of Service and Privacy Policy,")
         for (label, path) in [("Terms of Service", "terms"), ("Privacy Policy", "privacy")] {
             let range = (text.string as NSString).range(of: label)
             text.addAttribute(.link, value: URL(string: "https://blankmind.ai/\(path)")!, range: range)
