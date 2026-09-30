@@ -3508,12 +3508,7 @@ struct AppAccountSignInSheet: View {
                         .tracking(-0.9)
                         .foregroundStyle(Color.black)
                         .padding(.bottom, 12)
-                    Text("Chat with Blankmind and manage distractions, all in this app.")
-                        .font(.custom("ArialMT", size: 14, relativeTo: .body))
-                        .foregroundStyle(Color(red: 100 / 255.0, green: 116 / 255.0, blue: 139 / 255.0))
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(3)
-                        .fixedSize(horizontal: false, vertical: true)
+                    AccountJustifiedCopy(text: NSAttributedString(string: "Blankmind AI's core model is trained to identify recurring behavioral patterns, detect high-risk moments, and adapt interventions in real time."))
                         .padding(.bottom, 28)
 
                     if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
@@ -3532,7 +3527,7 @@ struct AppAccountSignInSheet: View {
                         request.nonce = Self.hashNonce(nonce)
                     }, onCompletion: finishAppleAuthorization)
                         .signInWithAppleButtonStyle(.black)
-                        .frame(height: 44)
+                        .frame(width: accountTitleWidth, height: 44)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                         .disabled(isWorking)
                         .overlay {
@@ -3542,13 +3537,7 @@ struct AppAccountSignInSheet: View {
                         }
                         .padding(.bottom, 20)
 
-                    Text(accountLegalText)
-                        .font(.custom("ArialMT", size: 14, relativeTo: .footnote))
-                        .foregroundStyle(Color(red: 75 / 255.0, green: 85 / 255.0, blue: 99 / 255.0))
-                        .tint(Color(red: 55 / 255.0, green: 65 / 255.0, blue: 81 / 255.0))
-                        .lineSpacing(5)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
+                    AccountJustifiedCopy(text: accountLegalText)
 
                     if let errorMessage {
                         Text(errorMessage)
@@ -3569,13 +3558,16 @@ struct AppAccountSignInSheet: View {
         .preferredColorScheme(.light)
     }
 
-    private var accountLegalText: AttributedString {
-        var text = AttributedString("By clicking the buttons below, I agree to Blankmind's Terms of Service and SMS Terms, and acknowledge the Privacy Policy.")
-        for (label, path) in [("Terms of Service", "terms"), ("SMS Terms", "legal/sms-terms"), ("Privacy Policy", "privacy")] {
-            if let range = text.range(of: label) {
-                text[range].link = URL(string: "https://blankmind.ai/\(path)")
-                text[range].underlineStyle = .single
-            }
+    private var accountTitleWidth: CGFloat {
+        let font = UIFontMetrics(forTextStyle: .title1).scaledFont(for: UIFont(name: "TimesNewRomanPSMT", size: 32)!)
+        return ceil(NSAttributedString(string: "Sign in to Blankmind", attributes: [.font: font, .kern: -0.9]).size().width)
+    }
+
+    private var accountLegalText: NSAttributedString {
+        let text = NSMutableAttributedString(string: "By clicking Continue, I agree to Blankmind's Terms of Service and acknowledge the Privacy Policy.")
+        for (label, path) in [("Terms of Service", "terms"), ("Privacy Policy", "privacy")] {
+            let range = (text.string as NSString).range(of: label)
+            text.addAttribute(.link, value: URL(string: "https://blankmind.ai/\(path)")!, range: range)
         }
         return text
     }
@@ -3910,3 +3902,37 @@ private struct HomePreviewScene: View {
     HomePreviewScene("Permission pending", authorizationApproved: false)
 }
 #endif
+
+// TextKit supplies true paragraph justification while preserving native legal links.
+private struct AccountJustifiedCopy: UIViewRepresentable {
+    let text: NSAttributedString
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    func makeUIView(context: Context) -> UITextView {
+        let view = UITextView()
+        view.isEditable = false
+        view.isScrollEnabled = false
+        view.backgroundColor = .clear
+        view.textContainerInset = .zero
+        view.textContainer.lineFragmentPadding = 0
+        view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return view
+    }
+
+    func updateUIView(_ view: UITextView, context: Context) {
+        let color = UIColor(red: 100 / 255.0, green: 116 / 255.0, blue: 139 / 255.0, alpha: 1)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .justified
+        paragraph.lineSpacing = 4
+        let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "ArialMT", size: 14)!)
+        let styled = NSMutableAttributedString(attributedString: text)
+        styled.addAttributes([.font: font, .foregroundColor: color, .paragraphStyle: paragraph], range: NSRange(location: 0, length: styled.length))
+        view.linkTextAttributes = [.foregroundColor: color, .underlineStyle: 0]
+        view.attributedText = styled
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+        guard let width = proposal.width else { return nil }
+        return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+    }
+}
