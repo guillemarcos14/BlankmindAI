@@ -123,6 +123,12 @@ struct SetupView: View {
                         Task { await completeSetup() }
                     }
                     .padding(.top, 24)
+
+                    if !deviceReady, let requirement = pendingRequirement {
+                        AccountJustifiedCopy(text: NSAttributedString(string: requirement))
+                            .padding(.top, 8)
+                            .accessibilityAddTraits(.updatesFrequently)
+                    }
                 }
                 .frame(maxWidth: 400, alignment: .leading)
                 .padding(.horizontal, 24)
@@ -150,6 +156,7 @@ struct SetupView: View {
                     title: "Screen Time",
                     detail: "Block distracting apps on this iPhone.",
                     ready: screenTimeBlocker.authorizationStatus == .approved,
+                    completedTitle: "Enabled",
                     actionTitle: screenTimeBlocker.authorizationStatus == .denied ? "Open Settings" : "Allow Screen Time",
                     action: authorizeScreenTime
                 )
@@ -159,7 +166,8 @@ struct SetupView: View {
                         ? "\(sessionStore.selectionCount) selected."
                         : "Choose apps for one reusable protection list.",
                     ready: sessionStore.hasSelectedApps,
-                    actionTitle: sessionStore.hasSelectedApps ? "Edit apps" : "Choose apps",
+                    completedTitle: "Apps selected",
+                    actionTitle: "Choose apps",
                     showActionWhenReady: true
                 ) {
                     if screenTimeBlocker.authorizationStatus == .approved {
@@ -172,6 +180,7 @@ struct SetupView: View {
                     title: "Notifications",
                     detail: "Get alerts to apply blocks from chat.",
                     ready: notificationReady,
+                    completedTitle: "Enabled",
                     actionTitle: notificationDenied ? "Open Settings" : "Enable notifications",
                     action: requestNotifications
                 )
@@ -183,6 +192,7 @@ struct SetupView: View {
         title: String,
         detail: String,
         ready: Bool,
+        completedTitle: String,
         actionTitle: String,
         showActionWhenReady: Bool = false,
         action: @escaping () -> Void
@@ -193,26 +203,27 @@ struct SetupView: View {
                     .font(.blankEditorial(size: 22, relativeTo: .headline))
                     .tracking(-0.3)
                 Spacer(minLength: 8)
-                if ready {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 18, weight: .medium))
-                        .accessibilityLabel("Completed")
-                }
             }
             AccountJustifiedCopy(text: NSAttributedString(string: detail))
                 .padding(.top, 8)
 
-            if !ready || showActionWhenReady {
                 Button(action: action) {
-                    Text(actionTitle)
+                    HStack(spacing: 8) {
+                        Text(ready ? completedTitle : actionTitle)
+                        if ready {
+                            Image(systemName: "checkmark")
+                                .accessibilityHidden(true)
+                        }
+                    }
                         .font(.custom("ArialMT", size: 15, relativeTo: .body))
                         .foregroundStyle(.white)
                         .frame(width: setupTitleWidth, height: 44)
                         .background(.black, in: RoundedRectangle(cornerRadius: 4))
                 }
                 .buttonStyle(.plain)
+                .disabled(ready && !showActionWhenReady)
+                .accessibilityHint(ready && showActionWhenReady ? "Edit selected apps and websites" : "")
                 .padding(.top, 16)
-            }
         }
         .foregroundStyle(.black)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -240,6 +251,22 @@ struct SetupView: View {
         !assistantConnectCode.isEmpty
             && screenTimeBlocker.authorizationStatus == .approved
             && sessionStore.hasSelectedApps && notificationReady
+    }
+
+    private var pendingRequirement: String? {
+        if screenTimeBlocker.authorizationStatus != .approved {
+            return "Allow Screen Time to continue."
+        }
+        if !sessionStore.hasSelectedApps {
+            return "Choose apps to continue."
+        }
+        if !notificationReady {
+            return "Enable notifications to continue."
+        }
+        if assistantConnectCode.isEmpty {
+            return "Sign in to continue."
+        }
+        return nil
     }
 
     private func authorizeScreenTime() {
