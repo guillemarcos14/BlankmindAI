@@ -3904,7 +3904,7 @@ private struct HomePreviewScene: View {
 #endif
 
 // TextKit supplies true paragraph justification while preserving native legal links.
-private struct AccountJustifiedCopy: UIViewRepresentable {
+struct AccountJustifiedCopy: UIViewRepresentable {
     let text: NSAttributedString
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 

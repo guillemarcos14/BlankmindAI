@@ -106,15 +106,15 @@ struct SetupView: View {
     private var functionalStep: some View {
         GeometryReader { geometry in
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .center, spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
                     deviceContent
 
                     if let message {
                         Text(message)
                             .font(.blankInter(size: 14, relativeTo: .footnote))
                             .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .multilineTextAlignment(.leading)
                             .padding(.bottom, 14)
                             .accessibilityAddTraits(.updatesFrequently)
                     }
@@ -124,25 +124,28 @@ struct SetupView: View {
                     }
                     .padding(.top, 24)
                 }
-                .padding(.horizontal, 28)
+                .frame(maxWidth: 400, alignment: .leading)
+                .padding(.horizontal, 24)
                 .padding(.vertical, 24)
-                .frame(minHeight: geometry.size.height, alignment: .center)
+                .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .foregroundStyle(BlankColors.charcoal)
-        .tint(BlankColors.charcoal)
+        .foregroundStyle(Color.black)
+        .tint(Color.black)
+        .preferredColorScheme(.light)
         .background(BlankColors.pureWhite.ignoresSafeArea())
     }
 
     private var deviceContent: some View {
-        VStack(alignment: .center, spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             Text("Prepare this iPhone")
-                .font(.blankEditorial(size: 32))
-                .multilineTextAlignment(.center)
+                .font(.blankEditorial(size: 32, relativeTo: .title))
+                .tracking(-0.9)
+                .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 28)
 
-            VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 28) {
                 setupCard(
                     title: "Screen Time",
                     detail: "Block distracting apps on this iPhone.",
@@ -187,7 +190,8 @@ struct SetupView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 Text(title)
-                    .font(.blankInter(size: 17, weight: .semibold, relativeTo: .headline))
+                    .font(.blankEditorial(size: 22, relativeTo: .headline))
+                    .tracking(-0.3)
                 Spacer(minLength: 8)
                 if ready {
                     Image(systemName: "checkmark.circle.fill")
@@ -195,41 +199,41 @@ struct SetupView: View {
                         .accessibilityLabel("Completed")
                 }
             }
-            Text(detail)
-                .font(.blankInter(size: 14, relativeTo: .subheadline))
-                .foregroundStyle(.white.opacity(0.78))
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 6)
+            AccountJustifiedCopy(text: NSAttributedString(string: detail))
+                .padding(.top, 8)
 
             if !ready || showActionWhenReady {
                 Button(action: action) {
                     Text(actionTitle)
-                        .font(.blankInter(size: 15, weight: .semibold, relativeTo: .body))
-                        .foregroundStyle(.black)
-                        .frame(maxWidth: .infinity, minHeight: 46)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 10))
+                        .font(.custom("ArialMT", size: 15, relativeTo: .body))
+                        .foregroundStyle(.white)
+                        .frame(width: setupTitleWidth, height: 44)
+                        .background(.black, in: RoundedRectangle(cornerRadius: 4))
                 }
                 .buttonStyle(.plain)
-                .padding(.top, 18)
+                .padding(.top, 16)
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(.black)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .background(.black, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func primaryButton(_ title: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.blankInter(size: 16, weight: .semibold, relativeTo: .headline))
-                .frame(maxWidth: .infinity, minHeight: 54)
+                .font(.custom("ArialMT", size: 15, relativeTo: .body))
+                .frame(width: setupTitleWidth, height: 44)
                 .foregroundStyle(enabled ? Color.white : BlankColors.stoneGray)
-                .background(enabled ? Color.black : Color(uiColor: .systemGray5), in: RoundedRectangle(cornerRadius: 12))
+                .background(enabled ? Color.black : Color(uiColor: .systemGray5), in: RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
         .padding(.bottom, 4)
+    }
+
+    private var setupTitleWidth: CGFloat {
+        let font = UIFontMetrics(forTextStyle: .title1).scaledFont(for: UIFont(name: "TimesNewRomanPSMT", size: 32)!)
+        return ceil(NSAttributedString(string: "Prepare this iPhone", attributes: [.font: font, .kern: -0.9]).size().width)
     }
 
     private var deviceReady: Bool {
