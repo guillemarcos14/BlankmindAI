@@ -3564,7 +3564,7 @@ struct AppAccountSignInSheet: View {
     }
 
     private var accountLegalText: NSAttributedString {
-        let text = NSMutableAttributedString(string: "By clicking Continue, I agree to Blankmind's Terms of Service and acknowledge the Privacy Policy.")
+        let text = NSMutableAttributedString(string: "By continuing, you agree to Blankmind's Terms of Service and acknowledge its Privacy Policy.")
         for (label, path) in [("Terms of Service", "terms"), ("Privacy Policy", "privacy")] {
             let range = (text.string as NSString).range(of: label)
             text.addAttribute(.link, value: URL(string: "https://blankmind.ai/\(path)")!, range: range)
@@ -3927,6 +3927,13 @@ private struct AccountJustifiedCopy: UIViewRepresentable {
         let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "ArialMT", size: 14)!)
         let styled = NSMutableAttributedString(attributedString: text)
         styled.addAttributes([.font: font, .foregroundColor: color, .paragraphStyle: paragraph], range: NSRange(location: 0, length: styled.length))
+        let linkFont = UIFont(
+            descriptor: font.fontDescriptor.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]]),
+            size: font.pointSize
+        )
+        text.enumerateAttribute(.link, in: NSRange(location: 0, length: text.length)) { link, range, _ in
+            if link != nil { styled.addAttribute(.font, value: linkFont, range: range) }
+        }
         view.linkTextAttributes = [.foregroundColor: color, .underlineStyle: 0]
         view.attributedText = styled
     }
