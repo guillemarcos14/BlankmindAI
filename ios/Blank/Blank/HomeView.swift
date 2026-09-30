@@ -3504,18 +3504,18 @@ struct AppAccountSignInSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Sign in to Blankmind")
-                        .font(.blankEditorial(size: 28, relativeTo: .title))
-                        .tracking(-0.6)
+                        .font(.blankEditorial(size: 32, relativeTo: .title))
+                        .tracking(-0.9)
                         .foregroundStyle(Color.black)
                         .padding(.bottom, 12)
                     Text("Chat with Blankmind and manage distractions, all in this app.")
-                        .font(.blankInter(size: 14, relativeTo: .body))
+                        .font(.custom("ArialMT", size: 14, relativeTo: .body))
                         .foregroundStyle(Color(red: 100 / 255.0, green: 116 / 255.0, blue: 139 / 255.0))
                         .multilineTextAlignment(.leading)
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.bottom, 28)
-        
+
                     if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
                         Text("This will connect Apple to your existing Blank account and preserve its chat history.")
                             .font(.blankInter(size: 14, relativeTo: .footnote))
@@ -3524,7 +3524,7 @@ struct AppAccountSignInSheet: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.bottom, 16)
                     }
-        
+
                     SignInWithAppleButton(.continue, onRequest: { request in
                         let nonce = Self.makeNonce()
                         rawNonce = nonce
@@ -3541,15 +3541,15 @@ struct AppAccountSignInSheet: View {
                             }
                         }
                         .padding(.bottom, 20)
-        
+
                     Text(accountLegalText)
-                        .font(.blankInter(size: 13, relativeTo: .footnote))
-                        .foregroundStyle(Color(red: 107 / 255.0, green: 114 / 255.0, blue: 128 / 255.0))
-                        .tint(Color(red: 75 / 255.0, green: 85 / 255.0, blue: 99 / 255.0))
+                        .font(.custom("ArialMT", size: 14, relativeTo: .footnote))
+                        .foregroundStyle(Color(red: 75 / 255.0, green: 85 / 255.0, blue: 99 / 255.0))
+                        .tint(Color(red: 55 / 255.0, green: 65 / 255.0, blue: 81 / 255.0))
                         .lineSpacing(5)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
-        
+
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.blankInter(size: 14, relativeTo: .footnote))
