@@ -3927,10 +3927,7 @@ private struct AccountJustifiedCopy: UIViewRepresentable {
         let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "ArialMT", size: 14)!)
         let styled = NSMutableAttributedString(attributedString: text)
         styled.addAttributes([.font: font, .foregroundColor: color, .paragraphStyle: paragraph], range: NSRange(location: 0, length: styled.length))
-        let linkFont = UIFont(
-            descriptor: font.fontDescriptor.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]]),
-            size: font.pointSize
-        )
+        let linkFont = UIFont.systemFont(ofSize: font.pointSize, weight: .semibold)
         text.enumerateAttribute(.link, in: NSRange(location: 0, length: text.length)) { link, range, _ in
             if link != nil { styled.addAttribute(.font, value: linkFont, range: range) }
         }
