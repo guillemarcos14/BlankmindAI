@@ -162,7 +162,7 @@ struct SetupView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 24)
 
-            AccountJustifiedCopy(text: NSAttributedString(string: "Screen Time lets Blankmind block distractions. Choose the apps to protect, and enable notifications to receive block requests from chat."))
+            AccountJustifiedCopy(text: NSAttributedString(string: "Screen Time lets Blankmind block distractions. Choose apps for one reusable protection list, and enable notifications to receive block requests from chat."))
                 .padding(.bottom, 24)
 
             VStack(spacing: 12) {
