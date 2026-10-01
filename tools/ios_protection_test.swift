@@ -93,6 +93,29 @@ struct ProtectionTests {
         for action in nonActivatingActions {
             expect(!identity.requiresPermission(action), "Removal or permission-only action must not enter protection preflight twice")
         }
-        print("iOS protection: weekday/overnight/expiry/overlap, 648 app-extension comparisons, legacy persistence and canonical selection locking passed")
+        let suite = "blank-manual-unlock-tests-\(UUID().uuidString)"
+        let unlockDefaults = UserDefaults(suiteName: suite)!
+        defer { unlockDefaults.removePersistentDomain(forName: suite) }
+        let startedAt = date(20, 9)
+        let firstLaunch = ManualUnlockFixture(defaults: unlockDefaults, startedAt: startedAt)
+        firstLaunch.scheduleManualUnlock(after: 60, now: startedAt)
+        firstLaunch.scheduleManualUnlock(after: 60, now: startedAt.addingTimeInterval(30))
+        expect(firstLaunch.delayedManualUnlockAt == startedAt.addingTimeInterval(60), "Repeated request restarted cooldown")
+        let reopened = ManualUnlockFixture(defaults: unlockDefaults, startedAt: startedAt)
+        expect(!reopened.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(59)), "Reopened app unlocked before deadline")
+        expect(reopened.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(90)), "Closed-app elapsed time was lost")
+        expect(!reopened.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(91)) && reopened.unlocks == 1, "Unlock executed twice")
+        let next = ManualUnlockFixture(defaults: unlockDefaults, startedAt: startedAt)
+        next.scheduleManualUnlock(after: 60, now: startedAt)
+        let replacement = ManualUnlockFixture(defaults: unlockDefaults, startedAt: startedAt.addingTimeInterval(30))
+        expect(!replacement.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(90)) && replacement.delayedManualUnlockAt == nil, "Old cooldown unlocked a different session")
+        replacement.hardBlankActive = true
+        replacement.scheduleManualUnlock(after: 0, now: startedAt)
+        expect(replacement.delayedManualUnlockAt == nil, "Hard protection accepted manual unlock")
+        replacement.hardBlankActive = false
+        replacement.scheduleManualUnlock(after: 60, now: startedAt)
+        replacement.cancelManualUnlock()
+        expect(unlockDefaults.object(forKey: "blankManualUnlockAt") == nil && !replacement.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(90)), "Cancelled cooldown survived restart")
+        print("iOS protection: schedule parity, selection locking, persistent manual unlock/restart/expiry/cancellation/session identity passed")
     }
 }

@@ -148,7 +148,7 @@ struct SetupView: View {
     private var deviceContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Set up Blankmind")
-                .font(.blankEditorial(size: 32, relativeTo: .title))
+                .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
                 .tracking(-0.9)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 28)
@@ -206,7 +206,7 @@ struct SetupView: View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
-                    .font(.blankEditorial(size: 22, relativeTo: .headline))
+                    .font(.blankOnboardingEditorial(size: 22, relativeTo: .headline))
                     .tracking(-0.3)
                     .fixedSize(horizontal: false, vertical: true)
                 AccountJustifiedCopy(text: NSAttributedString(string: detail))

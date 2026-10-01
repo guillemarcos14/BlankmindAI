@@ -51,6 +51,36 @@ const intervals = scheduler.slice(scheduler.indexOf('    private static func rec
 const extensionModel = between(monitor, '    private struct StoredWindow:', '    private static func recurringScheduleIsActive')
   .replace('private struct StoredWindow', 'struct StoredWindow');
 const fixtures = `
+final class ManualUnlockFixture {
+    let defaults: UserDefaults
+    var isBlankActive = true
+    var hardBlankActive = false
+    var blankActiveSince: Date?
+    var delayedManualUnlockAt: Date?
+    var unlocks = 0
+    enum Keys {
+        static let isBlankActive = "blankIsActive"
+        static let blankActiveSince = "blankActiveSince"
+    }
+    enum NfcResult { case unblanked }
+    enum EntryMode { case app }
+    enum EndReason { case manual }
+    init(defaults: UserDefaults, startedAt: Date) {
+        self.defaults = defaults
+        blankActiveSince = startedAt
+        let timestamp = defaults.double(forKey: "blankManualUnlockAt")
+        delayedManualUnlockAt = timestamp > 0 ? Date(timeIntervalSince1970: timestamp) : nil
+        defaults.set(true, forKey: Keys.isBlankActive)
+        defaults.set(startedAt.timeIntervalSince1970, forKey: Keys.blankActiveSince)
+    }
+${between(store, '    func scheduleManualUnlock(', '    init(defaults: UserDefaults = BlankSharedState.defaults)')}
+    func deactivateBlank(entryMode: EntryMode, endedReason: EndReason) -> NfcResult {
+        unlocks += 1
+        isBlankActive = false
+        defaults.set(false, forKey: Keys.isBlankActive)
+        return .unblanked
+    }
+}
 final class IdentityFixture {
     var assistantConnectCode = "code-A"
     var accountID = "account-A"

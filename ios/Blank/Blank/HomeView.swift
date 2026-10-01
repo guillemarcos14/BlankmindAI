@@ -392,6 +392,7 @@ struct HomeView: View {
     @EnvironmentObject private var screenTimeBlocker: ScreenTimeBlocker
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
     @AppStorage("blankAssistantConnectCode", store: BlankSharedState.defaults) private var assistantConnectCode = ""
 
@@ -403,6 +404,7 @@ struct HomeView: View {
     @State private var showingAssistantChat = false
     @State private var chatLaunchMessage: String?
     @State private var homeChatDraft = ""
+    @FocusState private var homeChatFocused: Bool
     @State private var homeSpeechPrefix = ""
     @State private var acceptingHomeSpeech = false
     @StateObject private var homeSpeech = AssistantSpeechInput()
@@ -416,8 +418,7 @@ struct HomeView: View {
     @State private var isAnimatingUnblankHold = false
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
-    @State private var delayedManualUnlockAt: Date?
-    @State private var delayedManualUnlockTask: Task<Void, Never>?
+    private var delayedManualUnlockAt: Date? { sessionStore.delayedManualUnlockAt }
     @State private var showingRelapseReview = false
     @AppStorage("blankPendingAssistantActionId", store: BlankSharedState.defaults) private var pendingAssistantActionId = ""
     @State private var assistantActionPollInFlight = false
@@ -500,7 +501,7 @@ struct HomeView: View {
             }
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
         }
-        .ignoresSafeArea()
+        .ignoresSafeArea(.container)
         .foregroundStyle(activeSection == nil ? (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.homeLightInk) : (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink))
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
@@ -511,6 +512,7 @@ struct HomeView: View {
         .navigationBarBackButtonHidden()
         .onReceive(timer) { date in
             now = date
+            finishDelayedManualUnlock(now: date)
             pollPendingAssistantActionIfNeeded(now: date)
             sessionStore.syncFromSharedDefaults(now: date)
             sessionStore.applyScheduleWindow(at: date)
@@ -531,6 +533,8 @@ struct HomeView: View {
             if let error { message = error }
         }
         .onAppear {
+            now = Date()
+            finishDelayedManualUnlock(now: now)
             Task { await activateAppChannel() }
             sessionStore.syncFromSharedDefaults(now: now)
             applyScreenTimeControls()
@@ -552,6 +556,8 @@ struct HomeView: View {
                 return
             }
             Task { await activateAppChannel() }
+            now = Date()
+            finishDelayedManualUnlock(now: now)
             sessionStore.syncFromSharedDefaults()
             applyScreenTimeControls()
             screenTimeBlocker.refreshAuthorizationStatus()
@@ -909,8 +915,6 @@ struct HomeView: View {
 
                 minimalStatus
 
-                homeChatComposer
-
                 #if targetEnvironment(simulator)
                 HStack(spacing: 18) {
                     minimalUtilityRow("onboarding") {
@@ -925,10 +929,27 @@ struct HomeView: View {
                 #endif
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .opacity(homeChatFocused ? 0 : 1)
+            .allowsHitTesting(!homeChatFocused)
+            .accessibilityHidden(homeChatFocused)
+            .frame(height: homeChatFocused ? 0 : nil, alignment: .bottom)
+            .clipped()
+
+            homeChatComposer
+
+            if homeChatFocused {
+                Spacer(minLength: 0)
+            }
         }
         .padding(.horizontal, layout.horizontalPadding)
         .padding(.bottom, layout.bottomPadding * 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+        .background {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { homeChatFocused = false }
+        }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: homeChatFocused)
     }
 
     private func activeMinimalHome(layout: HomeLayoutMetrics) -> some View {
@@ -1198,6 +1219,7 @@ struct HomeView: View {
                 .font(.blankInter(size: 16, relativeTo: .body))
                 .lineLimit(1...3)
                 .submitLabel(.send)
+                .focused($homeChatFocused)
                 .onSubmit(sendHomeChatMessage)
                 .padding(.leading, 18)
                 .padding(.vertical, 14)
@@ -1205,6 +1227,7 @@ struct HomeView: View {
                 .accessibilityLabel("Message Blankmind")
 
             Button {
+                homeChatFocused = true
                 if !homeSpeech.isRecording && !homeSpeech.isStarting {
                     let prefix = homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                     homeSpeechPrefix = prefix.isEmpty ? "" : "\(prefix) "
@@ -1233,9 +1256,11 @@ struct HomeView: View {
         .foregroundStyle(BlankColors.homeLightInk)
         .background(RoundedRectangle(cornerRadius: 26).fill(BlankColors.homeLightInk.opacity(0.06)))
         .padding(.top, 22)
+        .onTapGesture { homeChatFocused = true }
     }
 
     private func openAssistantChat() {
+        homeChatFocused = false
         acceptingHomeSpeech = false
         homeSpeech.stop()
         chatLaunchMessage = nil
@@ -1252,6 +1277,7 @@ struct HomeView: View {
         acceptingHomeSpeech = false
         homeSpeech.stop()
         homeChatDraft = ""
+        homeChatFocused = false
         chatLaunchMessage = text
         showingAssistantChat = true
     }
@@ -1485,12 +1511,11 @@ struct HomeView: View {
     }
 
     private func scheduleDelayedManualUnlock(cooldownSeconds requestedCooldownSeconds: Int? = nil) {
-        guard delayedManualUnlockTask == nil else { return }
+        guard delayedManualUnlockAt == nil else { return }
         let cooldownSeconds = requestedCooldownSeconds ?? sessionStore.manualUnblankCooldownSeconds
         let startedAt = Date()
-        let unlockAt = startedAt.addingTimeInterval(TimeInterval(cooldownSeconds))
         now = startedAt
-        delayedManualUnlockAt = unlockAt
+        sessionStore.scheduleManualUnlock(after: cooldownSeconds, now: startedAt)
         updateDelayedUnlockMessage(now: Date())
         Task {
             await BlankFunnelAnalytics.track(
@@ -1498,18 +1523,14 @@ struct HomeView: View {
                 properties: ["source": "hold_to_unblank", "delay_seconds": cooldownSeconds]
             )
         }
-        delayedManualUnlockTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: UInt64(max(0, cooldownSeconds)) * 1_000_000_000)
-            guard !Task.isCancelled else { return }
-            let result = withAnimation(.easeInOut(duration: 0.65)) {
-                sessionStore.deactivateBlank(entryMode: .app, endedReason: .manual)
-            }
-            screenTimeBlocker.clear()
-            delayedManualUnlockAt = nil
-            delayedManualUnlockTask = nil
-            setMessage(for: result)
-            presentRelapseReview()
-        }
+        finishDelayedManualUnlock(now: startedAt)
+    }
+
+    private func finishDelayedManualUnlock(now: Date) {
+        guard sessionStore.finishManualUnlockIfDue(now: now) else { return }
+        screenTimeBlocker.apply(isBlankActive: sessionStore.isBlankActive)
+        setMessage(for: .unblanked)
+        presentRelapseReview()
     }
 
     private func presentRelapseReview() {
@@ -1525,9 +1546,7 @@ struct HomeView: View {
     }
 
     private func cancelDelayedManualUnlock() {
-        delayedManualUnlockTask?.cancel()
-        delayedManualUnlockTask = nil
-        delayedManualUnlockAt = nil
+        sessionStore.cancelManualUnlock()
     }
 
     private func updateDelayedUnlockMessage(now _: Date) {
@@ -3504,7 +3523,7 @@ struct AppAccountSignInSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Sign in to Blankmind")
-                        .font(.blankEditorial(size: 32, relativeTo: .title))
+                        .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
                         .tracking(-0.9)
                         .foregroundStyle(Color.black)
                         .padding(.bottom, 12)
