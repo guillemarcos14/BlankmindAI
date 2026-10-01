@@ -85,7 +85,7 @@ async function main() {
       body, status: "prepared", physical_success_claimed: false, broad_release_authorized: false };
     fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
     console.log(JSON.stringify({ status: report.status, report: reportFile, source: commit, changed: ENTRIES,
-      preserved_functions: Object.keys(body.functions).length - ENTRIES.filter(n => snapshot.fns.functions.some(f => f.n === n)).length,
+      preserved_functions: snapshot.fns.functions.filter(f => !ENTRIES.includes(f.n)).length,
       preserved_files: Object.keys(body.files).length }));
     return;
   }
