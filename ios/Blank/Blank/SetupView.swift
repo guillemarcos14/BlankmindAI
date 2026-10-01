@@ -175,8 +175,7 @@ struct SetupView: View {
                 permissionButton(
                     title: "Choose apps",
                     completedTitle: "Apps selected",
-                    ready: sessionStore.hasSelectedApps,
-                    editable: true
+                    ready: sessionStore.hasSelectedApps
                 ) {
                     if screenTimeBlocker.authorizationStatus == .approved {
                         showingPicker = true
@@ -205,7 +204,6 @@ struct SetupView: View {
         title: String,
         completedTitle: String,
         ready: Bool,
-        editable: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -216,16 +214,15 @@ struct SetupView: View {
                 Text(ready ? completedTitle : title)
             }
             .font(.blankInter(size: 16, weight: .medium, relativeTo: .body))
-            .foregroundStyle(Color.white)
+            .foregroundStyle(ready ? BlankColors.charcoal : Color.white)
             .frame(maxWidth: .infinity, minHeight: 44)
             .padding(.vertical, 2)
-            .background(Color.black, in: RoundedRectangle(cornerRadius: 4))
+            .background(ready ? BlankColors.lichenGray : Color.black, in: RoundedRectangle(cornerRadius: 4))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(ready && !editable)
+        .disabled(ready)
         .accessibilityLabel(ready ? completedTitle : title)
-        .accessibilityHint(editable && ready ? "Edit the selected apps" : "")
     }
     private var canAutomaticallyComplete: Bool {
         currentStep == .device && deviceReady && !showingPicker
