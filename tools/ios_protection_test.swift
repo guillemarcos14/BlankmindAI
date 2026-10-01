@@ -7,6 +7,10 @@ private func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
 @main
 struct ProtectionTests {
     static func main() throws {
+        expect(UnblankHoldCadence.pulseTimes(duration: 20) == [0, 1, 3, 6, 10, 15], "Hold pulses must slow down without changing the 20-second hold")
+        expect(UnblankHoldCadence.pulseTimes(duration: 25) == [0, 1, 3, 6, 10, 15, 21], "Intervals must increase by one second")
+        expect(UnblankHoldCadence.pulseTimes(duration: 0).isEmpty, "Inactive hold must not vibrate")
+        expect(UnblankHoldCadence.pulseTimes(duration: .infinity).isEmpty, "Reject unbounded cadence")
         let precise = InboxDateFixture(requestedAt: "2026-10-01T12:00:00.123Z").requestedDate
         let wholeSecond = InboxDateFixture(requestedAt: "2026-10-01T12:00:00Z").requestedDate
         expect(precise != nil && wholeSecond != nil, "Server milliseconds must not prevent native blocking")

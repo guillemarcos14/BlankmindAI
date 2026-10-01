@@ -14,6 +14,21 @@ enum HomeSection: Hashable {
     case settings
 }
 
+struct UnblankHoldCadence {
+    static func pulseTimes(duration: Double) -> [Double] {
+        guard duration.isFinite, duration > 0 else { return [] }
+        var pulses = [0.0]
+        var elapsed = 0.0
+        var interval = 1.0
+        while elapsed + interval < duration {
+            elapsed += interval
+            pulses.append(elapsed)
+            interval += 1
+        }
+        return pulses
+    }
+}
+
 struct AssistantInboxResponse: Decodable {
     let pendingAction: AssistantInboxAction?
 
@@ -434,6 +449,7 @@ struct HomeView: View {
     @State private var showingForgetConfirm = false
     @StateObject private var healthKitStore = HealthKitStore()
     @State private var unblankHoldProgress = 0.0
+    @State private var unblankHapticTask: Task<Void, Never>?
     @State private var isAnimatingUnblankHold = false
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
@@ -525,9 +541,9 @@ struct HomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
         .environment(\.blankMinimalAppearance, true)
-        .animation(.easeInOut(duration: 0.65), value: sessionStore.isBlankActive)
-        .animation(.easeInOut(duration: 0.35), value: activeSection)
-        .animation(.easeInOut(duration: 0.35), value: showingRelapseReview)
+        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.45), value: sessionStore.isBlankActive)
+        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.35), value: activeSection)
+        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.35), value: showingRelapseReview)
         .navigationBarBackButtonHidden()
         .onReceive(timer) { date in
             now = date
@@ -568,6 +584,7 @@ struct HomeView: View {
         }
         .onChange(of: scenePhase) { phase in
             guard phase == .active else {
+                stopUnblankHoldHaptics()
                 if phase == .background {
                     acceptingHomeSpeech = false
                     homeSpeech.stop()
@@ -589,6 +606,7 @@ struct HomeView: View {
             pollPendingAssistantActionIfNeeded(force: true)
         }
         .onDisappear {
+            stopUnblankHoldHaptics()
             acceptingHomeSpeech = false
             homeSpeech.stop()
         }
@@ -614,6 +632,7 @@ struct HomeView: View {
                 isHoldingToUnblank = false
                 unblankHoldProgress = 0
                 isAnimatingUnblankHold = false
+                stopUnblankHoldHaptics()
             }
             syncAssistantContext()
         }
@@ -923,8 +942,6 @@ struct HomeView: View {
 
     private func idleMinimalHome(layout: HomeLayoutMetrics) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-
             VStack(alignment: .leading, spacing: -8) {
                 minimalStartRow
 
@@ -968,13 +985,10 @@ struct HomeView: View {
 
             homeChatComposer
 
-            if homeChatFocused {
-                Spacer(minLength: 0)
-            }
         }
         .padding(.horizontal, layout.horizontalPadding)
-        .padding(.bottom, layout.bottomPadding * 2)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+        .padding(.bottom, homeChatFocused ? 0 : layout.bottomPadding * 2)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: homeChatFocused ? .center : .bottomLeading)
         .background {
             Color.clear
                 .contentShape(Rectangle())
@@ -1003,7 +1017,7 @@ struct HomeView: View {
                             Button("unblank") {
                                 beginFullScreenUnblankHold()
                             }
-                            .font(.blankInter(size: 32, weight: .semibold, relativeTo: .title))
+                            .font(.blankInter(size: 32, weight: .bold, relativeTo: .title))
                             .tracking(0)
                             .foregroundStyle(BlankColors.homeDarkSecondary)
                             .frame(minWidth: 44, minHeight: 44, alignment: .leading)
@@ -1043,6 +1057,7 @@ struct HomeView: View {
                                 isHoldingToUnblank = false
                                 unblankHoldProgress = 0
                                 isAnimatingUnblankHold = false
+                                stopUnblankHoldHaptics()
                             }
                     )
                     .simultaneousGesture(
@@ -1053,6 +1068,7 @@ struct HomeView: View {
                                       delayedManualUnlockAt == nil,
                                       !isAnimatingUnblankHold else { return }
                                 isAnimatingUnblankHold = true
+                                startUnblankHoldHaptics()
                                 unblankHoldProgress = 0
                                 withAnimation(.linear(duration: 20)) {
                                     unblankHoldProgress = 1
@@ -1060,6 +1076,7 @@ struct HomeView: View {
                             }
                             .onEnded { _ in
                                 isAnimatingUnblankHold = false
+                                stopUnblankHoldHaptics()
                                 withAnimation(.easeOut(duration: 0.18)) {
                                     unblankHoldProgress = 0
                                 }
@@ -1079,7 +1096,7 @@ struct HomeView: View {
         ZStack(alignment: .leading) {
             if isHoldingToUnblank {
                 Text("hold the screen to unblank")
-                    .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                     .tracking(0)
                     .foregroundStyle(BlankColors.pureWhite)
                     .lineLimit(3)
@@ -1089,7 +1106,7 @@ struct HomeView: View {
                     .transition(.opacity)
             } else if let cooldownText {
                 Text(cooldownText)
-                    .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                     .tracking(0)
                     .foregroundStyle(BlankColors.homeDarkSecondary)
                     .monospacedDigit()
@@ -1098,7 +1115,7 @@ struct HomeView: View {
                     .transition(.opacity)
             } else if let timerCountdownText {
                 Text(timerCountdownText)
-                    .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                     .tracking(0)
                     .foregroundStyle(BlankColors.homeDarkSecondary)
                     .monospacedDigit()
@@ -1147,7 +1164,7 @@ struct HomeView: View {
     private func minimalHomeRow(_ title: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .blankHomeDisplayTextStyle(color: color)
+                .blankHomeDisplayTextStyle(color: color, weight: .semibold)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
         }
@@ -1177,7 +1194,7 @@ struct HomeView: View {
             setMessage(for: result)
         } label: {
             Text(title)
-                .font(.blankEditorial(size: 32, relativeTo: .title))
+                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .title))
                 .foregroundStyle(titleColor)
                 .tracking(0)
                 .lineLimit(1)
@@ -1202,7 +1219,7 @@ struct HomeView: View {
 
             if let schedulePausedUntil = sessionStore.schedulePausedUntil, now < schedulePausedUntil {
                 Text("Schedule paused \(remainingText(until: schedulePausedUntil))")
-                    .font(.blankInter(size: 13, relativeTo: .footnote))
+                    .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
             }
 
             if let message {
@@ -1228,7 +1245,7 @@ struct HomeView: View {
                     .monospacedDigit()
             }
         }
-        .font(.blankInter(size: 13, relativeTo: .footnote))
+        .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
         .foregroundStyle(sessionStore.isBlankActive ? BlankColors.homeDarkSecondary : BlankColors.homeLightSecondary)
         .fixedSize(horizontal: false, vertical: true)
         .padding(.top, 6)
@@ -1247,7 +1264,7 @@ struct HomeView: View {
             TextField("", text: $homeChatDraft,
                       prompt: Text("Ask Blankmind…").foregroundColor(BlankColors.homeLightSecondary),
                       axis: .vertical)
-                .font(.blankInter(size: 16, relativeTo: .body))
+                .font(.blankInter(size: 16, weight: .medium, relativeTo: .body))
                 .lineLimit(1...3)
                 .submitLabel(.send)
                 .focused($homeChatFocused)
@@ -1316,7 +1333,7 @@ struct HomeView: View {
     private func centerContent(maxWidth: CGFloat, actionWidth: CGFloat) -> some View {
         VStack(spacing: 28) {
             Text(homeTagline)
-                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                 .foregroundStyle(BlankColors.pureWhite)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
@@ -1339,7 +1356,7 @@ struct HomeView: View {
                     .monospacedDigit()
                 if let schedulePausedUntil = sessionStore.schedulePausedUntil, now < schedulePausedUntil {
                     Text("Schedule paused \(remainingText(until: schedulePausedUntil))")
-                        .font(.blankInter(size: 13, relativeTo: .footnote))
+                        .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
                         .foregroundStyle(BlankColors.pureWhite.opacity(0.58))
                 }
             }
@@ -1358,7 +1375,7 @@ struct HomeView: View {
                     .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk)
                 } else {
                     Text(message)
-                        .font(.blankInter(size: 13, relativeTo: .footnote))
+                        .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
                         .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk)
                         .multilineTextAlignment(.center)
                         .padding(.top, 8)
@@ -1404,6 +1421,7 @@ struct HomeView: View {
                         scheduleDelayedManualUnlock()
                         unblankHoldProgress = 0
                         isAnimatingUnblankHold = false
+                        stopUnblankHoldHaptics()
                     }
             )
             .simultaneousGesture(
@@ -1411,6 +1429,7 @@ struct HomeView: View {
                     .onChanged { _ in
                         guard sessionStore.isBlankActive, !sessionStore.hardBlankActive, !isAnimatingUnblankHold else { return }
                         isAnimatingUnblankHold = true
+                        startUnblankHoldHaptics()
                         unblankHoldProgress = 0
                         withAnimation(.linear(duration: 20)) {
                             unblankHoldProgress = 1
@@ -1418,6 +1437,7 @@ struct HomeView: View {
                     }
                     .onEnded { _ in
                         isAnimatingUnblankHold = false
+                        stopUnblankHoldHaptics()
                         withAnimation(.easeOut(duration: 0.18)) {
                             unblankHoldProgress = 0
                         }
@@ -1529,6 +1549,31 @@ struct HomeView: View {
         return unlocked
     }
 
+    private func stopUnblankHoldHaptics() {
+        unblankHapticTask?.cancel()
+        unblankHapticTask = nil
+    }
+
+    private func startUnblankHoldHaptics() {
+        stopUnblankHoldHaptics()
+        unblankHapticTask = Task { @MainActor in
+            let feedback = UIImpactFeedbackGenerator(style: .light)
+            var elapsed = 0.0
+            for pulse in UnblankHoldCadence.pulseTimes(duration: 20) {
+                if pulse > elapsed {
+                    do { try await Task.sleep(nanoseconds: UInt64((pulse - elapsed) * 1_000_000_000)) }
+                    catch { return }
+                }
+                guard !Task.isCancelled, scenePhase == .active,
+                      isAnimatingUnblankHold, sessionStore.isBlankActive,
+                      !sessionStore.hardBlankActive, delayedManualUnlockAt == nil else { return }
+                feedback.prepare()
+                feedback.impactOccurred(intensity: 0.65)
+                elapsed = pulse
+            }
+        }
+    }
+
     private func beginFullScreenUnblankHold() {
         guard sessionStore.isBlankActive,
               !sessionStore.hardBlankActive,
@@ -1539,6 +1584,7 @@ struct HomeView: View {
         }
         unblankHoldProgress = 0
         isAnimatingUnblankHold = false
+        stopUnblankHoldHaptics()
     }
 
     private func scheduleDelayedManualUnlock(cooldownSeconds requestedCooldownSeconds: Int? = nil) {
@@ -2233,8 +2279,8 @@ struct HomeView: View {
 }
 
 private extension View {
-    func blankHomeDisplayTextStyle(color: Color) -> some View {
-        font(.blankEditorial(size: 32, relativeTo: .title))
+    func blankHomeDisplayTextStyle(color: Color, weight: Font.Weight = .regular) -> some View {
+        font(.blankInter(size: 32, weight: weight, relativeTo: .title))
             .foregroundStyle(color)
             .tracking(0)
             .lineLimit(1)

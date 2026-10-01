@@ -131,7 +131,7 @@ try {
   const binary = path.join(temporary, 'protection-tests');
   fs.writeFileSync(file, 'import Foundation\n' + between(model, 'struct BlankHabitWindow:', 'struct BlankSession:')
     + between(store, 'enum AssistantPendingAction:', 'struct AssistantProtectionExecution:')
-    + extensionModel + fixtures + read('tools/ios_protection_test.swift'));
+    + between(home, 'struct UnblankHoldCadence {', 'struct AssistantInboxResponse:') + extensionModel + fixtures + read('tools/ios_protection_test.swift'));
   const built = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file, '-o', binary], { encoding: 'utf8' });
   if (built.error) throw new Error(`Protection runtime tests require Swift on macOS: ${built.error.message}`);
   if (built.status !== 0) throw new Error(built.stderr || built.stdout);

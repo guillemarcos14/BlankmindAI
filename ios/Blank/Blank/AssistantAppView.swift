@@ -531,6 +531,7 @@ struct AssistantAppView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var speech = AssistantSpeechInput()
     @FocusState private var composerFocused: Bool
     @State private var turns: [AssistantAppTurn] = []
@@ -579,7 +580,9 @@ struct AssistantAppView: View {
     private var waiting: Bool { isSending || composer.pending != nil || isApplyingAction }
 
     var body: some View {
-        VStack(spacing: 0) {
+        GeometryReader { geometry in
+            ZStack(alignment: .top) {
+                VStack(spacing: 0) {
             HStack {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
@@ -613,8 +616,7 @@ struct AssistantAppView: View {
             .background(background)
             .zIndex(1)
 
-            GeometryReader { geometry in
-                ScrollView {
+                    ScrollView {
                     VStack(alignment: .leading, spacing: 26) {
                         if let latest {
                             Text(latest.assistantText)
@@ -645,8 +647,7 @@ struct AssistantAppView: View {
                                     .foregroundStyle(foreground.opacity(0.74))
                             }
                         } else if isLoading {
-                            ProgressView(spanish ? "Recuperando conversación…" : "Loading conversation…")
-                                .font(.blankInter(size: 15)).tint(foreground)
+                            BlankLoadingIndicator(color: foreground)
                         } else {
                             Text(requiresVerification
                                  ? (spanish ? "Tu conversación en Blankmind." : "Your conversation in Blankmind.")
@@ -664,20 +665,28 @@ struct AssistantAppView: View {
                                     .frame(minHeight: 44)
                             }
                         }
-                        if dynamicTypeSize.isAccessibilitySize { status }
                     }
-                    .frame(maxWidth: 640, alignment: .leading)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? 0 : geometry.size.height * 0.72, alignment: .center)
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 16)
+                        .frame(maxWidth: 640, alignment: .leading)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 16)
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .frame(height: max(0, geometry.size.height / 2 - 108))
+                    .clipped()
+                    Spacer(minLength: 0)
                 }
-                .scrollDismissesKeyboard(.interactively)
+                composerBar
+                    .overlay(alignment: .bottom) {
+                        status
+                            .fixedSize(horizontal: false, vertical: true)
+                            .alignmentGuide(.bottom) { dimensions in dimensions[.top] - 12 }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
-            .clipped()
-
-            if !dynamicTypeSize.isAccessibilitySize { status }
-            composerBar
+            .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: waiting)
+            .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: isLoading)
+            .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: latest?.id)
         }
         .foregroundStyle(foreground)
         .background(background.ignoresSafeArea())
@@ -777,10 +786,7 @@ struct AssistantAppView: View {
                     .disabled(isSending)
                 }
             } else if waiting {
-                HStack(spacing: 10) {
-                    ProgressView().tint(foreground)
-                    Text(spanish ? "Blankmind está respondiendo…" : "Blankmind is replying…")
-                }
+                BlankLoadingIndicator(color: foreground)
             } else if speech.isRecording || speech.isStarting {
                 Text(spanish ? "Dictando. Revisa el texto antes de enviar." : "Dictating. Review your words before sending.")
             }
@@ -817,7 +823,7 @@ struct AssistantAppView: View {
         .padding(.leading, 18).padding(.trailing, 8)
         .background(RoundedRectangle(cornerRadius: 28).fill(foreground.opacity(dark ? 0.11 : 0.06)))
         .frame(maxWidth: 640)
-        .padding(.horizontal, 22).padding(.bottom, 12)
+        .padding(.horizontal, 22)
         .layoutPriority(1)
     }
 
@@ -1016,6 +1022,7 @@ struct AssistantAppView: View {
     private func loadPreview() {
         isLoading = false
         let scenario = AssistantAppPreview.scenario
+        if scenario == "loading" { isLoading = true; return }
         if scenario == "empty" { return }
         if scenario == "signin" { requiresVerification = true; return }
         turns = [AssistantAppTurn(id: "preview", userText: "Necesito concentrarme esta tarde.",
@@ -1274,3 +1281,26 @@ enum AssistantAppPreview {
     static var enabled: Bool { !scenario.isEmpty }
 }
 #endif
+
+
+private struct BlankLoadingIndicator: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    let color: Color
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { timeline in
+            HStack(spacing: 6) {
+                ForEach(0..<3) { index in
+                    Circle()
+                        .fill(color)
+                        .frame(width: 5, height: 5)
+                        .opacity(reduceMotion ? 0.6 : 0.25 + 0.65 * (1 + sin(timeline.date.timeIntervalSinceReferenceDate * 4 - Double(index) * 0.8)) / 2)
+                }
+            }
+            .frame(height: 24)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Locale.current.languageCode == "es" ? "Cargando" : "Loading")
+    }
+}
