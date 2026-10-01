@@ -160,92 +160,73 @@ struct SetupView: View {
                 .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
                 .tracking(-0.9)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 28)
+                .padding(.bottom, 24)
 
-            setupRow(
-                title: "Screen Time",
-                detail: "Block distracting apps on this iPhone.",
-                ready: screenTimeBlocker.authorizationStatus == .approved,
-                actionTitle: screenTimeBlocker.authorizationStatus == .denied ? "Settings" : "Allow",
-                action: authorizeScreenTime
-            )
-            rowDivider
-            setupRow(
-                title: "Apps and websites",
-                detail: sessionStore.hasSelectedApps
-                    ? "\(sessionStore.selectionCount) selected"
-                    : "Choose apps for one reusable protection list.",
-                ready: sessionStore.hasSelectedApps,
-                actionTitle: sessionStore.hasSelectedApps ? "Edit" : "Choose",
-                editable: true
-            ) {
-                if screenTimeBlocker.authorizationStatus == .approved {
-                    showingPicker = true
-                } else {
-                    message = "Allow Screen Time before choosing apps."
+            AccountJustifiedCopy(text: NSAttributedString(string: "Screen Time lets Blankmind block distractions. Choose the apps to protect, and enable notifications to receive block requests from chat."))
+                .padding(.bottom, 24)
+
+            VStack(spacing: 12) {
+                permissionButton(
+                    title: "Allow Screen Time",
+                    completedTitle: "Screen Time enabled",
+                    ready: screenTimeBlocker.authorizationStatus == .approved,
+                    action: authorizeScreenTime
+                )
+                permissionButton(
+                    title: "Choose apps",
+                    completedTitle: "Apps selected",
+                    ready: sessionStore.hasSelectedApps,
+                    editable: true
+                ) {
+                    if screenTimeBlocker.authorizationStatus == .approved {
+                        showingPicker = true
+                    } else {
+                        message = "Allow Screen Time before choosing apps."
+                    }
                 }
+                permissionButton(
+                    title: "Enable notifications",
+                    completedTitle: "Notifications enabled",
+                    ready: notificationReady,
+                    action: requestNotifications
+                )
             }
-            rowDivider
-            setupRow(
-                title: "Notifications",
-                detail: "Get alerts to apply blocks from chat.",
-                ready: notificationReady,
-                actionTitle: notificationDenied ? "Settings" : "Enable",
-                action: requestNotifications
-            )
+            .frame(width: deviceButtonWidth)
         }
         .disabled(completionInFlight)
     }
 
-    private var rowDivider: some View {
-        Rectangle()
-            .fill(Color.black.opacity(0.1))
-            .frame(height: 0.5)
-            .padding(.vertical, 24)
+    private var deviceButtonWidth: CGFloat {
+        let font = UIFontMetrics(forTextStyle: .title1).scaledFont(for: UIFont(name: "TimesNewRomanPSMT", size: 32)!)
+        return ceil(NSAttributedString(string: "Set up Blankmind", attributes: [.font: font, .kern: -0.9]).size().width)
     }
 
-    private func setupRow(
+    private func permissionButton(
         title: String,
-        detail: String,
+        completedTitle: String,
         ready: Bool,
-        actionTitle: String,
         editable: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
-        HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.blankOnboardingEditorial(size: 22, relativeTo: .headline))
-                    .tracking(-0.3)
-                    .fixedSize(horizontal: false, vertical: true)
-                AccountJustifiedCopy(text: NSAttributedString(string: detail))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            if ready && !editable {
-                HStack(spacing: 6) {
-                    Text("Enabled")
+        Button(action: action) {
+            HStack(spacing: 8) {
+                if ready {
                     Image(systemName: "checkmark").accessibilityHidden(true)
                 }
-                .font(.custom("ArialMT", size: 14, relativeTo: .body))
-                .fixedSize()
-                .accessibilityLabel("\(title), enabled")
-            } else {
-                Button(action: action) {
-                    Text(actionTitle)
-                        .font(.custom("ArialMT", size: 14, relativeTo: .body))
-                        .foregroundStyle(ready ? Color.black : Color.white)
-                        .padding(.horizontal, 14)
-                        .frame(minHeight: 44)
-                        .background(ready ? Color.clear : Color.black, in: RoundedRectangle(cornerRadius: 4))
-                }
-                .buttonStyle(.plain)
-                .fixedSize()
-                .accessibilityLabel("\(actionTitle) \(title)")
+                Text(ready ? completedTitle : title)
             }
+            .font(.blankInter(size: 16, weight: .medium, relativeTo: .body))
+            .foregroundStyle(Color.white)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .padding(.vertical, 2)
+            .background(Color.black, in: RoundedRectangle(cornerRadius: 4))
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .disabled(ready && !editable)
+        .accessibilityLabel(ready ? completedTitle : title)
+        .accessibilityHint(editable && ready ? "Edit the selected apps" : "")
     }
-
     private var canAutomaticallyComplete: Bool {
         currentStep == .device && deviceReady && !showingPicker
             && scenePhase == .active && !sessionStore.setupComplete
