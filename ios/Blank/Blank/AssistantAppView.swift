@@ -551,6 +551,7 @@ struct AssistantAppView: View {
     @State private var showAccountSignIn = false
     @State private var saveTask: Task<Void, Never>?
     @State private var initialMessageHandled = false
+    @State private var composerHeight: CGFloat = 56
 
     var initialMessage: String? = nil
     var simulatorGuest = false
@@ -626,26 +627,6 @@ struct AssistantAppView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
                                 .accessibilityLabel("Blankmind: \(latest.assistantText)")
-                            if latest.canApply && !waiting {
-                                Button {
-                                    Task { await applyAction(latest.actionId) }
-                                } label: {
-                                    Text(latest.actionLabel.isEmpty ? (spanish ? "Aplicar ahora" : "Apply now") : latest.actionLabel)
-                                        .font(.blankInter(size: 17, weight: .semibold))
-                                        .multilineTextAlignment(.leading)
-                                        .padding(.horizontal, 26)
-                                        .padding(.vertical, 14)
-                                        .frame(minHeight: 52)
-                                        .background(Capsule().fill(foreground))
-                                        .foregroundStyle(background)
-                                }
-                                .disabled(isApplyingAction)
-                                .accessibilityHint(spanish ? "Aplica la acción sobre tus distracciones seleccionadas" : "Applies the action to your selected distractions")
-                            } else if !latest.actionId.isEmpty && !latest.canApply {
-                                Text(AssistantActionCopy.outcome(latest.actionStatus, spanish: spanish))
-                                    .font(.blankInter(size: 15))
-                                    .foregroundStyle(foreground.opacity(0.74))
-                            }
                         } else if isLoading {
                             BlankLoadingIndicator(color: foreground)
                         } else {
@@ -672,15 +653,22 @@ struct AssistantAppView: View {
                         .padding(.vertical, 16)
                     }
                     .scrollDismissesKeyboard(.interactively)
-                    .frame(height: max(0, geometry.size.height / 2 - 108))
+                    .frame(height: max(0, geometry.size.height / 2 - composerHeight / 2 - 72))
                     .clipped()
                     Spacer(minLength: 0)
                 }
                 composerBar
+                    .background {
+                        GeometryReader { bar in
+                            Color.clear.preference(key: AssistantComposerHeightKey.self, value: bar.size.height)
+                        }
+                    }
                     .overlay(alignment: .bottom) {
-                        status
-                            .fixedSize(horizontal: false, vertical: true)
-                            .alignmentGuide(.bottom) { dimensions in dimensions[.top] - 12 }
+                        ScrollView {
+                            status
+                        }
+                        .frame(width: geometry.size.width, height: max(0, geometry.size.height / 2 - composerHeight / 2 - 16))
+                        .alignmentGuide(.bottom) { dimensions in dimensions[.top] - 12 }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
@@ -688,6 +676,7 @@ struct AssistantAppView: View {
             .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: isLoading)
             .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: latest?.id)
         }
+        .onPreferenceChange(AssistantComposerHeightKey.self) { composerHeight = $0 }
         .foregroundStyle(foreground)
         .background(background.ignoresSafeArea())
         .preferredColorScheme(dark ? .dark : .light)
@@ -762,6 +751,28 @@ struct AssistantAppView: View {
 
     @ViewBuilder private var status: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if let latest {
+                            if latest.canApply && !waiting {
+                                Button {
+                                    Task { await applyAction(latest.actionId) }
+                                } label: {
+                                    Text(latest.actionLabel.isEmpty ? (spanish ? "Aplicar ahora" : "Apply now") : latest.actionLabel)
+                                        .font(.blankInter(size: 17, weight: .semibold))
+                                        .multilineTextAlignment(.leading)
+                                        .padding(.horizontal, 26)
+                                        .padding(.vertical, 14)
+                                        .frame(minHeight: 52)
+                                        .background(Capsule().fill(foreground))
+                                        .foregroundStyle(background)
+                                }
+                                .disabled(isApplyingAction)
+                                .accessibilityHint(spanish ? "Aplica la acción sobre tus distracciones seleccionadas" : "Applies the action to your selected distractions")
+                            } else if !latest.actionId.isEmpty && !latest.canApply {
+                                Text(AssistantActionCopy.outcome(latest.actionStatus, spanish: spanish))
+                                    .font(.blankInter(size: 15))
+                                    .foregroundStyle(foreground.opacity(0.74))
+                            }
+            }
             if let error {
                 Text(error)
                     .foregroundStyle(dark ? Color(red: 1, green: 0.66, blue: 0.64) : BlankColors.red)
@@ -797,7 +808,7 @@ struct AssistantAppView: View {
         .font(.blankInter(size: 14))
         .frame(maxWidth: 640, alignment: .leading)
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, dynamicTypeSize.isAccessibilitySize ? 0 : 28)
+        .padding(.horizontal, 28)
         .padding(.bottom, 10)
         .accessibilityElement(children: .contain)
     }
@@ -1302,5 +1313,13 @@ private struct BlankLoadingIndicator: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Locale.current.languageCode == "es" ? "Cargando" : "Loading")
+    }
+}
+
+
+private struct AssistantComposerHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 56
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
