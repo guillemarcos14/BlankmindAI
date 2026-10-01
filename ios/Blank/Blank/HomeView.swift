@@ -3526,9 +3526,9 @@ struct AppAccountSignInSheet: View {
                         .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
                         .tracking(-0.9)
                         .foregroundStyle(Color.black)
-                        .padding(.bottom, 12)
+                        .padding(.bottom, 24)
                     AccountJustifiedCopy(text: NSAttributedString(string: "Blankmind AI's core model is trained to identify recurring behavioral patterns, detect high-risk moments, and adapt interventions in real time."))
-                        .padding(.bottom, 28)
+                        .padding(.bottom, 24)
 
                     if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
                         Text("This will connect Apple to your existing Blank account and preserve its chat history.")
@@ -3554,10 +3554,6 @@ struct AppAccountSignInSheet: View {
                                 ProgressView().tint(.white)
                             }
                         }
-                        .padding(.bottom, 20)
-
-                    AccountJustifiedCopy(text: accountLegalText)
-
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.blankInter(size: 14, relativeTo: .footnote))
@@ -3572,6 +3568,15 @@ struct AppAccountSignInSheet: View {
                 .padding(.vertical, 24)
                 .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            AccountJustifiedCopy(text: accountLegalText)
+                .frame(maxWidth: 400, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity)
+                .background(Color.white)
         }
         .background(Color.white)
         .preferredColorScheme(.light)
