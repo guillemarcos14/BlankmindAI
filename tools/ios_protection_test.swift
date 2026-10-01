@@ -7,6 +7,16 @@ private func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
 @main
 struct ProtectionTests {
     static func main() throws {
+        expect(UnblankHoldCadence.pulseTimes(duration: 20) == [0, 1, 3, 6, 10, 15], "Hold pulses must slow down without changing the 20-second hold")
+        expect(UnblankHoldCadence.pulseTimes(duration: 25) == [0, 1, 3, 6, 10, 15, 21], "Intervals must increase by one second")
+        expect(UnblankHoldCadence.pulseTimes(duration: 0).isEmpty, "Inactive hold must not vibrate")
+        expect(UnblankHoldCadence.pulseTimes(duration: .infinity).isEmpty, "Reject unbounded cadence")
+        let precise = InboxDateFixture(requestedAt: "2026-10-01T12:00:00.123Z").requestedDate
+        let wholeSecond = InboxDateFixture(requestedAt: "2026-10-01T12:00:00Z").requestedDate
+        expect(precise != nil && wholeSecond != nil, "Server milliseconds must not prevent native blocking")
+        expect(abs(precise!.timeIntervalSince(wholeSecond!) - 0.123) < 0.001, "Preserve the action's exact start time")
+        expect(InboxDateFixture(requestedAt: "invalid").requestedDate == nil, "Reject malformed server dates")
+        expect(InboxDateFixture(requestedAt: nil).requestedDate == nil, "Reject missing action metadata")
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         func date(_ day: Int, _ hour: Int, _ minute: Int = 0) -> Date {
@@ -67,14 +77,14 @@ struct ProtectionTests {
         state.selection = 2
         expect(state.saved == 1, "Equivalent selection update should be inert")
         let identity = IdentityFixture()
-        expect(identity.matches(code: "code-A", channel: "app", phone: "+34000000000"), "The app channel matches its verified identity")
+        expect(identity.matches(code: "code-A", channel: "app", owner: "account-A"), "The app channel matches its account identity")
         identity.assistantConnectCode = "code-B"
-        expect(!identity.matches(code: "code-A", channel: "app", phone: "+34000000000"), "An old account's poll must not execute after linking a new account")
+        expect(!identity.matches(code: "code-A", channel: "app", owner: "account-A"), "An old connection's poll must not execute after linking a new account")
         identity.assistantConnectCode = "code-A"
-        identity.assistantPhoneNumber = "+34000000001"
-        expect(!identity.matches(code: "code-A", channel: "app", phone: "+34000000000"), "Changed verified phone accepted a stale action")
-        identity.assistantPhoneNumber = "+34000000000"
-        expect(!identity.matches(code: "code-A", channel: "whatsapp", phone: "+34000000000"), "External channel accepted an app action")
+        AssistantAppSession.userID = "account-B"
+        expect(!identity.matches(code: "code-A", channel: "app", owner: "account-A"), "Changed account accepted a stale action")
+        AssistantAppSession.userID = "account-A"
+        expect(!identity.matches(code: "code-A", channel: "whatsapp", owner: "account-A"), "External channel accepted an app action")
         let requestedSchedule = PendingPlanSchedule(name: "Work", startMinute: 540, endMinute: 600, weekdays: [2], durationDays: 7)
         let activatingActions: [AssistantPendingAction] = [
             .startProtection(minutes: 30, hardMode: false, appNames: []),
@@ -93,6 +103,29 @@ struct ProtectionTests {
         for action in nonActivatingActions {
             expect(!identity.requiresPermission(action), "Removal or permission-only action must not enter protection preflight twice")
         }
-        print("iOS protection: weekday/overnight/expiry/overlap, 648 app-extension comparisons, legacy persistence and canonical selection locking passed")
+        let suite = "blank-manual-unlock-tests-\(UUID().uuidString)"
+        let unlockDefaults = UserDefaults(suiteName: suite)!
+        defer { unlockDefaults.removePersistentDomain(forName: suite) }
+        let startedAt = date(20, 9)
+        let firstLaunch = ManualUnlockFixture(defaults: unlockDefaults, startedAt: startedAt)
+        firstLaunch.scheduleManualUnlock(after: 60, now: startedAt)
+        firstLaunch.scheduleManualUnlock(after: 60, now: startedAt.addingTimeInterval(30))
+        expect(firstLaunch.delayedManualUnlockAt == startedAt.addingTimeInterval(60), "Repeated request restarted cooldown")
+        let reopened = ManualUnlockFixture(defaults: unlockDefaults, startedAt: startedAt)
+        expect(!reopened.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(59)), "Reopened app unlocked before deadline")
+        expect(reopened.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(90)), "Closed-app elapsed time was lost")
+        expect(!reopened.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(91)) && reopened.unlocks == 1, "Unlock executed twice")
+        let next = ManualUnlockFixture(defaults: unlockDefaults, startedAt: startedAt)
+        next.scheduleManualUnlock(after: 60, now: startedAt)
+        let replacement = ManualUnlockFixture(defaults: unlockDefaults, startedAt: startedAt.addingTimeInterval(30))
+        expect(!replacement.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(90)) && replacement.delayedManualUnlockAt == nil, "Old cooldown unlocked a different session")
+        replacement.hardBlankActive = true
+        replacement.scheduleManualUnlock(after: 0, now: startedAt)
+        expect(replacement.delayedManualUnlockAt == nil, "Hard protection accepted manual unlock")
+        replacement.hardBlankActive = false
+        replacement.scheduleManualUnlock(after: 60, now: startedAt)
+        replacement.cancelManualUnlock()
+        expect(unlockDefaults.object(forKey: "blankManualUnlockAt") == nil && !replacement.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(90)), "Cancelled cooldown survived restart")
+        print("iOS protection: schedule parity, selection locking, persistent manual unlock/restart/expiry/cancellation/session identity passed")
     }
 }

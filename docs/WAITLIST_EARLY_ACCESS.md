@@ -8,7 +8,7 @@ La web, Supabase, Netlify y los senders existentes de WhatsApp/Twilio siguen sie
 
 ## Flujo
 
-1. La persona abre `/early-access`, elige WhatsApp o Message, verifica su teléfono con el `app-auth` existente y acepta explícitamente guardar la conversación y recibir mensajes en el canal elegido.
+1. La persona abre `/early-access`, elige WhatsApp o Message, verifica su teléfono por SMS con `waitlist-auth` y acepta explícitamente guardar la conversación y recibir mensajes en el canal elegido. El OTP de la web no pasa por `app-auth` ni forma parte de la app iOS.
 2. `waitlist-start` verifica el JWT y que el teléfono pertenece a ese usuario.
 3. Se envían exactamente dos mensajes deterministas, una vez cada uno. En WhatsApp se entregan mediante plantillas Twilio aprobadas; en SMS se envían como mensajes Twilio normales:
 

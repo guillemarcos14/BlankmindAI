@@ -27,10 +27,10 @@ assert.match(store, /blankActiveUntil == nil \|\| deviceActivityTimerScheduled/)
 const capacity = scheduler.indexOf('guard intervals.count + expirations.count <= maxScheduleActivities');
 assert(capacity >= 0 && scheduler.indexOf('center.stopMonitoring', capacity) > capacity);
 const polling = between(home, '    private func pollPendingAssistantActionIfNeeded', '    private func clearAssistantNotificationRequest');
-assert.equal((polling.match(/guard assistantIdentityMatches\(code: code, channel: channel, phone: phoneNumber\)/g) || []).length, 2);
-const signIn = between(home, '    private func verifyCode() async', '    private func performRequest(');
+assert.equal((polling.match(/guard assistantIdentityMatches\(code: code, channel: channel, owner: accountID\)/g) || []).length, 2);
+const signIn = between(home, '    private func signIn(idToken:', '    private func postJSON(');
 assert(signIn.indexOf('guard AssistantAppSession.save(') >= 0
-  && signIn.indexOf('guard AssistantAppSession.save(') < signIn.indexOf('phoneVerified = true'), 'Secure session must persist before verification is shown');
+  && signIn.indexOf('guard AssistantAppSession.save(') < signIn.indexOf('onSignedIn?()'), 'Secure session must persist before sign-in completes');
 const activation = between(home, '    private func confirmPendingAssistantAction()', '    private func assistantActionRequiresScreenTime(');
 assert(activation.indexOf('if assistantActionRequiresScreenTime(pendingAction)') < activation.indexOf('switch pendingAction'),
   'Permission must be requested before schedule, selection or protection mutations');
@@ -51,12 +51,46 @@ const intervals = scheduler.slice(scheduler.indexOf('    private static func rec
 const extensionModel = between(monitor, '    private struct StoredWindow:', '    private static func recurringScheduleIsActive')
   .replace('private struct StoredWindow', 'struct StoredWindow');
 const fixtures = `
+struct InboxDateFixture {
+    var requestedAt: String?
+${between(home, '    var requestedDate: Date?', '\n}\n\nstruct AssistantActionReceipt:')}
+}
+final class ManualUnlockFixture {
+    let defaults: UserDefaults
+    var isBlankActive = true
+    var hardBlankActive = false
+    var blankActiveSince: Date?
+    var delayedManualUnlockAt: Date?
+    var unlocks = 0
+    enum Keys {
+        static let isBlankActive = "blankIsActive"
+        static let blankActiveSince = "blankActiveSince"
+    }
+    enum NfcResult { case unblanked }
+    enum EntryMode { case app }
+    enum EndReason { case manual }
+    init(defaults: UserDefaults, startedAt: Date) {
+        self.defaults = defaults
+        blankActiveSince = startedAt
+        let timestamp = defaults.double(forKey: "blankManualUnlockAt")
+        delayedManualUnlockAt = timestamp > 0 ? Date(timeIntervalSince1970: timestamp) : nil
+        defaults.set(true, forKey: Keys.isBlankActive)
+        defaults.set(startedAt.timeIntervalSince1970, forKey: Keys.blankActiveSince)
+    }
+${between(store, '    func scheduleManualUnlock(', '    init(defaults: UserDefaults = BlankSharedState.defaults)')}
+    func deactivateBlank(entryMode: EntryMode, endedReason: EndReason) -> NfcResult {
+        unlocks += 1
+        isBlankActive = false
+        defaults.set(false, forKey: Keys.isBlankActive)
+        return .unblanked
+    }
+}
 final class IdentityFixture {
     var assistantConnectCode = "code-A"
-    var assistantPhoneNumber = "+34000000000"
+    var accountID = "account-A"
 ${between(home, '    private func assistantIdentityMatches(', '    private func clearPendingAssistantIdentityState()')}
-    func matches(code: String, channel: String, phone: String) -> Bool {
-        assistantIdentityMatches(code: code, channel: channel, phone: phone)
+    func matches(code: String, channel: String, owner: String?) -> Bool {
+        assistantIdentityMatches(code: code, channel: channel, owner: owner)
     }
 ${between(home, '    private func assistantActionRequiresScreenTime(', '    private func finishPendingAssistantAction(')}
     func requiresPermission(_ action: AssistantPendingAction) -> Bool {
@@ -68,6 +102,7 @@ enum BlankSharedState {
     struct ActiveState { let isActive: Bool }
     static func loadActiveState(defaults: UserDefaults) -> ActiveState { ActiveState(isActive: sharedActive) }
 }
+enum AssistantAppSession { static var userID: String? = "account-A" }
 enum DeviceActivityTimerScheduler {
     static var hasIndependentProtection = false
 ${intervals}
@@ -96,7 +131,7 @@ try {
   const binary = path.join(temporary, 'protection-tests');
   fs.writeFileSync(file, 'import Foundation\n' + between(model, 'struct BlankHabitWindow:', 'struct BlankSession:')
     + between(store, 'enum AssistantPendingAction:', 'struct AssistantProtectionExecution:')
-    + extensionModel + fixtures + read('tools/ios_protection_test.swift'));
+    + between(home, 'struct UnblankHoldCadence {', 'struct AssistantInboxResponse:') + extensionModel + fixtures + read('tools/ios_protection_test.swift'));
   const built = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file, '-o', binary], { encoding: 'utf8' });
   if (built.error) throw new Error(`Protection runtime tests require Swift on macOS: ${built.error.message}`);
   if (built.status !== 0) throw new Error(built.stderr || built.stdout);

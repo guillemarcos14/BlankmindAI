@@ -24,7 +24,7 @@ assert.match(revisionGuard, /excluded\.client_revision > bm_user_context_snapsho
 assert.doesNotMatch(persistenceSource, /catch\s*\(_\)\s*\{\s*return null;\s*\}/);
 assert.match(persistenceSource, /const mergedBase = \{ \.\.\.base, \.\.\.durableContext \}/);
 assert.match(persistenceSource, /profile_name: clean\(mergedBase\.profile_name/);
-assert.match(assistantChannelSource, /return await syncContext\(body\)/);
+assert.match(assistantChannelSource, /return await syncContext\(body,\s*appAuth\)/);
 assert.match(assistantChannelSource, /assistant_identity_conflict/);
 assert.match(assistantChannelSource, /enrichAssistantContext\(\{\}, connectCode\)/);
 assert.match(iosContextSource, /for attempt in 0\.\.<3/);

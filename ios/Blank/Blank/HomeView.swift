@@ -1,4 +1,6 @@
 import FamilyControls
+import AuthenticationServices
+import CryptoKit
 import LocalAuthentication
 import SwiftUI
 import UIKit
@@ -10,6 +12,21 @@ enum HomeSection: Hashable {
     case report
     case emergency
     case settings
+}
+
+struct UnblankHoldCadence {
+    static func pulseTimes(duration: Double) -> [Double] {
+        guard duration.isFinite, duration > 0 else { return [] }
+        var pulses = [0.0]
+        var elapsed = 0.0
+        var interval = 1.0
+        while elapsed + interval < duration {
+            elapsed += interval
+            pulses.append(elapsed)
+            interval += 1
+        }
+        return pulses
+    }
 }
 
 struct AssistantInboxResponse: Decodable {
@@ -150,7 +167,14 @@ struct AssistantInboxAction: Decodable {
     }
 
     var requestedDate: Date? {
-        ISO8601DateFormatter().date(from: requestedAt ?? "")
+        Self.parseDate(requestedAt)
+    }
+
+    static func parseDate(_ value: String?) -> Date? {
+        guard let value else { return nil }
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return fractional.date(from: value) ?? ISO8601DateFormatter().date(from: value)
     }
 }
 
@@ -268,13 +292,21 @@ enum AssistantActionReceiptStore {
 }
 
 struct AssistantActionInboxClient {
-    func poll(connectCode: String, channel: String, phoneNumber: String) async -> AssistantInboxPollResult {
-        guard let data = try? await request(
-            action: "poll_pending_action",
-            connectCode: connectCode,
-            channel: channel,
-            phoneNumber: phoneNumber
-        ), let response = try? JSONDecoder().decode(AssistantInboxResponse.self, from: data) else {
+    func actionForApplication(actionId: String, connectCode: String, channel: String) async throws -> AssistantInboxAction {
+        let data = try await request(action: "poll_pending_action", connectCode: connectCode, channel: channel)
+        let response = try JSONDecoder().decode(AssistantInboxResponse.self, from: data)
+        guard let action = response.pendingAction, action.id == actionId,
+              let expiresAt = action.expiresAt,
+              let expiry = AssistantInboxAction.parseDate(expiresAt), expiry > Date(),
+              action.toPendingAction() != nil else {
+            throw AssistantAppError.server(status: 409, code: "action_unavailable")
+        }
+        return action
+    }
+
+    func poll(connectCode: String, channel: String) async -> AssistantInboxPollResult {
+        guard let data = try? await request(action: "poll_pending_action", connectCode: connectCode, channel: channel),
+              let response = try? JSONDecoder().decode(AssistantInboxResponse.self, from: data) else {
             return .retry
         }
         return .success(response.pendingAction)
@@ -285,7 +317,6 @@ struct AssistantActionInboxClient {
         status: String,
         connectCode: String,
         channel: String,
-        phoneNumber: String,
         detail: String = "",
         evidence: AssistantActionReceipt? = nil
     ) async -> AssistantLifecycleAcknowledgement {
@@ -293,7 +324,6 @@ struct AssistantActionInboxClient {
             action: "ack_pending_action",
             connectCode: connectCode,
             channel: channel,
-            phoneNumber: phoneNumber,
             actionId: actionId,
             status: status,
             detail: detail,
@@ -309,24 +339,21 @@ struct AssistantActionInboxClient {
     func acknowledgeLifecycle(
         receipt: AssistantActionReceipt,
         connectCode: String,
-        channel: String,
-        phoneNumber: String
+        channel: String
     ) async -> AssistantLifecycleAcknowledgement {
         if receipt.executionStarted {
             let confirmed = await acknowledge(
                 actionId: receipt.actionId,
                 status: "confirmed",
                 connectCode: connectCode,
-                channel: channel,
-                phoneNumber: phoneNumber
+                channel: channel
             )
             guard confirmed == .acknowledged else { return confirmed }
             let started = await acknowledge(
                 actionId: receipt.actionId,
                 status: "execution_started",
                 connectCode: connectCode,
-                channel: channel,
-                phoneNumber: phoneNumber
+                channel: channel
             )
             guard started == .acknowledged else { return started }
         }
@@ -335,18 +362,16 @@ struct AssistantActionInboxClient {
             status: receipt.status,
             connectCode: connectCode,
             channel: channel,
-            phoneNumber: phoneNumber,
             detail: receipt.detail,
             evidence: receipt
         )
     }
 
-    func registerDevicePush(token: String, environment: String, connectCode: String, channel: String, phoneNumber: String) async -> Bool {
+    func registerDevicePush(token: String, environment: String, connectCode: String, channel: String) async -> Bool {
         guard let data = try? await request(
             action: "register_device_push",
             connectCode: connectCode,
             channel: channel,
-            phoneNumber: phoneNumber,
             deviceToken: token,
             environment: environment
         ), let response = try? JSONDecoder().decode(AssistantPushRegistrationResponse.self, from: data) else { return false }
@@ -357,7 +382,6 @@ struct AssistantActionInboxClient {
         action: String,
         connectCode: String,
         channel: String,
-        phoneNumber: String,
         actionId: String? = nil,
         status: String? = nil,
         detail: String? = nil,
@@ -365,22 +389,10 @@ struct AssistantActionInboxClient {
         deviceToken: String? = nil,
         environment: String? = nil
     ) async throws -> Data {
-        guard let rawBaseURL = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String else {
-            throw URLError(.badURL)
-        }
-        let base = rawBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !base.isEmpty, !base.contains("$("), let baseURL = URL(string: base) else {
-            throw URLError(.badURL)
-        }
-        var request = URLRequest(url: baseURL.appendingPathComponent("assistant-channel"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 8
         var body: [String: Any] = [
             "action": action,
             "connect_code": connectCode,
             "preferred_channel": channel,
-            "user_phone": phoneNumber,
             "app_install_id": BlankSharedState.appInstallId,
         ]
         if let actionId { body["action_id"] = actionId }
@@ -398,9 +410,11 @@ struct AssistantActionInboxClient {
         }
         if let deviceToken, !deviceToken.isEmpty { body["device_token"] = deviceToken }
         if let environment, !environment.isEmpty { body["environment"] = environment }
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+        let payload = try JSONSerialization.data(withJSONObject: body)
+        let (data, response) = try await AssistantAppClient().postAuthorized(
+            path: "assistant-channel", payload: payload, timeout: 8
+        )
+        guard (200..<300).contains(response.statusCode) else {
             throw URLError(.badServerResponse)
         }
         return data
@@ -412,9 +426,9 @@ struct HomeView: View {
     @EnvironmentObject private var screenTimeBlocker: ScreenTimeBlocker
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
     @AppStorage("blankAssistantConnectCode", store: BlankSharedState.defaults) private var assistantConnectCode = ""
-    @AppStorage("blankAssistantPhoneNumber", store: BlankSharedState.defaults) private var assistantPhoneNumber = ""
 
     @State private var now = Date()
     @State private var message: String?
@@ -424,6 +438,7 @@ struct HomeView: View {
     @State private var showingAssistantChat = false
     @State private var chatLaunchMessage: String?
     @State private var homeChatDraft = ""
+    @FocusState private var homeChatFocused: Bool
     @State private var homeSpeechPrefix = ""
     @State private var acceptingHomeSpeech = false
     @StateObject private var homeSpeech = AssistantSpeechInput()
@@ -434,11 +449,11 @@ struct HomeView: View {
     @State private var showingForgetConfirm = false
     @StateObject private var healthKitStore = HealthKitStore()
     @State private var unblankHoldProgress = 0.0
+    @State private var unblankHapticTask: Task<Void, Never>?
     @State private var isAnimatingUnblankHold = false
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
-    @State private var delayedManualUnlockAt: Date?
-    @State private var delayedManualUnlockTask: Task<Void, Never>?
+    private var delayedManualUnlockAt: Date? { sessionStore.delayedManualUnlockAt }
     @State private var showingRelapseReview = false
     @AppStorage("blankPendingAssistantActionId", store: BlankSharedState.defaults) private var pendingAssistantActionId = ""
     @State private var assistantActionPollInFlight = false
@@ -449,8 +464,10 @@ struct HomeView: View {
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let homeTagline = "Your plan adapts\nbefore the scroll\npulls you back."
     let onOpenOnboardingDemo: () -> Void
+    let simulatorGuest: Bool
 
-    init(_ onOpenOnboardingDemo: @escaping () -> Void = {}) {
+    init(simulatorGuest: Bool = false, _ onOpenOnboardingDemo: @escaping () -> Void = {}) {
+        self.simulatorGuest = simulatorGuest
         self.onOpenOnboardingDemo = onOpenOnboardingDemo
     }
 
@@ -519,17 +536,18 @@ struct HomeView: View {
             }
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
         }
-        .ignoresSafeArea()
+        .ignoresSafeArea(.container)
         .foregroundStyle(activeSection == nil ? (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.homeLightInk) : (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink))
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
         .environment(\.blankMinimalAppearance, true)
-        .animation(.easeInOut(duration: 0.65), value: sessionStore.isBlankActive)
-        .animation(.easeInOut(duration: 0.35), value: activeSection)
-        .animation(.easeInOut(duration: 0.35), value: showingRelapseReview)
+        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.45), value: sessionStore.isBlankActive)
+        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.35), value: activeSection)
+        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.35), value: showingRelapseReview)
         .navigationBarBackButtonHidden()
         .onReceive(timer) { date in
             now = date
+            finishDelayedManualUnlock(now: date)
             pollPendingAssistantActionIfNeeded(now: date)
             sessionStore.syncFromSharedDefaults(now: date)
             sessionStore.applyScheduleWindow(at: date)
@@ -543,10 +561,6 @@ struct HomeView: View {
             clearPendingAssistantIdentityState()
             Task { await activateAppChannel() }
         }
-        .onChange(of: assistantPhoneNumber) { _ in
-            clearPendingAssistantIdentityState()
-            Task { await activateAppChannel() }
-        }
         .onChange(of: homeSpeech.transcript) { transcript in
             if acceptingHomeSpeech { homeChatDraft = homeSpeechPrefix + transcript }
         }
@@ -554,6 +568,8 @@ struct HomeView: View {
             if let error { message = error }
         }
         .onAppear {
+            now = Date()
+            finishDelayedManualUnlock(now: now)
             Task { await activateAppChannel() }
             sessionStore.syncFromSharedDefaults(now: now)
             applyScreenTimeControls()
@@ -568,6 +584,7 @@ struct HomeView: View {
         }
         .onChange(of: scenePhase) { phase in
             guard phase == .active else {
+                stopUnblankHoldHaptics()
                 if phase == .background {
                     acceptingHomeSpeech = false
                     homeSpeech.stop()
@@ -575,6 +592,8 @@ struct HomeView: View {
                 return
             }
             Task { await activateAppChannel() }
+            now = Date()
+            finishDelayedManualUnlock(now: now)
             sessionStore.syncFromSharedDefaults()
             applyScreenTimeControls()
             screenTimeBlocker.refreshAuthorizationStatus()
@@ -587,6 +606,7 @@ struct HomeView: View {
             pollPendingAssistantActionIfNeeded(force: true)
         }
         .onDisappear {
+            stopUnblankHoldHaptics()
             acceptingHomeSpeech = false
             homeSpeech.stop()
         }
@@ -612,6 +632,7 @@ struct HomeView: View {
                 isHoldingToUnblank = false
                 unblankHoldProgress = 0
                 isAnimatingUnblankHold = false
+                stopUnblankHoldHaptics()
             }
             syncAssistantContext()
         }
@@ -713,13 +734,25 @@ struct HomeView: View {
         }
         .fullScreenCover(isPresented: $showingAssistantChat, onDismiss: {
             chatLaunchMessage = nil
+            if sessionStore.pendingAssistantAction != nil, pendingAssistantInboxAction != nil {
+                confirmPendingAssistantAction()
+            }
         }) {
-            AssistantAppView(initialMessage: chatLaunchMessage, onOpenControls: { section in
+            AssistantAppView(initialMessage: chatLaunchMessage, simulatorGuest: simulatorGuest, onOpenControls: { section in
                 if let section { openSection(section) }
             }) { actionId in
-                BlankSharedState.defaults.set(true, forKey: AssistantRemoteNotification.pollAfterOpenKey)
-                BlankSharedState.defaults.set(actionId, forKey: AssistantRemoteNotification.tappedActionIDKey)
-                pollPendingAssistantActionIfNeeded(force: true)
+                let owner = AssistantAppSession.userID
+                let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
+                let remote = try await AssistantActionInboxClient().actionForApplication(
+                    actionId: actionId, connectCode: code, channel: "app")
+                guard assistantIdentityMatches(code: code, channel: "app", owner: owner),
+                      !assistantActionExecutionInFlight,
+                      sessionStore.pendingAssistantAction == nil,
+                      let pending = remote.toPendingAction() else { throw AssistantAppError.sessionChanged }
+                clearAssistantNotificationRequest()
+                pendingAssistantActionId = remote.id
+                pendingAssistantInboxAction = remote
+                sessionStore.requestAssistantActionConfirmation(pending)
             }
         }
         .sheet(isPresented: $showingRelink) {
@@ -909,8 +942,6 @@ struct HomeView: View {
 
     private func idleMinimalHome(layout: HomeLayoutMetrics) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-
             VStack(alignment: .leading, spacing: -8) {
                 minimalStartRow
 
@@ -932,8 +963,6 @@ struct HomeView: View {
 
                 minimalStatus
 
-                homeChatComposer
-
                 #if targetEnvironment(simulator)
                 HStack(spacing: 18) {
                     minimalUtilityRow("onboarding") {
@@ -948,10 +977,24 @@ struct HomeView: View {
                 #endif
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .opacity(homeChatFocused ? 0 : 1)
+            .allowsHitTesting(!homeChatFocused)
+            .accessibilityHidden(homeChatFocused)
+            .frame(height: homeChatFocused ? 0 : nil, alignment: .bottom)
+            .clipped()
+
+            homeChatComposer
+
         }
         .padding(.horizontal, layout.horizontalPadding)
-        .padding(.bottom, layout.bottomPadding * 2)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+        .padding(.bottom, homeChatFocused ? 0 : layout.bottomPadding * 2)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: homeChatFocused ? .center : .bottomLeading)
+        .background {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { homeChatFocused = false }
+        }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: homeChatFocused)
     }
 
     private func activeMinimalHome(layout: HomeLayoutMetrics) -> some View {
@@ -974,7 +1017,7 @@ struct HomeView: View {
                             Button("unblank") {
                                 beginFullScreenUnblankHold()
                             }
-                            .font(.blankInter(size: 32, weight: .semibold, relativeTo: .title))
+                            .font(.blankInter(size: 32, weight: .bold, relativeTo: .title))
                             .tracking(0)
                             .foregroundStyle(BlankColors.homeDarkSecondary)
                             .frame(minWidth: 44, minHeight: 44, alignment: .leading)
@@ -1014,6 +1057,7 @@ struct HomeView: View {
                                 isHoldingToUnblank = false
                                 unblankHoldProgress = 0
                                 isAnimatingUnblankHold = false
+                                stopUnblankHoldHaptics()
                             }
                     )
                     .simultaneousGesture(
@@ -1024,6 +1068,7 @@ struct HomeView: View {
                                       delayedManualUnlockAt == nil,
                                       !isAnimatingUnblankHold else { return }
                                 isAnimatingUnblankHold = true
+                                startUnblankHoldHaptics()
                                 unblankHoldProgress = 0
                                 withAnimation(.linear(duration: 20)) {
                                     unblankHoldProgress = 1
@@ -1031,6 +1076,7 @@ struct HomeView: View {
                             }
                             .onEnded { _ in
                                 isAnimatingUnblankHold = false
+                                stopUnblankHoldHaptics()
                                 withAnimation(.easeOut(duration: 0.18)) {
                                     unblankHoldProgress = 0
                                 }
@@ -1050,7 +1096,7 @@ struct HomeView: View {
         ZStack(alignment: .leading) {
             if isHoldingToUnblank {
                 Text("hold the screen to unblank")
-                    .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                     .tracking(0)
                     .foregroundStyle(BlankColors.pureWhite)
                     .lineLimit(3)
@@ -1060,7 +1106,7 @@ struct HomeView: View {
                     .transition(.opacity)
             } else if let cooldownText {
                 Text(cooldownText)
-                    .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                     .tracking(0)
                     .foregroundStyle(BlankColors.homeDarkSecondary)
                     .monospacedDigit()
@@ -1069,7 +1115,7 @@ struct HomeView: View {
                     .transition(.opacity)
             } else if let timerCountdownText {
                 Text(timerCountdownText)
-                    .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                     .tracking(0)
                     .foregroundStyle(BlankColors.homeDarkSecondary)
                     .monospacedDigit()
@@ -1118,7 +1164,7 @@ struct HomeView: View {
     private func minimalHomeRow(_ title: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .blankHomeDisplayTextStyle(color: color)
+                .blankHomeDisplayTextStyle(color: color, weight: .semibold)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
         }
@@ -1173,7 +1219,7 @@ struct HomeView: View {
 
             if let schedulePausedUntil = sessionStore.schedulePausedUntil, now < schedulePausedUntil {
                 Text("Schedule paused \(remainingText(until: schedulePausedUntil))")
-                    .font(.blankInter(size: 13, relativeTo: .footnote))
+                    .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
             }
 
             if let message {
@@ -1199,7 +1245,7 @@ struct HomeView: View {
                     .monospacedDigit()
             }
         }
-        .font(.blankInter(size: 13, relativeTo: .footnote))
+        .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
         .foregroundStyle(sessionStore.isBlankActive ? BlankColors.homeDarkSecondary : BlankColors.homeLightSecondary)
         .fixedSize(horizontal: false, vertical: true)
         .padding(.top, 6)
@@ -1218,9 +1264,10 @@ struct HomeView: View {
             TextField("", text: $homeChatDraft,
                       prompt: Text("Ask Blankmind…").foregroundColor(BlankColors.homeLightSecondary),
                       axis: .vertical)
-                .font(.blankInter(size: 16, relativeTo: .body))
+                .font(.blankInter(size: 16, weight: .medium, relativeTo: .body))
                 .lineLimit(1...3)
                 .submitLabel(.send)
+                .focused($homeChatFocused)
                 .onSubmit(sendHomeChatMessage)
                 .padding(.leading, 18)
                 .padding(.vertical, 14)
@@ -1228,6 +1275,7 @@ struct HomeView: View {
                 .accessibilityLabel("Message Blankmind")
 
             Button {
+                homeChatFocused = true
                 if !homeSpeech.isRecording && !homeSpeech.isStarting {
                     let prefix = homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                     homeSpeechPrefix = prefix.isEmpty ? "" : "\(prefix) "
@@ -1256,9 +1304,11 @@ struct HomeView: View {
         .foregroundStyle(BlankColors.homeLightInk)
         .background(RoundedRectangle(cornerRadius: 26).fill(BlankColors.homeLightInk.opacity(0.06)))
         .padding(.top, 22)
+        .onTapGesture { homeChatFocused = true }
     }
 
     private func openAssistantChat() {
+        homeChatFocused = false
         acceptingHomeSpeech = false
         homeSpeech.stop()
         chatLaunchMessage = nil
@@ -1275,6 +1325,7 @@ struct HomeView: View {
         acceptingHomeSpeech = false
         homeSpeech.stop()
         homeChatDraft = ""
+        homeChatFocused = false
         chatLaunchMessage = text
         showingAssistantChat = true
     }
@@ -1282,7 +1333,7 @@ struct HomeView: View {
     private func centerContent(maxWidth: CGFloat, actionWidth: CGFloat) -> some View {
         VStack(spacing: 28) {
             Text(homeTagline)
-                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                 .foregroundStyle(BlankColors.pureWhite)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
@@ -1305,7 +1356,7 @@ struct HomeView: View {
                     .monospacedDigit()
                 if let schedulePausedUntil = sessionStore.schedulePausedUntil, now < schedulePausedUntil {
                     Text("Schedule paused \(remainingText(until: schedulePausedUntil))")
-                        .font(.blankInter(size: 13, relativeTo: .footnote))
+                        .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
                         .foregroundStyle(BlankColors.pureWhite.opacity(0.58))
                 }
             }
@@ -1324,7 +1375,7 @@ struct HomeView: View {
                     .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk)
                 } else {
                     Text(message)
-                        .font(.blankInter(size: 13, relativeTo: .footnote))
+                        .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
                         .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk)
                         .multilineTextAlignment(.center)
                         .padding(.top, 8)
@@ -1370,6 +1421,7 @@ struct HomeView: View {
                         scheduleDelayedManualUnlock()
                         unblankHoldProgress = 0
                         isAnimatingUnblankHold = false
+                        stopUnblankHoldHaptics()
                     }
             )
             .simultaneousGesture(
@@ -1377,6 +1429,7 @@ struct HomeView: View {
                     .onChanged { _ in
                         guard sessionStore.isBlankActive, !sessionStore.hardBlankActive, !isAnimatingUnblankHold else { return }
                         isAnimatingUnblankHold = true
+                        startUnblankHoldHaptics()
                         unblankHoldProgress = 0
                         withAnimation(.linear(duration: 20)) {
                             unblankHoldProgress = 1
@@ -1384,6 +1437,7 @@ struct HomeView: View {
                     }
                     .onEnded { _ in
                         isAnimatingUnblankHold = false
+                        stopUnblankHoldHaptics()
                         withAnimation(.easeOut(duration: 0.18)) {
                             unblankHoldProgress = 0
                         }
@@ -1452,10 +1506,14 @@ struct HomeView: View {
 
     private func openOnboardingDemo() {
         withAnimation(.easeInOut(duration: 0.45)) {
+            #if !targetEnvironment(simulator)
             _ = sessionStore.deactivateBlank(entryMode: .app, endedReason: .manual)
             sessionStore.setupComplete = false
+            #endif
         }
+        #if !targetEnvironment(simulator)
         screenTimeBlocker.clear()
+        #endif
         message = nil
         messageAction = nil
         onOpenOnboardingDemo()
@@ -1491,6 +1549,31 @@ struct HomeView: View {
         return unlocked
     }
 
+    private func stopUnblankHoldHaptics() {
+        unblankHapticTask?.cancel()
+        unblankHapticTask = nil
+    }
+
+    private func startUnblankHoldHaptics() {
+        stopUnblankHoldHaptics()
+        unblankHapticTask = Task { @MainActor in
+            let feedback = UIImpactFeedbackGenerator(style: .light)
+            var elapsed = 0.0
+            for pulse in UnblankHoldCadence.pulseTimes(duration: 20) {
+                if pulse > elapsed {
+                    do { try await Task.sleep(nanoseconds: UInt64((pulse - elapsed) * 1_000_000_000)) }
+                    catch { return }
+                }
+                guard !Task.isCancelled, scenePhase == .active,
+                      isAnimatingUnblankHold, sessionStore.isBlankActive,
+                      !sessionStore.hardBlankActive, delayedManualUnlockAt == nil else { return }
+                feedback.prepare()
+                feedback.impactOccurred(intensity: 0.65)
+                elapsed = pulse
+            }
+        }
+    }
+
     private func beginFullScreenUnblankHold() {
         guard sessionStore.isBlankActive,
               !sessionStore.hardBlankActive,
@@ -1501,15 +1584,15 @@ struct HomeView: View {
         }
         unblankHoldProgress = 0
         isAnimatingUnblankHold = false
+        stopUnblankHoldHaptics()
     }
 
     private func scheduleDelayedManualUnlock(cooldownSeconds requestedCooldownSeconds: Int? = nil) {
-        guard delayedManualUnlockTask == nil else { return }
+        guard delayedManualUnlockAt == nil else { return }
         let cooldownSeconds = requestedCooldownSeconds ?? sessionStore.manualUnblankCooldownSeconds
         let startedAt = Date()
-        let unlockAt = startedAt.addingTimeInterval(TimeInterval(cooldownSeconds))
         now = startedAt
-        delayedManualUnlockAt = unlockAt
+        sessionStore.scheduleManualUnlock(after: cooldownSeconds, now: startedAt)
         updateDelayedUnlockMessage(now: Date())
         Task {
             await BlankFunnelAnalytics.track(
@@ -1517,18 +1600,14 @@ struct HomeView: View {
                 properties: ["source": "hold_to_unblank", "delay_seconds": cooldownSeconds]
             )
         }
-        delayedManualUnlockTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: UInt64(max(0, cooldownSeconds)) * 1_000_000_000)
-            guard !Task.isCancelled else { return }
-            let result = withAnimation(.easeInOut(duration: 0.65)) {
-                sessionStore.deactivateBlank(entryMode: .app, endedReason: .manual)
-            }
-            screenTimeBlocker.clear()
-            delayedManualUnlockAt = nil
-            delayedManualUnlockTask = nil
-            setMessage(for: result)
-            presentRelapseReview()
-        }
+        finishDelayedManualUnlock(now: startedAt)
+    }
+
+    private func finishDelayedManualUnlock(now: Date) {
+        guard sessionStore.finishManualUnlockIfDue(now: now) else { return }
+        screenTimeBlocker.apply(isBlankActive: sessionStore.isBlankActive)
+        setMessage(for: .unblanked)
+        presentRelapseReview()
     }
 
     private func presentRelapseReview() {
@@ -1544,9 +1623,7 @@ struct HomeView: View {
     }
 
     private func cancelDelayedManualUnlock() {
-        delayedManualUnlockTask?.cancel()
-        delayedManualUnlockTask = nil
-        delayedManualUnlockAt = nil
+        sessionStore.cancelManualUnlock()
     }
 
     private func updateDelayedUnlockMessage(now _: Date) {
@@ -1636,12 +1713,12 @@ struct HomeView: View {
             assistantActionExecutionInFlight = true
             let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
             let channel = "app"
-            let phone = assistantPhoneNumber
+            let accountID = AssistantAppSession.userID
             let actionID = pendingAssistantActionId
             Task {
                 _ = await screenTimeBlocker.requestAuthorization()
                 await MainActor.run {
-                    guard assistantIdentityMatches(code: code, channel: channel, phone: phone),
+                    guard assistantIdentityMatches(code: code, channel: channel, owner: accountID),
                           pendingAssistantActionId == actionID else { return }
                     if screenTimeBlocker.authorizationStatus == .approved {
                         confirmPendingAssistantAction()
@@ -1799,12 +1876,12 @@ struct HomeView: View {
         case .requestScreenTimePermission:
             let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
             let channel = "app"
-            let phone = assistantPhoneNumber
+            let accountID = AssistantAppSession.userID
             let actionID = pendingAssistantActionId
             Task {
                 _ = await screenTimeBlocker.requestAuthorization()
                 await MainActor.run {
-                    guard assistantIdentityMatches(code: code, channel: channel, phone: phone),
+                    guard assistantIdentityMatches(code: code, channel: channel, owner: accountID),
                           pendingAssistantActionId == actionID else { return }
                     applyScreenTimeControls()
                     finishPendingAssistantAction(
@@ -1840,7 +1917,7 @@ struct HomeView: View {
             assistantActionExecutionInFlight = false
             return
         }
-        let phoneNumber = assistantPhoneNumber
+        let accountID = AssistantAppSession.userID
         let receipt = AssistantActionReceipt(
             actionId: actionId,
             status: status,
@@ -1873,8 +1950,7 @@ struct HomeView: View {
             let acknowledgement = await AssistantActionInboxClient().acknowledgeLifecycle(
                 receipt: receipt,
                 connectCode: code,
-                channel: channel,
-                phoneNumber: phoneNumber
+                channel: channel
             )
             await MainActor.run {
                 assistantActionExecutionInFlight = false
@@ -1962,7 +2038,6 @@ struct HomeView: View {
             _ = await AssistantContextSyncClient().sync(
                 connectCode: code,
                 channel: channel,
-                phoneNumber: assistantPhoneNumber,
                 payload: payload
             )
         }
@@ -1986,6 +2061,7 @@ struct HomeView: View {
     private func pollPendingAssistantActionIfNeeded(force: Bool = false, now: Date = Date()) {
         guard force || now.timeIntervalSince(lastAssistantActionPollAt) >= 5 else { return }
         guard !assistantActionPollInFlight,
+              !showingAssistantChat,
               !assistantActionExecutionInFlight,
               !showingContextualAppPicker,
               sessionStore.pendingAssistantAction == nil else { return }
@@ -1993,7 +2069,7 @@ struct HomeView: View {
         let channel = "app"
         lastAssistantActionPollAt = now
         assistantActionPollInFlight = true
-        let phoneNumber = assistantPhoneNumber
+        let accountID = AssistantAppSession.userID
         let applyNowRequested = BlankSharedState.defaults.bool(forKey: AssistantRemoteNotification.pollAfterOpenKey)
         // An old receipt must not starve an explicitly requested newer action.
         if !applyNowRequested, let receipt = AssistantActionReceiptStore.load() {
@@ -2001,12 +2077,11 @@ struct HomeView: View {
                 let acknowledgement = await AssistantActionInboxClient().acknowledgeLifecycle(
                     receipt: receipt,
                     connectCode: code,
-                    channel: channel,
-                    phoneNumber: phoneNumber
+                    channel: channel
                 )
                 await MainActor.run {
                     assistantActionPollInFlight = false
-                    guard assistantIdentityMatches(code: code, channel: channel, phone: phoneNumber) else { return }
+                    guard assistantIdentityMatches(code: code, channel: channel, owner: accountID) else { return }
                     if acknowledgement == .acknowledged || acknowledgement == .stale {
                         AssistantActionReceiptStore.clear(actionId: receipt.actionId)
                         if pendingAssistantActionId == receipt.actionId {
@@ -2021,12 +2096,11 @@ struct HomeView: View {
         Task {
             let pollResult = await AssistantActionInboxClient().poll(
                 connectCode: code,
-                channel: channel,
-                phoneNumber: phoneNumber
+                channel: channel
             )
             await MainActor.run {
                 assistantActionPollInFlight = false
-                guard assistantIdentityMatches(code: code, channel: channel, phone: phoneNumber) else { return }
+                guard assistantIdentityMatches(code: code, channel: channel, owner: accountID) else { return }
                 // Read this after the network round-trip. On a cold launch the
                 // notification response can arrive while the initial poll is
                 // already in flight; reading it before the request loses the tap.
@@ -2059,7 +2133,9 @@ struct HomeView: View {
     }
 
     private func activateAppChannel() async {
-        do { try await AssistantAppClient().activate() } catch { return }
+        let activatedCode: String
+        do { activatedCode = try await AssistantAppClient().activate() } catch { return }
+        assistantConnectCode = activatedCode
         syncAssistantContext()
         let token = BlankSharedState.defaults.string(forKey: "blankAssistantPushToken") ?? ""
         guard !token.isEmpty, !assistantConnectCode.isEmpty else { return }
@@ -2070,16 +2146,16 @@ struct HomeView: View {
         #endif
         let registered = await AssistantActionInboxClient().registerDevicePush(
             token: token, environment: environment, connectCode: assistantConnectCode,
-            channel: "app", phoneNumber: assistantPhoneNumber
+            channel: "app"
         )
         BlankSharedState.defaults.set(registered, forKey: "blankAssistantPushRegistered")
         if registered { syncAssistantContext() }
     }
 
-    private func assistantIdentityMatches(code: String, channel: String, phone: String) -> Bool {
+    private func assistantIdentityMatches(code: String, channel: String, owner: String?) -> Bool {
         let currentChannel = "app"
         return code == assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-            && channel == currentChannel && phone == assistantPhoneNumber
+            && channel == currentChannel && owner == AssistantAppSession.userID
     }
 
     private func clearPendingAssistantIdentityState() {
@@ -2203,8 +2279,8 @@ struct HomeView: View {
 }
 
 private extension View {
-    func blankHomeDisplayTextStyle(color: Color) -> some View {
-        font(.blankInter(size: 32, weight: .semibold, relativeTo: .title))
+    func blankHomeDisplayTextStyle(color: Color, weight: Font.Weight = .regular) -> some View {
+        font(.blankInter(size: 32, weight: weight, relativeTo: .title))
             .foregroundStyle(color)
             .tracking(0)
             .lineLimit(1)
@@ -2411,6 +2487,7 @@ struct SectionBackHeader: View {
             Button(action: action) {
                 Text("back")
                     .font(.blankInter(size: 20, weight: .semibold, relativeTo: .headline))
+                    .underline()
                     .tracking(-0.3)
                     .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.premiumBlue)
                     .frame(minWidth: 44, minHeight: 44, alignment: .leading)
@@ -2446,7 +2523,7 @@ struct SectionHeader: View {
             SectionBackHeader(action: action)
 
             Text(title.lowercased())
-                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                .font(.blankEditorial(size: 32))
                 .tracking(0)
                 .foregroundStyle(resolvedTitleColor)
                 .lineLimit(1)
@@ -2466,7 +2543,9 @@ struct SectionHeader: View {
 
 private struct SettingsScreen: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @Environment(\.openURL) private var openURL
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
+    @State private var showingAccount = false
 
     let onClose: () -> Void
     let onOpenEmergency: () -> Void
@@ -2514,11 +2593,33 @@ private struct SettingsScreen: View {
                     detail: "conversation and account",
                     action: onOpenAssistant
                 )
+
+                settingsRow(
+                    title: "account",
+                    detail: "Apple sign-in and account controls",
+                    action: { showingAccount = true }
+                )
+
+                settingsRow(
+                    title: "privacy policy",
+                    detail: "how Blankmind handles your data",
+                    action: { openURL(URL(string: "https://blankmind.ai/privacy")!) }
+                )
+
+                settingsRow(
+                    title: "terms of service",
+                    detail: "terms for using Blankmind",
+                    action: { openURL(URL(string: "https://blankmind.ai/terms")!) }
+                )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, sectionHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .sheet(isPresented: $showingAccount) {
+            AccountSettingsSheet()
+                .environmentObject(sessionStore)
+        }
     }
 
     private func settingsRow(
@@ -3473,36 +3574,27 @@ private struct DistractionsScreen: View {
     }
 }
 
-struct AppPhoneSignInSheet: View {
+struct AppAccountSignInSheet: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("blankAssistantPhoneNumber", store: BlankSharedState.defaults) private var phoneNumber = ""
-    @AppStorage("blankAssistantConnectCode", store: BlankSharedState.defaults) private var connectCode = ""
-    @AppStorage("blankAssistantPreferredChannel", store: BlankSharedState.defaults) private var preferredChannel = ""
-    @AppStorage("blankAssistantPhoneVerified", store: BlankSharedState.defaults) private var phoneVerified = false
-    @State private var code = ""
-    @State private var inputPhone = ""
-    @State private var verificationStarted = false
-    @State private var dataConsent = false
+    @State private var rawNonce: String?
     @State private var isWorking = false
     @State private var errorMessage: String?
 
-    let initialPhone: String
     let showsCancel: Bool
-    var onVerified: (() -> Void)?
+    var onSignedIn: (() -> Void)?
 
-    init(initialPhone: String, showsCancel: Bool = true, onVerified: (() -> Void)? = nil) {
-        self.initialPhone = initialPhone
+    init(showsCancel: Bool = true, onSignedIn: (() -> Void)? = nil) {
         self.showsCancel = showsCancel
-        self.onVerified = onVerified
+        self.onSignedIn = onSignedIn
     }
 
     var body: some View {
         Group {
             if showsCancel {
                 NavigationStack {
-                    phoneForm
-                        .navigationTitle("Verify phone")
+                    accountForm
+                        .navigationTitle("Your account")
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
@@ -3511,184 +3603,278 @@ struct AppPhoneSignInSheet: View {
                         }
                 }
             } else {
-                phoneForm
+                accountForm
             }
         }
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
     }
 
-    private var phoneForm: some View {
-        Form {
-            if !showsCancel {
-                Section {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("blank")
-                            .font(.blankInter(size: 18, weight: .semibold, relativeTo: .headline))
-                            .padding(.bottom, 34)
-                        Text("Link your iPhone")
-                            .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
-                        Text("We’ll send a one-time code by SMS to verify your number.")
-                            .font(.blankInter(size: 16, relativeTo: .body))
+    private var accountForm: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Sign in to Blankmind")
+                        .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
+                        .tracking(-0.9)
+                        .foregroundStyle(Color.black)
+                        .padding(.bottom, 24)
+                    AccountJustifiedCopy(text: NSAttributedString(string: "Blankmind AI's core model is trained to identify recurring behavioral patterns, detect high-risk moments, and adapt interventions in real time."))
+                        .padding(.bottom, 24)
+
+                    if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
+                        Text("This will connect Apple to your existing Blank account and preserve its chat history.")
+                            .font(.blankInter(size: 14, relativeTo: .footnote))
                             .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.bottom, 16)
                     }
-                    .padding(.vertical, 16)
-                }
-                .listRowBackground(Color.clear)
-            } else {
-                Section {
-                    Text("We’ll send a one-time code by SMS. After setup, you can talk to Blankmind in this app.")
-                        .font(.blankInter(size: 15, weight: .medium, relativeTo: .body))
-                        .foregroundStyle(.secondary)
-                }
-            }
 
-            Section("Phone") {
-                TextField("+34 600 000 000", text: $inputPhone)
-                    .keyboardType(.phonePad)
-                    .textContentType(.telephoneNumber)
-            }
-
-            Section {
-                Toggle("Link this number and iPhone to my Blankmind account for in-app chat and device protection.", isOn: $dataConsent)
-            }
-
-            if verificationStarted {
-                Section("Verification code") {
-                    TextField("123456", text: $code)
-                        .keyboardType(.numberPad)
-                        .textContentType(.oneTimeCode)
-                    Button(isWorking ? "Verifying…" : "Verify phone") {
-                        Task { await verifyCode() }
+                    SignInWithAppleButton(.continue, onRequest: { request in
+                        let nonce = Self.makeNonce()
+                        rawNonce = nonce
+                        request.requestedScopes = [.email]
+                        request.nonce = Self.hashNonce(nonce)
+                    }, onCompletion: finishAppleAuthorization)
+                        .signInWithAppleButtonStyle(.black)
+                        .frame(width: accountTitleWidth, height: 44)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .disabled(isWorking)
+                        .overlay {
+                            if isWorking {
+                                ProgressView().tint(.white)
+                            }
+                        }
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.blankInter(size: 14, relativeTo: .footnote))
+                            .foregroundStyle(BlankColors.red)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 16)
                     }
-                    .disabled(isWorking || !dataConsent || code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-            } else {
-                Section {
-                    Button(isWorking ? "Sending…" : "Send verification code") {
-                        Task { await requestCode() }
-                    }
-                    .disabled(isWorking || inputPhone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-
-            Section {
-                HStack(spacing: 18) {
-                    Link("Privacy Policy", destination: URL(string: "https://blanked.app/privacy")!)
-                    Link("Terms", destination: URL(string: "https://blanked.app/terms")!)
-                }
-                .font(.blankInter(size: 13, relativeTo: .footnote))
-            }
-
-            if let errorMessage {
-                Section {
-                    Text(errorMessage)
-                        .foregroundStyle(BlankColors.red)
-                }
+                .frame(maxWidth: 400, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+                .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(Color(uiColor: .systemBackground))
-        .tint(Color(uiColor: .label))
-        .onAppear {
-            inputPhone = phoneNumber.isEmpty ? initialPhone : phoneNumber
+        .background(Color.white)
+        .preferredColorScheme(.light)
+    }
+
+    private var accountTitleWidth: CGFloat {
+        let font = UIFontMetrics(forTextStyle: .title1).scaledFont(for: UIFont(name: "TimesNewRomanPSMT", size: 32)!)
+        return ceil(NSAttributedString(string: "Sign in to Blankmind", attributes: [.font: font, .kern: -0.9]).size().width)
+    }
+
+    private func finishAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let tokenData = credential.identityToken,
+                  let idToken = String(data: tokenData, encoding: .utf8),
+                  let nonce = rawNonce else {
+                errorMessage = "Apple did not return a valid account token. Try again."
+                return
+            }
+            Task { await signIn(idToken: idToken, nonce: nonce, appleUserID: credential.user) }
+        case .failure(let error as ASAuthorizationError) where error.code == .canceled:
+            rawNonce = nil
+        case .failure:
+            errorMessage = "Apple sign-in did not complete. Try again."
+            rawNonce = nil
         }
     }
 
-    private func requestCode() async {
-        await performRequest(action: "request_otp", payload: [
-            "phone": inputPhone,
-        ])
-        if errorMessage == nil { verificationStarted = true }
-    }
-
-    private func verifyCode() async {
+    @MainActor
+    private func signIn(idToken: String, nonce: String, appleUserID: String) async {
+        isWorking = true
+        errorMessage = nil
+        defer { isWorking = false; rawNonce = nil }
         do {
-            isWorking = true
-            errorMessage = nil
-            let auth = try await postJSON(path: "app-auth", payload: [
-                "action": "verify_otp",
-                "phone": inputPhone,
-                "token": code,
-            ])
-            guard let accessToken = auth["access_token"] as? String, !accessToken.isEmpty else {
-                throw AppPhoneSignInError.message("Blankmind did not return a session.")
+            let existingAccess = AssistantAppSession.token("access")
+            let shouldLinkExistingAccount = existingAccess != nil && !AssistantAppSession.hasAppleIdentity
+            var payload: [String: Any] = [
+                "action": "sign_in_with_apple",
+                "id_token": idToken,
+                "nonce": nonce,
+            ]
+            if shouldLinkExistingAccount, let refresh = AssistantAppSession.token("refresh") {
+                payload["refresh_token"] = refresh
             }
-            let linked = try await postJSON(
-                path: "app-handoff",
-                payload: [
-                    "action": "claim_identity",
-                    "app_install_id": BlankSharedState.appInstallId,
-                    "data_consent": dataConsent,
-                ],
-                bearerToken: accessToken
+            let auth = try await postJSON(
+                path: "app-auth",
+                payload: payload,
+                bearerToken: shouldLinkExistingAccount ? existingAccess : nil
             )
-            guard let linkedCode = linked["assistant_connect_code"] as? String, !linkedCode.isEmpty else {
-                throw AppPhoneSignInError.message("The account was verified but the assistant link was not created.")
+            guard let accessToken = auth["access_token"] as? String, !accessToken.isEmpty,
+                  let refreshToken = auth["refresh_token"] as? String, !refreshToken.isEmpty else {
+                throw AppAccountSignInError.message("Blank did not return a secure account session. Try again.")
             }
-            guard let linkedPhone = linked["phone_e164"] as? String, !linkedPhone.isEmpty else {
-                throw AppPhoneSignInError.message("The account was verified but no phone number was returned.")
+            let email = auth["apple_email"] as? String
+            guard AssistantAppSession.save(accessToken: accessToken, refreshToken: refreshToken,
+                                           appleUserID: appleUserID, email: email) else {
+                throw AppAccountSignInError.message("Could not securely save your account on this iPhone. Try again.")
             }
-            guard AssistantAppSession.save(
-                accessToken: accessToken,
-                refreshToken: auth["refresh_token"] as? String ?? ""
-            ) else {
-                throw AppPhoneSignInError.message("Could not securely save your session on this iPhone. Try verifying again.")
-            }
-            phoneNumber = linkedPhone
-            connectCode = linkedCode
-            preferredChannel = "app"
-            phoneVerified = true
-            onVerified?()
+            _ = try await AssistantAppClient().activate()
+            let defaults = BlankSharedState.defaults
+            defaults.removeObject(forKey: "blankAssistantPhoneNumber")
+            defaults.removeObject(forKey: "blankAssistantPhoneVerified")
+            defaults.set("app", forKey: "blankAssistantPreferredChannel")
+            onSignedIn?()
             if showsCancel { dismiss() }
         } catch {
             errorMessage = error.localizedDescription
         }
-        isWorking = false
     }
 
-    private func performRequest(action: String, payload: [String: Any]) async {
-        do {
-            isWorking = true
-            errorMessage = nil
-            var body = payload
-            body["action"] = action
-            _ = try await postJSON(path: "app-auth", payload: body)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-        isWorking = false
-    }
-
-    private func postJSON(path: String, payload: [String: Any], bearerToken: String? = nil) async throws -> [String: Any] {
+    private func postJSON(path: String, payload: [String: Any], bearerToken: String?) async throws -> [String: Any] {
         guard let baseURL = configuredBaseURL() else {
-            throw AppPhoneSignInError.message("Blankmind connection is not configured in this build.")
+            throw AppAccountSignInError.message("Blankmind connection is not configured in this build.")
         }
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 20
         if let bearerToken { request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization") }
-        request.timeoutInterval = 12
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         let (data, response) = try await URLSession.shared.data(for: request)
-        let result = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
-        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
-            let detail = result["detail"] as? String ?? result["error"] as? String ?? "Request failed."
-            throw AppPhoneSignInError.message(detail.replacingOccurrences(of: "_", with: " "))
+        let body = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            let code = body["error"] as? String ?? "account_sign_in_failed"
+            let message = code == "app_auth_unavailable"
+                ? "Sign-in is unavailable right now. Try again in a moment."
+                : "Could not connect this Apple Account to Blank. Check the Apple Account and try again."
+            throw AppAccountSignInError.message(message)
         }
-        return result
+        return body
     }
 
     private func configuredBaseURL() -> URL? {
-        guard let rawValue = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String else {
-            return nil
-        }
+        guard let rawValue = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String else { return nil }
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !trimmed.contains("$(") else { return nil }
         return URL(string: trimmed)
     }
+
+    private static func makeNonce() -> String {
+        UUID().uuidString + UUID().uuidString
+    }
+
+    private static func hashNonce(_ nonce: String) -> String {
+        SHA256.hash(data: Data(nonce.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
 }
 
-private enum AppPhoneSignInError: LocalizedError {
+private struct AccountSettingsSheet: View {
+    @EnvironmentObject private var sessionStore: SessionStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingDeleteConfirmation = false
+    @State private var isVerifyingDeletion = false
+    @State private var isDeleting = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Apple account") {
+                    if let email = AssistantAppSession.email, !email.isEmpty {
+                        LabeledContent("Email shared by Apple", value: email)
+                    } else {
+                        Text("Apple has not shared an email with this account.")
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Blank never receives your Apple password.")
+                        .foregroundStyle(.secondary)
+                }
+                Section("Subscription") {
+                    Link("Manage in the App Store", destination: URL(string: "https://apps.apple.com/account/subscriptions")!)
+                }
+                Section {
+                    Button("Sign out") {
+                        AssistantAppSession.clear()
+                        dismiss()
+                    }
+                    Button("Delete account and cloud data", role: .destructive) {
+                        showingDeleteConfirmation = true
+                    }
+                    .disabled(isDeleting)
+                    if isVerifyingDeletion {
+                        Text("Verify with Apple to finish deleting your account.")
+                            .foregroundStyle(.secondary)
+                        SignInWithAppleButton(.signIn, onRequest: { request in
+                            request.requestedScopes = []
+                        }, onCompletion: finishDeleteAuthorization)
+                            .signInWithAppleButtonStyle(.black)
+                            .frame(height: 48)
+                            .disabled(isDeleting)
+                    }
+                } footer: {
+                    Text("Deleting your Blank account does not cancel an App Store subscription. Cancel it in the App Store first.")
+                }
+                if let errorMessage {
+                    Section { Text(errorMessage).foregroundStyle(.red) }
+                }
+            }
+            .navigationTitle("Account")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
+            .confirmationDialog("Delete your Blank account and cloud data?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+                Button("Continue to Apple verification", role: .destructive) { isVerifyingDeletion = true }
+            } message: {
+                Text("This cannot be undone. Your App Store subscription must be canceled separately.")
+            }
+            .overlay { if isDeleting { ProgressView().controlSize(.large) } }
+        }
+    }
+
+    @MainActor
+    private func finishDeleteAuthorization(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let codeData = credential.authorizationCode,
+                  let code = String(data: codeData, encoding: .utf8), !code.isEmpty else {
+                errorMessage = "Apple did not return a deletion authorization. Try again."
+                return
+            }
+            Task { await deleteAccount(authorizationCode: code) }
+        case .failure(let error as ASAuthorizationError) where error.code == .canceled:
+            break
+        case .failure:
+            errorMessage = "Apple verification did not complete. Try again."
+        }
+    }
+
+    @MainActor
+    private func deleteAccount(authorizationCode: String) async {
+        guard !isDeleting else { return }
+        isDeleting = true
+        errorMessage = nil
+        defer { isDeleting = false }
+        do {
+            let payload = try JSONSerialization.data(withJSONObject: [
+                "action": "delete_apple", "apple_authorization_code": authorizationCode,
+            ])
+            let (_, response) = try await AssistantAppClient().postAuthorized(
+                path: "account-data", payload: payload, timeout: 30
+            )
+            guard (200..<300).contains(response.statusCode) else {
+                throw AppAccountSignInError.message("Could not delete your account. Try again or contact support.")
+            }
+            AssistantAppSession.clear()
+            isVerifyingDeletion = false
+            BlankSharedState.defaults.removeObject(forKey: "blankAssistantConnectCode")
+            sessionStore.setupComplete = false
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+private enum AppAccountSignInError: LocalizedError {
     case message(String)
 
     var errorDescription: String? {
@@ -3813,3 +3999,52 @@ private struct HomePreviewScene: View {
     HomePreviewScene("Permission pending", authorizationApproved: false)
 }
 #endif
+
+// TextKit supplies true paragraph justification while preserving native legal links.
+struct AccountJustifiedCopy: UIViewRepresentable {
+    let text: NSAttributedString
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    func makeUIView(context: Context) -> UITextView {
+        let storage = NSTextStorage()
+        let layout = AccountLegalLayoutManager()
+        let container = NSTextContainer(size: .zero)
+        container.widthTracksTextView = true
+        storage.addLayoutManager(layout)
+        layout.addTextContainer(container)
+        let view = UITextView(frame: .zero, textContainer: container)
+        view.isEditable = false
+        view.isScrollEnabled = false
+        view.backgroundColor = .clear
+        view.textContainerInset = .zero
+        view.textContainer.lineFragmentPadding = 0
+        view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return view
+    }
+
+    func updateUIView(_ view: UITextView, context: Context) {
+        let color = UIColor(red: 100 / 255.0, green: 116 / 255.0, blue: 139 / 255.0, alpha: 1)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .justified
+        paragraph.lineSpacing = 4
+        let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "ArialMT", size: 14)!)
+        let styled = NSMutableAttributedString(attributedString: text)
+        styled.addAttributes([.font: font, .foregroundColor: color, .paragraphStyle: paragraph], range: NSRange(location: 0, length: styled.length))
+        text.enumerateAttribute(.link, in: NSRange(location: 0, length: text.length)) { link, range, _ in
+            if link != nil { styled.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range) }
+        }
+        view.linkTextAttributes = [.foregroundColor: color, .underlineStyle: NSUnderlineStyle.single.rawValue]
+        view.attributedText = styled
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+        guard let width = proposal.width else { return nil }
+        return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+    }
+}
+
+private final class AccountLegalLayoutManager: NSLayoutManager {
+    override func drawUnderline(forGlyphRange glyphRange: NSRange, underlineType underlineVal: NSUnderlineStyle, baselineOffset: CGFloat, lineFragmentRect lineRect: CGRect, lineFragmentGlyphRange lineGlyphRange: NSRange, containerOrigin: CGPoint) {
+        super.drawUnderline(forGlyphRange: glyphRange, underlineType: underlineVal, baselineOffset: baselineOffset - 2, lineFragmentRect: lineRect, lineFragmentGlyphRange: lineGlyphRange, containerOrigin: containerOrigin)
+    }
+}

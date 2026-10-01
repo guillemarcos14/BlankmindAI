@@ -22,22 +22,26 @@ extension EnvironmentValues {
 }
 
 enum BlankColors {
-    // Blank brand palette: charcoal gray, pale steel blue, seafoam green, powder gray, pure white.
-    static let charcoal = Color(red: 51 / 255.0, green: 59 / 255.0, blue: 65 / 255.0)
-    static let paleSteelBlue = Color(red: 173 / 255.0, green: 191 / 255.0, blue: 201 / 255.0)
-    static let seafoam = Color(red: 118 / 255.0, green: 201 / 255.0, blue: 171 / 255.0)
-    static let powderGray = Color(red: 228 / 255.0, green: 235 / 255.0, blue: 239 / 255.0)
+    // Blankmind web palette. Existing color names remain as aliases for app surfaces.
+    static let porcelain = Color(red: 248 / 255.0, green: 249 / 255.0, blue: 244 / 255.0)
+    static let lichenGray = Color(red: 201 / 255.0, green: 202 / 255.0, blue: 196 / 255.0)
+    static let stoneGray = Color(red: 142 / 255.0, green: 143 / 255.0, blue: 138 / 255.0)
+    static let deepOliveCharcoal = Color(red: 48 / 255.0, green: 49 / 255.0, blue: 42 / 255.0)
+    static let charcoal = deepOliveCharcoal
+    static let paleSteelBlue = lichenGray
+    static let seafoam = stoneGray
+    static let powderGray = porcelain
     static let pureWhite = Color.white
 
     // Semantic alert color: retained for error/destructive states because the brand palette has no alert equivalent.
     static let red = Color(red: 0.827, green: 0.184, blue: 0.184)
-    static let statusGreen = seafoam
+    static let statusGreen = charcoal
     static let redDark = charcoal
-    static let green = seafoam
+    static let green = charcoal
     static let background = powderGray
     static let surface = pureWhite
     static let text = pureWhite
-    static let secondaryText = charcoal.opacity(0.86)
+    static let secondaryText = charcoal.opacity(0.84)
     static let warmBackground = powderGray
     static let warmSurface = pureWhite.opacity(0.92)
     static let ink = charcoal
@@ -47,21 +51,21 @@ enum BlankColors {
     static let airMist = powderGray
     static let airStone = powderGray.opacity(0.92)
     static let glassTint = paleSteelBlue
-    static let premiumBlue = seafoam
+    static let premiumBlue = charcoal
     static let controlSurface = pureWhite.opacity(0.16)
     static let activeControlSurface = pureWhite.opacity(0.09)
     static let minimalBackground = pureWhite
     static let minimalInk = charcoal
     static let minimalSecondary = secondaryText
     static let minimalFaded = charcoal.opacity(0.42)
-    static let minimalCardSurface = Color(uiColor: .secondarySystemBackground)
+    static let minimalCardSurface = porcelain
     static let darkCardSurface = pureWhite.opacity(0.10)
     static let newLookDarkBackground = charcoal
     static let newLookDarkSecondary = pureWhite.opacity(0.55)
     static let homeLightBackground = pureWhite
     static let homeLightInk = charcoal
-    static let homeLightOption = charcoal.opacity(0.78)
-    static let homeLightSecondary = charcoal.opacity(0.68)
+    static let homeLightOption = charcoal.opacity(0.80)
+    static let homeLightSecondary = charcoal.opacity(0.78)
     static let homeDarkBackground = charcoal
     static let homeDarkSecondary = pureWhite.opacity(0.74)
     static let newLookRule = charcoal.opacity(0.16)
@@ -79,7 +83,15 @@ enum BlankColors {
 
 extension Font {
     static func blankInter(size: CGFloat, weight: Weight = .regular, relativeTo textStyle: TextStyle = .body) -> Font {
-        .custom("Inter", size: size, relativeTo: textStyle).weight(weight)
+        .custom("HelveticaNeue", size: size, relativeTo: textStyle).weight(weight)
+    }
+
+    static func blankEditorial(size: CGFloat, relativeTo textStyle: TextStyle = .largeTitle) -> Font {
+        .blankInter(size: size, relativeTo: textStyle)
+    }
+
+    static func blankOnboardingEditorial(size: CGFloat, relativeTo textStyle: TextStyle = .largeTitle) -> Font {
+        .custom("TimesNewRomanPSMT", size: size, relativeTo: textStyle)
     }
 
     static var blankBody: Font {
@@ -257,11 +269,7 @@ struct TopSheetHeader: View {
     var body: some View {
         VStack(alignment: minimalAppearance ? .leading : .center, spacing: minimalAppearance ? 5 : 10) {
             Text(minimalAppearance ? title.lowercased() : title)
-                .font(.blankInter(
-                    size: minimalAppearance ? 40 : 34,
-                    weight: minimalAppearance ? .bold : .medium,
-                    relativeTo: .largeTitle
-                ))
+                .font(.blankEditorial(size: minimalAppearance ? 40 : 34))
                 .foregroundStyle(titleColor)
                 .tracking(minimalAppearance ? -0.6 : 0)
                 .multilineTextAlignment(minimalAppearance ? .leading : .center)

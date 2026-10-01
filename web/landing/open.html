@@ -54,8 +54,7 @@
         "adult-filter",
         "pause-rules",
         "resume-rules",
-        "mode",
-        "handoff"
+        "mode"
       ]);
 
       function validAction(value) {
@@ -83,21 +82,17 @@
         return target.toString();
       }
 
-      const target = targetFromQuery(new URLSearchParams(window.location.search));
       const query = new URLSearchParams(window.location.search);
+      const legacyHandoff = query.get("action") === "handoff";
+      const target = legacyHandoff ? "" : targetFromQuery(query);
       const appStoreUrl = "https://apps.apple.com/es/app/id6789519152";
-      if (target) {
-        window.location.replace(target);
-      }
-
       const link = document.getElementById("openLink");
-      if (target) {
-        if (query.get("action") === "handoff") {
-          link.href = appStoreUrl;
-          link.textContent = "Download Blankmind";
-        } else {
-          link.href = target;
-        }
+      if (legacyHandoff) {
+        link.href = appStoreUrl;
+        link.textContent = "Download Blankmind";
+      } else if (target) {
+        window.location.replace(target);
+        link.href = target;
         document.addEventListener("visibilitychange", () => {
           if (document.hidden) return;
           window.setTimeout(() => window.location.replace(target), 50);
