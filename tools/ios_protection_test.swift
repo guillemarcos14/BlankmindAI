@@ -8,9 +8,9 @@ private func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
 struct ProtectionTests {
     static func main() throws {
         let precise = InboxDateFixture(requestedAt: "2026-10-01T12:00:00.123Z").requestedDate
-        let legacy = InboxDateFixture(requestedAt: "2026-10-01T12:00:00Z").requestedDate
-        expect(precise != nil && legacy != nil, "Server milliseconds must not prevent native blocking")
-        expect(abs(precise!.timeIntervalSince(legacy!) - 0.123) < 0.001, "Preserve the action's exact start time")
+        let wholeSecond = InboxDateFixture(requestedAt: "2026-10-01T12:00:00Z").requestedDate
+        expect(precise != nil && wholeSecond != nil, "Server milliseconds must not prevent native blocking")
+        expect(abs(precise!.timeIntervalSince(wholeSecond!) - 0.123) < 0.001, "Preserve the action's exact start time")
         expect(InboxDateFixture(requestedAt: "invalid").requestedDate == nil, "Reject malformed server dates")
         expect(InboxDateFixture(requestedAt: nil).requestedDate == nil, "Reject missing action metadata")
         var calendar = Calendar(identifier: .gregorian)

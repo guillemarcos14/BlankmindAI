@@ -11,8 +11,13 @@ async function main() {
   const app = fs.readFileSync(path.join(__dirname, "../ios/Blank/Blank/AssistantAppView.swift"), "utf8");
   const history = app.slice(app.indexOf("private struct AssistantAppHistoryView: View"));
   const apply = history.slice(history.indexOf("private func apply(_ turn:"), history.indexOf("private func loadEarlier()"));
-  assert.match(app, /background: background, onApplyAction: applyAction\)/,
+  assert.match(app, /background: background, onApplyAction: \{ id in Task \{ await applyAction\(id\) \} \}\)/,
     "older actionable turns must reach the existing native application callback");
+  const handoff = app.slice(app.indexOf("private func applyAction("), app.indexOf("private func openControls("));
+  assert(handoff.indexOf("try await onApplyAction(actionID)") < handoff.indexOf("dismiss()"),
+    "chat must validate the native inbox before navigating away");
+  assert.match(handoff.slice(handoff.indexOf("} catch")), /handle\(error\)/,
+    "failed application must stay visible in chat");
   assert.match(history, /hasFreshSnapshot = false/);
   assert.match(history, /\.task \{ await refresh\(\) \}/,
     "opening history must fetch current action outcomes before enabling buttons");
