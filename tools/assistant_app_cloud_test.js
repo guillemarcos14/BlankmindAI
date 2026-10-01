@@ -9,11 +9,17 @@ const path = require("node:path");
 const SUPABASE_ORIGIN = "https://njqbovsmoowkhhsqmitn.supabase.co";
 const STAGING_SITE = "blank-product-staging-20260926";
 
-function target(raw, kind) {
+function target(raw, kind, { physicalQa = false } = {}) {
   let url;
   try { url = new URL(raw); } catch (_) { throw new Error(`invalid_${kind}_target`); }
   if (url.protocol !== "https:" || url.username || url.password || url.port
     || !["", "/"].includes(url.pathname) || url.search || url.hash) throw new Error(`invalid_${kind}_target`);
+  if (physicalQa) {
+    const expected = kind === "supabase" ? "https://vhiikgyyfisejjwqtxfc.supabase.co" : "https://getblank.netlify.app";
+    const draft = kind === "netlify" && /^[a-f0-9]{24}--getblank\.netlify\.app$/.test(url.hostname);
+    if (url.origin !== expected && !draft) throw new Error(`${kind}_physical_qa_target_not_allowlisted`);
+    return url.origin;
+  }
   if (kind === "supabase" && url.origin !== SUPABASE_ORIGIN) throw new Error("supabase_target_not_allowlisted");
   const host = new RegExp(`^(?:[a-z0-9-]+--)?${STAGING_SITE}\\.netlify\\.app$`);
   if (kind === "netlify" && !host.test(url.hostname)) throw new Error("netlify_target_not_allowlisted");
@@ -35,14 +41,15 @@ function protectionHeaders(raw = "{}") {
   return headers;
 }
 
-function configuration(env = process.env, requireCredentials = true) {
-  const supabase = target(env.BM_CLOUD_TEST_SUPABASE_URL || SUPABASE_ORIGIN, "supabase");
-  const netlify = target(env.BM_CLOUD_TEST_NETLIFY_URL || `https://${STAGING_SITE}.netlify.app`, "netlify");
+function configuration(env = process.env, requireCredentials = true, { physicalQa = false } = {}) {
+  const supabase = target(env.BM_CLOUD_TEST_SUPABASE_URL || SUPABASE_ORIGIN, "supabase", { physicalQa });
+  const netlify = target(env.BM_CLOUD_TEST_NETLIFY_URL || `https://${STAGING_SITE}.netlify.app`, "netlify", { physicalQa });
   const extraHeaders = protectionHeaders(env.BM_CLOUD_TEST_EXTRA_HEADERS_JSON);
   const serviceKey = env.BM_CLOUD_TEST_SERVICE_ROLE_KEY || "";
   const anonKey = env.BM_CLOUD_TEST_ANON_KEY || "";
   if (requireCredentials && (!serviceKey || !anonKey)) throw new Error("staging_credentials_missing");
-  return { supabase, netlify, extraHeaders, serviceKey, anonKey };
+  if (physicalQa && Object.keys(extraHeaders).length) throw new Error("physical_qa_protection_headers_forbidden");
+  return { supabase, netlify, extraHeaders, serviceKey, anonKey, physicalQa };
 }
 
 function memoryIdentity(channel, user) {
@@ -51,7 +58,7 @@ function memoryIdentity(channel, user) {
 
 async function run(config, output, { infrastructureOnly = false } = {}) {
   // Recheck even when called programmatically.
-  target(config.supabase, "supabase"); target(config.netlify, "netlify");
+  target(config.supabase, "supabase", config); target(config.netlify, "netlify", config);
   const runId = crypto.randomUUID();
   const users = [];
   const checks = [];
@@ -263,7 +270,7 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
     }
     console.log(`${cleanup.every(item => item.passed) ? "PASS" : "FAIL"} synthetic_data_cleanup`);
   }
-  const result = { evaluator: "assistant-app-real-staging-v1", generated_at: new Date().toISOString(), run_id: runId,
+  const result = { evaluator: config.physicalQa ? "assistant-app-authorized-production-synthetic-qa-v1" : "assistant-app-real-staging-v1", generated_at: new Date().toISOString(), run_id: runId,
     script_sha256: crypto.createHash("sha256").update(fs.readFileSync(__filename)).digest("hex"),
     targets: { supabase: config.supabase, netlify: config.netlify }, checks, cleanup,
     scope: infrastructureOnly ? "infrastructure_only_no_model_calls" : "full_conversation_recovery",
@@ -288,6 +295,14 @@ function selfTest() {
   assert.throws(()=>protectionHeaders('{"Cookie":"bad\\r\\nheader"}'));
   assert.deepEqual(protectionHeaders('{"Cookie":"opaque","X-NF-Protection-Bypass":"opaque"}'),{cookie:"opaque","x-nf-protection-bypass":"opaque"});
   assert.notEqual(memoryIdentity("+199900000001"),memoryIdentity("+199900000002"));
+  for (const [kind, url] of [["supabase", "https://vhiikgyyfisejjwqtxfc.supabase.co"], ["netlify", "https://getblank.netlify.app"]]) {
+    assert.throws(() => target(url, kind));
+    assert.equal(target(url, kind, { physicalQa: true }), url);
+    assert.throws(() => target(`${url}.evil.example`, kind, { physicalQa: true }));
+  }
+  assert.throws(() => target(SUPABASE_ORIGIN, "supabase", { physicalQa: true }));
+  assert.equal(target("https://aaaaaaaaaaaaaaaaaaaaaaaa--getblank.netlify.app", "netlify", { physicalQa: true }), "https://aaaaaaaaaaaaaaaaaaaaaaaa--getblank.netlify.app");
+  assert.throws(() => target("https://random--getblank.netlify.app", "netlify", { physicalQa: true }));
   console.log("PASS local_target_allowlist_header_safety_and_identity_tests (no network)");
 }
 
@@ -300,7 +315,8 @@ async function main() {
     return;
   }
   const at = args.indexOf("--out");
-  const result = await run(configuration(), at >= 0 ? args[at+1] : "tmp/assistant-app-cloud/report.json", { infrastructureOnly: args.includes("--infrastructure-only") });
+  if (args.includes("--physical-qa") && !args.includes("--confirm")) throw new Error("physical_qa_requires_confirm");
+  const result = await run(configuration(process.env, true, { physicalQa: args.includes("--physical-qa") }), at >= 0 ? args[at+1] : "tmp/assistant-app-cloud/report.json", { infrastructureOnly: args.includes("--infrastructure-only") });
   process.exitCode = result.passed ? 0 : 1;
 }
 module.exports = { configuration, target, protectionHeaders, memoryIdentity, run };
