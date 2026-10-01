@@ -119,7 +119,7 @@ struct SetupView: View {
                     deviceContent
 
                     if completionInFlight {
-                        AccountJustifiedCopy(text: NSAttributedString(string: "Finishing setup…"))
+                        AccountJustifiedCopy(text: NSAttributedString(string: "Finishing setup..."))
                             .padding(.top, 24)
                             .accessibilityAddTraits(.updatesFrequently)
                     } else if let message {
