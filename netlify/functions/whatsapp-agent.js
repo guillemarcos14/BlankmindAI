@@ -278,6 +278,8 @@ async function scheduleActionRetry(connection, pending) {
 }
 
 async function deliverPendingAssistantAction(connection, pending, memory = {}) {
+  // The in-app CTA owns delivery. APNs/retry would offer the same action twice.
+  if (connection.channel === "app") return { action: pending, duplicate: true };
   let pushResult;
   try { pushResult = await sendAssistantActionPush(memory.assistant_device_push, pending); }
   catch (error) { pushResult = { sent: false, reason: `push_exception:${error.message}` }; }

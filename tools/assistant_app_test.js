@@ -189,9 +189,11 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
   assert.equal(response.body.turn.action_id, `app_${firstId}`);
   assert.deepEqual(memory.pending_assistant_action.app_names, []);
   assert.equal(effects.semantic, 1);
+  assert.equal(effects.push, 0, "In-app actions must not send a duplicate APNs notification");
   const firstEffects = copy(effects);
   assert.equal((await send(firstId)).body.idempotent, true);
   assert.deepEqual(effects, firstEffects);
+  assert.equal(effects.push, 0, "Recovering an app turn must not notify again");
   assert.equal((await send(firstId, "different text")).body.error, "turn_payload_conflict");
   assert.equal((await send(firstId, undefined, "other")).status, 403);
   assert.equal((await request({ action: "status", turn_id: firstId }, "other")).status, 403);

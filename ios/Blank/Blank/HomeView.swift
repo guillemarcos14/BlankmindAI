@@ -152,7 +152,14 @@ struct AssistantInboxAction: Decodable {
     }
 
     var requestedDate: Date? {
-        ISO8601DateFormatter().date(from: requestedAt ?? "")
+        Self.parseDate(requestedAt)
+    }
+
+    static func parseDate(_ value: String?) -> Date? {
+        guard let value else { return nil }
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return fractional.date(from: value) ?? ISO8601DateFormatter().date(from: value)
     }
 }
 
@@ -270,6 +277,18 @@ enum AssistantActionReceiptStore {
 }
 
 struct AssistantActionInboxClient {
+    func actionForApplication(actionId: String, connectCode: String, channel: String) async throws -> AssistantInboxAction {
+        let data = try await request(action: "poll_pending_action", connectCode: connectCode, channel: channel)
+        let response = try JSONDecoder().decode(AssistantInboxResponse.self, from: data)
+        guard let action = response.pendingAction, action.id == actionId,
+              let expiresAt = action.expiresAt,
+              let expiry = AssistantInboxAction.parseDate(expiresAt), expiry > Date(),
+              action.toPendingAction() != nil else {
+            throw AssistantAppError.server(status: 409, code: "action_unavailable")
+        }
+        return action
+    }
+
     func poll(connectCode: String, channel: String) async -> AssistantInboxPollResult {
         guard let data = try? await request(action: "poll_pending_action", connectCode: connectCode, channel: channel),
               let response = try? JSONDecoder().decode(AssistantInboxResponse.self, from: data) else {
@@ -696,13 +715,25 @@ struct HomeView: View {
         }
         .fullScreenCover(isPresented: $showingAssistantChat, onDismiss: {
             chatLaunchMessage = nil
+            if sessionStore.pendingAssistantAction != nil, pendingAssistantInboxAction != nil {
+                confirmPendingAssistantAction()
+            }
         }) {
             AssistantAppView(initialMessage: chatLaunchMessage, simulatorGuest: simulatorGuest, onOpenControls: { section in
                 if let section { openSection(section) }
             }) { actionId in
-                BlankSharedState.defaults.set(true, forKey: AssistantRemoteNotification.pollAfterOpenKey)
-                BlankSharedState.defaults.set(actionId, forKey: AssistantRemoteNotification.tappedActionIDKey)
-                pollPendingAssistantActionIfNeeded(force: true)
+                let owner = AssistantAppSession.userID
+                let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
+                let remote = try await AssistantActionInboxClient().actionForApplication(
+                    actionId: actionId, connectCode: code, channel: "app")
+                guard assistantIdentityMatches(code: code, channel: "app", owner: owner),
+                      !assistantActionExecutionInFlight,
+                      sessionStore.pendingAssistantAction == nil,
+                      let pending = remote.toPendingAction() else { throw AssistantAppError.sessionChanged }
+                clearAssistantNotificationRequest()
+                pendingAssistantActionId = remote.id
+                pendingAssistantInboxAction = remote
+                sessionStore.requestAssistantActionConfirmation(pending)
             }
         }
         .sheet(isPresented: $showingRelink) {
@@ -1984,6 +2015,7 @@ struct HomeView: View {
     private func pollPendingAssistantActionIfNeeded(force: Bool = false, now: Date = Date()) {
         guard force || now.timeIntervalSince(lastAssistantActionPollAt) >= 5 else { return }
         guard !assistantActionPollInFlight,
+              !showingAssistantChat,
               !assistantActionExecutionInFlight,
               !showingContextualAppPicker,
               sessionStore.pendingAssistantAction == nil else { return }

@@ -234,6 +234,9 @@ enum AssistantAppError: LocalizedError {
             if code == "invalid_turn" {
                 return spanish ? "Escribe un mensaje de hasta 4.000 caracteres." : "Write a message of up to 4,000 characters."
             }
+            if code == "action_unavailable" {
+                return spanish ? "Esta acción ya no está disponible. Pide un bloqueo nuevo." : "This action is no longer available. Request a new block."
+            }
             if status == 429 {
                 return spanish ? "Espera unos segundos antes de volver a intentarlo." : "Wait a few seconds before trying again."
             }
@@ -551,7 +554,8 @@ struct AssistantAppView: View {
     var initialMessage: String? = nil
     var simulatorGuest = false
     var onOpenControls: (HomeSection?) -> Void = { _ in }
-    let onApplyAction: (String) -> Void
+    let onApplyAction: (String) async throws -> Void
+    @State private var isApplyingAction = false
 
     private var latest: AssistantAppTurn? { turns.last(where: { $0.status == "completed" }) }
     private var spanish: Bool { Locale.current.languageCode == "es" }
@@ -572,7 +576,7 @@ struct AssistantAppView: View {
     private var background: Color { dark ? BlankColors.charcoal : BlankColors.pureWhite }
     private var draftTooLong: Bool { composer.draft.utf16.count > 4000 }
     private var isSending: Bool { sendRequestID != nil }
-    private var waiting: Bool { isSending || composer.pending != nil }
+    private var waiting: Bool { isSending || composer.pending != nil || isApplyingAction }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -583,6 +587,7 @@ struct AssistantAppView: View {
                         .frame(width: 48, height: 48)
                 }
                 .accessibilityLabel(spanish ? "Volver a Inicio" : "Back to Home")
+                .disabled(isApplyingAction)
                 Spacer(minLength: 0)
                 Menu {
                     Button(spanish ? "Historial" : "Conversation history", systemImage: "clock.arrow.circlepath") { showHistory = true }
@@ -621,7 +626,7 @@ struct AssistantAppView: View {
                                 .accessibilityLabel("Blankmind: \(latest.assistantText)")
                             if latest.canApply && !waiting {
                                 Button {
-                                    applyAction(latest.actionId)
+                                    Task { await applyAction(latest.actionId) }
                                 } label: {
                                     Text(latest.actionLabel.isEmpty ? (spanish ? "Aplicar ahora" : "Apply now") : latest.actionLabel)
                                         .font(.blankInter(size: 17, weight: .semibold))
@@ -632,6 +637,7 @@ struct AssistantAppView: View {
                                         .background(Capsule().fill(foreground))
                                         .foregroundStyle(background)
                                 }
+                                .disabled(isApplyingAction)
                                 .accessibilityHint(spanish ? "Aplica la acción sobre tus distracciones seleccionadas" : "Applies the action to your selected distractions")
                             } else if !latest.actionId.isEmpty && !latest.canApply {
                                 Text(AssistantActionCopy.outcome(latest.actionStatus, spanish: spanish))
@@ -737,7 +743,7 @@ struct AssistantAppView: View {
         .onDisappear { acceptingSpeech = false; speech.stop(); saveTask?.cancel(); persist() }
         .sheet(isPresented: $showHistory) {
             AssistantAppHistoryView(turns: turns, nextBefore: nextHistoryCursor,
-                foreground: foreground, background: background, onApplyAction: applyAction)
+                foreground: foreground, background: background, onApplyAction: { id in Task { await applyAction(id) } })
                 .preferredColorScheme(dark ? .dark : .light)
         }
         .sheet(isPresented: $showAccountSignIn, onDismiss: { Task { restoreOwner(); await reload() } }) {
@@ -860,14 +866,21 @@ struct AssistantAppView: View {
             }
     }
 
-    private func applyAction(_ actionID: String) {
-        guard !actionID.isEmpty, owner == AssistantAppSession.userID else { return }
+    private func applyAction(_ actionID: String) async {
+        guard !isApplyingAction, !actionID.isEmpty, owner == AssistantAppSession.userID else { return }
+        isApplyingAction = true
+        defer { isApplyingAction = false }
         acceptingSpeech = false
         speech.stop()
         composerFocused = false
         showHistory = false
-        onApplyAction(actionID)
-        dismiss()
+        do {
+            try await onApplyAction(actionID)
+            guard owner == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+            dismiss()
+        } catch {
+            handle(error)
+        }
     }
 
     private func openControls(_ section: HomeSection?) {

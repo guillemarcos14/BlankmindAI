@@ -51,6 +51,10 @@ const intervals = scheduler.slice(scheduler.indexOf('    private static func rec
 const extensionModel = between(monitor, '    private struct StoredWindow:', '    private static func recurringScheduleIsActive')
   .replace('private struct StoredWindow', 'struct StoredWindow');
 const fixtures = `
+struct InboxDateFixture {
+    var requestedAt: String?
+${between(home, '    var requestedDate: Date?', '\n}\n\nstruct AssistantActionReceipt:')}
+}
 final class ManualUnlockFixture {
     let defaults: UserDefaults
     var isBlankActive = true
