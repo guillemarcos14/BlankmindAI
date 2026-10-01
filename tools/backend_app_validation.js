@@ -22,6 +22,11 @@ function assertSource() {
   if (!/^codex\/backend-release-/.test(git("branch", "--show-current")) || git("status", "--porcelain")) throw Error("clean_release_branch_required");
   return git("rev-parse", "HEAD");
 }
+function assertRuntimeSource(preparedCommit) {
+  const current = assertSource();
+  if (current !== preparedCommit && git("diff", "--name-only", preparedCommit, current, "--", "netlify/functions")) throw Error("prepared_runtime_changed");
+  return current;
+}
 function manifest(snapshot, replacements) {
   if (snapshot.site.id !== SITE || snapshot.site.ssl_url !== ORIGIN || snapshot.deploy.site_id !== SITE
       || snapshot.site.published_deploy.id !== snapshot.deploy.id) throw Error("site_identity_mismatch");
@@ -48,6 +53,12 @@ async function main() {
     const response = await fetch(`https://api.netlify.com/api/v1${route}`, { ...options,
       headers: { authorization: `Bearer ${qaToken}`, "content-type": "application/json", ...options.headers },
       signal: AbortSignal.timeout(60000) });
+    if (response.status === 429 && ["GET", "PUT"].includes(options.method || "GET")) {
+      const seconds = Math.min(60, Math.max(2, Number(response.headers.get("retry-after")) || 12));
+      console.log(`Netlify upload throttle: wait ${seconds}s`);
+      await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+      return api(route, options);
+    }
     if (!response.ok) throw Error(`netlify_api_${response.status}`);
     return response.status === 204 ? null : response.json();
   };
@@ -80,6 +91,22 @@ async function main() {
   }
   const report = JSON.parse(fs.readFileSync(reportFile));
   const save = () => fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
+  async function uploadMissing(deployment) {
+    const originalsFile = path.join(ROOT, "tmp/physical-qa/original-artifacts.json");
+    const originals = fs.existsSync(originalsFile) ? JSON.parse(fs.readFileSync(originalsFile)) : {};
+    if (deployment.required?.length) throw Error("unexpected_static_artifact_upload");
+    for (const [name, digest] of Object.entries(report.body.functions)) {
+      if (!deployment.required_functions?.includes(digest)) continue;
+      const candidate = report.functions.find(f => f.name === name);
+      const previous = report.snapshot.fns.functions.find(f => f.n === name);
+      const file = candidate?.path || originals[digest];
+      if (!file || sha(fs.readFileSync(file)) !== digest) throw Error(`exact_original_artifact_required_${name}`);
+      const runtime = candidate?.runtime || previous.r;
+      await api(`/deploys/${deployment.id}/functions/${encodeURIComponent(name)}?runtime=${runtime}${previous?.im ? `&invocation_mode=${previous.im}` : ""}`, {
+        method: "PUT", headers: { "content-type": "application/octet-stream" }, body: fs.readFileSync(file) });
+      await new Promise(resolve => setTimeout(resolve, 1200));
+    }
+  }
   if (args.includes("--publish")) {
     if (!args.includes("--confirm") || report.status !== "prepared" || assertSource() !== report.source_commit) throw Error("confirmed_unchanged_prepared_candidate_required");
     const gate = JSON.parse(fs.readFileSync(path.join(ROOT, "tmp/physical-qa/harness.json")));
@@ -88,26 +115,36 @@ async function main() {
     for (const f of report.functions) if (sha(fs.readFileSync(f.path)) !== f.sha256) throw Error("package_changed");
     const created = await api(`/sites/${SITE}/deploys`, { method: "POST", body: JSON.stringify(report.body) });
     report.deploy_id = created.id; report.status = "draft_created"; save();
-    if (created.required?.length || created.required_functions?.some(d => !report.functions.some(f => f.sha256 === d))) throw Error("preserved_artifact_not_reused");
-    for (const digest of created.required_functions || []) {
-      const f = report.functions.find(item => item.sha256 === digest);
-      await api(`/deploys/${created.id}/functions/${f.name}?runtime=${f.runtime}`, { method: "PUT",
-        headers: { "content-type": "application/octet-stream" }, body: fs.readFileSync(f.path) });
-    }
+    await uploadMissing(created);
     report.status = "draft_uploaded"; save();
     // Draft polling is separate from publication so uncertain uploads are never repeated.
     console.log(JSON.stringify({ status: report.status, deploy_id: report.deploy_id, report: reportFile }));
     return;
   }
   if (args.includes("--activate")) {
-    if (!args.includes("--confirm") || report.status !== "draft_uploaded" || assertSource() !== report.source_commit) throw Error("confirmed_uploaded_candidate_required");
+    if (!args.includes("--confirm") || report.status !== "draft_uploaded") throw Error("confirmed_uploaded_candidate_required");
+    const validatedSource = assertRuntimeSource(report.source_commit);
+    const smoke = JSON.parse(fs.readFileSync(path.join(ROOT, "tmp/physical-qa/draft-smoke.json")));
+    const expectedDraft = `https://${report.deploy_id}--getblank.netlify.app`;
+    if (!smoke.passed || !smoke.full_conversation_tested || smoke.targets.netlify !== expectedDraft
+      || smoke.targets.supabase !== "https://vhiikgyyfisejjwqtxfc.supabase.co" || smoke.cleanup.some(c => !c.passed)) throw Error("complete_draft_cloud_smoke_required");
     const draft = await api(`/deploys/${report.deploy_id}`);
     if (draft.state !== "ready") throw Error(`draft_not_ready_${draft.state}`);
     if ((await api(`/sites/${SITE}`)).published_deploy.id !== report.snapshot.deploy.id) throw Error("active_deploy_changed");
-    await api(`/sites/${SITE}/deploys/${report.deploy_id}/restore`, { method: "POST" });
+    // A Deploy Preview keeps its preview environment after promotion. Create
+    // a production-context deployment from the same tested ZIPs instead.
+    report.draft_deploy_id = report.deploy_id;
+    const production = await api(`/sites/${SITE}/deploys`, { method: "POST", body: JSON.stringify({ ...report.body, draft: false }) });
+    report.deploy_id = production.id; report.execution_source_commit = validatedSource;
+    report.status = "production_created"; save();
+    await uploadMissing(production);
     report.status = "published_unverified"; save();
+    console.log(JSON.stringify({ status: report.status, deploy_id: report.deploy_id, report: reportFile }));
+    return;
   }
-  if (args.includes("--verify") || args.includes("--activate")) {
+  if (args.includes("--verify")) {
+    const deployment = await api(`/deploys/${report.deploy_id}`);
+    if (deployment.state !== "ready" || deployment.context !== "production") throw Error(`production_not_ready_${deployment.state}`);
     const site = await api(`/sites/${SITE}`);
     const inventory = await api(`/sites/${SITE}/functions`);
     const files = await api(`/deploys/${report.deploy_id}/files`);
