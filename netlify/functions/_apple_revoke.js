@@ -43,6 +43,22 @@ function clientSecret(config, now = Math.floor(Date.now() / 1000)) {
   return `${unsigned}.${signature}`;
 }
 
+async function resolvedConfiguration(env = process.env, readVault) {
+  const names = ["APPLE_SIGN_IN_TEAM_ID", "APPLE_SIGN_IN_KEY_ID", "APPLE_SIGN_IN_CLIENT_ID", "APPLE_SIGN_IN_PRIVATE_KEY"];
+  // Explicit environment configuration remains authoritative, including a
+  // malformed configuration. Never silently substitute a different Apple key.
+  if (names.some(name => env[name]) || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return configuration(env);
+  let stored;
+  try {
+    const read = readVault || (() => require("./_membership").supabaseFetch("rpc/read_apple_revocation_configuration", {
+      method: "POST", body: "{}", signal: AbortSignal.timeout(5000),
+    }));
+    stored = await read();
+  } catch (_) { throw appleError("apple_revocation_not_configured", 503); }
+  if (!stored || typeof stored !== "object" || Array.isArray(stored)) throw appleError("apple_revocation_not_configured", 503);
+  return configuration(Object.fromEntries(names.map(name => [name, stored[name]])));
+}
+
 async function verifiedAppleSubject(idToken, clientID, fetcher = fetch) {
   const parts = String(idToken || "").split(".");
   if (parts.length !== 3) throw appleError("apple_identity_mismatch", 400);
@@ -74,12 +90,12 @@ async function verifiedAppleSubject(idToken, clientID, fetcher = fetch) {
   return claims.sub;
 }
 
-async function revokeAppleAuthorization({ authorizationCode, expectedSubject, env = process.env, fetcher = fetch }) {
+async function revokeAppleAuthorization({ authorizationCode, expectedSubject, env = process.env, fetcher = fetch, readVault }) {
   if (typeof authorizationCode !== "string" || !authorizationCode || authorizationCode.length > 4096
       || typeof expectedSubject !== "string" || !expectedSubject) {
     throw appleError("apple_reauthorization_required", 400);
   }
-  const config = configuration(env);
+  const config = await resolvedConfiguration(env, readVault);
   const common = { client_id: config.clientID, client_secret: clientSecret(config) };
   let tokenResponse;
   try {
@@ -106,4 +122,4 @@ async function revokeAppleAuthorization({ authorizationCode, expectedSubject, en
   if (!revokeResponse.ok) throw appleError("apple_revocation_unavailable", 503);
 }
 
-module.exports = { configuration, clientSecret, verifiedAppleSubject, revokeAppleAuthorization };
+module.exports = { configuration, resolvedConfiguration, clientSecret, verifiedAppleSubject, revokeAppleAuthorization };

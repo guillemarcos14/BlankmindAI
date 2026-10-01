@@ -40,6 +40,14 @@ function manifest(snapshot, replacements) {
     function_schedules: snapshot.deploy.function_schedules || [], draft: true,
     title: "Authorized TestFlight app backend evaluation; preserve Early Access" };
 }
+function previewManifest(report) {
+  return { ...report.body, draft: true,
+    functions: Object.fromEntries(report.functions.map(f => [f.name, f.sha256])),
+    functions_config: Object.fromEntries(report.functions.map(f => [f.name,
+      report.body.functions_config[f.name] || { build_data: { runtimeAPIVersion: 1 }, priority: 10 }])),
+    function_schedules: [],
+  };
+}
 function token() {
   const c = JSON.parse(fs.readFileSync(path.join(process.env.APPDATA, "netlify/Config/config.json")));
   const value = (c.users[c.userId] || Object.values(c.users)[0])?.auth?.token;
@@ -113,7 +121,15 @@ async function main() {
     if (gate.status !== "passed" || gate.scope?.violations?.length) throw Error("scoped_harness_required");
     if ((await api(`/sites/${SITE}`)).published_deploy.id !== report.snapshot.deploy.id) throw Error("active_deploy_changed_reprepare_required");
     for (const f of report.functions) if (sha(fs.readFileSync(f.path)) !== f.sha256) throw Error("package_changed");
-    const created = await api(`/sites/${SITE}/deploys`, { method: "POST", body: JSON.stringify(report.body) });
+    const environment = await api(`/accounts/${report.snapshot.site.account_id}/env?site_id=${SITE}`);
+    const previewValue = key => {
+      const variable = environment.find(v => v.key === key && v.scopes.includes("functions"));
+      return variable?.values.find(v => v.context === "deploy-preview")?.value
+        || variable?.values.find(v => v.context === "all")?.value || "";
+    };
+    if (previewValue("SUPABASE_URL") !== "https://vhiikgyyfisejjwqtxfc.supabase.co"
+      || !previewValue("SUPABASE_SERVICE_ROLE_KEY") || !previewValue("OPENAI_API_KEY")) throw Error("preview_environment_must_be_configured_before_creation");
+    const created = await api(`/sites/${SITE}/deploys`, { method: "POST", body: JSON.stringify(previewManifest(report)) });
     report.deploy_id = created.id; report.status = "draft_created"; save();
     await uploadMissing(created);
     report.status = "draft_uploaded"; save();
@@ -156,5 +172,5 @@ async function main() {
       all_static_hashes_preserved: true, changed: ENTRIES }));
   }
 }
-module.exports = { manifest, ENTRIES };
+module.exports = { manifest, previewManifest, ENTRIES };
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });
