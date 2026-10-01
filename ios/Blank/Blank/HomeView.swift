@@ -2465,6 +2465,7 @@ struct SectionHeader: View {
 
 private struct SettingsScreen: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @Environment(\.openURL) private var openURL
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
     @State private var showingAccount = false
 
@@ -2519,6 +2520,18 @@ private struct SettingsScreen: View {
                     title: "account",
                     detail: "Apple sign-in and account controls",
                     action: { showingAccount = true }
+                )
+
+                settingsRow(
+                    title: "privacy policy",
+                    detail: "how Blankmind handles your data",
+                    action: { openURL(URL(string: "https://blankmind.ai/privacy")!) }
+                )
+
+                settingsRow(
+                    title: "terms of service",
+                    detail: "terms for using Blankmind",
+                    action: { openURL(URL(string: "https://blankmind.ai/terms")!) }
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -3569,15 +3582,6 @@ struct AppAccountSignInSheet: View {
                 .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            AccountJustifiedCopy(text: accountLegalText)
-                .frame(maxWidth: 400, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-                .frame(maxWidth: .infinity)
-                .background(Color.white)
-        }
         .background(Color.white)
         .preferredColorScheme(.light)
     }
@@ -3585,15 +3589,6 @@ struct AppAccountSignInSheet: View {
     private var accountTitleWidth: CGFloat {
         let font = UIFontMetrics(forTextStyle: .title1).scaledFont(for: UIFont(name: "TimesNewRomanPSMT", size: 32)!)
         return ceil(NSAttributedString(string: "Sign in to Blankmind", attributes: [.font: font, .kern: -0.9]).size().width)
-    }
-
-    private var accountLegalText: NSAttributedString {
-        let text = NSMutableAttributedString(string: "By clicking the button above, I agree to Blankmind's Terms of Service and Privacy Policy,")
-        for (label, path) in [("Terms of Service", "terms"), ("Privacy Policy", "privacy")] {
-            let range = (text.string as NSString).range(of: label)
-            text.addAttribute(.link, value: URL(string: "https://blankmind.ai/\(path)")!, range: range)
-        }
-        return text
     }
 
     private func finishAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
