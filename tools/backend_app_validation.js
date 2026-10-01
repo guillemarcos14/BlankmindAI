@@ -72,6 +72,10 @@ async function main() {
   };
   const at = args.indexOf("--report");
   const reportFile = path.resolve(ROOT, at >= 0 ? args[at + 1] : "tmp/physical-qa/backend-deploy.json");
+  const gateAt = args.indexOf("--gate-report");
+  const smokeAt = args.indexOf("--smoke-report");
+  const gateFile = path.resolve(ROOT, gateAt >= 0 ? args[gateAt + 1] : "tmp/physical-qa/harness.json");
+  const smokeFile = path.resolve(ROOT, smokeAt >= 0 ? args[smokeAt + 1] : "tmp/physical-qa/draft-smoke.json");
   if (args.includes("--prepare")) {
     const commit = assertSource();
     const site = await api(`/sites/${SITE}`);
@@ -117,7 +121,7 @@ async function main() {
   }
   if (args.includes("--publish")) {
     if (!args.includes("--confirm") || report.status !== "prepared" || assertSource() !== report.source_commit) throw Error("confirmed_unchanged_prepared_candidate_required");
-    const gate = JSON.parse(fs.readFileSync(path.join(ROOT, "tmp/physical-qa/harness.json")));
+    const gate = JSON.parse(fs.readFileSync(gateFile));
     if (gate.status !== "passed" || gate.scope?.violations?.length) throw Error("scoped_harness_required");
     if ((await api(`/sites/${SITE}`)).published_deploy.id !== report.snapshot.deploy.id) throw Error("active_deploy_changed_reprepare_required");
     for (const f of report.functions) if (sha(fs.readFileSync(f.path)) !== f.sha256) throw Error("package_changed");
@@ -140,7 +144,7 @@ async function main() {
   if (args.includes("--activate")) {
     if (!args.includes("--confirm") || report.status !== "draft_uploaded") throw Error("confirmed_uploaded_candidate_required");
     const validatedSource = assertRuntimeSource(report.source_commit);
-    const smoke = JSON.parse(fs.readFileSync(path.join(ROOT, "tmp/physical-qa/draft-smoke.json")));
+    const smoke = JSON.parse(fs.readFileSync(smokeFile));
     const expectedDraft = `https://${report.deploy_id}--getblank.netlify.app`;
     if (!smoke.passed || !smoke.full_conversation_tested || smoke.targets.netlify !== expectedDraft
       || smoke.targets.supabase !== "https://vhiikgyyfisejjwqtxfc.supabase.co" || smoke.cleanup.some(c => !c.passed)) throw Error("complete_draft_cloud_smoke_required");
