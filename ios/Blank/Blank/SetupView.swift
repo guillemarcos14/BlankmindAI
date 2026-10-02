@@ -205,7 +205,8 @@ struct SetupView: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Text(title)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                 Spacer(minLength: 8)
                 if ready {
                     Image(systemName: "checkmark").accessibilityHidden(true)
@@ -218,8 +219,9 @@ struct SetupView: View {
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .background(Color.black, in: RoundedRectangle(cornerRadius: 4))
             .contentShape(Rectangle())
+            .environment(\.isEnabled, true)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OnboardingPermissionButtonStyle())
         .disabled(ready)
         .accessibilityLabel(title)
         .accessibilityValue(ready ? "Completed" : "Not completed")
@@ -404,4 +406,10 @@ struct SetupView: View {
          "selection_count": sessionStore.selectionCount]
     }
 
+}
+
+private struct OnboardingPermissionButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.85 : 1)
+    }
 }
