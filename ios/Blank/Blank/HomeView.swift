@@ -2409,7 +2409,7 @@ private struct SettingsScreen: View {
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(
                     title: "settings",
                     subtitle: "access, support and preferences.",
@@ -2417,7 +2417,7 @@ private struct SettingsScreen: View {
                     titleColor: textColor,
                     subtitleColor: secondaryColor
                 )
-                .padding(.bottom, 24)
+                .padding(.bottom, 12)
 
                 settingsRow(
                     title: "emergency",
@@ -2462,6 +2462,7 @@ private struct SettingsScreen: View {
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 24)
         }
         .padding(.horizontal, sectionHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -2478,20 +2479,19 @@ private struct SettingsScreen: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.blankInter(size: 28, weight: .semibold, relativeTo: .title3))
                     .tracking(-0.4)
 
                 Text(detail)
                     .font(.blankInter(size: 12, weight: .medium, relativeTo: .caption))
-                    .foregroundStyle(secondaryColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
+                    .foregroundStyle(BlankColors.pureWhite.opacity(0.72))
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .foregroundStyle(color ?? textColor)
-            .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
-            .contentShape(Rectangle())
+            .foregroundStyle(color ?? BlankColors.pureWhite)
+            .blankBlackCard()
+            .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
@@ -3339,44 +3339,39 @@ private struct DistractionsScreen: View {
                             .padding(.top, 18)
                     }
 
-                    Spacer(minLength: 20)
-
                     ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: -8) {
+                        VStack(alignment: .leading, spacing: 12) {
                             if sessionStore.selection.blankedSelectionCount == 0 {
                                 Text("no distractions yet")
                                     .font(.blankInter(size: 18, weight: .medium, relativeTo: .headline))
-                                    .foregroundStyle(secondaryColor)
-                                    .frame(minHeight: 44, alignment: .leading)
+                                    .foregroundStyle(BlankColors.pureWhite.opacity(0.72))
+                                    .blankBlackCard()
                             } else {
                                 ForEach(Array(sessionStore.selection.applicationTokens), id: \.self) { token in
                                     Label(token)
-                                        .labelStyle(.titleOnly)
-                                        .blankHomeDisplayTextStyle(color: textColor)
-                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.blankInter(size: 20, weight: .medium, relativeTo: .headline))
+                                        .blankBlackCard()
                                 }
                                 ForEach(Array(sessionStore.selection.categoryTokens), id: \.self) { token in
                                     Label(token)
-                                        .labelStyle(.titleOnly)
-                                        .blankHomeDisplayTextStyle(color: textColor)
-                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.blankInter(size: 20, weight: .medium, relativeTo: .headline))
+                                        .blankBlackCard()
                                 }
                                 ForEach(Array(sessionStore.selection.webDomainTokens), id: \.self) { token in
                                     Label(token)
-                                        .labelStyle(.titleOnly)
-                                        .blankHomeDisplayTextStyle(color: textColor)
-                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.blankInter(size: 20, weight: .medium, relativeTo: .headline))
+                                        .blankBlackCard()
                                 }
                             }
                         }
-                        .frame(
-                            maxWidth: .infinity,
-                            minHeight: max(0, proxy.size.height - 310),
-                            alignment: .bottomLeading
-                        )
-                        .padding(.bottom, 78)
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .padding(.bottom, homeContentBottomMargin + 76)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    .padding(.top, 24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
                 .padding(.horizontal, sectionHorizontalPadding)
                 .padding(.bottom, 20)

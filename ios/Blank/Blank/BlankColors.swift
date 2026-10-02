@@ -250,6 +250,15 @@ private struct BlankControlSurfaceModifier: ViewModifier {
 }
 
 extension View {
+    func blankBlackCard() -> some View {
+        self
+            .foregroundStyle(BlankColors.pureWhite)
+            .padding(18)
+            .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.black))
+            .environment(\.colorScheme, .dark)
+    }
+
     func blankGlassCard(cornerRadius: CGFloat = 22, tintOpacity: Double = 0.34) -> some View {
         modifier(BlankGlassCardModifier(cornerRadius: cornerRadius, tintOpacity: tintOpacity))
     }
