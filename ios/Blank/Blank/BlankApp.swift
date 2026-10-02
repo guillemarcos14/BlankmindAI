@@ -14,6 +14,27 @@ extension Notification.Name {
     static let blankAssistantApplyNowRequested = Notification.Name("blankAssistantApplyNowRequested")
 }
 
+// Only private QA archives opt in. Production builds cannot install this cookie.
+enum BlankPrivateStageQA {
+    static func configure(baseURL: URL?, cookieHeader: String?, storage: HTTPCookieStorage = .shared) {
+        #if BLANK_PRIVATE_STAGE_QA
+        guard let baseURL, baseURL.scheme == "https",
+              baseURL.host == "blank-product-staging-20260926.netlify.app",
+              let cookieHeader, !cookieHeader.isEmpty, !cookieHeader.contains("$("),
+              !cookieHeader.contains("\r"), !cookieHeader.contains("\n") else { return }
+        for pair in cookieHeader.split(separator: ";") {
+            let components = pair.trimmingCharacters(in: .whitespaces).split(separator: "=", maxSplits: 1)
+            guard components.count == 2, components[0] == "2ef5a74e-af70-4893-a5f6-63fb2537720d",
+                  let cookie = HTTPCookie(properties: [
+                    .name: "2ef5a74e-af70-4893-a5f6-63fb2537720d", .value: String(components[1]),
+                    .domain: baseURL.host!, .path: "/", .secure: "TRUE"
+                  ]) else { continue }
+            storage.setCookie(cookie)
+        }
+        #endif
+    }
+}
+
 @main
 struct BlankApp: App {
     @UIApplicationDelegateAdaptor(BlankAppDelegate.self) private var appDelegate
@@ -23,6 +44,10 @@ struct BlankApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        BlankPrivateStageQA.configure(
+            baseURL: (Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String).flatMap(URL.init(string:)),
+            cookieHeader: Bundle.main.object(forInfoDictionaryKey: "BlankPrivateQAAuthenticationCookie") as? String
+        )
         UIScrollView.appearance().showsVerticalScrollIndicator = false
         UIScrollView.appearance().showsHorizontalScrollIndicator = false
     }
