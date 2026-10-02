@@ -13,3 +13,5 @@ Evidencia real acotada en BM_NATURAL_CHAT_EVIDENCE_2026-10-02.json. Ocho casos c
 Durante la iteración, el router amplio tuvo 19/20 aciertos y el flujo completo detectó redacción de WhatsApp, cancelación incompleta y una pregunta convertida en memoria. Se repararon las causas y se verificó el conjunto dirigido completo; no se presenta aquel primer resultado como 20/20. Las pruebas de regresión cubren contrato real, texto conservado, alteración del HMAC, datos inventados, idioma, cancelación y desviación pendiente sin otra extracción. Las llamadas pagadas quedan fuera del harness/CI por defecto.
 
 Pendiente probar el candidato en iPhone, integrado con backend y permisos reales. Repetir evaluación amplia solo con objetivo y presupuesto definidos. Referencia de herramientas del proveedor https://developers.openai.com/api/docs/guides/function-calling.
+
+Validación local final del runtime b14ab11: product harness66/66, baseline-natural-brain.json y --enforce-scope, informe ph_1790952522596_8dcae7a1. El gate de desarrollo pasa; no demuestra release físico.
