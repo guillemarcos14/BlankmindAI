@@ -69,8 +69,13 @@ async function commitMemory(userId, turnId) {
 }
 
 function readPlan(text, context, extra = {}) {
+  const { emptyState, normalizeSemanticState } = require("./bm-semantic-state");
+  const semanticState = normalizeSemanticState(context.memory?.conversation_state?.semantic_state)
+    || emptyState(context.language);
+  // Queries preserve an unfinished control conversation, but still participate
+  // in its durable CAS. PostgreSQL rejects a missing semantic state.
   return { plan: { intent: "general", response_text: text, message_text: text, actions: [],
-    response_language: context.language || "en", ...extra }, context, modelUnavailable: false };
+    semantic_state: semanticState, response_language: context.language || "en", ...extra }, context, modelUnavailable: false };
 }
 function duration(seconds) { return `${Math.floor(seconds / 60)} min`; }
 function reportText(facts, spanish) {
