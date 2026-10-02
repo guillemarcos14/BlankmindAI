@@ -26,7 +26,7 @@ struct ReportView: View {
     private var reportPrimary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
     private var reportSecondary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.70) : BlankColors.mutedInk }
     private var accentBlue: Color { BlankColors.premiumBlue }
-    private var recoveryGreen: Color { BlankColors.seafoam }
+    private var recoveryGreen: Color { sessionStore.isBlankActive ? BlankColors.seafoam : BlankColors.ink }
 
     private var report: BlankProgressReport {
         BlankProgressAggregator.aggregate(
@@ -547,9 +547,9 @@ struct ReportView: View {
     private func newLookRiskColor(_ level: ControlForecast.Level) -> Color {
         switch level {
         case .low:
-            return BlankColors.seafoam
+            return sessionStore.isBlankActive ? BlankColors.seafoam : BlankColors.ink
         case .medium:
-            return BlankColors.paleSteelBlue
+            return sessionStore.isBlankActive ? BlankColors.paleSteelBlue : BlankColors.ink
         case .high:
             return BlankColors.red
         }
@@ -1124,7 +1124,7 @@ private struct ReportFlatCardModifier: ViewModifier {
         content
             .background {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(colorScheme == .dark ? BlankColors.pureWhite.opacity(0.12) : BlankColors.pureWhite)
+                    .fill(colorScheme == .dark ? BlankColors.pureWhite.opacity(0.12) : BlankColors.lichenGray)
             }
     }
 }

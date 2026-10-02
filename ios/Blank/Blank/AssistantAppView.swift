@@ -831,7 +831,7 @@ struct AssistantAppView: View {
                 }
             }
         }
-        .padding(.leading, 18).padding(.trailing, 8)
+        .padding(.leading, 18).padding(.trailing, 16)
         .background(RoundedRectangle(cornerRadius: 28).fill(foreground.opacity(dark ? 0.11 : 0.06)))
         .frame(maxWidth: 640)
         .padding(.horizontal, 22)

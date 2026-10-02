@@ -1148,7 +1148,7 @@ struct HomeView: View {
                 AssistantAudioWaveform(audio: homeSpeech).padding(.leading, 18)
             } else {
             TextField("", text: $homeChatDraft,
-                      prompt: Text("Ask Blankmind…").foregroundColor(BlankColors.homeLightSecondary),
+                      prompt: Text("Ask Blankmind").foregroundColor(BlankColors.homeLightSecondary),
                       axis: .vertical)
                 .font(.blankInter(size: 16, weight: .medium, relativeTo: .body))
                 .lineLimit(1...3)
@@ -1186,6 +1186,7 @@ struct HomeView: View {
             }
         }
         .foregroundStyle(BlankColors.homeLightInk)
+        .padding(.trailing, 12)
         .background(RoundedRectangle(cornerRadius: 26).fill(BlankColors.homeLightInk.opacity(0.06)))
         .padding(.top, 22)
         .onTapGesture { if !homeSpeech.isRecording && !homeSpeech.isStarting { homeChatFocused = true } }
@@ -2336,7 +2337,6 @@ struct SectionBackHeader: View {
             Button(action: action) {
                 Text("back")
                     .font(.blankInter(size: 20, weight: .semibold, relativeTo: .headline))
-                    .underline()
                     .tracking(-0.3)
                     .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.premiumBlue)
                     .frame(minWidth: 44, minHeight: 44, alignment: .leading)
