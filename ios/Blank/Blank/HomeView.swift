@@ -319,7 +319,6 @@ struct HomeView: View {
     @State private var chatLaunchMessage: String?
     @State private var homeChatDraft = ""
     @FocusState private var homeChatFocused: Bool
-    @State private var homeSpeechPrefix = ""
     @State private var acceptingHomeSpeech = false
     @StateObject private var homeSpeech = AssistantSpeechInput()
     @State private var assistantNotificationsAuthorized = false
@@ -442,7 +441,11 @@ struct HomeView: View {
             Task { await activateAppChannel() }
         }
         .onChange(of: homeSpeech.transcript) { transcript in
-            if acceptingHomeSpeech { homeChatDraft = homeSpeechPrefix + transcript }
+            if acceptingHomeSpeech && !transcript.isEmpty {
+                acceptingHomeSpeech = false
+                chatLaunchMessage = transcript
+                showingAssistantChat = true
+            }
         }
         .onChange(of: homeSpeech.error) { error in
             if let error { message = error }
@@ -868,7 +871,7 @@ struct HomeView: View {
         }
         .padding(.horizontal, layout.horizontalPadding)
         .padding(.bottom, homeChatFocused ? 0 : layout.bottomPadding * 2)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: homeChatFocused ? .center : .bottomLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
         .background {
             Color.clear
                 .contentShape(Rectangle())
@@ -1141,6 +1144,9 @@ struct HomeView: View {
 
     private var homeChatComposer: some View {
         HStack(alignment: .bottom, spacing: 4) {
+            if homeSpeech.isRecording || homeSpeech.isStarting || homeSpeech.hasAudio {
+                AssistantAudioWaveform(audio: homeSpeech).padding(.leading, 18)
+            } else {
             TextField("", text: $homeChatDraft,
                       prompt: Text("Ask Blankmind…").foregroundColor(BlankColors.homeLightSecondary),
                       axis: .vertical)
@@ -1153,15 +1159,12 @@ struct HomeView: View {
                 .padding(.vertical, 14)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .accessibilityLabel("Message Blankmind")
+            }
 
             Button {
-                homeChatFocused = true
+                homeChatFocused = false
                 if !homeSpeech.isRecording && !homeSpeech.isStarting {
-                    let prefix = homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    homeSpeechPrefix = prefix.isEmpty ? "" : "\(prefix) "
                     acceptingHomeSpeech = true
-                } else {
-                    acceptingHomeSpeech = false
                 }
                 homeSpeech.toggle()
             } label: {
@@ -1169,9 +1172,10 @@ struct HomeView: View {
                     .font(.system(size: 21))
                     .frame(width: 44, height: 50)
             }
-            .accessibilityLabel(homeSpeech.isRecording || homeSpeech.isStarting ? "Stop dictation" : "Dictate message")
+            .disabled(homeSpeech.isStarting)
+            .accessibilityLabel(homeSpeech.isRecording || homeSpeech.isStarting ? "Send audio" : "Record audio")
 
-            if !homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if !homeSpeech.hasAudio && !homeSpeech.isRecording && !homeSpeech.isStarting && !homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Button(action: sendHomeChatMessage) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 28))
@@ -1184,7 +1188,7 @@ struct HomeView: View {
         .foregroundStyle(BlankColors.homeLightInk)
         .background(RoundedRectangle(cornerRadius: 26).fill(BlankColors.homeLightInk.opacity(0.06)))
         .padding(.top, 22)
-        .onTapGesture { homeChatFocused = true }
+        .onTapGesture { if !homeSpeech.isRecording && !homeSpeech.isStarting { homeChatFocused = true } }
     }
 
     private func openAssistantChat() {

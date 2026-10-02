@@ -352,6 +352,10 @@ exports.handler = async (event) => {
     if (body.action === "activate") return await activate(auth);
     if (body.action === "history") return await history(auth, body);
     if (body.action === "status") return await status(auth, body);
+    if (body.action === "transcribe") {
+      const result = await require("./bm-audio-input").transcribe(body);
+      return json(result.status, result.error ? { error: result.error } : { ok: true, text: result.text });
+    }
     if (body.action === "send") return await send(auth, body);
     return json(400, { error: "unsupported_action" });
   } catch (_) {

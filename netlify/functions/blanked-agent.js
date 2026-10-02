@@ -2890,9 +2890,9 @@ async function modelConversationPlan(prompt, context = {}, language = "en") {
     if (correction && correction.title === "Context Corrected") return { plan: correction, source: "deterministic_context_correction" };
   }
   const deterministicContext = ambiguousDigitalMomentPlan(prompt, language);
-  if (deterministicContext) return { plan: deterministicContext, source: "deterministic_digital_context" };
+  if (deterministicContext && context.channel !== "app") return { plan: deterministicContext, source: "deterministic_digital_context" };
   const contextual = conversationalFollowupPlan(prompt, context, language);
-  if (contextual) return { plan: contextual, source: "deterministic_conversation_context" };
+  if (contextual && context.channel !== "app") return { plan: contextual, source: "deterministic_conversation_context" };
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return { plan: fallback, source: "deterministic_conversation_fallback" };
   const model = process.env.OPENAI_MODEL || "gpt-5.6-luna";
@@ -2927,14 +2927,16 @@ async function modelConversationPlan(prompt, context = {}, language = "en") {
           }),
         },
       ],
-      max_output_tokens: 220,
+      max_output_tokens: context.channel === "app" ? 500 : 220,
     }),
   });
   if (!response.ok) {
     await response.body?.cancel();
     throw new Error(`openai_conversation_failed_${response.status}`);
   }
-  const reply = completeNaturalText(extractResponseText(await response.json()), 280);
+  const conversationBody = await response.json();
+  if (conversationBody.usage) console.info(JSON.stringify({ event: "bm_token_usage", stage: "conversation", model: conversationBody.model || model, usage: conversationBody.usage }));
+  const reply = completeNaturalText(extractResponseText(conversationBody), context.channel === "app" ? 1200 : 280);
   if (!reply) return { plan: fallback, source: `openai:${model}:conversation_empty` };
   return {
     plan: {
