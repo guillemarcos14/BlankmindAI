@@ -111,6 +111,18 @@ async function planBrainTurn({ prompt, context, userId, extract = extractRequest
   if (!snapshot || !process.env.OPENAI_API_KEY) return null;
   const memories = await readMemories(userId);
   context.brain_memories = memories.filter(row => row.value != null);
+  const forgottenAt = memories.filter(row => row.value == null && Number.isFinite(Date.parse(row.source_at)))
+    .map(row => row.source_at).sort().at(-1);
+  if (forgottenAt) {
+    // A tombstone also cuts off short-term personalization. The old statement
+    // remains searchable as history only when the user explicitly requests it.
+    const recent = await supabaseFetch(`assistant_app_turns?auth_user_id=eq.${encodeURIComponent(userId)}&status=eq.completed&created_at=gt.${encodeURIComponent(forgottenAt)}&select=user_text,assistant_text,created_at&order=created_at.desc,id.desc&limit=4`, { method: "GET" });
+    context.recent_messages = recent.filter(row => Date.parse(row.created_at) > Date.parse(forgottenAt)).reverse()
+      .flatMap(row => [{ role:"user",content:row.user_text.slice(0,420) },{role:"assistant",content:(row.assistant_text || "").slice(0,420)}]);
+    if (context.memory.conversation_state) context.memory.conversation_state = { ...context.memory.conversation_state,
+      recent_messages: context.recent_messages, last_user_message: context.recent_messages.at(-2)?.content || "",
+      last_assistant_message: context.recent_messages.at(-1)?.content || "" };
+  }
   if (memories.some(row => row.key === "_reset")) {
     context.profile_name = ""; context.personal_profile = {};
     context.memory.main_apps = []; context.memory.weak_hours = [];
