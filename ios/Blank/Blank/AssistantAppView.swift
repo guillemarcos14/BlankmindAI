@@ -604,6 +604,7 @@ struct AssistantAppView: View {
                 Color.clear.frame(width: 76, height: 48)
             }
             .frame(height: 56)
+            .padding(.horizontal, 24)
             .layoutPriority(1)
             .background(background)
             .zIndex(1)
@@ -758,20 +759,20 @@ struct AssistantAppView: View {
             if let latest {
                             if let name = latest.controlSection, let section = controlSection(name) {
                                 Button(spanish ? "Abrir" : "Open") { openControls(section) }
-                                    .font(.blankInter(size: 17, weight: .semibold))
+                                    .font(.blankOnboardingControl)
                             }
                             if latest.canApply && !waiting {
                                 Button {
                                     Task { await applyAction(latest.actionId) }
                                 } label: {
                                     Text(latest.actionLabel.isEmpty ? (spanish ? "Aplicar ahora" : "Apply now") : latest.actionLabel)
-                                        .font(.blankInter(size: 17, weight: .semibold))
+                                        .font(.blankOnboardingControl)
                                         .multilineTextAlignment(.leading)
-                                        .padding(.horizontal, 26)
-                                        .padding(.vertical, 14)
-                                        .frame(minHeight: 52)
-                                        .background(Capsule().fill(foreground))
-                                        .foregroundStyle(background)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .frame(minHeight: 44)
+                                        .background(RoundedRectangle(cornerRadius: 4).fill(dark ? Color.white : Color.black))
+                                        .foregroundStyle(dark ? Color.black : Color.white)
                                 }
                                 .disabled(isApplyingAction)
                                 .accessibilityHint(spanish ? "Aplica la acción sobre tus distracciones seleccionadas" : "Applies the action to your selected distractions")
@@ -1157,12 +1158,12 @@ private struct AssistantAppHistoryView: View {
                                             Task { await apply(turn) }
                                         } label: {
                                             Text(turn.actionLabel.isEmpty ? (spanish ? "Aplicar ahora" : "Apply now") : turn.actionLabel)
-                                                .font(.blankInter(size: 15, weight: .semibold))
+                                                .font(.blankOnboardingControl)
                                                 .multilineTextAlignment(.leading)
                                                 .padding(.horizontal, 20)
                                                 .padding(.vertical, 12)
                                                 .frame(minHeight: 44)
-                                                .background(Capsule().fill(foreground))
+                                                .background(RoundedRectangle(cornerRadius: 4).fill(foreground))
                                                 .foregroundStyle(background)
                                         }
                                         .disabled(loading)

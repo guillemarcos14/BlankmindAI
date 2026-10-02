@@ -869,12 +869,12 @@ struct HomeView: View {
                 #endif
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24 - layout.horizontalPadding)
             .opacity(homeChatFocused ? 0 : 1)
             .allowsHitTesting(!homeChatFocused)
             .accessibilityHidden(homeChatFocused)
             .frame(height: homeChatFocused ? 0 : nil, alignment: .bottom)
             .clipped()
+            .padding(.horizontal, 24 - layout.horizontalPadding)
 
             homeChatComposer
 
