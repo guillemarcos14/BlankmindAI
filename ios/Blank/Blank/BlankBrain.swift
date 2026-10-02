@@ -13,6 +13,8 @@ final class BlankBrain {
     private var subscriptions = Set<AnyCancellable>()
     private var syncTask: Task<Void, Never>?
     private var notificationsAuthorized = false
+    private var lastSyncedContent: Data?
+    private var lastSyncedAt = Date.distantPast
 
     func configure(store: SessionStore, blocker: ScreenTimeBlocker, purchases: StoreKitPurchaseStore) {
         guard self.store !== store else { return }
@@ -125,11 +127,33 @@ final class BlankBrain {
     func sync() {
         syncTask?.cancel()
         syncTask = Task {
-            guard let payload = await freshSnapshot(), !Task.isCancelled else { return }
             let owner = AssistantAppSession.userID
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            guard owner == AssistantAppSession.userID, !Task.isCancelled else { return }
+            notificationsAuthorized = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional || settings.authorizationStatus == .ephemeral
+            // Observing published changes must not mutate those same publishers.
+            // Fresh turn snapshots reconcile native state separately.
+            guard let payload = snapshot() else { return }
             let code = BlankSharedState.defaults.string(forKey: "blankAssistantConnectCode") ?? ""
             guard !code.isEmpty, owner != nil else { return }
-            _ = await AssistantContextSyncClient().sync(connectCode: code, channel: "app", payload: payload)
+            var content = payload
+            content.removeValue(forKey: "context_revision")
+            content.removeValue(forKey: "context_generated_at")
+            if var history = content["brain_snapshot"] as? [String: Any] {
+                history.removeValue(forKey: "generated_at")
+                content["brain_snapshot"] = history
+            }
+            if var presence = content["app_presence"] as? [String: Any] {
+                presence.removeValue(forKey: "last_seen_at")
+                content["app_presence"] = presence
+            }
+            content["owner"] = owner
+            content["connection"] = code
+            guard let digest = try? JSONSerialization.data(withJSONObject: content, options: [.sortedKeys]) else { return }
+            guard digest != lastSyncedContent || Date().timeIntervalSince(lastSyncedAt) >= 60 else { return }
+            let synced = await AssistantContextSyncClient().sync(connectCode: code, channel: "app", payload: payload)
+            guard !Task.isCancelled, owner == AssistantAppSession.userID else { return }
+            if synced { lastSyncedContent = digest; lastSyncedAt = Date() }
         }
     }
 }
