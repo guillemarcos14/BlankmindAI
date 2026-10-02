@@ -577,9 +577,9 @@ struct AssistantAppView: View {
                 VStack(spacing: 0) {
             HStack {
                 Button { dismiss() } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 19, weight: .semibold))
-                        .frame(width: 48, height: 48)
+                    Label(spanish ? "Volver" : "Back", systemImage: "chevron.left")
+                        .font(.blankInter(size: 14))
+                        .frame(minWidth: 76, minHeight: 48, alignment: .leading)
                 }
                 .accessibilityLabel(spanish ? "Volver a Inicio" : "Back to Home")
                 .disabled(isApplyingAction)
@@ -601,7 +601,7 @@ struct AssistantAppView: View {
                 }
                 .accessibilityLabel(spanish ? "Menú de Blankmind" : "Blankmind menu")
                 Spacer(minLength: 0)
-                Color.clear.frame(width: 48, height: 48)
+                Color.clear.frame(width: 76, height: 48)
             }
             .frame(height: 56)
             .layoutPriority(1)
@@ -610,10 +610,18 @@ struct AssistantAppView: View {
 
                     ScrollView {
                     VStack(alignment: .leading, spacing: 26) {
+                        VStack(alignment: .leading, spacing: 24) {
+                            Text("Chat")
+                                .font(.blankSectionEditorial())
+                                .tracking(-0.9)
+                                .accessibilityAddTraits(.isHeader)
+                            Text("Blankmind")
+                                .font(.blankInter(size: 14, relativeTo: .subheadline))
+                                .foregroundStyle(foreground.opacity(0.72))
+                        }
                         if let latest {
                             Text(latest.assistantText)
-                                .font(.blankEditorial(size: 28))
-                                .tracking(-0.5)
+                                .font(.blankInter(size: 20))
                                 .lineSpacing(4)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
@@ -624,7 +632,7 @@ struct AssistantAppView: View {
                             Text(requiresVerification
                                  ? (spanish ? "Tu conversación en Blankmind." : "Your conversation in Blankmind.")
                                  : (spanish ? "¿Qué tienes en mente?" : "What is on your mind?"))
-                                .font(.blankEditorial(size: 28))
+                                .font(.blankInter(size: 20))
                                 .fixedSize(horizontal: false, vertical: true)
                             if simulatorGuest {
                                 Text("Simulator navigation preview")
@@ -640,7 +648,7 @@ struct AssistantAppView: View {
                     }
                         .frame(maxWidth: 640, alignment: .leading)
                         .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 28)
+                        .padding(.horizontal, 24)
                         .padding(.vertical, 16)
                     }
                     .scrollDismissesKeyboard(.interactively)

@@ -10,15 +10,30 @@ struct ContentView: View {
 
     var body: some View {
         #if DEBUG
+        #if targetEnvironment(simulator)
+        if PostOnboardingPreviewScene.enabled {
+            PostOnboardingPreviewScene()
+        } else {
+            debugContent
+        }
+        #else
+        debugContent
+        #endif
+        #else
+        productContent
+        #endif
+    }
+
+    #if DEBUG
+    @ViewBuilder
+    private var debugContent: some View {
         if AssistantAppPreview.enabled {
             AssistantAppView { _ in }
         } else {
             productContent
         }
-        #else
-        productContent
-        #endif
     }
+    #endif
 
     private var productContent: some View {
         let _ = accountRevision
