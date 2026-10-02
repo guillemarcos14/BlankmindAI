@@ -234,10 +234,10 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     check(!view.isSending && view.turns.last?.userText == "C message", "New owner's completion failed")
     // Only a newly submitted imperative may apply automatically. Reload and
     // lost-response recovery must keep the explicit CTA without executing.
-    let executable = AssistantAppTurn(id: "fresh-action", userText: "Block now", assistantText: "Applying", status: "completed", actionId: "app_fresh_action", actionLabel: "Apply", actionStatus: "queued", createdAt: "2026-10-02T10:00:00Z", autoApply: true)
-    ViewTransport.send = { _, _ in executable }
+    ViewTransport.send = { text, id in AssistantAppTurn(id: id, userText: text, assistantText: "Applying", status: "completed", actionId: "app_fresh_action", actionLabel: "Apply", actionStatus: "queued", createdAt: "2026-10-02T10:00:00Z", autoApply: true) }
     view.composer.draft = "Block now"
     await view.sendForTest()
+    let executable = view.turns.last!
     check(view.appliedActions == ["app_fresh_action"] && view.dismissCount == 1, "New explicit action was not applied once")
     ViewTransport.history = { .init(turns: [executable], nextBefore: nil) }
     await view.reloadForTest()
