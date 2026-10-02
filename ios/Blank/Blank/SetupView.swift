@@ -17,6 +17,7 @@ private enum OnboardingStep: Int {
 }
 
 struct SetupView: View {
+    @ScaledMetric(relativeTo: .body) private var permissionLabelSize: CGFloat = 16
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var screenTimeBlocker: ScreenTimeBlocker
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
@@ -209,10 +210,13 @@ struct SetupView: View {
                     .minimumScaleFactor(0.85)
                 Spacer(minLength: 8)
                 if ready {
-                    Image(systemName: "checkmark").accessibilityHidden(true)
+                    Image(systemName: "checkmark")
+                        .font(.body.weight(.medium))
+                        .scaleEffect(0.65)
+                        .accessibilityHidden(true)
                 }
             }
-            .font(.body.weight(.medium))
+            .font(.system(size: permissionLabelSize, weight: .regular))
             .multilineTextAlignment(.leading)
             .foregroundStyle(Color.white)
             .padding(.horizontal, 14)
