@@ -102,6 +102,7 @@ membership.supabaseFetch = async (path, options = {}) => {
     return [{ claimed: true, status: "claimed", turn: copy(claimed) }];
   }
   if (path === "rpc/prepare_assistant_app_turn") {
+    assert.ok(body.p_state.semantic_state, "Real PostgreSQL requires semantic state on every query");
     faultOnce("prepare_before");
     const row = rows.get(body.p_turn_id);
     if (!row || row.auth_user_id !== body.p_auth_user_id || row.lease_owner !== body.p_lease_owner

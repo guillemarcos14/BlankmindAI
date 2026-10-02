@@ -35,6 +35,7 @@ assert.throws(() => data.periodBounds({period:"custom",start_date:"2026-02-30",e
 assert.throws(() => data.periodBounds({period:"custom",start_date:"2026-10-01",end_date:"invalid"},snapshot,now),/invalid_date/);
 assert.throws(() => data.periodBounds({period:"custom",start_date:"2026-10-01",end_date:"2026-09-20"},snapshot,now),/invalid_period/);
 assert.equal(data.normalizeBrainSnapshot({...snapshot,timezone:"invalid"}),null);
+assert.equal(data.normalizeBrainSnapshot({...snapshot,timezone:undefined}),null);
 assert.equal(data.normalizeBrainSnapshot({...snapshot,sessions:Array(2001).fill(snapshot.sessions[0])}),null);
 const duplicated = data.normalizeBrainSnapshot({...snapshot,sessions:[snapshot.sessions[0],snapshot.sessions[0]]});
 assert.equal(duplicated.sessions.length,1); assert.equal(duplicated.history_complete,false);
@@ -54,16 +55,18 @@ async function main() {
   const remembered = await plan("Recuerda que trabajo de noche",request("memory","Recuerda",{ memory:{operation:"set",key:"work_routine",value:"trabajo de noche",evidence:"trabajo de noche"}}));
   assert.deepEqual(remembered.context.brain_memory_effect,{operation:"set",key:"work_routine",value:"trabajo de noche",evidence:"trabajo de noche"});
   assert.equal(remembered.plan.actions.length,0);
+  assert.equal(remembered.plan.semantic_state.status,"idle","A read needs a durable semantic checkpoint");
   assert.equal(calls.some(call=>call.options?.method==="POST"),false,"Planning cannot commit a fact before the turn commits");
   const forgot = await plan("Olvida mi objetivo",request("memory","Olvida",{memory:{operation:"forget",key:"goal",value:null,evidence:"Olvida mi objetivo"}}));
   assert.equal(forgot.context.brain_memory_effect.operation,"forget");
   stored=[{key:"goal",value:null,source_at:"2026-10-01T00:00:00Z"}];
   const ctx=context(); await plan("Hola",request("conversation","Hola"),ctx);
   assert.equal(ctx.personal_profile.goal,""); assert.equal(ctx.brain_memories.length,0);
+  assert.equal(ctx.recent_messages.length,0,"A forgotten statement resurfaced in short-term personalization");
   const stale=await plan("Bloquea ahora",request("control","Bloquea",{execute:true}),{...context(),brain_snapshot:snapshot});
   assert.equal(stale.plan.actions.length,0); assert(stale.plan.message_text.includes("reciente"));
   calls=[]; await plan("Busca objetivo",request("history","Busca",{period:"all_time",search_terms:["objetivo"]}));
-  const history=calls.find(call=>call.path.startsWith("assistant_app_turns?"));
+  const history=calls.find(call=>call.path.includes("user_text.ilike"));
   assert(history.path.includes("auth_user_id=eq.user-A")); assert(history.path.includes("status=eq.completed"));
   assert(decodeURIComponent(history.path).includes("user_text.ilike.*objetivo*"));
   calls=[]; await brain.commitMemory("user-A","turn-A");
