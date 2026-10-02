@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		BA10000000000000000000032 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
+		BA10000000000000000000033 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
 		BA10000000000000000000022 /* AssistantControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000021 /* AssistantControl.swift */; };
 		BA10000000000000000000012 /* BlankBrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000011 /* BlankBrain.swift */; };
 		8A0000010000000000000001 /* BlankApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000011 /* BlankApp.swift */; };
@@ -523,6 +524,7 @@
 				8A0000040000000000000001 /* BlankWidget.swift in Sources */,
 				8A0000040000000000000002 /* BlankSharedState.swift in Sources */,
 				8A0000040000000000000003 /* BlankDomainModels.swift in Sources */,
+				BA10000000000000000000033 /* BlankBrainMetrics.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -64,7 +64,7 @@ try {
   const compiled = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file, '-o', binary], { encoding: 'utf8' });
   if (compiled.error) throw new Error(`Native client tests require Swift on macOS: ${compiled.error.message}`);
   if (compiled.status !== 0) throw new Error(compiled.stderr || compiled.stdout);
-  const result = spawnSync(binary, [], { encoding: 'utf8' });
+  const result = spawnSync(binary, [], { encoding: 'utf8', timeout: 120000 });
   process.stdout.write(result.stdout || '');
   process.stderr.write(result.stderr || '');
   if (result.error) throw result.error;
