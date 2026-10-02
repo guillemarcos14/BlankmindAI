@@ -15,3 +15,5 @@ Durante la iteración, el router amplio tuvo 19/20 aciertos y el flujo completo 
 Pendiente probar el candidato en iPhone, integrado con backend y permisos reales. Repetir evaluación amplia solo con objetivo y presupuesto definidos. Referencia de herramientas del proveedor https://developers.openai.com/api/docs/guides/function-calling.
 
 Validación local final del runtime b14ab11: product harness66/66, baseline-natural-brain.json y --enforce-scope, informe ph_1790952522596_8dcae7a1. El gate de desarrollo pasa; no demuestra release físico.
+
+Cierre adicional: el paso de localización cortaba las respuestas conversacionales españolas a320caracteres. La app conserva ahora el mismo límite de1200caracteres de su redacción original y una regresión verifica que la respuesta larga termina completa. No cambia el presupuesto de salida del modelo ni añade llamadas.

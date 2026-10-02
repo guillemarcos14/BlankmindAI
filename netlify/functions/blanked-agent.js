@@ -526,15 +526,15 @@ function localizeText(value, language, maxLength = 420) {
   return localizeMinuteText(translated, language);
 }
 
-function localizePlan(plan, language) {
+function localizePlan(plan, language, maxResponseLength = 320) {
   if (language !== "es") return plan;
   return {
     ...plan,
     title: localizeText(plan.title, language).slice(0, 70),
-    message_text: localizeText(plan.message_text, language).slice(0, 320),
+    message_text: localizeText(plan.message_text, language).slice(0, maxResponseLength),
     speech_text: localizeText(plan.speech_text, language).slice(0, 420),
     followup_text: localizeText(plan.followup_text, language).slice(0, 240),
-    response_text: localizeText(plan.response_text, language).slice(0, 320),
+    response_text: localizeText(plan.response_text, language).slice(0, maxResponseLength),
     bullets: Array.isArray(plan.bullets) ? plan.bullets.map((item) => localizeText(item, language).slice(0, 140)) : [],
     primary_label: localizeText(plan.primary_label, language).slice(0, 32),
     secondary_label: localizeText(plan.secondary_label, language).slice(0, 32),
@@ -3553,7 +3553,7 @@ exports.handler = async (event, runtime = {}) => {
       }
       conversationResult.plan = appendWebConversionNote(conversationResult.plan, prompt, context, language);
       conversationResult.plan = appendAppPresenceGuidance(conversationResult.plan, prompt, context, language);
-      conversationResult.plan = localizePlan(conversationResult.plan, language);
+      conversationResult.plan = localizePlan(conversationResult.plan, language, context.channel === "app" ? 1200 : 320);
       conversationResult.plan = enforceSemanticBoundary(conversationResult.plan, semantic, language);
       const gatedSummary = planSummary(conversationResult.plan);
       recordStage(harnessRun, "action_gate", {
@@ -3652,7 +3652,7 @@ function semanticPlan(result, language, prompt, context = {}) {
     if (permission) next = es ? "Pulsa el botón para dar permiso al bloqueo y avísame cuando lo tengas." : "Tap the button to allow blocking and let me know when you're ready.";
     else if (picker) next = es ? "Elige tus distracciones con el botón y confirma la selección. Entonces lo intentaré en tu iPhone." : "Choose your distractions with the button and confirm your selection. Then I'll try it on your iPhone.";
     else if (result.decision.type === "ready") {
-      summary = summary.replace(/^Block /, "I'll try blocking ").replace(/^Set /, "I'll try setting ")
+      summary = summary.replace(/^Block /, "I'll try blocking ").replace(/^Set /, "I'll try setting ").replace(/^Limit /, "I'll try limiting ")
         .replace(/^Bloquear /, "Voy a intentar bloquear ").replace(/^Limitar /, "Voy a intentar limitar ")
         .replace(/your selected distractions/g, "the apps you've chosen").replace(/tus distracciones seleccionadas/g, "las apps que has elegido");
       next = es ? "Te diré si ha funcionado." : "I'll let you know whether it worked.";

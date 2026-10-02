@@ -79,6 +79,11 @@ async function main() {
       assert.equal(body.plan.message_text, "That sounds tiring. What pulled you into scrolling?");
       assert.deepEqual(body.plan.actions, []);
       assert.deepEqual(body.plan.semantic_state, pending, "A detour consumed or changed the pending action");
+      const longerSpanishReply = "Cuando llevas todo el día cansado, abrir el móvil puede salirte casi sin pensarlo. Puedes fijarte en qué estabas haciendo justo antes de empezar a mirar cosas, porque a veces el impulso aparece al terminar una tarea o al sentarte un momento. No hace falta resolverlo todo de golpe. Podemos empezar por ese momento concreto y pensar juntos qué cambio te ayudaría a cortar el bucle sin complicarte el día.";
+      global.fetch = async () => ({ ok: true, json: async () => ({ output_text: longerSpanishReply }) });
+      const spanishResult = await handler({ httpMethod: "POST", body: JSON.stringify({ prompt: "Por qué acabo mirando el móvil cuando estoy cansado",
+        context: { ...device, brain_request: { route: "conversation", execute: false, language: "es" } } }) });
+      assert.equal(JSON.parse(spanishResult.body).plan.message_text, longerSpanishReply, "Spanish prose was cut off at the old template limit");
     } finally { global.fetch = oldFetch; }
     console.log("App natural response: Spanish generation, immutable duration/actions, false execution rejection PASS (mock)");
   } finally { if (old === undefined) delete process.env.OPENAI_API_KEY; else process.env.OPENAI_API_KEY = old; }
