@@ -147,6 +147,8 @@ struct AssistantAppTurn: Codable, Identifiable {
     let actionLabel: String
     let actionStatus: String
     let createdAt: String
+    var autoApply: Bool? = nil
+    var controlSection: String? = nil
 
     var canApply: Bool {
         !actionId.isEmpty && ["queued", "delivered"].contains(actionStatus)
@@ -278,8 +280,10 @@ struct AssistantAppClient {
         return AssistantAppHistoryPage(turns: result.turns ?? [], nextBefore: result.nextBefore)
     }
 
-    func send(text: String, turnId: String) async throws -> AssistantAppTurn {
-        let result = try await request(action: "send", extra: ["text": text, "turn_id": turnId])
+    func send(text: String, turnId: String, context: [String: Any]? = nil) async throws -> AssistantAppTurn {
+        var extra: [String: Any] = ["text": text, "turn_id": turnId]
+        if let context { extra["context"] = context }
+        let result = try await request(action: "send", extra: extra)
         guard let turn = result.turn else { throw AssistantAppError.invalidResponse }
         return turn
     }
@@ -749,9 +753,24 @@ struct AssistantAppView: View {
         }
     }
 
+    private func controlSection(_ name: String) -> HomeSection? {
+        switch name {
+        case "report": return .report
+        case "schedule": return .schedule
+        case "distractions": return .distractions
+        case "settings": return .settings
+        case "emergency": return .emergency
+        default: return nil
+        }
+    }
+
     @ViewBuilder private var status: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let latest {
+                            if let name = latest.controlSection, let section = controlSection(name) {
+                                Button(spanish ? "Abrir" : "Open") { openControls(section) }
+                                    .font(.blankInter(size: 17, weight: .semibold))
+                            }
                             if latest.canApply && !waiting {
                                 Button {
                                     Task { await applyAction(latest.actionId) }
@@ -1004,11 +1023,12 @@ struct AssistantAppView: View {
         let expectedOwner = owner
         defer { if sendRequestID == requestID { sendRequestID = nil } }
         do {
-            let turn = try await AssistantAppClient().send(text: pending.text, turnId: pending.id)
+            let turn = try await AssistantAppClient().send(text: pending.text, turnId: pending.id, context: await BlankBrain.shared.freshSnapshot())
             guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
                   expectedRevision == conversationRevision else { return }
             accept(turn)
             requiresVerification = false
+            if turn.autoApply == true, turn.canApply { await applyAction(turn.actionId) }
         } catch {
             guard expectedOwner == owner, expectedRevision == conversationRevision else { return }
             handle(error)

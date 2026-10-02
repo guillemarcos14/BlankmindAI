@@ -680,15 +680,8 @@ enum BlankWeeklySessionAggregator {
                 continue
             }
 
-            for session in trackedSessions {
-                let overlapStart = max(session.start, dayStart)
-                let overlapEnd = min(session.end, dayEnd)
-
-                guard overlapStart < overlapEnd else { continue }
-
-                dailyDurations[dayOffset] += overlapEnd.timeIntervalSince(overlapStart)
-                dailySessionCounts[dayOffset] += 1
-            }
+            dailyDurations[dayOffset] = BlankBrainMetrics.protectedSeconds(sessions: sessions, from: dayStart, to: min(dayEnd, now))
+            dailySessionCounts[dayOffset] = BlankBrainMetrics.sessionCount(sessions: sessions, from: dayStart, to: min(dayEnd, now))
         }
 
         let totalFocusTime = dailyDurations.reduce(0, +)

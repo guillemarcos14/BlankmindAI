@@ -88,6 +88,7 @@
       { "name": "bm_final_qa_router", "run": "node tools/bm_final_qa_router_test.js" },
       { "name": "production_app_activation", "run": "node tools/production_app_activation_test.js" },
       { "name": "assistant_app_recovery", "run": "node tools/assistant_app_test.js" },
+      { "name": "bm_central_brain", "run": "node tools/bm_brain_test.js" },
       { "name": "assistant_cloud_test_safety", "run": "node tools/assistant_app_cloud_test.js --self-test" },
       { "name": "app_auth_refresh", "run": "node tools/app_auth_test.js" },
       { "name": "bm_legacy_context_recovery", "run": "node tools/bm_legacy_context_recovery_test.js" },

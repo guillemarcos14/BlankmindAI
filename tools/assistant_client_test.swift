@@ -175,7 +175,7 @@ struct AssistantClientTests {
 struct ConversationTestClient {
     @MainActor func history() async throws -> AssistantAppHistoryPage { try await ViewTransport.history() }
     @MainActor func status(turnId: String) async throws -> AssistantAppTurn? { try await ViewTransport.status(turnId) }
-    @MainActor func send(text: String, turnId: String) async throws -> AssistantAppTurn { try await ViewTransport.send(text, turnId) }
+    @MainActor func send(text: String, turnId: String, context: [String: Any]? = nil) async throws -> AssistantAppTurn { try await ViewTransport.send(text, turnId) }
 }
 private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     .init(id: id, userText: text, assistantText: "Reply to \(text)", status: "completed", actionId: "",
@@ -232,5 +232,20 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     secondSend!.resume(returning: makeTurn(id: currentID, text: "C message"))
     await currentSend.value
     check(!view.isSending && view.turns.last?.userText == "C message", "New owner's completion failed")
+    // Only a newly submitted imperative may apply automatically. Reload and
+    // lost-response recovery must keep the explicit CTA without executing.
+    ViewTransport.send = { text, id in AssistantAppTurn(id: id, userText: text, assistantText: "Applying", status: "completed", actionId: "app_fresh_action", actionLabel: "Apply", actionStatus: "queued", createdAt: "2026-10-02T10:00:00Z", autoApply: true) }
+    view.composer.draft = "Block now"
+    await view.sendForTest()
+    let executable = view.turns.last!
+    check(view.appliedActions == ["app_fresh_action"] && view.dismissCount == 1, "New explicit action was not applied once")
+    ViewTransport.history = { .init(turns: [executable], nextBefore: nil) }
+    await view.reloadForTest()
+    check(view.appliedActions.count == 1, "History executed an old action")
+    view.composer.draft = "Retry block"
+    ViewTransport.send = { _, _ in throw AssistantAppError.network }
+    ViewTransport.status = { _ in executable }
+    await view.sendForTest()
+    check(view.appliedActions.count == 1, "Lost-response recovery executed an old action")
     print("assistant view: stale history, account switch during status and obsolete send completion passed")
 }

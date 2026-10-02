@@ -142,6 +142,9 @@ async function syncContext(body, appAuth = null) {
     : null;
   if (!connectCode || !context) return json(400, { error: "missing_connect_code_or_context" });
   if (preferredChannel === "app" && !appAuth) return json(401, { error: "authentication_required" });
+  if (preferredChannel === "app" && context.brain_snapshot) {
+    context.anonymous_user_id = appAuth.identity.anonymous_user_id || `app:${appAuth.user.id}`;
+  }
 
   const previousContext = await getAssistantUserContext(connectCode);
   const mergedContext = {

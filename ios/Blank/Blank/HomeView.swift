@@ -57,126 +57,6 @@ private struct AssistantPushRegistrationResponse: Decodable {
     let registered: Bool
 }
 
-struct AssistantInboxAction: Decodable {
-    let id: String
-    let type: String
-    let name: String?
-    let windowId: String?
-    let minutes: Int?
-    let hardMode: Bool?
-    let startMinute: Int?
-    let endMinute: Int?
-    let weekdays: [Int]?
-    let durationDays: Int?
-    let hours: Int?
-    let appNames: [String]?
-    let requestedAt: String?
-    let expiresAt: String?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case type
-        case name
-        case windowId = "window_id"
-        case minutes
-        case hardMode = "hard_mode"
-        case startMinute = "start_minute"
-        case endMinute = "end_minute"
-        case weekdays
-        case durationDays = "duration_days"
-        case hours
-        case appNames = "app_names"
-        case requestedAt = "requested_at"
-        case expiresAt = "expires_at"
-    }
-
-    func toPendingAction() -> AssistantPendingAction? {
-        let apps = (appNames ?? []).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        switch type {
-        case "start_protection", "activate_mode":
-            return .startProtection(minutes: minutes, hardMode: hardMode ?? false, appNames: apps)
-        case "switch_mode":
-            return .openAppPicker(appNames: apps)
-        case "apply_schedule":
-            guard let startMinute, let endMinute else { return nil }
-            return .applySchedule(
-                name: "Protection",
-                startMinute: min(max(startMinute, 0), 1439),
-                endMinute: min(max(endMinute, 0), 1439),
-                weekdays: (weekdays ?? Array(1...7)).filter { (1...7).contains($0) },
-                durationDays: min(max(durationDays ?? 7, 1), 14),
-                appNames: apps
-            )
-        case "update_schedule":
-            guard let windowId, let startMinute, let endMinute else { return nil }
-            return .updateSchedule(
-                windowId: windowId,
-                name: name ?? "Protection",
-                startMinute: min(max(startMinute, 0), 1439),
-                endMinute: min(max(endMinute, 0), 1439),
-                weekdays: (weekdays ?? Array(1...7)).filter { (1...7).contains($0) }
-            )
-        case "delete_schedule":
-            guard let windowId else { return nil }
-            return .deleteSchedule(windowId: windowId)
-        case "delete_all_schedules":
-            return .deleteAllSchedules
-        case "set_daily_limit":
-            return .setDailyLimit(minutes: minutes, appNames: apps)
-        case "enable_allow_only":
-            return .allowOnly
-        case "enable_adult_filter":
-            return .adultFilter
-        case "pause_rules":
-            return .pauseRules(hours: min(max(hours ?? 168, 1), 168))
-        case "disable_pause":
-            return .disablePause
-        case "apply_ai_plan":
-            return .applyAIPlan
-        case "open_app_picker":
-            let pickerName = name ?? ""
-            let pickerSchedule: PendingPlanSchedule?
-            if let startMinute, let endMinute {
-                pickerSchedule = PendingPlanSchedule(
-                    name: pickerName.isEmpty ? "AI Plan" : pickerName,
-                    startMinute: min(max(startMinute, 0), 1439),
-                    endMinute: min(max(endMinute, 0), 1439),
-                    weekdays: (weekdays ?? Array(1...7)).filter { (1...7).contains($0) },
-                    durationDays: min(max(durationDays ?? 7, 1), 14)
-                )
-            } else {
-                pickerSchedule = nil
-            }
-            if pickerName == "Daily Limit", let minutes {
-                return .configureAndOpenDailyLimitPicker(appNames: apps, minutes: minutes)
-            }
-            if pickerSchedule != nil || minutes != nil || hardMode == true || !pickerName.isEmpty {
-                return .configureAndOpenAppPicker(
-                    appNames: apps,
-                    durationMinutes: minutes,
-                    hardMode: hardMode ?? false,
-                    schedule: pickerSchedule
-                )
-            }
-            return .openAppPicker(appNames: apps)
-        case "request_screen_time_permission":
-            return .requestScreenTimePermission
-        default:
-            return nil
-        }
-    }
-
-    var requestedDate: Date? {
-        Self.parseDate(requestedAt)
-    }
-
-    static func parseDate(_ value: String?) -> Date? {
-        guard let value else { return nil }
-        let fractional = ISO8601DateFormatter()
-        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return fractional.date(from: value) ?? ISO8601DateFormatter().date(from: value)
-    }
-}
 
 struct AssistantActionReceipt: Equatable {
     let actionId: String
@@ -1686,6 +1566,12 @@ struct HomeView: View {
             return "Enable Allow Only?"
         case .adultFilter:
             return "Enable adult web protection?"
+        case .disableAllowOnly:
+            return "Disable Allow Only?"
+        case .disableAdultFilter:
+            return "Disable adult web protection?"
+        case .disableDailyLimit:
+            return "Disable the daily limit?"
         case .pauseRules(let hours):
             return "Pause protection rules for \(hours) hours?"
         case .disablePause:
@@ -1838,6 +1724,19 @@ struct HomeView: View {
                 status: sessionStore.dailyLimitRegistered && sessionStore.dailyLimitEnabled && sessionStore.dailyLimitMinutes == minutes ? "verified" : "failed",
                 detail: "daily_limit_state_checked"
             )
+        case .disableAllowOnly, .disableAdultFilter, .disableDailyLimit:
+            guard !sessionStore.isBlankActive else {
+                finishPendingAssistantAction(status: "failed", detail: "controls_locked_during_protection", executionStarted: false)
+                return
+            }
+            switch pendingAction {
+            case .disableAllowOnly: sessionStore.allowOnlyModeEnabled = false
+            case .disableAdultFilter: sessionStore.adultContentBlockingEnabled = false
+            case .disableDailyLimit: sessionStore.dailyLimitEnabled = false
+            default: break
+            }
+            applyScreenTimeControls()
+            finishPendingAssistantAction(status: "verified", detail: "control_disabled")
         case .allowOnly:
             sessionStore.allowOnlyModeEnabled = true
             applyScreenTimeControls()
@@ -1900,6 +1799,8 @@ struct HomeView: View {
              .openAppPicker, .configureAndOpenAppPicker, .configureAndOpenDailyLimitPicker:
             return true
         case .deleteSchedule, .deleteAllSchedules, .pauseRules, .requestScreenTimePermission:
+            return false
+        case .disableAllowOnly, .disableAdultFilter, .disableDailyLimit:
             return false
         }
     }
@@ -1983,64 +1884,8 @@ struct HomeView: View {
         aiSystem.forecast.riskWindow
     }
 
-    private func assistantContextPayload() -> [String: Any] {
-        let system = aiSystem
-        let generatedAt = Date()
-        let currentRevision = Int64(generatedAt.timeIntervalSince1970 * 1_000_000)
-        let previousRevision = (BlankSharedState.defaults.object(forKey: "blankAssistantContextRevision") as? NSNumber)?.int64Value ?? 0
-        let nextRevision = previousRevision < Int64.max ? previousRevision + 1 : previousRevision
-        let contextRevision = max(currentRevision, nextRevision)
-        BlankSharedState.defaults.set(contextRevision, forKey: "blankAssistantContextRevision")
-        var payload: [String: Any] = [
-            "context_revision": contextRevision,
-            "context_generated_at": ISO8601DateFormatter().string(from: generatedAt),
-            "anonymous_user_id": BlankSharedState.defaults.string(forKey: "blankOnboardingAnonymousUserId") ?? "",
-            "profile_name": BlankSharedState.defaults.string(forKey: "blankOnboardingName") ?? "",
-            "age_range": BlankSharedState.defaults.string(forKey: "blankOnboardingAgeRange") ?? "",
-            "is_blank_active": sessionStore.isBlankActive,
-            "has_selected_apps": sessionStore.hasSelectedApps,
-            "selection_count": sessionStore.selectionCount,
-            "screen_time_authorized": screenTimeBlocker.authorizationStatus == .approved,
-            "notification_authorized": assistantNotificationsAuthorized,
-            "emergency_unlocks_remaining": sessionStore.emergencyUnlocksRemaining,
-            "vacation_mode_active": sessionStore.isVacationModeActive,
-            "adherence_score": system.profile.adherenceScore,
-            "weekly_protected_minutes": system.profile.weeklyProtectedMinutes,
-            "weekly_break_count": system.profile.weeklyBreakCount,
-            "risk_window": system.forecast.riskWindow,
-            "recommended_duration_minutes": system.plan.recommendedDurationMinutes,
-            "weekly_goal": system.plan.weeklyGoal,
-            "single_distraction_block": true,
-            "protection_target": "selected_distractions",
-            "app_presence": BlankmindAppPresence.payload(
-                appReady: sessionStore.hasSelectedApps && screenTimeBlocker.authorizationStatus == .approved
-            ),
-            "device_execution_ready": BlankSharedState.defaults.bool(forKey: "blankAssistantPushRegistered") && assistantNotificationsAuthorized,
-            "schedule": sessionStore.assistantScheduleContext(),
-            "allow_only_mode_enabled": sessionStore.allowOnlyModeEnabled,
-            "adult_content_blocking_enabled": sessionStore.adultContentBlockingEnabled,
-            "daily_limit_enabled": sessionStore.dailyLimitEnabled,
-            "daily_limit_minutes": sessionStore.dailyLimitMinutes,
-            "memory": BlankedAgentMemory.snapshot(system: system),
-        ]
-        if let strongestWindow = system.profile.strongestWindow {
-            payload["strongest_hour"] = strongestWindow
-        }
-        return payload
-    }
-
     private func syncAssistantContext() {
-        let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        let channel = "app"
-        guard !code.isEmpty else { return }
-        let payload = assistantContextPayload()
-        Task {
-            _ = await AssistantContextSyncClient().sync(
-                connectCode: code,
-                channel: channel,
-                payload: payload
-            )
-        }
+        BlankBrain.shared.sync()
     }
 
     private func refreshAssistantNotificationAuthorization() {

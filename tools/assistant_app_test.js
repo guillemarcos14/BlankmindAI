@@ -23,6 +23,9 @@ let memoryUnavailable = false;
 let semanticConflict = false;
 let queueRace = false;
 let receiptRace = false;
+let brainContext = {};
+let memoryCommitUnavailable = false;
+let memoryCommitCount = 0;
 const identityRecord = { auth_user_id: userId, app_install_id: "", assistant_connect_code: "ABCDEFGHIJ", phone_e164: null };
 const otherIdentity = { auth_user_id: otherId, app_install_id: "other-install", assistant_connect_code: "KLMNOPQRST", phone_e164: null };
 const copy = (value) => structuredClone(value);
@@ -70,6 +73,17 @@ delete process.env.URL;
 
 membership.supabaseFetch = async (path, options = {}) => {
   const body = options.body ? JSON.parse(options.body) : null;
+  if (path === "rpc/commit_assistant_brain_memory") {
+    if (memoryCommitUnavailable) throw new Error("private memory outage");
+    const row = rows.get(body.p_turn_id);
+    assert.equal(row.auth_user_id, body.p_auth_user_id);
+    assert.equal(row.status, "completed", "Memory must follow the durable completed turn");
+    if (!row.brain_memory_applied_at) {
+      row.brain_memory_applied_at = new Date().toISOString();
+      memoryCommitCount += 1;
+    }
+    return [{ committed: true }];
+  }
   if (path === "rpc/claim_assistant_app_turn") {
     const { p_turn_id: id, p_auth_user_id: owner, p_user_text: text, p_lease_owner: lease } = body;
     const row = rows.get(id);
@@ -88,6 +102,7 @@ membership.supabaseFetch = async (path, options = {}) => {
     return [{ claimed: true, status: "claimed", turn: copy(claimed) }];
   }
   if (path === "rpc/prepare_assistant_app_turn") {
+    assert.ok(body.p_state.semantic_state, "Real PostgreSQL requires semantic state on every query");
     faultOnce("prepare_before");
     const row = rows.get(body.p_turn_id);
     if (!row || row.auth_user_id !== body.p_auth_user_id || row.lease_owner !== body.p_lease_owner
@@ -152,7 +167,7 @@ const whatsapp = require("../netlify/functions/whatsapp-agent");
 whatsapp.callBlankedAgent = async () => {
   effects.planner += 1;
   faultOnce("planner");
-  const context = { language: "es", memory: copy(memory) };
+  const context = { language: "es", memory: copy(memory), ...copy(brainContext) };
   if (plannerBarrier) await plannerBarrier;
   return { plan: { message_text: replyText, response_language: "es", actions: copy(actions),
     semantic_state: { ...emptyState("es"), ...copy(semanticState) }, semantic_decision: copy(semanticDecision) }, context, modelUnavailable };
@@ -412,6 +427,32 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
     assert.doesNotMatch(rendered.body.turn.assistant_text, /notificación|Ya están bloqueadas/i);
     assert.equal(rendered.body.turn.action_status, "queued");
   }
+
+  // A saved preference is not reported until its memory checkpoint succeeds.
+  actions = [];
+  brainContext = { brain_memory_effect: { operation: "set", key: "goal", value: "Estudiar", evidence: "Estudiar" } };
+  replyText = "He guardado tu objetivo.";
+  const memoryId = crypto.randomUUID(), beforeMemory = effects.planner;
+  memoryCommitUnavailable = true;
+  assert.equal((await send(memoryId, "Estudiar")).status, 503);
+  assert.equal(rows.get(memoryId).status, "completed");
+  assert.equal(memoryCommitCount, 0);
+  memoryCommitUnavailable = false;
+  assert.equal((await send(memoryId, "Estudiar")).status, 200);
+  assert.equal((await send(memoryId, "Estudiar")).status, 200);
+  assert.equal(memoryCommitCount, 1, "Recovered memory committed twice");
+  assert.equal(effects.planner - beforeMemory, 1, "Memory recovery regenerated the turn");
+  brainContext = { brain_request: { execute: true }, brain_snapshot: {}, has_selected_apps: true, screen_time_authorized: true };
+  actions = [{ type: "start_protection", minutes: 30 }];
+  let automatic = await send(crypto.randomUUID());
+  assert.equal(automatic.body.turn.auto_apply, true);
+  assert.doesNotMatch(automatic.body.turn.assistant_text, /Ya est[aá]n bloqueadas/);
+  brainContext.screen_time_authorized = false;
+  assert.equal((await send(crypto.randomUUID())).body.turn.auto_apply, false, "Missing permission allowed automatic execution");
+  brainContext.screen_time_authorized = true;
+  actions = [{ type: "disable_adult_filter" }];
+  assert.equal((await send(crypto.randomUUID())).body.turn.auto_apply, false, "Protective weakening bypassed confirmation");
+  brainContext = {};
 
   // More than one page sharing exactly the same timestamp cannot lose turns.
   rows.clear();

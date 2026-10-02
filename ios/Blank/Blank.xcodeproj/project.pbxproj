@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BA10000000000000000000032 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
+		BA10000000000000000000033 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
+		BA10000000000000000000022 /* AssistantControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000021 /* AssistantControl.swift */; };
+		BA10000000000000000000012 /* BlankBrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000011 /* BlankBrain.swift */; };
 		8A0000010000000000000001 /* BlankApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000011 /* BlankApp.swift */; };
 		8A0000010000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000012 /* ContentView.swift */; };
 		8A0000010000000000000003 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000013 /* SessionStore.swift */; };
@@ -89,6 +93,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		BA10000000000000000000031 /* BlankBrainMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankBrainMetrics.swift; sourceTree = "<group>"; };
+		BA10000000000000000000021 /* AssistantControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantControl.swift; sourceTree = "<group>"; };
+		BA10000000000000000000011 /* BlankBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankBrain.swift; sourceTree = "<group>"; };
 		8A0000010000000000000010 /* Blank.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Blank.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A0000010000000000000011 /* BlankApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankApp.swift; sourceTree = "<group>"; };
 		8A0000010000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -186,6 +193,9 @@
 			children = (
 				8A0000010000000000000011 /* BlankApp.swift */,
 				8A0000010000000000000012 /* ContentView.swift */,
+				BA10000000000000000000011 /* BlankBrain.swift */,
+				BA10000000000000000000021 /* AssistantControl.swift */,
+				BA10000000000000000000031 /* BlankBrainMetrics.swift */,
 				8A0000010000000000000013 /* SessionStore.swift */,
 				8A0000010000000000000014 /* NFCReader.swift */,
 				8A0000010000000000000015 /* ScreenTimeBlocker.swift */,
@@ -478,6 +488,9 @@
 			files = (
 				8A0000010000000000000001 /* BlankApp.swift in Sources */,
 				8A0000010000000000000002 /* ContentView.swift in Sources */,
+				BA10000000000000000000012 /* BlankBrain.swift in Sources */,
+				BA10000000000000000000022 /* AssistantControl.swift in Sources */,
+				BA10000000000000000000032 /* BlankBrainMetrics.swift in Sources */,
 				8A0000010000000000000003 /* SessionStore.swift in Sources */,
 				8A0000010000000000000004 /* NFCReader.swift in Sources */,
 				8A0000010000000000000005 /* ScreenTimeBlocker.swift in Sources */,
@@ -511,6 +524,7 @@
 				8A0000040000000000000001 /* BlankWidget.swift in Sources */,
 				8A0000040000000000000002 /* BlankSharedState.swift in Sources */,
 				8A0000040000000000000003 /* BlankDomainModels.swift in Sources */,
+				BA10000000000000000000033 /* BlankBrainMetrics.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

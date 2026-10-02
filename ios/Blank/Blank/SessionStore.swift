@@ -11,6 +11,9 @@ enum AssistantPendingAction: Equatable {
     case setDailyLimit(minutes: Int?, appNames: [String])
     case allowOnly
     case adultFilter
+    case disableAllowOnly
+    case disableAdultFilter
+    case disableDailyLimit
     case pauseRules(hours: Int)
     case disablePause
     case applyAIPlan
@@ -388,10 +391,24 @@ final class SessionStore: ObservableObject {
         return max(0, Self.maxEmergencyUnlocksPerWeek - emergencyUnlocksThisWeek)
     }
 
+    var brainSessions: [BlankSession] {
+        guard AssistantAppSession.userID != nil else { return sessions }
+        return BlankBrain.scopedSessions(sessions, owner: AssistantAppSession.userID, defaults: defaults)
+    }
+
+    var brainUsageEvents: [BlankUsageEvent] {
+        guard let owner = AssistantAppSession.userID else { return usageEvents }
+        let ids = Set(brainSessions.map(\.id))
+        return usageEvents.filter { event in
+            if let id = event.sessionId { return ids.contains(id) }
+            return false
+        }
+    }
+
     var digitalWellnessV3: DigitalWellnessV3System {
         DigitalWellnessAI.v3System(
-            events: usageEvents,
-            sessions: sessions,
+            events: brainUsageEvents,
+            sessions: brainSessions,
             selectionCount: selectionCount,
             modeName: Self.canonicalProtectionName,
             emergencyUnlocksRemaining: emergencyUnlocksRemaining
