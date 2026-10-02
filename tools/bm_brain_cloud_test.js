@@ -92,6 +92,14 @@ async function run(config, output) {
       const turn=await send(a,"What blocking schedules are configured?");
       expect(/No saved schedules/.test(turn.assistant_text) && !turn.action_id,"configuration_not_current");
     });
+    await check("history_search_returns_own_literal_user_statement",async()=>{
+      const turn=await send(a,"Search my previous messages for 'morning'.");
+      expect(turn.assistant_text.includes("study in the morning") && !turn.action_id,"history_search_missing_or_mutating");
+    });
+    await check("account_query_uses_observed_storekit_access",async()=>{
+      const turn=await send(a,"Do I have premium access?");
+      expect(/premium access active/.test(turn.assistant_text) && turn.control_section==="settings" && !turn.action_id,"account_query_not_observed");
+    });
     await check("explicit_protection_queues_exact_native_action_once",async()=>{
       const prompt="Block my selected distractions now for 25 minutes, just once.";
       const turn=await send(a,prompt),replay=await send(a,prompt,{id:turn.id});
@@ -105,6 +113,10 @@ async function run(config, output) {
       const snapshot=context();snapshot.brain_snapshot.generated_at=new Date(Date.now()-600000).toISOString();
       const turn=await send(a,"Block my distractions now for 30 minutes.",{snapshot});
       expect(!turn.action_id && !turn.auto_apply && /recent iPhone state/.test(turn.assistant_text),"stale_context_executed");
+    });
+    await check("weakening_protection_requires_explicit_native_confirmation",async()=>{
+      const turn=await send(a,"Disable the adult content filter.");
+      expect(turn.action_id && !turn.auto_apply && turn.action_status==="queued","weakening_bypassed_confirmation");
     });
     await check("forget_and_old_response_replay_do_not_restore_fact",async()=>{
       await send(a,"Forget my goal.");
@@ -130,7 +142,7 @@ async function run(config, output) {
   }
   const report={generated_at:new Date().toISOString(),run_id:runId,script_sha256:crypto.createHash("sha256").update(fs.readFileSync(__filename)).digest("hex"),
     targets:{supabase:config.supabase,netlify:config.netlify},checks,cleanup,synthetic_auth_user_ids:users.map(u=>u.id),
-    scope:"real_staging_brain_with_synthetic_device_observations_no_native_execution",passed:!failure&&checks.length===12&&cleanup.every(c=>c.passed),failure};
+    scope:"real_staging_brain_with_synthetic_device_observations_no_native_execution",passed:!failure&&checks.length===15&&cleanup.every(c=>c.passed),failure};
   fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(report,null,2));return report;
 }
 if(require.main===module) {
