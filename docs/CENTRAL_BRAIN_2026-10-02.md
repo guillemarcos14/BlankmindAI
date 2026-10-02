@@ -20,6 +20,16 @@ Blankmind comparte el estado reciente del iPhone desde cualquier pantalla. El mo
 
 El PR de implementación es #9, basado en la rama iOS actual. La integración vive en `codex/backend-release-central-brain-2026-10-02`. Los informes anteriores, incluidos fallos iniciales, se conservan; no acreditan el runtime posterior.
 
+## Reanudación de release — 2026-10-02
+
+En MacinCloud FF368 se generó el archive `1.9 (86)` de `904fa1e`, con `ARCHIVE SUCCEEDED`, en `~/blankmind-release-20261002/Blankmind86-904fa1e.xcarchive`. No se distribuyó: usa el backend productivo anterior.
+
+El replay original `tmp/bm-semantic/central-brain-904fa1e-active.json` completó 200 trayectorias y 925 turnos con modelo activo, cero fallos funcionales y fuente limpia/estable. La equivalencia visible quedó pendiente. El juez independiente `central-brain-904fa1e-judge.json` revisó 300: 258 excelentes, 42 aceptables, cero deficientes/graves. Se detuvo por HTTP429 `insufficient_quota`; faltan625 y no autoriza release. No se reutilizó el juez histórico porque su módulo no coincide. El replay posterior del candidato QA se conserva como fallido, con cero turnos de modelo por cuota; no sustituye al original ni se presenta como aprobado.
+
+Se añadió una configuración nativa exclusiva de QA: `BLANK_PRIVATE_STAGE_QA` habilita una cookie de acceso solo para HTTPS y el host exacto de staging. Las builds normales ignoran esa configuración. La cookie procede del secreto local cifrado, nunca de Git. `tools/run_private_stage_qa_tests.js` compila y prueba ambos modos y rechaza hosts productivos/externos, HTTP e inputs inválidos. La configuración externa cambia la URL y el número a87; no relaja la protección de staging. La transferencia del archivo a Mac no se completó: el selector RDP no abrió y el navegador bloqueó el puente local; no se omitieron esos controles. No hay archive QA87 ni subida nueva a TestFlight.
+
+Reanudar tras reponer créditos: congelar el candidato final y ejecutar una sola preflight antes de otro replay. Terminar/reutilizar dictámenes solo con todos sus hashes iguales; conservar reportes incompletos y fallidos. Preparar la build privada contra staging, comprobar Apple/StoreKit y los20 casos físicos, y pasar el gate existente antes de cualquier publicación productiva. Firmar o compilar no prueba Screen Time físico.
+
 ## Límites y paso físico
 
 La app conserva historia local limitada a las sesiones presentes en el dispositivo. No hay reconstrucción entre dispositivos ni lectura libre de uso real por aplicación. El acceso premium observado no equivale a datos de facturación. Los informes incompletos se identifican; minutos protegidos no se presentan como tiempo real recuperado.
