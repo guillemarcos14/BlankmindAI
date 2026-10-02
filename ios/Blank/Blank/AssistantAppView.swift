@@ -685,9 +685,7 @@ struct AssistantAppView: View {
         .onChange(of: speech.transcript) { transcript in
             if acceptingSpeech && !transcript.isEmpty && composer.pending == nil {
                 acceptingSpeech = false
-                let draft = composer.draft
-                composer.draft = transcript
-                Task { await send(preservingDraft: draft) }
+                Task { await send(audioText: transcript) }
             }
         }
         .onChange(of: speech.error) { value in
@@ -986,13 +984,12 @@ struct AssistantAppView: View {
         persist()
     }
 
-    private func send(preservingDraft: String? = nil) async {
+    private func send(audioText: String? = nil) async {
         guard !preview, !simulatorGuest, !isSending, !requiresVerification else { return }
         acceptingSpeech = false
         speech.stop()
         let before = composer
-        guard let pending = composer.begin() else { return }
-        if let preservingDraft { composer.draft = preservingDraft }
+        guard let pending = composer.begin(audioText: audioText) else { return }
         guard persist() else {
             composer = before
             error = spanish ? "No se pudo guardar el mensaje en este iPhone. Reintenta." : "Could not save the message on this iPhone. Try again."

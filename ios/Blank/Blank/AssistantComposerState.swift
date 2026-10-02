@@ -11,13 +11,13 @@ struct AssistantComposerState: Codable, Equatable {
     var draft = ""
     var pending: Pending?
 
-    mutating func begin() -> Pending? {
+    mutating func begin(audioText: String? = nil) -> Pending? {
         if let pending { return pending }
-        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = (audioText ?? draft).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, text.utf16.count <= 4000 else { return nil }
         let next = Pending(id: UUID().uuidString.lowercased(), text: text)
         pending = next
-        draft = ""
+        if audioText == nil { draft = "" }
         return next
     }
 

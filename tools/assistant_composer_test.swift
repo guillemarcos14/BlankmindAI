@@ -27,6 +27,16 @@ import Foundation
         precondition(state.begin() == nil, "Server length is UTF-16")
         state.draft = String(repeating: "a", count: 4000)
         precondition(state.begin() != nil)
+        var audio = AssistantComposerState()
+        audio.draft = "Borrador escrito aparte"
+        let voice = audio.begin(audioText: "  Bloquea 20 minutos.  ")!
+        precondition(voice.text == "Bloquea 20 minutos.")
+        precondition(audio.draft == "Borrador escrito aparte", "Voice must never enter the text field")
+        precondition(audio.begin(audioText: "Nuevo audio") == voice, "Voice retry keeps the original id and payload")
+        audio.complete(voice.id)
+        precondition(audio.draft == "Borrador escrito aparte")
+        precondition(audio.begin(audioText: " ") == nil)
+        precondition(audio.begin(audioText: String(repeating: "a", count: 4001)) == nil)
         print("assistant composer: immutable retries, restart, stale completion, newer draft and payload bounds passed")
     }
 }
