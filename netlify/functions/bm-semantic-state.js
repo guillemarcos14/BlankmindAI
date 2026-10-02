@@ -183,7 +183,7 @@ function extractSemanticPatch({ prompt, state = emptyState(), context = {} }) {
   // follow it, while negated cancellation or unrelated objects are not consent.
   const originalClauses = original.split(/[;.!?]|\b(?:but|pero|sino)\b/i);
   const clauses = originalClauses.map(part => fold(part).replace(/^no,\s*/, "").replace(/,\s*(please|por favor)$/, " $1"));
-  const cancelClause = /^(?:(?:please\s+)?(?:cancel|discard|withdraw|drop)(?:\s+(?:it|this|that)|\s+(?:the|this|that|my|our)\s+(?:(?:pending|current)\s+)?(?:request|proposal|plan|block|schedule|instruction))?(?:\s+please)?|never mind|nevermind|forget (?:it|that|(?:the|this|that) (?:plan|request|proposal))|stop(?: it| that)?|(?:por favor\s+)?(?:cancela(?:lo)?|descarta|retira|anula)(?:\s+(?:el|la|este|esta|ese|esa|mi)\s+(?:plan|bloqueo|solicitud|peticion|propuesta|programacion|instruccion|orden)(?:\s+(?:pendiente|actual))?)?(?:\s+por favor)?|olvida(?:lo| el plan)|dejalo)$/;
+  const cancelClause = /^(?:(?:please\s+)?(?:cancel|discard|withdraw|drop)(?:\s+(?:it|this|that)|\s+(?:the|this|that|my|our)\s+(?:(?:pending|current)\s+)?(?:request|proposal|plan|block|schedule|instruction))?(?:\s+please)?|never mind|nevermind|forget (?:it|that|(?:the|this|that) (?:plan|request|proposal|block|schedule))|stop(?: it| that)?|(?:por favor\s+)?(?:cancela(?:lo)?|descarta|retira|anula)(?:\s+(?:el|la|este|esta|ese|esa|mi)\s+(?:plan|bloqueo|solicitud|peticion|propuesta|programacion|instruccion|orden)(?:\s+(?:pendiente|actual))?)?(?:\s+por favor)?|olvida(?:lo| el plan| el bloqueo| la propuesta)|dejalo)$/;
   let lastWithdrawal = -1;
   clauses.forEach((clause, index) => {
     // A reason explains this withdrawal; it is never a second instruction.

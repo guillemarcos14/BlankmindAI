@@ -1,0 +1,352 @@
+{
+  "generated_at": "2026-10-02T14:46:35.960Z",
+  "scope": "synthetic_real_provider_no_native_execution",
+  "records": [
+    {
+      "prompt": "¿Qué recuerdas de mí?",
+      "provider_request": {
+        "route": "memory",
+        "response_language": "es",
+        "message_kind": "question",
+        "evidence": "¿Qué recuerdas de mí?",
+        "execute": false,
+        "period": "all_time",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "query": {
+        "route": "memory",
+        "response_language": "es",
+        "message_kind": "question",
+        "evidence": "¿Qué recuerdas de mí?",
+        "execute": false,
+        "period": "all_time",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "passed": true
+    },
+    {
+      "prompt": "30 minutes",
+      "provider_request": {
+        "route": "control",
+        "response_language": "en",
+        "message_kind": "action_request",
+        "evidence": "30 minutes",
+        "execute": true,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "query": {
+        "route": "control",
+        "response_language": "en",
+        "message_kind": "action_request",
+        "evidence": "30 minutes",
+        "execute": true,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "passed": true,
+      "generated_copy": "I'll try blocking the apps you've chosen now for 30 minutes, just once. I'll let you know whether it worked.",
+      "source": "openai:gpt-5.6-luna:semantic+openai:gpt-5.6-luna:grounded_contextual_response",
+      "reply": "I'll try blocking the apps you've chosen now for 30 minutes, just once. I'll let you know whether it worked.",
+      "actions": [
+        {
+          "type": "start_protection",
+          "window_id": null,
+          "minutes": 30,
+          "hard_mode": false,
+          "name": null,
+          "start_minute": null,
+          "end_minute": null,
+          "weekdays": null,
+          "duration_days": null,
+          "hours": null
+        }
+      ],
+      "issues": []
+    },
+    {
+      "prompt": "Actually, I had a rough morning and kept scrolling",
+      "provider_request": {
+        "route": "conversation",
+        "response_language": "en",
+        "message_kind": "social",
+        "evidence": "Actually, I had a rough morning and kept scrolling",
+        "execute": false,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "query": {
+        "route": "conversation",
+        "response_language": "en",
+        "message_kind": "social",
+        "evidence": "Actually, I had a rough morning and kept scrolling",
+        "execute": false,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "passed": true,
+      "source": "openai:gpt-5.6-luna:conversation",
+      "reply": "That sounds like a rough start. Want to interrupt the scrolling with a usage limit starting now, or set up a timed block?",
+      "actions": [],
+      "issues": []
+    },
+    {
+      "prompt": "Forget the block",
+      "provider_request": {
+        "route": "control",
+        "response_language": "en",
+        "message_kind": "cancellation",
+        "evidence": "Forget the block",
+        "execute": false,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [
+          "block"
+        ],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "query": {
+        "route": "control",
+        "response_language": "en",
+        "message_kind": "cancellation",
+        "evidence": "Forget the block",
+        "execute": false,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [
+          "block"
+        ],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "passed": true,
+      "source": "openai:gpt-5.6-luna:semantic+grounded_execution_boundary",
+      "reply": "Okay, I'll leave that. If a block is already running, you'll need to end it through its controls.",
+      "actions": [],
+      "issues": []
+    },
+    {
+      "prompt": "Bloquea mis distracciones ahora durante 25 minutos solo esta vez",
+      "provider_request": {
+        "route": "control",
+        "response_language": "es",
+        "message_kind": "action_request",
+        "evidence": "Bloquea mis distracciones ahora durante 25 minutos solo esta vez",
+        "execute": true,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [
+          "distracciones",
+          "25 minutos",
+          "solo esta vez"
+        ],
+        "section": "distractions",
+        "setting_change": null,
+        "memory": null
+      },
+      "query": {
+        "route": "control",
+        "response_language": "es",
+        "message_kind": "action_request",
+        "evidence": "Bloquea mis distracciones ahora durante 25 minutos solo esta vez",
+        "execute": true,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [
+          "distracciones",
+          "25 minutos",
+          "solo esta vez"
+        ],
+        "section": "distractions",
+        "setting_change": null,
+        "memory": null
+      },
+      "passed": true,
+      "generated_copy": "Voy a intentar bloquear las apps que has elegido ahora durante 25 minutos, solo esta vez. Te diré si ha funcionado.",
+      "source": "openai:gpt-5.6-luna:semantic+openai:gpt-5.6-luna:grounded_contextual_response",
+      "reply": "Voy a intentar bloquear las apps que has elegido ahora durante 25 minutos, solo esta vez. Te diré si ha funcionado.",
+      "actions": [
+        {
+          "type": "start_protection",
+          "window_id": null,
+          "minutes": 25,
+          "hard_mode": false,
+          "name": null,
+          "start_minute": null,
+          "end_minute": null,
+          "weekdays": null,
+          "duration_days": null,
+          "hours": null
+        }
+      ],
+      "issues": []
+    },
+    {
+      "prompt": "What usually pulls me back into scrolling when I'm tired?",
+      "provider_request": {
+        "route": "conversation",
+        "response_language": "en",
+        "message_kind": "question",
+        "evidence": "What usually pulls me back into scrolling when I'm tired?",
+        "execute": false,
+        "period": "this_week",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "query": {
+        "route": "conversation",
+        "response_language": "en",
+        "message_kind": "question",
+        "evidence": "What usually pulls me back into scrolling when I'm tired?",
+        "execute": false,
+        "period": "this_week",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "passed": true,
+      "source": "openai:gpt-5.6-luna:conversation",
+      "reply": "Usually it’s the combination of low energy and an easy escape. When you’re tired, boredom, stress, an unfinished thought, or simply seeing your phone nearby can pull you back into scrolling because it takes almost no effort and gives instant stimulation. Bedtime and brief pauses are common triggers too.",
+      "actions": [],
+      "issues": []
+    },
+    {
+      "prompt": "Mi amigo dijo 'bloquea mis apps 30 minutos'. ¿Qué opinas?",
+      "provider_request": {
+        "route": "conversation",
+        "response_language": "es",
+        "message_kind": "question",
+        "evidence": "¿Qué opinas?",
+        "execute": false,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "query": {
+        "route": "conversation",
+        "response_language": "es",
+        "message_kind": "question",
+        "evidence": "¿Qué opinas?",
+        "execute": false,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [],
+        "section": null,
+        "setting_change": null,
+        "memory": null
+      },
+      "passed": true,
+      "source": "openai:gpt-5.6-luna:conversation",
+      "reply": "Puede ser una buena idea si quieres cortar distracciones un rato. Treinta minutos es un descanso razonable, pero que lo haya dicho tu amigo no significa que quieras hacerlo tú. Si te apetece, puedo ayudarte a bloquear tus apps seleccionadas durante 30 minutos.",
+      "actions": [],
+      "issues": []
+    },
+    {
+      "prompt": "Block my distractions now",
+      "provider_request": {
+        "route": "control",
+        "response_language": "en",
+        "message_kind": "action_request",
+        "evidence": "Block my distractions now",
+        "execute": true,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [
+          "distractions"
+        ],
+        "section": "distractions",
+        "setting_change": null,
+        "memory": null
+      },
+      "query": {
+        "route": "control",
+        "response_language": "en",
+        "message_kind": "action_request",
+        "evidence": "Block my distractions now",
+        "execute": true,
+        "period": "today",
+        "start_date": null,
+        "end_date": null,
+        "compare_previous": false,
+        "search_terms": [
+          "distractions"
+        ],
+        "section": "distractions",
+        "setting_change": null,
+        "memory": null
+      },
+      "passed": true,
+      "generated_copy": "Got it — your selected distractions now. How long should it last, or what exact time should it end?",
+      "source": "openai:gpt-5.6-luna:semantic+openai:gpt-5.6-luna:grounded_contextual_response",
+      "reply": "Got it — your selected distractions now. How long should it last, or what exact time should it end?",
+      "actions": [],
+      "issues": []
+    }
+  ],
+  "passed": true
+}

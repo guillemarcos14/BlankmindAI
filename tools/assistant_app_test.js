@@ -412,10 +412,10 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
     { action: { type: "apply_schedule", start_minute: 510, end_minute: 565, weekdays: [1, 7], duration_days: 14 }, label: "Aplicar horario", required: /08:30 a 09:25, domingo, sábado durante 14 días/ },
     { action: { type: "apply_schedule", start_minute: 540, end_minute: 600 }, label: "Aplicar horario", required: /09:00 a 10:00, cada día durante 7 días/ },
     { action: { type: "update_schedule", window_id: "existing", start_minute: 540, end_minute: 600, duration_days: 3 }, label: "Aplicar horario", required: /09:00 a 10:00, cada día\./, forbidden: /durante 3 días/ },
-    { action: { type: "request_screen_time_permission" }, label: "Conceder permiso", required: /Tiempo de uso.*Después dime/ },
-    { action: { type: "open_app_picker", name: "Daily Limit", minutes: 25 }, label: "Elegir distracciones", required: /25 minutos de uso al día.*Al aceptar la selección/ },
+    { action: { type: "request_screen_time_permission" }, label: "Conceder permiso", required: /dar permiso al bloqueo.*Avísame/ },
+    { action: { type: "open_app_picker", name: "Daily Limit", minutes: 25 }, label: "Elegir distracciones", required: /25 minutos de uso al día.*confirma la selección/ },
     { action: { type: "open_app_picker", name: "Daily Limit", minutes: 35, start_minute: 540, end_minute: 600 }, label: "Elegir distracciones", required: /35 minutos de uso al día/, forbidden: /09:00/ },
-    { action: { type: "open_app_picker", name: "Distractions" }, label: "Elegir distracciones", required: /Todavía no hay una propuesta/ },
+    { action: { type: "open_app_picker", name: "Distractions" }, label: "Elegir distracciones", required: /Elige primero qué apps/ },
   ];
   for (const fixture of copies) {
     actions = [fixture.action];

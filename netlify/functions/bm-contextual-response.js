@@ -3,6 +3,7 @@ const { readModelJson } = require("./bm-model-request");
 
 const { personalContextView } = require("./bm-personal-context-view");
 const { BM_CONVERSATIONAL_TONE } = require("./_bm_tone");
+const { chatText, copyIssues, signCopy } = require("./bm-conversation-copy");
 
 function clean(value, max = 480) {
   return String(value == null ? "" : value).trim().replace(/\s+/g, " ").replace(/;/g, ",").slice(0, max);
@@ -34,6 +35,7 @@ function clockMinutes(value) {
     hour = hour % 12 + (match[3].toUpperCase() === "PM" ? 12 : 0);
     result.push(hour * 60 + minute);
   }
+  for (const match of clean(value).matchAll(/\b([01]?\d|2[0-3]):([0-5]\d)\b(?!\s*(?:AM|PM)\b)/gi)) result.push(Number(match[1]) * 60 + Number(match[2]));
   return result;
 }
 
@@ -112,6 +114,7 @@ function plannerAuthorityViolations(plan, { proposalAuthorized = false } = {}) {
 function isGrounded(text, plan, context) {
   const value = fold(text);
   const contract = plan.response_contract || {};
+  if (context.channel === "app" && copyIssues(text).length) return false;
   if (!value || /(^|\s)(read|pattern|move|signal|action)\s*:/.test(value)) return false;
   if (/\b(?:and|but|or|only|i ll|i will)\.?$/.test(value)) return false;
   if (/\b(?:backend|schema|canonical context|internal context|database)\b/.test(value)) return false;
@@ -133,6 +136,19 @@ function isGrounded(text, plan, context) {
   if (contract.execution_flow === "notification_apply"
       && /\b(?:picker|(?:choose|pick|select) (?:your |the )?(?:apps|distractions)|grant (?:blocking |screen time )?permission)\b/.test(value)) return false;
   if (contract.execution_flow === "app_presence" && /\b(?:notification|picker|grant permission|sending|sent)\b/.test(value)) return false;
+  if (String(contract.execution_flow || "").startsWith("in_app_") && /\b(?:notification|notificacion)\b/.test(value)) return false;
+  if (contract.execution_flow === "in_app_auto_apply" && /\b(?:tap|press|pulsa|toca)\b/.test(value)) return false;
+  if (contract.execution_flow === "in_app_permission_reply" && (!/\b(?:tap|press|pulsa|toca)\b/.test(value) || !/\b(?:let me know|tell me|avisame|dime)\b/.test(value))) return false;
+  if (contract.execution_flow === "in_app_picker_accept" && (!/\b(?:choose|select|pick|elige|elegir|selecciona|seleccionar)\b/.test(value) || !/\b(?:confirm|accept|confirma|confirmar|acepta|aceptar)\b/.test(value))) return false;
+  if (context.channel === "app" && String(contract.operation || "").startsWith("semantic_")) {
+    const facts = contract.facts || {};
+    const strict = /\b(?:hard mode|strict|no early exit|estricto|estricta|sin salida anticipada)\b/.test(value);
+    if (facts.hard_mode === false && strict) return false;
+    if (facts.hard_mode === true && !strict) return false;
+    const allowedNumbers = new Set([facts.duration_minutes, facts.schedule_horizon_days].filter(Number.isInteger));
+    const withoutClocks = text.replace(/\b\d{1,2}(?::\d{2})?\s*(?:AM|PM)\b/gi, "").replace(/\b\d{1,2}:\d{2}\b/g, "");
+    if ([...withoutClocks.matchAll(/\b\d+\b/g)].some(match => !allowedNumbers.has(Number(match[0])))) return false;
+  }
   if (String(contract.operation || "").startsWith("semantic_") && plannerAuthorityViolations({ ...plan, response_text:text, message_text:"", speech_text:"", followup_text:"", bullets:[] }, { proposalAuthorized: (plan.actions || []).length > 0 }).length) return false;
   const facts = factFold(text);
   if (Array.isArray(contract.required_phrases) && contract.required_phrases.some((phrase) => !facts.includes(factFold(phrase)))) return false;
@@ -149,7 +165,7 @@ function isGrounded(text, plan, context) {
     if (clockMinutes(text).some((minute) => !allowed.has(minute))) return false;
   }
   if (Array.isArray(plan.actions) && plan.actions.length) {
-    if (!/\b(?:notification|blankmind)\b/.test(value)) return false;
+    if (context.channel !== "app" && !/\b(?:notification|blankmind)\b/.test(value)) return false;
     if (/\b(?:i|we)(?: have|'ve)? (?:deleted|removed|changed|moved|applied|created|scheduled|blocked)\b/.test(value)) return false;
   }
   const recent = (context.recent_messages || []).filter((message) => message?.role === "assistant").map((message) => fold(message.content));
@@ -158,6 +174,9 @@ function isGrounded(text, plan, context) {
 
 async function naturalizeGroundedPlan({ prompt, context = {}, plan, fetchImpl = fetch }) {
   const fallback = stripContract(plan);
+  if (context.channel === "app") {
+    for (const field of ["response_text", "message_text", "speech_text"]) if (fallback[field]) fallback[field] = chatText(fallback[field]);
+  }
   if (plan?.response_contract?.immutable_reply === true) return { plan: fallback, source: "grounded_execution_boundary" };
   // The validated block renderer already contains the facts and next step.
   // Rephrasing those controls adds another request without changing the plan.
@@ -197,7 +216,8 @@ async function naturalizeGroundedPlan({ prompt, context = {}, plan, fetchImpl = 
   if (text && !/[.!?]$/.test(text)) text = `${text}.`;
   if (!isGrounded(text, plan, context)) return { plan: fallback, source: `openai:${model}:grounding_fallback`, request_metrics: metrics };
   return {
-    plan: { ...fallback, response_text: text, message_text: text, speech_text: text },
+    plan: { ...fallback, response_text: text, message_text: text, speech_text: text,
+      ...(context.channel === "app" ? { validated_copy: signCopy(text,fallback.actions) } : {}) },
     source: `openai:${model}:grounded_contextual_response`,
     request_metrics: metrics,
   };
