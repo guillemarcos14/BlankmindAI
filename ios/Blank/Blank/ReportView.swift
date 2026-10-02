@@ -30,7 +30,7 @@ struct ReportView: View {
 
     private var report: BlankProgressReport {
         BlankProgressAggregator.aggregate(
-            sessions: sessionStore.sessions
+            sessions: sessionStore.brainSessions
         )
     }
 
@@ -39,22 +39,22 @@ struct ReportView: View {
         let weekly = progress.weeklyReport
         let now = Date()
         let todayStart = Calendar.current.startOfDay(for: now)
-        let todayFocusTime = focusTime(sessions: sessionStore.sessions, from: todayStart, to: now)
-        let todaySessionCount = sessionCount(sessions: sessionStore.sessions, from: todayStart, to: now)
+        let todayFocusTime = focusTime(sessions: sessionStore.brainSessions, from: todayStart, to: now)
+        let todaySessionCount = sessionCount(sessions: sessionStore.brainSessions, from: todayStart, to: now)
         let todaySavedTime = cappedSavedTime(totalFocusTime: todayFocusTime, sessionCount: todaySessionCount)
-        let totalFocusTime = focusTime(sessions: sessionStore.sessions, from: .distantPast, to: Date())
-        let totalSessionCount = sessionCount(sessions: sessionStore.sessions, from: .distantPast, to: Date())
+        let totalFocusTime = focusTime(sessions: sessionStore.brainSessions, from: .distantPast, to: Date())
+        let totalSessionCount = sessionCount(sessions: sessionStore.brainSessions, from: .distantPast, to: Date())
         let savedTime = cappedSavedTime(totalFocusTime: totalFocusTime, sessionCount: totalSessionCount)
         let diagnosis = DigitalWellnessAI.currentDiagnosis(
-            events: sessionStore.usageEvents,
-            sessions: sessionStore.sessions,
+            events: sessionStore.brainUsageEvents,
+            sessions: sessionStore.brainSessions,
             selectionCount: sessionStore.selectionCount
         )
         let healthContext = healthRecoveryContext(summaries: healthKitStore.summaries)
         let controlForecast = healthControlForecast(
             context: healthContext,
-            events: sessionStore.usageEvents,
-            sessions: sessionStore.sessions,
+            events: sessionStore.brainUsageEvents,
+            sessions: sessionStore.brainSessions,
             diagnosis: diagnosis
         )
         let content = AnyView(
@@ -282,7 +282,7 @@ struct ReportView: View {
 
     private func newLookRecoveredCard(savedTime: TimeInterval, totalFocusTime: TimeInterval) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            newLookCardHeader(label: "recovered time", icon: "arrow.clockwise")
+            newLookCardHeader(label: "estimated recovered time", icon: "arrow.clockwise")
 
             Spacer(minLength: 18)
 
@@ -853,20 +853,11 @@ struct ReportView: View {
     }
 
     private func focusTime(sessions: [BlankSession], from start: Date, to end: Date) -> TimeInterval {
-        sessions.reduce(0) { total, session in
-            let sessionEnd = session.endedAt ?? end
-            let overlapStart = max(session.startedAt, start)
-            let overlapEnd = min(sessionEnd, end)
-            guard overlapStart < overlapEnd else { return total }
-            return total + overlapEnd.timeIntervalSince(overlapStart)
-        }
+        BlankBrainMetrics.protectedSeconds(sessions: sessions, from: start, to: end)
     }
 
     private func sessionCount(sessions: [BlankSession], from start: Date, to end: Date) -> Int {
-        sessions.filter { session in
-            let sessionEnd = session.endedAt ?? end
-            return session.startedAt < end && sessionEnd > start
-        }.count
+        BlankBrainMetrics.sessionCount(sessions: sessions, from: start, to: end)
     }
 
     private func bestDayText(report: BlankWeeklyReport) -> String {
@@ -963,7 +954,7 @@ struct ReportView: View {
                     "ai_insight_requested",
                     properties: [
                         "health_days": healthKitStore.summaries.count,
-                        "usage_events": sessionStore.usageEvents.count,
+                        "usage_events": sessionStore.brainUsageEvents.count,
                         "selection_count": sessionStore.selectionCount
                     ]
                 )
@@ -978,7 +969,7 @@ struct ReportView: View {
                     properties: [
                         "source": insight.source ?? "unknown",
                         "health_days": healthKitStore.summaries.count,
-                        "usage_events": sessionStore.usageEvents.count
+                        "usage_events": sessionStore.brainUsageEvents.count
                     ]
                 )
                 await MainActor.run {

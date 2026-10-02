@@ -16,6 +16,7 @@ const scheduler = read('ios/Blank/Blank/DeviceActivityTimerScheduler.swift');
 const monitor = read('ios/Blank/BlankDeviceActivityMonitor/DeviceActivityMonitorExtension.swift');
 const store = read('ios/Blank/Blank/SessionStore.swift');
 const home = read('ios/Blank/Blank/HomeView.swift');
+const control = read('ios/Blank/Blank/AssistantControl.swift');
 
 // Cross-target integration gates complement the executable model regressions.
 assert.doesNotMatch(scheduler, /where window\.runsEveryDay/);
@@ -53,7 +54,7 @@ const extensionModel = between(monitor, '    private struct StoredWindow:', '   
 const fixtures = `
 struct InboxDateFixture {
     var requestedAt: String?
-${between(home, '    var requestedDate: Date?', '\n}\n\nstruct AssistantActionReceipt:')}
+${between(control, '    var requestedDate: Date?', '\n}').replace(/\n}\s*$/, '')}
 }
 final class ManualUnlockFixture {
     let defaults: UserDefaults

@@ -478,6 +478,10 @@ async function agentContext(from, prompt, linkedConnection = null) {
 
 async function callBlankedAgent(prompt, from, linkedConnection = null) {
   const context = await agentContext(from, prompt, linkedConnection);
+  if (context.channel === "app") {
+    const brain = await require("./bm-brain").planBrainTurn({ prompt, context, userId: from });
+    if (brain) return brain;
+  }
   const response = await blankedAgentHandler({
     httpMethod: "POST",
     body: JSON.stringify({ prompt, context }),
@@ -822,4 +826,5 @@ exports.whatsappReplyText = whatsappReplyText;
 // pending-action delivery path. It supplies its own authenticated ingress and
 // renders its own output, so no WhatsApp message is sent for an in-app turn.
 exports.callBlankedAgent = callBlankedAgent;
+exports.agentContext = agentContext;
 exports.queuePendingAssistantAction = queuePendingAssistantAction;

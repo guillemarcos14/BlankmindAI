@@ -175,7 +175,7 @@ struct AssistantClientTests {
 struct ConversationTestClient {
     @MainActor func history() async throws -> AssistantAppHistoryPage { try await ViewTransport.history() }
     @MainActor func status(turnId: String) async throws -> AssistantAppTurn? { try await ViewTransport.status(turnId) }
-    @MainActor func send(text: String, turnId: String) async throws -> AssistantAppTurn { try await ViewTransport.send(text, turnId) }
+    @MainActor func send(text: String, turnId: String, context: [String: Any]? = nil) async throws -> AssistantAppTurn { try await ViewTransport.send(text, turnId) }
 }
 private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     .init(id: id, userText: text, assistantText: "Reply to \(text)", status: "completed", actionId: "",

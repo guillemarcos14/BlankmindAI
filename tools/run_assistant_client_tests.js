@@ -17,6 +17,11 @@ const viewMethodsEnd = source.indexOf('    #if DEBUG\n    private func loadPrevi
 if (viewMethodsStart < 0 || viewMethodsEnd < viewMethodsStart) throw new Error('Assistant view state test boundaries changed');
 const viewMethods = source.slice(viewMethodsStart, viewMethodsEnd).replaceAll('AssistantAppClient()', 'ConversationTestClient()');
 const viewFixture = `
+@MainActor final class BlankBrain {
+    static let shared = BlankBrain()
+    func freshSnapshot() async -> [String: Any]? { nil }
+}
+
 @MainActor final class ConversationFixture {
     var owner = "A"
     var preview = false
