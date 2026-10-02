@@ -16,7 +16,13 @@ const viewMethodsStart = source.indexOf('    @discardableResult private func res
 const viewMethodsEnd = source.indexOf('    #if DEBUG\n    private func loadPreview()', viewMethodsStart);
 if (viewMethodsStart < 0 || viewMethodsEnd < viewMethodsStart) throw new Error('Assistant view state test boundaries changed');
 const viewMethods = source.slice(viewMethodsStart, viewMethodsEnd).replaceAll('AssistantAppClient()', 'ConversationTestClient()');
+const applyMethod = source.slice(source.indexOf('    private func applyAction('), source.indexOf('    private func openControls('));
 const viewFixture = `
+@MainActor final class BlankBrain {
+    static let shared = BlankBrain()
+    func freshSnapshot() async -> [String: Any]? { nil }
+}
+
 @MainActor final class ConversationFixture {
     var owner = "A"
     var preview = false
@@ -37,10 +43,17 @@ const viewFixture = `
     var error: String?
     var requiresVerification = false
     var canRetry = true
+    var isApplyingAction = false
+    var showHistory = false
+    var appliedActions: [String] = []
+    var dismissCount = 0
+    func onApplyAction(_ id: String) async throws { appliedActions.append(id) }
+    func dismiss() { dismissCount += 1 }
     func reloadForTest() async { await reload() }
     func sendForTest() async { await send() }
     func restoreForTest() { restoreOwner() }
 ${viewMethods}
+${applyMethod}
 }
 `;
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'blank-assistant-client-'));

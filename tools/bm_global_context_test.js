@@ -17,7 +17,7 @@ const revisionGuard = fs.readFileSync(path.join(root, "supabase/migrations/018_g
 const persistenceSource = fs.readFileSync(path.join(root, "netlify/functions/_bm_user_context.js"), "utf8");
 const assistantChannelSource = fs.readFileSync(path.join(root, "netlify/functions/assistant-channel.js"), "utf8");
 const iosContextSource = fs.readFileSync(path.join(root, "ios/Blank/Blank/ContentView.swift"), "utf8");
-const iosHomeSource = fs.readFileSync(path.join(root, "ios/Blank/Blank/HomeView.swift"), "utf8");
+const iosHomeSource = fs.readFileSync(path.join(root, "ios/Blank/Blank/BlankBrain.swift"), "utf8");
 assert.match(upsertFix, /on conflict on constraint bm_user_context_snapshots_pkey/i);
 assert.match(revisionGuard, /client_revision/i);
 assert.match(revisionGuard, /excluded\.client_revision > bm_user_context_snapshots\.client_revision/i);

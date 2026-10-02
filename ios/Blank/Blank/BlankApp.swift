@@ -38,6 +38,7 @@ struct BlankApp: App {
                     #if DEBUG
                     if AssistantAppPreview.enabled { return }
                     #endif
+                    BlankBrain.shared.configure(store: sessionStore, blocker: screenTimeBlocker, purchases: purchaseStore)
                     appDelegate.registerForRemoteActions()
                     checkAppleCredentialState()
                     await purchaseStore.loadProducts()
@@ -61,7 +62,9 @@ struct BlankApp: App {
                     if AssistantAppPreview.enabled { return }
                     #endif
                     if phase == .active {
-                        appDelegate.registerForRemoteActions()
+                        BlankBrain.shared.configure(store: sessionStore, blocker: screenTimeBlocker, purchases: purchaseStore)
+                    appDelegate.registerForRemoteActions()
+                        BlankBrain.shared.sync()
                         checkAppleCredentialState()
                         screenTimeBlocker.refreshAuthorizationStatus()
                         sessionStore.syncRecurringSchedule()
@@ -245,87 +248,18 @@ struct BlankApp: App {
     }
 
     private func requestAssistantActionConfirmation(from components: URLComponents?) {
-        let type = components?.stringQueryItem("type") ?? ""
-        let appNames = components?.listQueryItem("apps") ?? []
-        let minutes = components?.intQueryItem("minutes").map { min(max($0, 5), 240) }
-        let hardMode = components?.boolQueryItem("hard") ?? false
-        switch type {
-        case "start_protection", "activate_mode":
-            sessionStore.requestAssistantActionConfirmation(.startProtection(minutes: minutes, hardMode: hardMode, appNames: appNames))
-        case "switch_mode":
-            sessionStore.requestAssistantActionConfirmation(.openAppPicker(appNames: appNames))
-        case "apply_schedule":
-            guard let start = components?.minuteQueryItem("start") ?? components?.intQueryItem("start_minute"),
-                  let end = components?.minuteQueryItem("end") ?? components?.intQueryItem("end_minute") else { return }
-            let weekdays = components?.listQueryItem("weekdays").compactMap(Int.init) ?? Array(1...7)
-            sessionStore.requestAssistantActionConfirmation(.applySchedule(
-                name: components?.stringQueryItem("name") ?? "AI Plan",
-                startMinute: min(max(start, 0), 1439),
-                endMinute: min(max(end, 0), 1439),
-                weekdays: weekdays,
-                durationDays: min(max(components?.intQueryItem("days") ?? 7, 1), 14),
-                appNames: appNames
-            ))
-        case "update_schedule":
-            guard let windowId = components?.stringQueryItem("window_id"),
-                  let start = components?.minuteQueryItem("start") ?? components?.intQueryItem("start_minute"),
-                  let end = components?.minuteQueryItem("end") ?? components?.intQueryItem("end_minute") else { return }
-            sessionStore.requestAssistantActionConfirmation(.updateSchedule(
-                windowId: windowId,
-                name: components?.stringQueryItem("name") ?? "Protection",
-                startMinute: min(max(start, 0), 1439),
-                endMinute: min(max(end, 0), 1439),
-                weekdays: components?.listQueryItem("weekdays").compactMap(Int.init) ?? Array(1...7)
-            ))
-        case "delete_schedule":
-            guard let windowId = components?.stringQueryItem("window_id") else { return }
-            sessionStore.requestAssistantActionConfirmation(.deleteSchedule(windowId: windowId))
-        case "delete_all_schedules":
-            sessionStore.requestAssistantActionConfirmation(.deleteAllSchedules)
-        case "set_daily_limit":
-            sessionStore.requestAssistantActionConfirmation(.setDailyLimit(minutes: minutes, appNames: appNames))
-        case "enable_allow_only":
-            sessionStore.requestAssistantActionConfirmation(.allowOnly)
-        case "enable_adult_filter":
-            sessionStore.requestAssistantActionConfirmation(.adultFilter)
-        case "pause_rules":
-            sessionStore.requestAssistantActionConfirmation(.pauseRules(hours: min(max(components?.intQueryItem("hours") ?? 168, 1), 168)))
-        case "disable_pause":
-            sessionStore.requestAssistantActionConfirmation(.disablePause)
-        case "apply_ai_plan":
-            sessionStore.requestAssistantActionConfirmation(.applyAIPlan)
-        case "open_app_picker":
-            let pickerStart = components?.minuteQueryItem("start") ?? components?.intQueryItem("start_minute")
-            let pickerEnd = components?.minuteQueryItem("end") ?? components?.intQueryItem("end_minute")
-            let pickerName = components?.stringQueryItem("name") ?? ""
-            let pickerSchedule: PendingPlanSchedule?
-            if let pickerStart, let pickerEnd {
-                pickerSchedule = PendingPlanSchedule(
-                    name: components?.stringQueryItem("name") ?? "AI Plan",
-                    startMinute: min(max(pickerStart, 0), 1439),
-                    endMinute: min(max(pickerEnd, 0), 1439),
-                    weekdays: components?.listQueryItem("weekdays").compactMap(Int.init) ?? Array(1...7),
-                    durationDays: min(max(components?.intQueryItem("days") ?? 7, 1), 14)
-                )
-            } else {
-                pickerSchedule = nil
-            }
-            if pickerName == "Daily Limit", let minutes {
-                sessionStore.requestAssistantActionConfirmation(.configureAndOpenDailyLimitPicker(appNames: appNames, minutes: minutes))
-            } else if pickerSchedule != nil || minutes != nil || hardMode || !pickerName.isEmpty {
-                sessionStore.requestAssistantActionConfirmation(.configureAndOpenAppPicker(
-                    appNames: appNames,
-                    durationMinutes: minutes,
-                    hardMode: hardMode,
-                    schedule: pickerSchedule
-                ))
-            } else {
-                sessionStore.requestAssistantActionConfirmation(.openAppPicker(appNames: appNames))
-            }
-        case "request_screen_time_permission":
-            sessionStore.requestAssistantActionConfirmation(.requestScreenTimePermission)
-        default:
-            break
+        let command = AssistantInboxAction(
+            id: "", type: components?.stringQueryItem("type") ?? "",
+            name: components?.stringQueryItem("name"), windowId: components?.stringQueryItem("window_id"),
+            minutes: components?.intQueryItem("minutes").map { min(max($0, 5), 240) },
+            hardMode: components?.boolQueryItem("hard"),
+            startMinute: components?.minuteQueryItem("start") ?? components?.intQueryItem("start_minute"),
+            endMinute: components?.minuteQueryItem("end") ?? components?.intQueryItem("end_minute"),
+            weekdays: components?.listQueryItem("weekdays").compactMap(Int.init),
+            durationDays: components?.intQueryItem("days"), hours: components?.intQueryItem("hours"),
+            appNames: components?.listQueryItem("apps"), requestedAt: nil, expiresAt: nil)
+        if let pending = command.toPendingAction() {
+            sessionStore.requestAssistantActionConfirmation(pending)
         }
     }
 

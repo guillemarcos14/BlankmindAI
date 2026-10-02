@@ -11,6 +11,9 @@ enum AssistantPendingAction: Equatable {
     case setDailyLimit(minutes: Int?, appNames: [String])
     case allowOnly
     case adultFilter
+    case disableAllowOnly
+    case disableAdultFilter
+    case disableDailyLimit
     case pauseRules(hours: Int)
     case disablePause
     case applyAIPlan
@@ -204,10 +207,41 @@ final class SessionStore: ObservableObject {
 
     private let defaults: UserDefaults
     private var lastManualUnblankedAt: Date?
+    @Published private(set) var delayedManualUnlockAt: Date?
+
+    func scheduleManualUnlock(after seconds: Int, now: Date = Date()) {
+        guard isBlankActive, !hardBlankActive, delayedManualUnlockAt == nil,
+              let blankActiveSince else { return }
+        delayedManualUnlockAt = now.addingTimeInterval(TimeInterval(max(0, seconds)))
+        defaults.set(delayedManualUnlockAt!.timeIntervalSince1970, forKey: "blankManualUnlockAt")
+        defaults.set(blankActiveSince.timeIntervalSince1970, forKey: "blankManualUnlockSessionSince")
+    }
+
+    func cancelManualUnlock() {
+        delayedManualUnlockAt = nil
+        defaults.removeObject(forKey: "blankManualUnlockAt")
+        defaults.removeObject(forKey: "blankManualUnlockSessionSince")
+    }
+
+    @discardableResult
+    func finishManualUnlockIfDue(now: Date = Date()) -> Bool {
+        guard let deadline = delayedManualUnlockAt else { return false }
+        let owner = defaults.double(forKey: "blankManualUnlockSessionSince")
+        guard defaults.bool(forKey: Keys.isBlankActive), !hardBlankActive,
+              defaults.double(forKey: Keys.blankActiveSince) == owner else {
+            cancelManualUnlock()
+            return false
+        }
+        guard now >= deadline else { return false }
+        cancelManualUnlock()
+        return deactivateBlank(entryMode: .app, endedReason: .manual) == .unblanked
+    }
 
     init(defaults: UserDefaults = BlankSharedState.defaults) {
         self.defaults = defaults
         Self.migrateLegacyDefaultsIfNeeded(to: defaults)
+        let manualUnlockTimestamp = defaults.double(forKey: "blankManualUnlockAt")
+        delayedManualUnlockAt = manualUnlockTimestamp > 0 ? Date(timeIntervalSince1970: manualUnlockTimestamp) : nil
         isBlankActive = defaults.bool(forKey: Keys.isBlankActive)
         if let timestamp = defaults.object(forKey: Keys.blankActiveSince) as? TimeInterval, timestamp > 0 {
             blankActiveSince = Date(timeIntervalSince1970: timestamp)
@@ -357,10 +391,24 @@ final class SessionStore: ObservableObject {
         return max(0, Self.maxEmergencyUnlocksPerWeek - emergencyUnlocksThisWeek)
     }
 
+    var brainSessions: [BlankSession] {
+        guard AssistantAppSession.userID != nil else { return sessions }
+        return BlankBrain.scopedSessions(sessions, owner: AssistantAppSession.userID, defaults: defaults)
+    }
+
+    var brainUsageEvents: [BlankUsageEvent] {
+        guard let owner = AssistantAppSession.userID else { return usageEvents }
+        let ids = Set(brainSessions.map(\.id))
+        return usageEvents.filter { event in
+            if let id = event.sessionId { return ids.contains(id) }
+            return false
+        }
+    }
+
     var digitalWellnessV3: DigitalWellnessV3System {
         DigitalWellnessAI.v3System(
-            events: usageEvents,
-            sessions: sessions,
+            events: brainUsageEvents,
+            sessions: brainSessions,
             selectionCount: selectionCount,
             modeName: Self.canonicalProtectionName,
             emergencyUnlocksRemaining: emergencyUnlocksRemaining
@@ -415,6 +463,7 @@ final class SessionStore: ObservableObject {
             return .unblanked
         }
 
+        cancelManualUnlock()
         isBlankActive = true
         hardBlankActive = hardMode
         blankActiveSince = now
@@ -522,6 +571,7 @@ final class SessionStore: ObservableObject {
         }
 
         isBlankActive = false
+        cancelManualUnlock()
         hardBlankActive = false
         blankActiveSince = nil
         blankActiveUntil = nil
@@ -548,6 +598,7 @@ final class SessionStore: ObservableObject {
     }
 
     func applyScheduleWindow(at date: Date = Date()) {
+        finishManualUnlockIfDue(now: date)
         resetEmergencyUnlocksIfNeeded(for: date)
         BlankSharedState.finishExpiredBlock(defaults: defaults, now: date)
 
@@ -669,6 +720,7 @@ final class SessionStore: ObservableObject {
     }
 
     func syncFromSharedDefaults(now: Date = Date()) {
+        finishManualUnlockIfDue(now: now)
         BlankSharedState.finishExpiredBlock(defaults: defaults, now: now)
         let activeState = BlankSharedState.loadActiveState(now: now, defaults: defaults)
         if isBlankActive != activeState.isActive {

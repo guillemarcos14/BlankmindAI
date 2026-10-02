@@ -14,6 +14,21 @@ enum HomeSection: Hashable {
     case settings
 }
 
+struct UnblankHoldCadence {
+    static func pulseTimes(duration: Double) -> [Double] {
+        guard duration.isFinite, duration > 0 else { return [] }
+        var pulses = [0.0]
+        var elapsed = 0.0
+        var interval = 1.0
+        while elapsed + interval < duration {
+            elapsed += interval
+            pulses.append(elapsed)
+            interval += 1
+        }
+        return pulses
+    }
+}
+
 struct AssistantInboxResponse: Decodable {
     let pendingAction: AssistantInboxAction?
 
@@ -42,119 +57,6 @@ private struct AssistantPushRegistrationResponse: Decodable {
     let registered: Bool
 }
 
-struct AssistantInboxAction: Decodable {
-    let id: String
-    let type: String
-    let name: String?
-    let windowId: String?
-    let minutes: Int?
-    let hardMode: Bool?
-    let startMinute: Int?
-    let endMinute: Int?
-    let weekdays: [Int]?
-    let durationDays: Int?
-    let hours: Int?
-    let appNames: [String]?
-    let requestedAt: String?
-    let expiresAt: String?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case type
-        case name
-        case windowId = "window_id"
-        case minutes
-        case hardMode = "hard_mode"
-        case startMinute = "start_minute"
-        case endMinute = "end_minute"
-        case weekdays
-        case durationDays = "duration_days"
-        case hours
-        case appNames = "app_names"
-        case requestedAt = "requested_at"
-        case expiresAt = "expires_at"
-    }
-
-    func toPendingAction() -> AssistantPendingAction? {
-        let apps = (appNames ?? []).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        switch type {
-        case "start_protection", "activate_mode":
-            return .startProtection(minutes: minutes, hardMode: hardMode ?? false, appNames: apps)
-        case "switch_mode":
-            return .openAppPicker(appNames: apps)
-        case "apply_schedule":
-            guard let startMinute, let endMinute else { return nil }
-            return .applySchedule(
-                name: "Protection",
-                startMinute: min(max(startMinute, 0), 1439),
-                endMinute: min(max(endMinute, 0), 1439),
-                weekdays: (weekdays ?? Array(1...7)).filter { (1...7).contains($0) },
-                durationDays: min(max(durationDays ?? 7, 1), 14),
-                appNames: apps
-            )
-        case "update_schedule":
-            guard let windowId, let startMinute, let endMinute else { return nil }
-            return .updateSchedule(
-                windowId: windowId,
-                name: name ?? "Protection",
-                startMinute: min(max(startMinute, 0), 1439),
-                endMinute: min(max(endMinute, 0), 1439),
-                weekdays: (weekdays ?? Array(1...7)).filter { (1...7).contains($0) }
-            )
-        case "delete_schedule":
-            guard let windowId else { return nil }
-            return .deleteSchedule(windowId: windowId)
-        case "delete_all_schedules":
-            return .deleteAllSchedules
-        case "set_daily_limit":
-            return .setDailyLimit(minutes: minutes, appNames: apps)
-        case "enable_allow_only":
-            return .allowOnly
-        case "enable_adult_filter":
-            return .adultFilter
-        case "pause_rules":
-            return .pauseRules(hours: min(max(hours ?? 168, 1), 168))
-        case "disable_pause":
-            return .disablePause
-        case "apply_ai_plan":
-            return .applyAIPlan
-        case "open_app_picker":
-            let pickerName = name ?? ""
-            let pickerSchedule: PendingPlanSchedule?
-            if let startMinute, let endMinute {
-                pickerSchedule = PendingPlanSchedule(
-                    name: pickerName.isEmpty ? "AI Plan" : pickerName,
-                    startMinute: min(max(startMinute, 0), 1439),
-                    endMinute: min(max(endMinute, 0), 1439),
-                    weekdays: (weekdays ?? Array(1...7)).filter { (1...7).contains($0) },
-                    durationDays: min(max(durationDays ?? 7, 1), 14)
-                )
-            } else {
-                pickerSchedule = nil
-            }
-            if pickerName == "Daily Limit", let minutes {
-                return .configureAndOpenDailyLimitPicker(appNames: apps, minutes: minutes)
-            }
-            if pickerSchedule != nil || minutes != nil || hardMode == true || !pickerName.isEmpty {
-                return .configureAndOpenAppPicker(
-                    appNames: apps,
-                    durationMinutes: minutes,
-                    hardMode: hardMode ?? false,
-                    schedule: pickerSchedule
-                )
-            }
-            return .openAppPicker(appNames: apps)
-        case "request_screen_time_permission":
-            return .requestScreenTimePermission
-        default:
-            return nil
-        }
-    }
-
-    var requestedDate: Date? {
-        ISO8601DateFormatter().date(from: requestedAt ?? "")
-    }
-}
 
 struct AssistantActionReceipt: Equatable {
     let actionId: String
@@ -270,6 +172,18 @@ enum AssistantActionReceiptStore {
 }
 
 struct AssistantActionInboxClient {
+    func actionForApplication(actionId: String, connectCode: String, channel: String) async throws -> AssistantInboxAction {
+        let data = try await request(action: "poll_pending_action", connectCode: connectCode, channel: channel)
+        let response = try JSONDecoder().decode(AssistantInboxResponse.self, from: data)
+        guard let action = response.pendingAction, action.id == actionId,
+              let expiresAt = action.expiresAt,
+              let expiry = AssistantInboxAction.parseDate(expiresAt), expiry > Date(),
+              action.toPendingAction() != nil else {
+            throw AssistantAppError.server(status: 409, code: "action_unavailable")
+        }
+        return action
+    }
+
     func poll(connectCode: String, channel: String) async -> AssistantInboxPollResult {
         guard let data = try? await request(action: "poll_pending_action", connectCode: connectCode, channel: channel),
               let response = try? JSONDecoder().decode(AssistantInboxResponse.self, from: data) else {
@@ -392,6 +306,7 @@ struct HomeView: View {
     @EnvironmentObject private var screenTimeBlocker: ScreenTimeBlocker
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
     @AppStorage("blankAssistantConnectCode", store: BlankSharedState.defaults) private var assistantConnectCode = ""
 
@@ -403,6 +318,7 @@ struct HomeView: View {
     @State private var showingAssistantChat = false
     @State private var chatLaunchMessage: String?
     @State private var homeChatDraft = ""
+    @FocusState private var homeChatFocused: Bool
     @State private var homeSpeechPrefix = ""
     @State private var acceptingHomeSpeech = false
     @StateObject private var homeSpeech = AssistantSpeechInput()
@@ -413,11 +329,11 @@ struct HomeView: View {
     @State private var showingForgetConfirm = false
     @StateObject private var healthKitStore = HealthKitStore()
     @State private var unblankHoldProgress = 0.0
+    @State private var unblankHapticTask: Task<Void, Never>?
     @State private var isAnimatingUnblankHold = false
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
-    @State private var delayedManualUnlockAt: Date?
-    @State private var delayedManualUnlockTask: Task<Void, Never>?
+    private var delayedManualUnlockAt: Date? { sessionStore.delayedManualUnlockAt }
     @State private var showingRelapseReview = false
     @AppStorage("blankPendingAssistantActionId", store: BlankSharedState.defaults) private var pendingAssistantActionId = ""
     @State private var assistantActionPollInFlight = false
@@ -500,17 +416,18 @@ struct HomeView: View {
             }
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
         }
-        .ignoresSafeArea()
+        .ignoresSafeArea(.container)
         .foregroundStyle(activeSection == nil ? (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.homeLightInk) : (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink))
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
         .environment(\.blankMinimalAppearance, true)
-        .animation(.easeInOut(duration: 0.65), value: sessionStore.isBlankActive)
-        .animation(.easeInOut(duration: 0.35), value: activeSection)
-        .animation(.easeInOut(duration: 0.35), value: showingRelapseReview)
+        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.45), value: sessionStore.isBlankActive)
+        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.35), value: activeSection)
+        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.35), value: showingRelapseReview)
         .navigationBarBackButtonHidden()
         .onReceive(timer) { date in
             now = date
+            finishDelayedManualUnlock(now: date)
             pollPendingAssistantActionIfNeeded(now: date)
             sessionStore.syncFromSharedDefaults(now: date)
             sessionStore.applyScheduleWindow(at: date)
@@ -531,6 +448,8 @@ struct HomeView: View {
             if let error { message = error }
         }
         .onAppear {
+            now = Date()
+            finishDelayedManualUnlock(now: now)
             Task { await activateAppChannel() }
             sessionStore.syncFromSharedDefaults(now: now)
             applyScreenTimeControls()
@@ -545,6 +464,7 @@ struct HomeView: View {
         }
         .onChange(of: scenePhase) { phase in
             guard phase == .active else {
+                stopUnblankHoldHaptics()
                 if phase == .background {
                     acceptingHomeSpeech = false
                     homeSpeech.stop()
@@ -552,6 +472,8 @@ struct HomeView: View {
                 return
             }
             Task { await activateAppChannel() }
+            now = Date()
+            finishDelayedManualUnlock(now: now)
             sessionStore.syncFromSharedDefaults()
             applyScreenTimeControls()
             screenTimeBlocker.refreshAuthorizationStatus()
@@ -564,6 +486,7 @@ struct HomeView: View {
             pollPendingAssistantActionIfNeeded(force: true)
         }
         .onDisappear {
+            stopUnblankHoldHaptics()
             acceptingHomeSpeech = false
             homeSpeech.stop()
         }
@@ -589,6 +512,7 @@ struct HomeView: View {
                 isHoldingToUnblank = false
                 unblankHoldProgress = 0
                 isAnimatingUnblankHold = false
+                stopUnblankHoldHaptics()
             }
             syncAssistantContext()
         }
@@ -690,13 +614,25 @@ struct HomeView: View {
         }
         .fullScreenCover(isPresented: $showingAssistantChat, onDismiss: {
             chatLaunchMessage = nil
+            if sessionStore.pendingAssistantAction != nil, pendingAssistantInboxAction != nil {
+                confirmPendingAssistantAction()
+            }
         }) {
             AssistantAppView(initialMessage: chatLaunchMessage, simulatorGuest: simulatorGuest, onOpenControls: { section in
                 if let section { openSection(section) }
             }) { actionId in
-                BlankSharedState.defaults.set(true, forKey: AssistantRemoteNotification.pollAfterOpenKey)
-                BlankSharedState.defaults.set(actionId, forKey: AssistantRemoteNotification.tappedActionIDKey)
-                pollPendingAssistantActionIfNeeded(force: true)
+                let owner = AssistantAppSession.userID
+                let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
+                let remote = try await AssistantActionInboxClient().actionForApplication(
+                    actionId: actionId, connectCode: code, channel: "app")
+                guard assistantIdentityMatches(code: code, channel: "app", owner: owner),
+                      !assistantActionExecutionInFlight,
+                      sessionStore.pendingAssistantAction == nil,
+                      let pending = remote.toPendingAction() else { throw AssistantAppError.sessionChanged }
+                clearAssistantNotificationRequest()
+                pendingAssistantActionId = remote.id
+                pendingAssistantInboxAction = remote
+                sessionStore.requestAssistantActionConfirmation(pending)
             }
         }
         .sheet(isPresented: $showingRelink) {
@@ -886,8 +822,6 @@ struct HomeView: View {
 
     private func idleMinimalHome(layout: HomeLayoutMetrics) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-
             VStack(alignment: .leading, spacing: -8) {
                 minimalStartRow
 
@@ -909,8 +843,6 @@ struct HomeView: View {
 
                 minimalStatus
 
-                homeChatComposer
-
                 #if targetEnvironment(simulator)
                 HStack(spacing: 18) {
                     minimalUtilityRow("onboarding") {
@@ -925,10 +857,24 @@ struct HomeView: View {
                 #endif
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .opacity(homeChatFocused ? 0 : 1)
+            .allowsHitTesting(!homeChatFocused)
+            .accessibilityHidden(homeChatFocused)
+            .frame(height: homeChatFocused ? 0 : nil, alignment: .bottom)
+            .clipped()
+
+            homeChatComposer
+
         }
         .padding(.horizontal, layout.horizontalPadding)
-        .padding(.bottom, layout.bottomPadding * 2)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+        .padding(.bottom, homeChatFocused ? 0 : layout.bottomPadding * 2)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: homeChatFocused ? .center : .bottomLeading)
+        .background {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { homeChatFocused = false }
+        }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: homeChatFocused)
     }
 
     private func activeMinimalHome(layout: HomeLayoutMetrics) -> some View {
@@ -951,7 +897,7 @@ struct HomeView: View {
                             Button("unblank") {
                                 beginFullScreenUnblankHold()
                             }
-                            .font(.blankInter(size: 32, weight: .semibold, relativeTo: .title))
+                            .font(.blankInter(size: 32, weight: .bold, relativeTo: .title))
                             .tracking(0)
                             .foregroundStyle(BlankColors.homeDarkSecondary)
                             .frame(minWidth: 44, minHeight: 44, alignment: .leading)
@@ -991,6 +937,7 @@ struct HomeView: View {
                                 isHoldingToUnblank = false
                                 unblankHoldProgress = 0
                                 isAnimatingUnblankHold = false
+                                stopUnblankHoldHaptics()
                             }
                     )
                     .simultaneousGesture(
@@ -1001,6 +948,7 @@ struct HomeView: View {
                                       delayedManualUnlockAt == nil,
                                       !isAnimatingUnblankHold else { return }
                                 isAnimatingUnblankHold = true
+                                startUnblankHoldHaptics()
                                 unblankHoldProgress = 0
                                 withAnimation(.linear(duration: 20)) {
                                     unblankHoldProgress = 1
@@ -1008,6 +956,7 @@ struct HomeView: View {
                             }
                             .onEnded { _ in
                                 isAnimatingUnblankHold = false
+                                stopUnblankHoldHaptics()
                                 withAnimation(.easeOut(duration: 0.18)) {
                                     unblankHoldProgress = 0
                                 }
@@ -1027,7 +976,7 @@ struct HomeView: View {
         ZStack(alignment: .leading) {
             if isHoldingToUnblank {
                 Text("hold the screen to unblank")
-                    .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                     .tracking(0)
                     .foregroundStyle(BlankColors.pureWhite)
                     .lineLimit(3)
@@ -1037,7 +986,7 @@ struct HomeView: View {
                     .transition(.opacity)
             } else if let cooldownText {
                 Text(cooldownText)
-                    .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                     .tracking(0)
                     .foregroundStyle(BlankColors.homeDarkSecondary)
                     .monospacedDigit()
@@ -1046,7 +995,7 @@ struct HomeView: View {
                     .transition(.opacity)
             } else if let timerCountdownText {
                 Text(timerCountdownText)
-                    .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                     .tracking(0)
                     .foregroundStyle(BlankColors.homeDarkSecondary)
                     .monospacedDigit()
@@ -1095,7 +1044,7 @@ struct HomeView: View {
     private func minimalHomeRow(_ title: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .blankHomeDisplayTextStyle(color: color)
+                .blankHomeDisplayTextStyle(color: color, weight: .semibold)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
         }
@@ -1125,7 +1074,7 @@ struct HomeView: View {
             setMessage(for: result)
         } label: {
             Text(title)
-                .font(.blankEditorial(size: 32, relativeTo: .title))
+                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .title))
                 .foregroundStyle(titleColor)
                 .tracking(0)
                 .lineLimit(1)
@@ -1150,7 +1099,7 @@ struct HomeView: View {
 
             if let schedulePausedUntil = sessionStore.schedulePausedUntil, now < schedulePausedUntil {
                 Text("Schedule paused \(remainingText(until: schedulePausedUntil))")
-                    .font(.blankInter(size: 13, relativeTo: .footnote))
+                    .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
             }
 
             if let message {
@@ -1176,7 +1125,7 @@ struct HomeView: View {
                     .monospacedDigit()
             }
         }
-        .font(.blankInter(size: 13, relativeTo: .footnote))
+        .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
         .foregroundStyle(sessionStore.isBlankActive ? BlankColors.homeDarkSecondary : BlankColors.homeLightSecondary)
         .fixedSize(horizontal: false, vertical: true)
         .padding(.top, 6)
@@ -1195,9 +1144,10 @@ struct HomeView: View {
             TextField("", text: $homeChatDraft,
                       prompt: Text("Ask Blankmind…").foregroundColor(BlankColors.homeLightSecondary),
                       axis: .vertical)
-                .font(.blankInter(size: 16, relativeTo: .body))
+                .font(.blankInter(size: 16, weight: .medium, relativeTo: .body))
                 .lineLimit(1...3)
                 .submitLabel(.send)
+                .focused($homeChatFocused)
                 .onSubmit(sendHomeChatMessage)
                 .padding(.leading, 18)
                 .padding(.vertical, 14)
@@ -1205,6 +1155,7 @@ struct HomeView: View {
                 .accessibilityLabel("Message Blankmind")
 
             Button {
+                homeChatFocused = true
                 if !homeSpeech.isRecording && !homeSpeech.isStarting {
                     let prefix = homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                     homeSpeechPrefix = prefix.isEmpty ? "" : "\(prefix) "
@@ -1233,9 +1184,11 @@ struct HomeView: View {
         .foregroundStyle(BlankColors.homeLightInk)
         .background(RoundedRectangle(cornerRadius: 26).fill(BlankColors.homeLightInk.opacity(0.06)))
         .padding(.top, 22)
+        .onTapGesture { homeChatFocused = true }
     }
 
     private func openAssistantChat() {
+        homeChatFocused = false
         acceptingHomeSpeech = false
         homeSpeech.stop()
         chatLaunchMessage = nil
@@ -1252,6 +1205,7 @@ struct HomeView: View {
         acceptingHomeSpeech = false
         homeSpeech.stop()
         homeChatDraft = ""
+        homeChatFocused = false
         chatLaunchMessage = text
         showingAssistantChat = true
     }
@@ -1259,7 +1213,7 @@ struct HomeView: View {
     private func centerContent(maxWidth: CGFloat, actionWidth: CGFloat) -> some View {
         VStack(spacing: 28) {
             Text(homeTagline)
-                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
                 .foregroundStyle(BlankColors.pureWhite)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
@@ -1282,7 +1236,7 @@ struct HomeView: View {
                     .monospacedDigit()
                 if let schedulePausedUntil = sessionStore.schedulePausedUntil, now < schedulePausedUntil {
                     Text("Schedule paused \(remainingText(until: schedulePausedUntil))")
-                        .font(.blankInter(size: 13, relativeTo: .footnote))
+                        .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
                         .foregroundStyle(BlankColors.pureWhite.opacity(0.58))
                 }
             }
@@ -1301,7 +1255,7 @@ struct HomeView: View {
                     .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk)
                 } else {
                     Text(message)
-                        .font(.blankInter(size: 13, relativeTo: .footnote))
+                        .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
                         .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk)
                         .multilineTextAlignment(.center)
                         .padding(.top, 8)
@@ -1347,6 +1301,7 @@ struct HomeView: View {
                         scheduleDelayedManualUnlock()
                         unblankHoldProgress = 0
                         isAnimatingUnblankHold = false
+                        stopUnblankHoldHaptics()
                     }
             )
             .simultaneousGesture(
@@ -1354,6 +1309,7 @@ struct HomeView: View {
                     .onChanged { _ in
                         guard sessionStore.isBlankActive, !sessionStore.hardBlankActive, !isAnimatingUnblankHold else { return }
                         isAnimatingUnblankHold = true
+                        startUnblankHoldHaptics()
                         unblankHoldProgress = 0
                         withAnimation(.linear(duration: 20)) {
                             unblankHoldProgress = 1
@@ -1361,6 +1317,7 @@ struct HomeView: View {
                     }
                     .onEnded { _ in
                         isAnimatingUnblankHold = false
+                        stopUnblankHoldHaptics()
                         withAnimation(.easeOut(duration: 0.18)) {
                             unblankHoldProgress = 0
                         }
@@ -1472,6 +1429,31 @@ struct HomeView: View {
         return unlocked
     }
 
+    private func stopUnblankHoldHaptics() {
+        unblankHapticTask?.cancel()
+        unblankHapticTask = nil
+    }
+
+    private func startUnblankHoldHaptics() {
+        stopUnblankHoldHaptics()
+        unblankHapticTask = Task { @MainActor in
+            let feedback = UIImpactFeedbackGenerator(style: .light)
+            var elapsed = 0.0
+            for pulse in UnblankHoldCadence.pulseTimes(duration: 20) {
+                if pulse > elapsed {
+                    do { try await Task.sleep(nanoseconds: UInt64((pulse - elapsed) * 1_000_000_000)) }
+                    catch { return }
+                }
+                guard !Task.isCancelled, scenePhase == .active,
+                      isAnimatingUnblankHold, sessionStore.isBlankActive,
+                      !sessionStore.hardBlankActive, delayedManualUnlockAt == nil else { return }
+                feedback.prepare()
+                feedback.impactOccurred(intensity: 0.65)
+                elapsed = pulse
+            }
+        }
+    }
+
     private func beginFullScreenUnblankHold() {
         guard sessionStore.isBlankActive,
               !sessionStore.hardBlankActive,
@@ -1482,15 +1464,15 @@ struct HomeView: View {
         }
         unblankHoldProgress = 0
         isAnimatingUnblankHold = false
+        stopUnblankHoldHaptics()
     }
 
     private func scheduleDelayedManualUnlock(cooldownSeconds requestedCooldownSeconds: Int? = nil) {
-        guard delayedManualUnlockTask == nil else { return }
+        guard delayedManualUnlockAt == nil else { return }
         let cooldownSeconds = requestedCooldownSeconds ?? sessionStore.manualUnblankCooldownSeconds
         let startedAt = Date()
-        let unlockAt = startedAt.addingTimeInterval(TimeInterval(cooldownSeconds))
         now = startedAt
-        delayedManualUnlockAt = unlockAt
+        sessionStore.scheduleManualUnlock(after: cooldownSeconds, now: startedAt)
         updateDelayedUnlockMessage(now: Date())
         Task {
             await BlankFunnelAnalytics.track(
@@ -1498,18 +1480,14 @@ struct HomeView: View {
                 properties: ["source": "hold_to_unblank", "delay_seconds": cooldownSeconds]
             )
         }
-        delayedManualUnlockTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: UInt64(max(0, cooldownSeconds)) * 1_000_000_000)
-            guard !Task.isCancelled else { return }
-            let result = withAnimation(.easeInOut(duration: 0.65)) {
-                sessionStore.deactivateBlank(entryMode: .app, endedReason: .manual)
-            }
-            screenTimeBlocker.clear()
-            delayedManualUnlockAt = nil
-            delayedManualUnlockTask = nil
-            setMessage(for: result)
-            presentRelapseReview()
-        }
+        finishDelayedManualUnlock(now: startedAt)
+    }
+
+    private func finishDelayedManualUnlock(now: Date) {
+        guard sessionStore.finishManualUnlockIfDue(now: now) else { return }
+        screenTimeBlocker.apply(isBlankActive: sessionStore.isBlankActive)
+        setMessage(for: .unblanked)
+        presentRelapseReview()
     }
 
     private func presentRelapseReview() {
@@ -1525,9 +1503,7 @@ struct HomeView: View {
     }
 
     private func cancelDelayedManualUnlock() {
-        delayedManualUnlockTask?.cancel()
-        delayedManualUnlockTask = nil
-        delayedManualUnlockAt = nil
+        sessionStore.cancelManualUnlock()
     }
 
     private func updateDelayedUnlockMessage(now _: Date) {
@@ -1590,6 +1566,12 @@ struct HomeView: View {
             return "Enable Allow Only?"
         case .adultFilter:
             return "Enable adult web protection?"
+        case .disableAllowOnly:
+            return "Disable Allow Only?"
+        case .disableAdultFilter:
+            return "Disable adult web protection?"
+        case .disableDailyLimit:
+            return "Disable the daily limit?"
         case .pauseRules(let hours):
             return "Pause protection rules for \(hours) hours?"
         case .disablePause:
@@ -1742,6 +1724,19 @@ struct HomeView: View {
                 status: sessionStore.dailyLimitRegistered && sessionStore.dailyLimitEnabled && sessionStore.dailyLimitMinutes == minutes ? "verified" : "failed",
                 detail: "daily_limit_state_checked"
             )
+        case .disableAllowOnly, .disableAdultFilter, .disableDailyLimit:
+            guard !sessionStore.isBlankActive else {
+                finishPendingAssistantAction(status: "failed", detail: "controls_locked_during_protection", executionStarted: false)
+                return
+            }
+            switch pendingAction {
+            case .disableAllowOnly: sessionStore.allowOnlyModeEnabled = false
+            case .disableAdultFilter: sessionStore.adultContentBlockingEnabled = false
+            case .disableDailyLimit: sessionStore.dailyLimitEnabled = false
+            default: break
+            }
+            applyScreenTimeControls()
+            finishPendingAssistantAction(status: "verified", detail: "control_disabled")
         case .allowOnly:
             sessionStore.allowOnlyModeEnabled = true
             applyScreenTimeControls()
@@ -1804,6 +1799,8 @@ struct HomeView: View {
              .openAppPicker, .configureAndOpenAppPicker, .configureAndOpenDailyLimitPicker:
             return true
         case .deleteSchedule, .deleteAllSchedules, .pauseRules, .requestScreenTimePermission:
+            return false
+        case .disableAllowOnly, .disableAdultFilter, .disableDailyLimit:
             return false
         }
     }
@@ -1887,64 +1884,8 @@ struct HomeView: View {
         aiSystem.forecast.riskWindow
     }
 
-    private func assistantContextPayload() -> [String: Any] {
-        let system = aiSystem
-        let generatedAt = Date()
-        let currentRevision = Int64(generatedAt.timeIntervalSince1970 * 1_000_000)
-        let previousRevision = (BlankSharedState.defaults.object(forKey: "blankAssistantContextRevision") as? NSNumber)?.int64Value ?? 0
-        let nextRevision = previousRevision < Int64.max ? previousRevision + 1 : previousRevision
-        let contextRevision = max(currentRevision, nextRevision)
-        BlankSharedState.defaults.set(contextRevision, forKey: "blankAssistantContextRevision")
-        var payload: [String: Any] = [
-            "context_revision": contextRevision,
-            "context_generated_at": ISO8601DateFormatter().string(from: generatedAt),
-            "anonymous_user_id": BlankSharedState.defaults.string(forKey: "blankOnboardingAnonymousUserId") ?? "",
-            "profile_name": BlankSharedState.defaults.string(forKey: "blankOnboardingName") ?? "",
-            "age_range": BlankSharedState.defaults.string(forKey: "blankOnboardingAgeRange") ?? "",
-            "is_blank_active": sessionStore.isBlankActive,
-            "has_selected_apps": sessionStore.hasSelectedApps,
-            "selection_count": sessionStore.selectionCount,
-            "screen_time_authorized": screenTimeBlocker.authorizationStatus == .approved,
-            "notification_authorized": assistantNotificationsAuthorized,
-            "emergency_unlocks_remaining": sessionStore.emergencyUnlocksRemaining,
-            "vacation_mode_active": sessionStore.isVacationModeActive,
-            "adherence_score": system.profile.adherenceScore,
-            "weekly_protected_minutes": system.profile.weeklyProtectedMinutes,
-            "weekly_break_count": system.profile.weeklyBreakCount,
-            "risk_window": system.forecast.riskWindow,
-            "recommended_duration_minutes": system.plan.recommendedDurationMinutes,
-            "weekly_goal": system.plan.weeklyGoal,
-            "single_distraction_block": true,
-            "protection_target": "selected_distractions",
-            "app_presence": BlankmindAppPresence.payload(
-                appReady: sessionStore.hasSelectedApps && screenTimeBlocker.authorizationStatus == .approved
-            ),
-            "device_execution_ready": BlankSharedState.defaults.bool(forKey: "blankAssistantPushRegistered") && assistantNotificationsAuthorized,
-            "schedule": sessionStore.assistantScheduleContext(),
-            "allow_only_mode_enabled": sessionStore.allowOnlyModeEnabled,
-            "adult_content_blocking_enabled": sessionStore.adultContentBlockingEnabled,
-            "daily_limit_enabled": sessionStore.dailyLimitEnabled,
-            "daily_limit_minutes": sessionStore.dailyLimitMinutes,
-            "memory": BlankedAgentMemory.snapshot(system: system),
-        ]
-        if let strongestWindow = system.profile.strongestWindow {
-            payload["strongest_hour"] = strongestWindow
-        }
-        return payload
-    }
-
     private func syncAssistantContext() {
-        let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        let channel = "app"
-        guard !code.isEmpty else { return }
-        let payload = assistantContextPayload()
-        Task {
-            _ = await AssistantContextSyncClient().sync(
-                connectCode: code,
-                channel: channel,
-                payload: payload
-            )
-        }
+        BlankBrain.shared.sync()
     }
 
     private func refreshAssistantNotificationAuthorization() {
@@ -1965,6 +1906,7 @@ struct HomeView: View {
     private func pollPendingAssistantActionIfNeeded(force: Bool = false, now: Date = Date()) {
         guard force || now.timeIntervalSince(lastAssistantActionPollAt) >= 5 else { return }
         guard !assistantActionPollInFlight,
+              !showingAssistantChat,
               !assistantActionExecutionInFlight,
               !showingContextualAppPicker,
               sessionStore.pendingAssistantAction == nil else { return }
@@ -2182,8 +2124,8 @@ struct HomeView: View {
 }
 
 private extension View {
-    func blankHomeDisplayTextStyle(color: Color) -> some View {
-        font(.blankEditorial(size: 32, relativeTo: .title))
+    func blankHomeDisplayTextStyle(color: Color, weight: Font.Weight = .regular) -> some View {
+        font(.blankInter(size: 32, weight: weight, relativeTo: .title))
             .foregroundStyle(color)
             .tracking(0)
             .lineLimit(1)
@@ -2446,6 +2388,7 @@ struct SectionHeader: View {
 
 private struct SettingsScreen: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @Environment(\.openURL) private var openURL
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
     @State private var showingAccount = false
 
@@ -2500,6 +2443,18 @@ private struct SettingsScreen: View {
                     title: "account",
                     detail: "Apple sign-in and account controls",
                     action: { showingAccount = true }
+                )
+
+                settingsRow(
+                    title: "privacy policy",
+                    detail: "how Blankmind handles your data",
+                    action: { openURL(URL(string: "https://blankmind.ai/privacy")!) }
+                )
+
+                settingsRow(
+                    title: "terms of service",
+                    detail: "terms for using Blankmind",
+                    action: { openURL(URL(string: "https://blankmind.ai/terms")!) }
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -3500,62 +3455,63 @@ struct AppAccountSignInSheet: View {
     }
 
     private var accountForm: some View {
-        VStack(alignment: .center, spacing: 22) {
-            Spacer(minLength: 24)
-            Text("Your account")
-                .font(.blankEditorial(size: 34))
-            Text("Continue with Apple to keep your chat and setup connected to your account.")
-                .font(.blankInter(size: 16, relativeTo: .body))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Sign in to Blankmind")
+                        .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
+                        .tracking(-0.9)
+                        .foregroundStyle(Color.black)
+                        .padding(.bottom, 24)
+                    AccountJustifiedCopy(text: NSAttributedString(string: "Blankmind AI's core model is trained to identify recurring behavioral patterns, detect high-risk moments, and adapt interventions in real time."))
+                        .padding(.bottom, 24)
 
-            if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
-                Text("This will connect Apple to your existing Blank account and preserve its chat history.")
-                    .font(.blankInter(size: 14, relativeTo: .footnote))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+                    if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
+                        Text("This will connect Apple to your existing Blank account and preserve its chat history.")
+                            .font(.blankInter(size: 14, relativeTo: .footnote))
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.bottom, 16)
+                    }
 
-            SignInWithAppleButton(.continue, onRequest: { request in
-                let nonce = Self.makeNonce()
-                rawNonce = nonce
-                request.requestedScopes = [.email]
-                request.nonce = Self.hashNonce(nonce)
-            }, onCompletion: finishAppleAuthorization)
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 54)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .disabled(isWorking)
-                .overlay {
-                    if isWorking {
-                        ProgressView().tint(.white)
+                    SignInWithAppleButton(.continue, onRequest: { request in
+                        let nonce = Self.makeNonce()
+                        rawNonce = nonce
+                        request.requestedScopes = [.email]
+                        request.nonce = Self.hashNonce(nonce)
+                    }, onCompletion: finishAppleAuthorization)
+                        .signInWithAppleButtonStyle(.black)
+                        .frame(width: accountTitleWidth, height: 44)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .disabled(isWorking)
+                        .overlay {
+                            if isWorking {
+                                ProgressView().tint(.white)
+                            }
+                        }
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.blankInter(size: 14, relativeTo: .footnote))
+                            .foregroundStyle(BlankColors.red)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 16)
                     }
                 }
+                .frame(maxWidth: 400, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+                .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
+            }
+        }
+        .background(Color.white)
+        .preferredColorScheme(.light)
+    }
 
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.blankInter(size: 14, relativeTo: .footnote))
-                    .foregroundStyle(BlankColors.red)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 24)
-        }
-        .padding(.horizontal, 28)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            HStack(spacing: 18) {
-                Link("Privacy Policy", destination: URL(string: "https://blanked.app/privacy")!)
-                Link("Terms", destination: URL(string: "https://blanked.app/terms")!)
-            }
-            .font(.blankInter(size: 13, relativeTo: .footnote))
-            .padding(.bottom, 12)
-            .frame(maxWidth: .infinity)
-            .background(Color(uiColor: .systemBackground))
-        }
-        .background(Color(uiColor: .systemBackground))
+    private var accountTitleWidth: CGFloat {
+        let font = UIFontMetrics(forTextStyle: .title1).scaledFont(for: UIFont(name: "TimesNewRomanPSMT", size: 32)!)
+        return ceil(NSAttributedString(string: "Sign in to Blankmind", attributes: [.font: font, .kern: -0.9]).size().width)
     }
 
     private func finishAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
@@ -3888,3 +3844,52 @@ private struct HomePreviewScene: View {
     HomePreviewScene("Permission pending", authorizationApproved: false)
 }
 #endif
+
+// TextKit supplies true paragraph justification while preserving native legal links.
+struct AccountJustifiedCopy: UIViewRepresentable {
+    let text: NSAttributedString
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    func makeUIView(context: Context) -> UITextView {
+        let storage = NSTextStorage()
+        let layout = AccountLegalLayoutManager()
+        let container = NSTextContainer(size: .zero)
+        container.widthTracksTextView = true
+        storage.addLayoutManager(layout)
+        layout.addTextContainer(container)
+        let view = UITextView(frame: .zero, textContainer: container)
+        view.isEditable = false
+        view.isScrollEnabled = false
+        view.backgroundColor = .clear
+        view.textContainerInset = .zero
+        view.textContainer.lineFragmentPadding = 0
+        view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return view
+    }
+
+    func updateUIView(_ view: UITextView, context: Context) {
+        let color = UIColor(red: 100 / 255.0, green: 116 / 255.0, blue: 139 / 255.0, alpha: 1)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .justified
+        paragraph.lineSpacing = 4
+        let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "ArialMT", size: 14)!)
+        let styled = NSMutableAttributedString(attributedString: text)
+        styled.addAttributes([.font: font, .foregroundColor: color, .paragraphStyle: paragraph], range: NSRange(location: 0, length: styled.length))
+        text.enumerateAttribute(.link, in: NSRange(location: 0, length: text.length)) { link, range, _ in
+            if link != nil { styled.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range) }
+        }
+        view.linkTextAttributes = [.foregroundColor: color, .underlineStyle: NSUnderlineStyle.single.rawValue]
+        view.attributedText = styled
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+        guard let width = proposal.width else { return nil }
+        return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+    }
+}
+
+private final class AccountLegalLayoutManager: NSLayoutManager {
+    override func drawUnderline(forGlyphRange glyphRange: NSRange, underlineType underlineVal: NSUnderlineStyle, baselineOffset: CGFloat, lineFragmentRect lineRect: CGRect, lineFragmentGlyphRange lineGlyphRange: NSRange, containerOrigin: CGPoint) {
+        super.drawUnderline(forGlyphRange: glyphRange, underlineType: underlineVal, baselineOffset: baselineOffset - 2, lineFragmentRect: lineRect, lineFragmentGlyphRange: lineGlyphRange, containerOrigin: containerOrigin)
+    }
+}

@@ -147,6 +147,8 @@ struct AssistantAppTurn: Codable, Identifiable {
     let actionLabel: String
     let actionStatus: String
     let createdAt: String
+    var autoApply: Bool? = nil
+    var controlSection: String? = nil
 
     var canApply: Bool {
         !actionId.isEmpty && ["queued", "delivered"].contains(actionStatus)
@@ -234,6 +236,9 @@ enum AssistantAppError: LocalizedError {
             if code == "invalid_turn" {
                 return spanish ? "Escribe un mensaje de hasta 4.000 caracteres." : "Write a message of up to 4,000 characters."
             }
+            if code == "action_unavailable" {
+                return spanish ? "Esta acción ya no está disponible. Pide un bloqueo nuevo." : "This action is no longer available. Request a new block."
+            }
             if status == 429 {
                 return spanish ? "Espera unos segundos antes de volver a intentarlo." : "Wait a few seconds before trying again."
             }
@@ -275,8 +280,10 @@ struct AssistantAppClient {
         return AssistantAppHistoryPage(turns: result.turns ?? [], nextBefore: result.nextBefore)
     }
 
-    func send(text: String, turnId: String) async throws -> AssistantAppTurn {
-        let result = try await request(action: "send", extra: ["text": text, "turn_id": turnId])
+    func send(text: String, turnId: String, context: [String: Any]? = nil) async throws -> AssistantAppTurn {
+        var extra: [String: Any] = ["text": text, "turn_id": turnId]
+        if let context { extra["context"] = context }
+        let result = try await request(action: "send", extra: extra)
         guard let turn = result.turn else { throw AssistantAppError.invalidResponse }
         return turn
     }
@@ -528,6 +535,7 @@ struct AssistantAppView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var speech = AssistantSpeechInput()
     @FocusState private var composerFocused: Bool
     @State private var turns: [AssistantAppTurn] = []
@@ -547,11 +555,13 @@ struct AssistantAppView: View {
     @State private var showAccountSignIn = false
     @State private var saveTask: Task<Void, Never>?
     @State private var initialMessageHandled = false
+    @State private var composerHeight: CGFloat = 56
 
     var initialMessage: String? = nil
     var simulatorGuest = false
     var onOpenControls: (HomeSection?) -> Void = { _ in }
-    let onApplyAction: (String) -> Void
+    let onApplyAction: (String) async throws -> Void
+    @State private var isApplyingAction = false
 
     private var latest: AssistantAppTurn? { turns.last(where: { $0.status == "completed" }) }
     private var spanish: Bool { Locale.current.languageCode == "es" }
@@ -572,10 +582,12 @@ struct AssistantAppView: View {
     private var background: Color { dark ? BlankColors.charcoal : BlankColors.pureWhite }
     private var draftTooLong: Bool { composer.draft.utf16.count > 4000 }
     private var isSending: Bool { sendRequestID != nil }
-    private var waiting: Bool { isSending || composer.pending != nil }
+    private var waiting: Bool { isSending || composer.pending != nil || isApplyingAction }
 
     var body: some View {
-        VStack(spacing: 0) {
+        GeometryReader { geometry in
+            ZStack(alignment: .top) {
+                VStack(spacing: 0) {
             HStack {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
@@ -583,6 +595,7 @@ struct AssistantAppView: View {
                         .frame(width: 48, height: 48)
                 }
                 .accessibilityLabel(spanish ? "Volver a Inicio" : "Back to Home")
+                .disabled(isApplyingAction)
                 Spacer(minLength: 0)
                 Menu {
                     Button(spanish ? "Historial" : "Conversation history", systemImage: "clock.arrow.circlepath") { showHistory = true }
@@ -608,8 +621,7 @@ struct AssistantAppView: View {
             .background(background)
             .zIndex(1)
 
-            GeometryReader { geometry in
-                ScrollView {
+                    ScrollView {
                     VStack(alignment: .leading, spacing: 26) {
                         if let latest {
                             Text(latest.assistantText)
@@ -619,28 +631,8 @@ struct AssistantAppView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
                                 .accessibilityLabel("Blankmind: \(latest.assistantText)")
-                            if latest.canApply && !waiting {
-                                Button {
-                                    applyAction(latest.actionId)
-                                } label: {
-                                    Text(latest.actionLabel.isEmpty ? (spanish ? "Aplicar ahora" : "Apply now") : latest.actionLabel)
-                                        .font(.blankInter(size: 17, weight: .semibold))
-                                        .multilineTextAlignment(.leading)
-                                        .padding(.horizontal, 26)
-                                        .padding(.vertical, 14)
-                                        .frame(minHeight: 52)
-                                        .background(Capsule().fill(foreground))
-                                        .foregroundStyle(background)
-                                }
-                                .accessibilityHint(spanish ? "Aplica la acción sobre tus distracciones seleccionadas" : "Applies the action to your selected distractions")
-                            } else if !latest.actionId.isEmpty && !latest.canApply {
-                                Text(AssistantActionCopy.outcome(latest.actionStatus, spanish: spanish))
-                                    .font(.blankInter(size: 15))
-                                    .foregroundStyle(foreground.opacity(0.74))
-                            }
                         } else if isLoading {
-                            ProgressView(spanish ? "Recuperando conversación…" : "Loading conversation…")
-                                .font(.blankInter(size: 15)).tint(foreground)
+                            BlankLoadingIndicator(color: foreground)
                         } else {
                             Text(requiresVerification
                                  ? (spanish ? "Tu conversación en Blankmind." : "Your conversation in Blankmind.")
@@ -658,21 +650,37 @@ struct AssistantAppView: View {
                                     .frame(minHeight: 44)
                             }
                         }
-                        if dynamicTypeSize.isAccessibilitySize { status }
                     }
-                    .frame(maxWidth: 640, alignment: .leading)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? 0 : geometry.size.height * 0.72, alignment: .center)
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 16)
+                        .frame(maxWidth: 640, alignment: .leading)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 16)
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .frame(height: max(0, geometry.size.height / 2 - composerHeight / 2 - 72))
+                    .clipped()
+                    Spacer(minLength: 0)
                 }
-                .scrollDismissesKeyboard(.interactively)
+                composerBar
+                    .background {
+                        GeometryReader { bar in
+                            Color.clear.preference(key: AssistantComposerHeightKey.self, value: bar.size.height)
+                        }
+                    }
+                    .overlay(alignment: .bottom) {
+                        ScrollView {
+                            status
+                        }
+                        .frame(width: geometry.size.width, height: max(0, geometry.size.height / 2 - composerHeight / 2 - 16))
+                        .alignmentGuide(.bottom) { dimensions in dimensions[.top] - 12 }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
-            .clipped()
-
-            if !dynamicTypeSize.isAccessibilitySize { status }
-            composerBar
+            .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: waiting)
+            .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: isLoading)
+            .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: latest?.id)
         }
+        .onPreferenceChange(AssistantComposerHeightKey.self) { composerHeight = $0 }
         .foregroundStyle(foreground)
         .background(background.ignoresSafeArea())
         .preferredColorScheme(dark ? .dark : .light)
@@ -737,7 +745,7 @@ struct AssistantAppView: View {
         .onDisappear { acceptingSpeech = false; speech.stop(); saveTask?.cancel(); persist() }
         .sheet(isPresented: $showHistory) {
             AssistantAppHistoryView(turns: turns, nextBefore: nextHistoryCursor,
-                foreground: foreground, background: background, onApplyAction: applyAction)
+                foreground: foreground, background: background, onApplyAction: { id in Task { await applyAction(id) } })
                 .preferredColorScheme(dark ? .dark : .light)
         }
         .sheet(isPresented: $showAccountSignIn, onDismiss: { Task { restoreOwner(); await reload() } }) {
@@ -745,8 +753,45 @@ struct AssistantAppView: View {
         }
     }
 
+    private func controlSection(_ name: String) -> HomeSection? {
+        switch name {
+        case "report": return .report
+        case "schedule": return .schedule
+        case "distractions": return .distractions
+        case "settings": return .settings
+        case "emergency": return .emergency
+        default: return nil
+        }
+    }
+
     @ViewBuilder private var status: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if let latest {
+                            if let name = latest.controlSection, let section = controlSection(name) {
+                                Button(spanish ? "Abrir" : "Open") { openControls(section) }
+                                    .font(.blankInter(size: 17, weight: .semibold))
+                            }
+                            if latest.canApply && !waiting {
+                                Button {
+                                    Task { await applyAction(latest.actionId) }
+                                } label: {
+                                    Text(latest.actionLabel.isEmpty ? (spanish ? "Aplicar ahora" : "Apply now") : latest.actionLabel)
+                                        .font(.blankInter(size: 17, weight: .semibold))
+                                        .multilineTextAlignment(.leading)
+                                        .padding(.horizontal, 26)
+                                        .padding(.vertical, 14)
+                                        .frame(minHeight: 52)
+                                        .background(Capsule().fill(foreground))
+                                        .foregroundStyle(background)
+                                }
+                                .disabled(isApplyingAction)
+                                .accessibilityHint(spanish ? "Aplica la acción sobre tus distracciones seleccionadas" : "Applies the action to your selected distractions")
+                            } else if !latest.actionId.isEmpty && !latest.canApply {
+                                Text(AssistantActionCopy.outcome(latest.actionStatus, spanish: spanish))
+                                    .font(.blankInter(size: 15))
+                                    .foregroundStyle(foreground.opacity(0.74))
+                            }
+            }
             if let error {
                 Text(error)
                     .foregroundStyle(dark ? Color(red: 1, green: 0.66, blue: 0.64) : BlankColors.red)
@@ -771,10 +816,7 @@ struct AssistantAppView: View {
                     .disabled(isSending)
                 }
             } else if waiting {
-                HStack(spacing: 10) {
-                    ProgressView().tint(foreground)
-                    Text(spanish ? "Blankmind está respondiendo…" : "Blankmind is replying…")
-                }
+                BlankLoadingIndicator(color: foreground)
             } else if speech.isRecording || speech.isStarting {
                 Text(spanish ? "Dictando. Revisa el texto antes de enviar." : "Dictating. Review your words before sending.")
             }
@@ -785,7 +827,7 @@ struct AssistantAppView: View {
         .font(.blankInter(size: 14))
         .frame(maxWidth: 640, alignment: .leading)
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, dynamicTypeSize.isAccessibilitySize ? 0 : 28)
+        .padding(.horizontal, 28)
         .padding(.bottom, 10)
         .accessibilityElement(children: .contain)
     }
@@ -811,7 +853,7 @@ struct AssistantAppView: View {
         .padding(.leading, 18).padding(.trailing, 8)
         .background(RoundedRectangle(cornerRadius: 28).fill(foreground.opacity(dark ? 0.11 : 0.06)))
         .frame(maxWidth: 640)
-        .padding(.horizontal, 22).padding(.bottom, 12)
+        .padding(.horizontal, 22)
         .layoutPriority(1)
     }
 
@@ -860,14 +902,21 @@ struct AssistantAppView: View {
             }
     }
 
-    private func applyAction(_ actionID: String) {
-        guard !actionID.isEmpty, owner == AssistantAppSession.userID else { return }
+    private func applyAction(_ actionID: String) async {
+        guard !isApplyingAction, !actionID.isEmpty, owner == AssistantAppSession.userID else { return }
+        isApplyingAction = true
+        defer { isApplyingAction = false }
         acceptingSpeech = false
         speech.stop()
         composerFocused = false
         showHistory = false
-        onApplyAction(actionID)
-        dismiss()
+        do {
+            try await onApplyAction(actionID)
+            guard owner == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+            dismiss()
+        } catch {
+            handle(error)
+        }
     }
 
     private func openControls(_ section: HomeSection?) {
@@ -974,11 +1023,12 @@ struct AssistantAppView: View {
         let expectedOwner = owner
         defer { if sendRequestID == requestID { sendRequestID = nil } }
         do {
-            let turn = try await AssistantAppClient().send(text: pending.text, turnId: pending.id)
+            let turn = try await AssistantAppClient().send(text: pending.text, turnId: pending.id, context: await BlankBrain.shared.freshSnapshot())
             guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
                   expectedRevision == conversationRevision else { return }
             accept(turn)
             requiresVerification = false
+            if turn.autoApply == true, turn.canApply { await applyAction(turn.actionId) }
         } catch {
             guard expectedOwner == owner, expectedRevision == conversationRevision else { return }
             handle(error)
@@ -1003,6 +1053,7 @@ struct AssistantAppView: View {
     private func loadPreview() {
         isLoading = false
         let scenario = AssistantAppPreview.scenario
+        if scenario == "loading" { isLoading = true; return }
         if scenario == "empty" { return }
         if scenario == "signin" { requiresVerification = true; return }
         turns = [AssistantAppTurn(id: "preview", userText: "Necesito concentrarme esta tarde.",
@@ -1261,3 +1312,34 @@ enum AssistantAppPreview {
     static var enabled: Bool { !scenario.isEmpty }
 }
 #endif
+
+
+private struct BlankLoadingIndicator: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    let color: Color
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { timeline in
+            HStack(spacing: 6) {
+                ForEach(0..<3) { index in
+                    Circle()
+                        .fill(color)
+                        .frame(width: 5, height: 5)
+                        .opacity(reduceMotion ? 0.6 : 0.25 + 0.65 * (1 + sin(timeline.date.timeIntervalSinceReferenceDate * 4 - Double(index) * 0.8)) / 2)
+                }
+            }
+            .frame(height: 24)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Locale.current.languageCode == "es" ? "Cargando" : "Loading")
+    }
+}
+
+
+private struct AssistantComposerHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 56
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}

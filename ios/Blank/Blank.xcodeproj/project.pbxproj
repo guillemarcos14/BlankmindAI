@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BA10000000000000000000032 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
+		BA10000000000000000000022 /* AssistantControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000021 /* AssistantControl.swift */; };
+		BA10000000000000000000012 /* BlankBrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000011 /* BlankBrain.swift */; };
 		8A0000010000000000000001 /* BlankApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000011 /* BlankApp.swift */; };
 		8A0000010000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000012 /* ContentView.swift */; };
 		8A0000010000000000000003 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000013 /* SessionStore.swift */; };
@@ -89,6 +92,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		BA10000000000000000000031 /* BlankBrainMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankBrainMetrics.swift; sourceTree = "<group>"; };
+		BA10000000000000000000021 /* AssistantControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantControl.swift; sourceTree = "<group>"; };
+		BA10000000000000000000011 /* BlankBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankBrain.swift; sourceTree = "<group>"; };
 		8A0000010000000000000010 /* Blank.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Blank.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A0000010000000000000011 /* BlankApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankApp.swift; sourceTree = "<group>"; };
 		8A0000010000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -186,6 +192,9 @@
 			children = (
 				8A0000010000000000000011 /* BlankApp.swift */,
 				8A0000010000000000000012 /* ContentView.swift */,
+				BA10000000000000000000011 /* BlankBrain.swift */,
+				BA10000000000000000000021 /* AssistantControl.swift */,
+				BA10000000000000000000031 /* BlankBrainMetrics.swift */,
 				8A0000010000000000000013 /* SessionStore.swift */,
 				8A0000010000000000000014 /* NFCReader.swift */,
 				8A0000010000000000000015 /* ScreenTimeBlocker.swift */,
@@ -478,6 +487,9 @@
 			files = (
 				8A0000010000000000000001 /* BlankApp.swift in Sources */,
 				8A0000010000000000000002 /* ContentView.swift in Sources */,
+				BA10000000000000000000012 /* BlankBrain.swift in Sources */,
+				BA10000000000000000000022 /* AssistantControl.swift in Sources */,
+				BA10000000000000000000032 /* BlankBrainMetrics.swift in Sources */,
 				8A0000010000000000000003 /* SessionStore.swift in Sources */,
 				8A0000010000000000000004 /* NFCReader.swift in Sources */,
 				8A0000010000000000000005 /* ScreenTimeBlocker.swift in Sources */,
@@ -680,7 +692,7 @@
 				BLANK_MEMBERSHIP_API_BASE_URL = "https://getblank.netlify.app/.netlify/functions";
 				CODE_SIGN_ENTITLEMENTS = Blank/Blank.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = GS54UV79RG;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -711,7 +723,7 @@
 				BLANK_MEMBERSHIP_API_BASE_URL = "https://getblank.netlify.app/.netlify/functions";
 				CODE_SIGN_ENTITLEMENTS = Blank/Blank.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = GS54UV79RG;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -740,7 +752,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = BlankDeviceActivityMonitor/BlankDeviceActivityMonitor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = GS54UV79RG;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BlankDeviceActivityMonitor/Info.plist;
@@ -769,7 +781,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = BlankDeviceActivityMonitor/BlankDeviceActivityMonitor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = GS54UV79RG;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BlankDeviceActivityMonitor/Info.plist;
@@ -798,7 +810,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = BlankWidgetExtension/BlankWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = GS54UV79RG;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BlankWidgetExtension/Info.plist;
@@ -827,7 +839,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = BlankWidgetExtension/BlankWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = GS54UV79RG;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BlankWidgetExtension/Info.plist;
@@ -856,7 +868,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = BlankShieldConfiguration/BlankShieldConfiguration.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = GS54UV79RG;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BlankShieldConfiguration/Info.plist;
@@ -885,7 +897,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = BlankShieldConfiguration/BlankShieldConfiguration.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = GS54UV79RG;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BlankShieldConfiguration/Info.plist;
@@ -914,7 +926,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = BlankShieldAction/BlankShieldAction.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = GS54UV79RG;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BlankShieldAction/Info.plist;
@@ -943,7 +955,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = BlankShieldAction/BlankShieldAction.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = GS54UV79RG;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BlankShieldAction/Info.plist;

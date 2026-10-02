@@ -1,6 +1,7 @@
 "use strict";
 
 const { clean, fingerprint } = require("./bm-contracts");
+const { normalizeBrainSnapshot } = require("./bm-brain-data");
 
 const MEMORY_KEYS = new Set([
   "main_apps",
@@ -107,7 +108,7 @@ function normalizeSchedule(value) {
     if (Number.isFinite(value[key])) result[key] = value[key];
   }
   if (Array.isArray(value.windows)) {
-    result.windows = value.windows.slice(0, 12).map((window) => {
+    result.windows = value.windows.slice(0, 32).map((window) => {
       if (!window || typeof window !== "object" || Array.isArray(window)) return null;
       const normalized = {};
       for (const key of ["id", "name"]) {
@@ -118,6 +119,7 @@ function normalizeSchedule(value) {
       for (const key of ["start_minute", "end_minute"]) {
         if (Number.isFinite(window[key])) normalized[key] = Math.round(window[key]);
       }
+      if (Number.isFinite(window.expires_at)) normalized.expires_at = window.expires_at;
       if (Array.isArray(window.weekdays)) normalized.weekdays = window.weekdays.filter((day) => Number.isInteger(day) && day >= 1 && day <= 7).slice(0, 7);
       return Object.keys(normalized).length ? normalized : null;
     }).filter(Boolean);
@@ -218,6 +220,8 @@ function normalizeUserContext(value) {
   }
   if (Array.isArray(value.selected_app_names)) result.selected_app_names = normalizeStringArray(value.selected_app_names, 8, 60);
   if (value.schedule) result.schedule = normalizeSchedule(value.schedule);
+  const brainSnapshot = normalizeBrainSnapshot(value.brain_snapshot);
+  if (brainSnapshot) result.brain_snapshot = brainSnapshot;
   if (value.app_presence) result.app_presence = normalizeAppPresence(value.app_presence);
   for (const key of GENERIC_OBJECT_KEYS) {
     const normalized = normalizeObject(value[key]);
@@ -323,6 +327,9 @@ function buildAgentContext(input = {}) {
   const shared = normalizeUserContext(source.user_context);
   const merged = { ...shared, ...source };
   const result = {};
+  const brainSnapshot = normalizeBrainSnapshot(merged.brain_snapshot);
+  if (brainSnapshot) result.brain_snapshot = brainSnapshot;
+  if (source.channel === "app" && Array.isArray(source.brain_memories)) result.brain_memories = source.brain_memories.slice(0, 7);
   for (const key of SCALAR_KEYS) {
     if (merged[key] !== undefined) result[key] = merged[key];
   }
