@@ -5,9 +5,10 @@
 const MAX_SESSIONS = 2000;
 const date = value => typeof value === "string" && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null;
 const clean = (value, max = 160) => typeof value === "string" ? value.trim().slice(0, max) : "";
-const uuid = /^[0-9a-f]{8}-[0-9a-f-]{27}$/i;
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function normalizeBrainSnapshot(input) {
   if (!input || input.schema_version !== 1 || !date(input.generated_at)) return null;
+  if (typeof input.timezone !== "string" || !input.timezone) return null;
   let timezone;
   try { timezone = new Intl.DateTimeFormat("en", { timeZone: input.timezone }).resolvedOptions().timeZone; }
   catch (_) { return null; }
