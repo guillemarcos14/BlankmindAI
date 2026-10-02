@@ -3,6 +3,7 @@
 // success receipts. The production endpoint and real user data are unreachable.
 const fs = require("node:fs"), crypto = require("node:crypto"), path = require("node:path");
 const { configuration, target, memoryIdentity } = require("./assistant_app_cloud_test");
+const SCRIPT_SHA256 = crypto.createHash("sha256").update(fs.readFileSync(__filename)).digest("hex");
 async function run(config, output) {
   target(config.supabase,"supabase"); target(config.netlify,"netlify");
   const runId = crypto.randomUUID(), users = [], checks = [], cleanup = [];
@@ -140,7 +141,7 @@ async function run(config, output) {
     }
     console.log(`${cleanup.every(c=>c.passed)?"PASS":"FAIL"} synthetic_cleanup`);
   }
-  const report={generated_at:new Date().toISOString(),run_id:runId,script_sha256:crypto.createHash("sha256").update(fs.readFileSync(__filename)).digest("hex"),
+  const report={generated_at:new Date().toISOString(),run_id:runId,script_sha256:SCRIPT_SHA256,
     targets:{supabase:config.supabase,netlify:config.netlify},checks,cleanup,synthetic_auth_user_ids:users.map(u=>u.id),
     scope:"real_staging_brain_with_synthetic_device_observations_no_native_execution",passed:!failure&&checks.length===15&&cleanup.every(c=>c.passed),failure};
   fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(report,null,2));return report;
