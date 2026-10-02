@@ -12,6 +12,8 @@
 	<string>Blankmind</string>
 	<key>BlankMembershipAPIBaseURL</key>
 	<string>$(BLANK_MEMBERSHIP_API_BASE_URL)</string>
+	<key>BlankPrivateQAAuthenticationCookie</key>
+	<string>$(BLANK_PRIVATE_QA_COOKIE)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleLocalizations</key>

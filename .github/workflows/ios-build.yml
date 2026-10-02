@@ -37,6 +37,8 @@ jobs:
           tmp/native-tests/composer
           node tools/run_assistant_client_tests.js
           node tools/run_ios_protection_tests.js
+          node tools/run_brain_native_tests.js
+          node tools/run_private_stage_qa_tests.js
       - name: Build simulator
         run: |
           xcodebuild \

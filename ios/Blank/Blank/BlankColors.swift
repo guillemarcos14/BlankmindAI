@@ -87,6 +87,10 @@ extension Font {
     }
 
     static func blankEditorial(size: CGFloat, relativeTo textStyle: TextStyle = .largeTitle) -> Font {
+        .blankInter(size: size, relativeTo: textStyle)
+    }
+
+    static func blankOnboardingEditorial(size: CGFloat, relativeTo textStyle: TextStyle = .largeTitle) -> Font {
         .custom("TimesNewRomanPSMT", size: size, relativeTo: textStyle)
     }
 

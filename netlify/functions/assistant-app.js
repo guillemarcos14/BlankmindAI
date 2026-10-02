@@ -4,6 +4,9 @@ const { authUserHasAppleIdentity, ensureIdentityForAuthUser, identityForAuthUser
 const { assistantChannelUserId, findAssistantConnection, getAssistantMemory, recordAssistantChannel, recordConversationTurnState } = require("./_assistant_channel");
 const { pendingActionFromPlan } = require("./bm-pending-action");
 const { callBlankedAgent, queuePendingAssistantAction } = require("./whatsapp-agent");
+const { normalizeUserContext } = require("./bm-context");
+const { persistCanonicalSnapshot } = require("./_bm_user_context");
+const { commitMemory } = require("./bm-brain");
 
 const TABLE = "assistant_app_turns";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -85,6 +88,8 @@ function presentTurn(row, memory = {}) {
     id: row.id, user_text: row.user_text, assistant_text: row.assistant_text || "", status: row.status,
     action_id: row.action_id || "", action_label: row.action_label || "",
     action_status: actionStatus(row.action_id, memory, row.action_status), created_at: row.created_at,
+    auto_apply: row.auto_apply === true && ["queued", "delivered"].includes(actionStatus(row.action_id, memory, row.action_status)),
+    control_section: row.control_section || null,
   };
 }
 
@@ -95,6 +100,7 @@ function presentWithAvailableMemory(row, memory) {
 }
 
 async function presentWithMemory(auth, row) {
+  if (row.status === "completed" && row.brain_memory_effect && !row.brain_memory_applied_at) await commitMemory(auth.user.id, row.id);
   // A transient memory read failure must not hide an already committed reply.
   const memory = await getAssistantMemory(APP_CHANNEL, auth.user.id, { requireSemantic: true }).catch(() => null);
   return presentWithAvailableMemory(row, memory);
@@ -129,6 +135,9 @@ async function history(auth, body) {
     { method: "GET" },
   );
   const page = rows.slice(0, 60);
+  for (const row of page) {
+    if (row.status === "completed" && row.brain_memory_effect && !row.brain_memory_applied_at) await commitMemory(auth.user.id,row.id);
+  }
   const last = page[page.length - 1];
   const memory = await getAssistantMemory(APP_CHANNEL, auth.user.id, { requireSemantic: true }).catch(() => null);
   return json(200, {
@@ -209,7 +218,15 @@ function visibleReply(plan, context, action) {
   return answer;
 }
 
-async function prepare(auth, row, leaseOwner, prompt) {
+async function prepare(auth, row, leaseOwner, prompt, deviceContext) {
+  if (deviceContext != null) {
+    const context = normalizeUserContext(deviceContext);
+    if (!context.brain_snapshot || !Number.isSafeInteger(context.context_revision)) throw new Error("invalid_brain_snapshot");
+    // Bind IDs to the authenticated installation, never to client-supplied IDs.
+    context.anonymous_user_id = auth.identity.anonymous_user_id || `app:${auth.user.id}`;
+    const saved = await persistCanonicalSnapshot(auth.identity.assistant_connect_code, context, "app_turn_fresh_snapshot");
+    if (!saved) throw new Error("brain_snapshot_not_persisted");
+  }
   const { plan, context, modelUnavailable } = await callBlankedAgent(prompt, auth.user.id, auth.connection);
   // Do not commit a degraded reply as completed: the existing failed-turn lease
   // lets the client retry this exact UUID and payload. A canonical withdrawal is
@@ -225,12 +242,19 @@ async function prepare(auth, row, leaseOwner, prompt) {
     action.id = `app_${row.id}`;
     action.semantic_version = version + 1;
   }
-  const answer = visibleReply(plan, context, action);
+  let answer = visibleReply(plan, context, action);
   const spanish = String(plan.response_language || context.language || "").startsWith("es");
+  const autoApply = Boolean(context.brain_request?.execute && action && plan.actions?.length === 1
+    && ["start_protection","apply_schedule","update_schedule","set_daily_limit","enable_allow_only","enable_adult_filter","disable_pause"].includes(action.type)
+    && context.brain_snapshot && context.has_selected_apps && context.screen_time_authorized);
+  if (autoApply) answer = spanish ? "Voy a aplicar tu petición. El resultado se comprobará en el iPhone." : "I'll apply your request. The result will be checked on your iPhone.";
   const state = recordConversationTurnState(context.memory?.conversation_state, prompt, answer,
     context.memory?.last_topic || "", plan.semantic_state);
   const payload = {
     assistant_text: answer, action,
+    brain_memory_effect: context.brain_memory_effect || null,
+    auto_apply: autoApply,
+    control_section: ["report","settings","schedule","distractions","emergency"].includes(plan.control_section) ? plan.control_section : null,
     action_label: actionCopy(action, spanish)?.label || (action ? (spanish ? "Aplicar ahora" : "Apply now") : null),
     semantic_version: version + 1,
     invalidates: plan.semantic_state?.intent === "cancelled"
@@ -269,7 +293,7 @@ async function send(auth, body) {
   }
   const ownedPath = `${turnPath(auth.user.id, turnId)}&lease_owner=eq.${leaseOwner}&status=eq.processing`;
   try {
-    const row = claim.turn.prepared_payload ? claim.turn : await prepare(auth, claim.turn, leaseOwner, prompt);
+    const row = claim.turn.prepared_payload ? claim.turn : await prepare(auth, claim.turn, leaseOwner, prompt, body.context);
     const payload = row.prepared_payload;
     let action = null;
     if (payload.action) {
@@ -293,6 +317,9 @@ async function send(auth, body) {
       method: "PATCH", headers: { prefer: "return=representation" },
       body: JSON.stringify({ assistant_text: payload.assistant_text, action_id: action?.id || null,
         action_label: payload.action_label,
+        ...(payload.brain_memory_effect ? { brain_memory_effect: payload.brain_memory_effect } : {}),
+        ...(payload.auto_apply ? { auto_apply: true } : {}),
+        ...(payload.control_section ? { control_section: payload.control_section } : {}),
         status: "completed", completed_at: new Date().toISOString(), lease_expires_at: null,
         prepared_payload: null }),
     });

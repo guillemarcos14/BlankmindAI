@@ -79,6 +79,13 @@ function personalContextView(context = {}) {
     learned_personal_signals: copy(source.learned_memory_signals || source.user_context?.learned_memory_signals || []),
     recent_wellness_signals: copy(source.recent_wellness_signals || source.user_context?.recent_wellness_signals || []),
     remembered_context: rememberedContext(source.memory || source.user_context?.memory || {}),
+    durable_personal_memory: copy(source.brain_memories || []),
+    data_limits: source.brain_snapshot ? {
+      observed_at: source.brain_snapshot.generated_at,
+      authority: "iPhone observations for device state; user statements for personal memory",
+      phone_usage_available: false, saved_time_measured: false, billing_details_available: false,
+      history_complete: source.brain_snapshot.history_complete,
+    } : undefined,
     recent_conversation: recentMessages.slice(-8).map((message) => ({
       role: message?.role === "assistant" ? "assistant" : "user",
       content: clean(message?.content || message?.text, 420),
