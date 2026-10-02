@@ -171,4 +171,4 @@ function runBoundedAttempts({ budgetMs, hedgeAfterMs, minRemainingMs = 1000,
   });
 }
 
-module.exports = { readModelJson, runBoundedAttempts };
+module.exports = { readModelJson, runBoundedAttempts, usageCounts };

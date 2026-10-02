@@ -428,6 +428,10 @@ final class AssistantSpeechInput: ObservableObject {
     }
     deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
 
+    private func copy(_ spanish: String, _ english: String) -> String {
+        Locale.current.languageCode == "es" ? spanish : english
+    }
+
     func toggle() {
         if isRecording { finish(); return }
         if isStarting { return }
@@ -439,7 +443,7 @@ final class AssistantSpeechInput: ObservableObject {
         AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
             Task { @MainActor [weak self] in
                 guard let self, self.generation == current, owner == AssistantAppSession.userID else { return }
-                guard allowed else { self.isStarting = false; self.error = "Enable Microphone access in Settings."; return }
+                guard allowed else { self.isStarting = false; self.error = self.copy("Activa el acceso al micrófono en Ajustes.", "Enable Microphone access in Settings."); return }
                 do {
                     let audio = AVAudioSession.sharedInstance()
                     try audio.setCategory(.record, mode: .measurement)
@@ -461,7 +465,7 @@ final class AssistantSpeechInput: ObservableObject {
                             if recorder.currentTime >= 90 { self.finish() }
                         }
                     }
-                } catch { self.stop(); self.error = "Could not start the microphone. Try again." }
+                } catch { self.stop(); self.error = self.copy("No se pudo iniciar el micrófono. Reintenta.", "Could not start the microphone. Try again.") }
             }
         }
     }
@@ -485,7 +489,7 @@ final class AssistantSpeechInput: ObservableObject {
             } catch {
                 guard let self, self.generation == current else { return }
                 self.isStarting = false
-                self.error = "Could not transcribe audio. Tap the microphone to retry, or cancel."
+                self.error = self.copy("No se pudo transcribir. Pulsa el micrófono para reintentar o cancela.", "Could not transcribe audio. Tap the microphone to retry, or cancel.")
             }
         }
     }
@@ -867,7 +871,7 @@ struct AssistantAppView: View {
                     .font(.system(size: 22)).frame(width: 44, height: 50)
             }
             .fixedSize(horizontal: true, vertical: false)
-            .disabled(requiresVerification || waiting || speech.isStarting)
+            .disabled(requiresVerification || simulatorGuest || waiting || speech.isStarting)
             .opacity(requiresVerification || isSending ? 0.45 : 1)
             .accessibilityLabel(speech.isRecording || speech.isStarting
                                 ? (spanish ? "Enviar audio" : "Send audio")
