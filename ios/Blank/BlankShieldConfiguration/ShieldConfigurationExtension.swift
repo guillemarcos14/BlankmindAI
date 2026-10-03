@@ -3,9 +3,9 @@ import ManagedSettingsUI
 import UIKit
 
 private enum BlankShieldPalette {
-    static let charcoal = UIColor(red: 48 / 255.0, green: 49 / 255.0, blue: 42 / 255.0, alpha: 1)
+    static let charcoal = UIColor(red: 41 / 255.0, green: 41 / 255.0, blue: 41 / 255.0, alpha: 1)
     static let paleSteelBlue = UIColor(red: 201 / 255.0, green: 202 / 255.0, blue: 196 / 255.0, alpha: 1)
-    static let pureWhite = UIColor.white
+    static let pureWhite = UIColor(red: 1, green: 1, blue: 252 / 255.0, alpha: 1)
 }
 
 final class ShieldConfigurationExtension: ShieldConfigurationDataSource {

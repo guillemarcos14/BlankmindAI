@@ -426,6 +426,7 @@ struct HomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(activeSection == nil ? .light : (sessionStore.isBlankActive ? .dark : .light))
         .statusBarHidden(activeSection == nil)
+        .persistentSystemOverlays(activeSection == nil ? .hidden : .automatic)
         .environment(\.blankMinimalAppearance, true)
         .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.45), value: sessionStore.isBlankActive)
         .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.35), value: activeSection)
@@ -852,7 +853,7 @@ struct HomeView: View {
                     .allowsHitTesting(!isHoldingToUnblank)
                     .accessibilityHidden(isHoldingToUnblank)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
         .animation(.easeOut(duration: reduceMotion ? 0.12 : 0.38), value: isHomeMenuOpen)
         .overlay {
