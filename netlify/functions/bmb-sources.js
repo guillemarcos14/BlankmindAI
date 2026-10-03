@@ -5,7 +5,7 @@ const {statistics}=require("./bm-brain-data");
 // A closed catalog, explicit columns and a server-verified identity. Never accept
 // a table, owner or SQL supplied by the model or device.
 const CATALOG={
-  history:["assistant_app_turns","auth_user_id","id,user_text,assistant_text,created_at","created_at",true],
+  history:["assistant_app_turns","auth_user_id","id,user_text,assistant_text,action_id,created_at","created_at",true],
   sessions:["bmb_sessions","auth_user_id","id,started_at,ended_at,pause_started_at,pause_ended_at,ended_reason,entry_mode,observed_at","started_at"],
   features:["digital_wellness_feature_payloads","anonymous_user_id","id,payload,insight,period_start,period_end,created_at","created_at",true,true],
   onboarding:["onboarding_responses","anonymous_user_id","id,name,age_range,goal,profile,daily_hours,ai_goal,weak_moment,selected_plan,locale,created_at","created_at",true,true],

@@ -32,6 +32,27 @@ async function main() {
   const reorderedAction=Object.fromEntries(Object.entries(action()).reverse());
   result=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:reorderedAction},ctx);
   assert.equal(result.context.brain_request.execute,true,"JSON field order changed proposal authority");
+  const recover=require("../netlify/functions/bmb-proposal").recover;
+  const offered={id:"saved-offer",created_at:new Date(Date.now()-60000).toISOString(),action_id:null,
+    user_text:"I want to focus",assistant_text:"Want a 30-minute block of your distractions?"};
+  const extraction={turn_id:offered.id,offer:offered.assistant_text,action:action()};
+  const recoverOptions={normalize:brain.normalizeAction,run:async()=>extraction};
+  const restored=await recover({history:[offered]},recoverOptions);
+  assert.equal(restored.action.minutes,30);
+  assert.equal(await recover({history:[{...offered,action_id:"already-applied"}]},recoverOptions),null);
+  assert.equal(await recover({history:[offered],after:new Date().toISOString()},recoverOptions),null);
+  assert.equal(await recover({history:[{...offered,created_at:"2020-01-01"}]},recoverOptions),null);
+  assert.equal(await recover({history:[offered]}, {...recoverOptions,run:async()=>({...extraction,turn_id:"foreign"})}),null);
+  assert.equal(await recover({history:[offered]}, {...recoverOptions,run:async()=>({...extraction,offer:"invented offer"})}),null);
+  assert.equal(await recover({history:[offered,{...offered,id:"later",created_at:new Date().toISOString(),action_id:"other-action"}]},recoverOptions),null);
+  let reruns=0;
+  const recoveredTurn=await brain.plan({prompt:"Yes",context:context(),userId:"A",identity:{}},{
+    memories:[],recover:async()=>restored,
+    run:async input=>{reruns++;return {...base(),evidence:"Yes",message_kind:"acceptance",
+      decision:reruns===1?"ask":"execute",action:reruns===1?null:action(),accepted_proposal:input.pending?.proposal?.fingerprint||null};},
+  });
+  assert.equal(reruns,2);assert.equal(recoveredTurn.context.brain_request.execute,true);
+  assert.equal(recoveredTurn.plan.actions[0].minutes,30);
   const expired=context();expired.memory.conversation_state={bmb_state:{proposal:{...proposed,expires_at:"2020-01-01"}}};
   const expiredReply=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:action()},expired);assert.deepEqual(expiredReply.plan.actions,[]); const missing=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:null,action:action()});assert.deepEqual(missing.plan.actions,[]);assert.match(missing.plan.response_text,/haven.t applied/);assert.equal(missing.plan.bmb_state.proposal,null);
   result=await turn({...base(),message_kind:"action_request",decision:"execute",action:action()});assert.equal(result.plan.actions.length,1);
