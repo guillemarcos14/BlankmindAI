@@ -90,6 +90,7 @@ struct BlankApp: App {
                         BlankBrain.shared.configure(store: sessionStore, blocker: screenTimeBlocker, purchases: purchaseStore)
                     appDelegate.registerForRemoteActions()
                         BlankBrain.shared.sync()
+                        Task { _ = await BlankBrain.shared.executeAutonomous() }
                         checkAppleCredentialState()
                         screenTimeBlocker.refreshAuthorizationStatus()
                         sessionStore.syncRecurringSchedule()
@@ -337,7 +338,10 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         let hasAssistantAction = notification.request.content.userInfo["bm_action_id"] != nil
-        completionHandler(hasAssistantAction ? [.banner, .list, .sound] : [])
+        let hasBMBEvent = notification.request.content.userInfo["bm_event_id"] != nil
+        Task { @MainActor in
+            completionHandler((hasAssistantAction || hasBMBEvent) && !BlankBrain.shared.chatIsOpen ? [.banner, .list, .sound] : [])
+        }
     }
 
     func userNotificationCenter(
@@ -347,6 +351,9 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
     ) {
         let userInfo = response.notification.request.content.userInfo
         let isAssistantAction = userInfo["bm_action_id"] != nil
+        if userInfo["bm_event_id"] != nil, let url = URL(string:"blank://assistant") {
+            DispatchQueue.main.async { UIApplication.shared.open(url) }
+        }
         let shouldApply = response.actionIdentifier == AssistantRemoteNotification.applyActionIdentifier
             || response.actionIdentifier == UNNotificationDefaultActionIdentifier
         if isAssistantAction && shouldApply {
@@ -385,10 +392,13 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
-        // A remote proposal is intentionally inert until the person taps
-        // its visible notification. This callback may be delivered silently by
-        // APNs, so it must never acknowledge or execute the pending action.
-        completionHandler(.noData)
+        guard userInfo["bm_autonomous"] as? Bool == true, let actionID = userInfo["bm_action_id"] as? String else {
+            completionHandler(.noData); return
+        }
+        Task { @MainActor in
+            let applied = await BlankBrain.shared.executeAutonomous(actionID:actionID)
+            completionHandler(applied ? .newData : .noData)
+        }
     }
 
     private func registerStoredTokenIfPossible() {

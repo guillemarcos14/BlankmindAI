@@ -774,6 +774,10 @@ final class SessionStore: ObservableObject {
                 if let expiresAt = window.expiresAt {
                     payload["expires_at"] = expiresAt.timeIntervalSince1970
                 }
+                if let start = window.startsAt { payload["starts_at"] = ISO8601DateFormatter().string(from:start) }
+                if let end = window.endsAt { payload["ends_at"] = ISO8601DateFormatter().string(from:end) }
+                if let timezone = window.timeZoneIdentifier { payload["timezone"] = timezone }
+                payload["recurrence"] = window.startsAt != nil ? "once" : (window.expiresAt == nil ? "continuous" : "weekly")
                 return payload
             }
         ]
@@ -808,9 +812,9 @@ final class SessionStore: ObservableObject {
         name: String = "AI Plan",
         weekdays: [Int] = Array(1...7)
     ) {
-        let candidateExpiry = Calendar.current.date(
+        let candidateExpiry = durationDays == 0 ? nil : Calendar.current.date(
             byAdding: .day,
-            value: max(1, min(14, durationDays)),
+            value: max(1, min(365, durationDays)),
             to: Date()
         )
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "AI Plan" : name
@@ -976,6 +980,9 @@ final class SessionStore: ObservableObject {
 
     private func scheduleEndDate(containing date: Date, calendar: Calendar = .current) -> Date? {
         guard schedule.enabled, let window = schedule.window(containing: date, calendar: calendar) else { return nil }
+        if let end = window.endsAt { return end }
+        var calendar = calendar
+        if let timezone = window.timeZoneIdentifier, let value = TimeZone(identifier:timezone) { calendar.timeZone = value }
 
         let minute = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
         let dayStart = calendar.startOfDay(for: date)
@@ -987,7 +994,7 @@ final class SessionStore: ObservableObject {
             endDay = dayStart
         }
 
-        return calendar.date(byAdding: .minute, value: window.endMinute, to: endDay)
+        return calendar.date(bySettingHour: window.endMinute / 60, minute: window.endMinute % 60, second: 0, of: endDay)
     }
 
     private var currentSelectionSnapshot: BlankSelectionSnapshot {
@@ -1148,11 +1155,40 @@ final class SessionStore: ObservableObject {
     }
 
     @discardableResult
+    func applyBMBProtectionSchedule(_ command: AssistantInboxAction) -> Bool {
+        guard let timezone = command.timezone, TimeZone(identifier: timezone) != nil,
+              let startMinute = command.startMinute, let endMinute = command.endMinute,
+              let id = UUID(uuidString: String(command.id.dropFirst(4))) else { return false }
+        let targetID = command.type == "update_schedule" ? command.windowId.flatMap(UUID.init(uuidString:)) : nil
+        if command.type == "update_schedule", targetID == nil || !schedule.windows.contains(where: { $0.id == targetID }) { return false }
+        if command.type != "update_schedule", schedule.windows.contains(where: { $0.id == id }) { return recurringScheduleRegistered }
+        let previous = schedule
+        let window: BlankHabitWindow
+        if command.recurrence == "once" {
+            guard let start = AssistantInboxAction.parseDate(command.startsAt), let end = AssistantInboxAction.parseDate(command.endsAt),
+                  start > Date(), end > start else { return false }
+            window = BlankHabitWindow(id:targetID ?? id,name:"Protection",enabled:true,startMinute:startMinute,endMinute:endMinute,
+                expiresAt:end,startsAt:start,endsAt:end,timeZoneIdentifier:timezone)
+        } else {
+            guard ["weekly","continuous"].contains(command.recurrence ?? ""), let weekdays = command.weekdays, !weekdays.isEmpty else { return false }
+            var calendar = Calendar(identifier:.gregorian); calendar.timeZone = TimeZone(identifier:timezone)!
+            let expiry = command.recurrence == "continuous" ? nil : calendar.date(byAdding:.day,value:command.durationDays ?? 7,to:Date())
+            window = BlankHabitWindow(id:targetID ?? id,name:"Protection",enabled:true,startMinute:startMinute,endMinute:endMinute,
+                weekdays:weekdays,expiresAt:expiry,timeZoneIdentifier:timezone)
+        }
+        schedule = BlankFocusSchedule(enabled: true, windows: previous.windows.filter { $0.id != targetID } + [window])
+        guard recurringScheduleRegistered else { schedule = previous; return false }
+        return true
+    }
+
+    @discardableResult
     func updateScheduleWindow(id: String, name: String, startMinute: Int, endMinute: Int, weekdays: [Int]) -> Bool {
         guard let uuid = UUID(uuidString: id),
               let index = schedule.windows.firstIndex(where: { $0.id == uuid }) else { return false }
         var values = schedule.windows
         let existing = values[index]
+        // Legacy commands cannot erase a dated window's exact scope.
+        guard existing.startsAt == nil else { return false }
         values[index] = BlankHabitWindow(
             id: existing.id,
             name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? existing.name : name,
@@ -1160,7 +1196,8 @@ final class SessionStore: ObservableObject {
             startMinute: min(max(startMinute, 0), 1439),
             endMinute: min(max(endMinute, 0), 1439),
             weekdays: weekdays,
-            expiresAt: existing.expiresAt
+            expiresAt: existing.expiresAt,
+            timeZoneIdentifier: existing.timeZoneIdentifier
         )
         schedule = BlankFocusSchedule(
             enabled: values.contains(where: { $0.enabled }),

@@ -30,7 +30,11 @@ function normalizeBrainSnapshot(input) {
     history_started_at: date(input.history_started_at), history_complete: input.history_complete === true && sessions.length === input.sessions.length,
     sessions, account: { signed_in: input.account?.signed_in === true,
       premium_access: input.account?.premium_access === true,
-      subscription_source: "App Store", billing_details_available: false },
+      active_product_ids: Array.isArray(input.account?.active_product_ids)?input.account.active_product_ids.filter(v=>typeof v==="string"&&/^[\w.-]{1,120}$/.test(v)).slice(0,8):[],
+      referral_trial_ends_at: date(input.account?.referral_trial_ends_at),
+      referral_count: Number.isInteger(input.account?.referral_count)&&input.account.referral_count>=0?Math.min(input.account.referral_count,100000):0,
+      demo_access: input.account?.demo_access === true,
+      subscription_source: "device_entitlement_observation", billing_details_available: false },
     capabilities: ["configuration", "statistics", "session_history", "conversation_history", "personal_memory", "native_actions"] };
 }
 

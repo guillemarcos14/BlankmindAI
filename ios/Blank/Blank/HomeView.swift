@@ -103,6 +103,7 @@ struct AssistantActionReceipt: Equatable {
 }
 
 enum AssistantActionReceiptStore {
+    private static let ownerKey = "blankBMBReceiptOwner"
     private static let actionIdKey = "blankAssistantReceiptActionId"
     private static let statusKey = "blankAssistantReceiptStatus"
     private static let detailKey = "blankAssistantReceiptDetail"
@@ -112,6 +113,7 @@ enum AssistantActionReceiptStore {
     static func load(defaults: UserDefaults = BlankSharedState.defaults) -> AssistantActionReceipt? {
         guard let actionId = defaults.string(forKey: actionIdKey), !actionId.isEmpty,
               let status = defaults.string(forKey: statusKey), !status.isEmpty else { return nil }
+        if actionId.hasPrefix("bmb_"), defaults.string(forKey:ownerKey) != AssistantAppSession.userID { return nil }
         let evidence = defaults.dictionary(forKey: evidenceKey) ?? [:]
         return AssistantActionReceipt(
             actionId: actionId,
@@ -145,6 +147,7 @@ enum AssistantActionReceiptStore {
         defaults: UserDefaults = BlankSharedState.defaults
     ) {
         defaults.set(actionId, forKey: actionIdKey)
+        if actionId.hasPrefix("bmb_") { defaults.set(AssistantAppSession.userID,forKey:ownerKey) }
         defaults.set(status, forKey: statusKey)
         defaults.set(detail, forKey: detailKey)
         defaults.set(executionStarted, forKey: executionStartedKey)
@@ -164,6 +167,7 @@ enum AssistantActionReceiptStore {
     static func clear(actionId: String, defaults: UserDefaults = BlankSharedState.defaults) {
         guard defaults.string(forKey: actionIdKey) == actionId else { return }
         defaults.removeObject(forKey: actionIdKey)
+        defaults.removeObject(forKey: ownerKey)
         defaults.removeObject(forKey: statusKey)
         defaults.removeObject(forKey: detailKey)
         defaults.removeObject(forKey: executionStartedKey)
@@ -172,6 +176,7 @@ enum AssistantActionReceiptStore {
 }
 
 struct AssistantActionInboxClient {
+    var requestTimeout: TimeInterval = 8
     func actionForApplication(actionId: String, connectCode: String, channel: String) async throws -> AssistantInboxAction {
         let data = try await request(action: "poll_pending_action", connectCode: connectCode, channel: channel)
         let response = try JSONDecoder().decode(AssistantInboxResponse.self, from: data)
@@ -192,7 +197,7 @@ struct AssistantActionInboxClient {
         return .success(response.pendingAction)
     }
 
-    private func acknowledge(
+    func acknowledge(
         actionId: String,
         status: String,
         connectCode: String,
@@ -292,7 +297,7 @@ struct AssistantActionInboxClient {
         if let environment, !environment.isEmpty { body["environment"] = environment }
         let payload = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await AssistantAppClient().postAuthorized(
-            path: "assistant-channel", payload: payload, timeout: 8
+            path: "assistant-channel", payload: payload, timeout: requestTimeout
         )
         guard (200..<300).contains(response.statusCode) else {
             throw URLError(.badServerResponse)
@@ -1668,6 +1673,13 @@ struct HomeView: View {
                 execution: execution
             )
         case .applySchedule(_, let start, let end, let weekdays, let days, let appNames):
+            if let remote = pendingAssistantInboxAction, remote.recurrence != nil {
+                let registered = sessionStore.applyBMBProtectionSchedule(remote)
+                applyScreenTimeControls()
+                finishPendingAssistantAction(status: registered ? "verified" : "failed",
+                    detail: registered ? "dated_schedule_registered" : "dated_schedule_registration_failed")
+                return
+            }
             guard sessionStore.restoreSavedSelectionForAssistant(appNames: appNames) else {
                 sessionStore.requestBlockConfiguration(
                     appNames: appNames,
@@ -1694,7 +1706,9 @@ struct HomeView: View {
             messageAction = nil
             finishPendingAssistantAction(status: sessionStore.recurringScheduleRegistered ? "verified" : "failed", detail: sessionStore.recurringScheduleRegistered ? "schedule_registered" : "device_activity_registration_failed")
         case .updateSchedule(let windowId, let name, let start, let end, let weekdays):
-            let updated = sessionStore.updateScheduleWindow(
+            let updated = pendingAssistantInboxAction?.recurrence != nil
+                ? sessionStore.applyBMBProtectionSchedule(pendingAssistantInboxAction!)
+                : sessionStore.updateScheduleWindow(
                 id: windowId,
                 name: name,
                 startMinute: start,
@@ -2080,20 +2094,10 @@ struct HomeView: View {
 
     private func showPendingBAIProactiveAlertIfNeeded() {
         let defaults = BlankSharedState.defaults
-        guard let id = defaults.string(forKey: "blankBAIProactiveAlertId"),
-              id != defaults.string(forKey: "blankBAIProactiveAlertConsumedId"),
-              let body = defaults.string(forKey: "blankBAIProactiveAlertBody"),
-              !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return
+        // Discard the previous brain's cached copy; BMB owns all proactive text.
+        for key in ["blankBAIProactiveAlertId","blankBAIProactiveAlertBody","blankBAIProactiveAlertCreatedAt","blankBAIProactiveAlertConsumedId"] {
+            defaults.removeObject(forKey:key)
         }
-        let createdAt = defaults.double(forKey: "blankBAIProactiveAlertCreatedAt")
-        guard createdAt <= 0 || Date().timeIntervalSince1970 - createdAt < 24 * 60 * 60 else {
-            defaults.set(id, forKey: "blankBAIProactiveAlertConsumedId")
-            return
-        }
-        message = body
-        messageAction = nil
-        defaults.set(id, forKey: "blankBAIProactiveAlertConsumedId")
     }
 
     private func setMessage(for result: SessionStore.NfcResult) {
@@ -2404,6 +2408,7 @@ private struct SettingsScreen: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
     @State private var showingAccount = false
+    @State private var showingBMBSettings = false
 
     let onClose: () -> Void
     let onOpenEmergency: () -> Void
@@ -2428,6 +2433,7 @@ private struct SettingsScreen: View {
                 )
                 .padding(.bottom, 12)
 
+                settingsRow(title: "blankmind", detail: "autonomy and notifications", action: { showingBMBSettings = true })
                 settingsRow(
                     title: "emergency",
                     detail: "unlock access while blanked",
@@ -2479,6 +2485,7 @@ private struct SettingsScreen: View {
         }
         .padding(.horizontal, sectionHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .sheet(isPresented: $showingBMBSettings) { BMBSettingsView() }
         .sheet(isPresented: $showingAccount) {
             AccountSettingsSheet()
                 .environmentObject(sessionStore)
@@ -2620,7 +2627,10 @@ private struct ScheduleEditorContent: View {
                 startMinute: window.startMinute,
                 endMinute: window.endMinute,
                 weekdays: window.weekdays,
-                expiresAt: window.expiresAt
+                expiresAt: window.expiresAt,
+                startsAt: window.startsAt,
+                endsAt: window.endsAt,
+                timeZoneIdentifier: window.timeZoneIdentifier
             )
         }
         let first = normalized.first ?? BlankHabitWindow(enabled: false)
@@ -2806,7 +2816,7 @@ private struct HabitWindowCard: View {
             HStack(spacing: 8) {
                 routineMetric(title: "start", value: formatMinute(window.startMinute))
                 routineMetric(title: "end", value: formatMinute(window.endMinute))
-                routineMetric(title: "days", value: daysSummary)
+                routineMetric(title: window.startsAt == nil ? "days" : "date", value: daysSummary)
             }
 
             if isExpanded {
@@ -2816,12 +2826,14 @@ private struct HabitWindowCard: View {
                         WheelTimePicker(minute: $window.endMinute)
                     }
                     .padding(.top, 2)
+                    .disabled(window.startsAt != nil)
 
                     HabitDaysPicker(
                         selectedWeekdays: $window.weekdays,
                         textColor: textColor,
                         secondaryColor: secondaryColor
                     )
+                    .disabled(window.startsAt != nil)
 
                     if canDelete {
                         Button(action: onDelete) {
@@ -2865,6 +2877,11 @@ private struct HabitWindowCard: View {
     }
 
     private var daysSummary: String {
+        if let start = window.startsAt {
+            let formatter = DateFormatter(); formatter.dateFormat = "MMM d"
+            if let timezone = window.timeZoneIdentifier { formatter.timeZone = TimeZone(identifier:timezone) }
+            return formatter.string(from:start)
+        }
         if window.runsEveryDay {
             return "everyday"
         }
@@ -3996,5 +4013,142 @@ struct AccountJustifiedCopy: UIViewRepresentable {
 private final class AccountLegalLayoutManager: NSLayoutManager {
     override func drawUnderline(forGlyphRange glyphRange: NSRange, underlineType underlineVal: NSUnderlineStyle, baselineOffset: CGFloat, lineFragmentRect lineRect: CGRect, lineFragmentGlyphRange lineGlyphRange: NSRange, containerOrigin: CGPoint) {
         super.drawUnderline(forGlyphRange: glyphRange, underlineType: underlineVal, baselineOffset: baselineOffset - 2, lineFragmentRect: lineRect, lineFragmentGlyphRange: lineGlyphRange, containerOrigin: containerOrigin)
+    }
+}
+
+
+private struct BMBSettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var version = 0
+    @State private var active = false
+    @State private var enabled = false
+    @State private var allowedTypes = Set(["start_protection"])
+    @State private var actionStart = 0
+    @State private var actionEnd = 0
+    @State private var quietStart = 480
+    @State private var quietEnd = 1320
+    @State private var maxMinutes = 30
+    @State private var actionDaily = 1
+    @State private var actionWeekly = 3
+    @State private var notifyDaily = 1
+    @State private var notifyWeekly = 3
+    @State private var intervalMinutes = 1440
+    @State private var expires = Date().addingTimeInterval(30*86400)
+    @State private var pausedUntil: String?
+    @State private var opportunities = true
+    @State private var interventions = true
+    @State private var failures = true
+    @State private var busy = true
+    @State private var status = ""
+    @State private var events: [[String: Any]] = []
+    private func clock(_ value: Binding<Int>) -> Binding<Date> {
+        Binding(get: { Calendar.current.date(bySettingHour:value.wrappedValue/60,minute:value.wrappedValue%60,second:0,of:Date()) ?? Date() },
+                set: { value.wrappedValue = Calendar.current.component(.hour,from:$0)*60 + Calendar.current.component(.minute,from:$0) })
+    }
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Automatic protection") {
+                    Toggle("Allow BMB to act", isOn:$active)
+                    Text("BMB can try these actions within your limits. iOS may delay background delivery. Existing blocks keep their release rules.").font(.footnote)
+                    ForEach([("start_protection","Block selected distractions"),("set_daily_limit","Set daily limit"),("enable_adult_filter","Enable adult filter")], id: \.0) { type,label in
+                        Toggle(label,isOn:Binding(get:{ allowedTypes.contains(type) },set:{ if $0 { allowedTypes.insert(type) } else { allowedTypes.remove(type) } }))
+                    }
+                    DatePicker("From",selection:clock($actionStart),displayedComponents:.hourAndMinute)
+                    DatePicker("Until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
+                    Text("Matching times allow any hour.").font(.footnote)
+                    Text("Daily limits and the adult filter stay on until you change them. Revoking permission stops future automatic changes.").font(.footnote)
+                    Stepper("Maximum minutes \(maxMinutes)",value:$maxMinutes,in:5...240,step:5)
+                    Stepper("Actions per day \(actionDaily)",value:$actionDaily,in:0...10)
+                    Stepper("Actions per 7 days \(actionWeekly)",value:$actionWeekly,in:0...30)
+                    Stepper("Minimum gap \(intervalMinutes) min",value:$intervalMinutes,in:15...10080,step:15)
+                    DatePicker("Permission expires",selection:$expires,in:Date()...,displayedComponents:[.date,.hourAndMinute])
+                }
+                Section("Notifications") {
+                    Toggle("Useful notifications",isOn:$enabled)
+                    Text("Notification permission is separate from acting. Quiet hours still apply to failures. No routine start or end alerts.").font(.footnote)
+                    Toggle("Useful opportunities",isOn:$opportunities)
+                    Toggle("Confirmed new interventions",isOn:$interventions)
+                    Toggle("Failures needing my help",isOn:$failures)
+                    DatePicker("Allowed from",selection:clock($quietStart),displayedComponents:.hourAndMinute)
+                    DatePicker("Allowed until",selection:clock($quietEnd),displayedComponents:.hourAndMinute)
+                    Stepper("Notifications per day \(notifyDaily)",value:$notifyDaily,in:0...10)
+                    Stepper("Notifications per 7 days \(notifyWeekly)",value:$notifyWeekly,in:0...30)
+                }
+                Section {
+                    Button("Pause BMB for 24 hours") { pausedUntil=ISO8601DateFormatter().string(from:Date().addingTimeInterval(86400)); Task { await save() } }
+                    Button("Resume BMB") { pausedUntil=nil; Task { await save() } }
+                    Button("Revoke automatic protection",role:.destructive) { active=false; Task { await save() } }
+                    Button("Save preferences") { Task { await save() } }
+                    if !status.isEmpty { Text(status).font(.footnote) }
+                }
+                if !events.isEmpty {
+                    Section("Recent help") {
+                        ForEach(events.indices,id: \.self) { index in
+                            let event=events[index]
+                            VStack(alignment:.leading) {
+                                Text((event["outcome"] as? [String:Any])?["message_text"] as? String ?? (event["kind"] as? String ?? "BMB"))
+                                Text(event["created_at"] as? String ?? "").font(.caption)
+                                HStack {
+                                    Button("Helpful") { Task { await feedback(event,"helpful") } }
+                                    Button("Wrong time") { Task { await feedback(event,"wrong_time") } }
+                                    Button("Too frequent") { Task { await feedback(event,"too_frequent") } }
+                                }.buttonStyle(.borderless)
+                            }
+                        }
+                    }
+                }
+            }
+            .disabled(busy)
+            .navigationTitle("Blankmind")
+            .toolbar { Button("Done") { dismiss() } }
+            .task { await load() }
+        }
+    }
+    private func request(_ body: [String: Any]) async throws -> [String: Any] {
+        let owner=AssistantAppSession.userID
+        var payload=body; payload["app_install_id"]=BlankSharedState.appInstallId
+        let data=try JSONSerialization.data(withJSONObject:payload)
+        let (result,response)=try await AssistantAppClient().postAuthorized(path:"assistant-app",payload:data,timeout:8)
+        guard owner != nil, owner==AssistantAppSession.userID, (200..<300).contains(response.statusCode),
+              let decoded=try JSONSerialization.jsonObject(with:result) as? [String:Any] else { throw URLError(.badServerResponse) }
+        return decoded
+    }
+    private func load() async {
+        busy=true; defer { busy=false }
+        do {
+            let result=try await request(["action":"bmb_settings"])
+            let account=result["account"] as? [String:Any] ?? [:]
+            version=account["version"] as? Int ?? 0
+            let settings=account["settings"] as? [String:Any] ?? [:]
+            let grant=settings["grant"] as? [String:Any] ?? [:], notifications=settings["notifications"] as? [String:Any] ?? [:]
+            active=grant["active"] as? Bool ?? false; enabled=notifications["enabled"] as? Bool ?? false
+            allowedTypes=Set(grant["action_types"] as? [String] ?? ["start_protection"])
+            if allowedTypes.isEmpty { allowedTypes=["start_protection"] }
+            actionStart=grant["start_minute"] as? Int ?? 0; actionEnd=grant["end_minute"] as? Int ?? 0
+            maxMinutes=grant["max_minutes"] as? Int ?? 30
+            actionDaily=grant["max_per_day"] as? Int ?? 1; actionWeekly=grant["max_per_week"] as? Int ?? 3
+            intervalMinutes=grant["min_interval_minutes"] as? Int ?? 1440
+            expires=AssistantInboxAction.parseDate(grant["expires_at"] as? String) ?? Date().addingTimeInterval(30*86400)
+            quietStart=notifications["start_minute"] as? Int ?? 480; quietEnd=notifications["end_minute"] as? Int ?? 1320
+            notifyDaily=notifications["max_per_day"] as? Int ?? 1; notifyWeekly=notifications["max_per_week"] as? Int ?? 3
+            opportunities=notifications["opportunities"] as? Bool ?? true; interventions=notifications["interventions"] as? Bool ?? true; failures=notifications["failures"] as? Bool ?? true
+            pausedUntil=settings["paused_until"] as? String
+            events=(try await request(["action":"bmb_activity"]))["events"] as? [[String:Any]] ?? []
+        } catch { status="Could not load preferences. Reopen to retry." }
+    }
+    private func save() async {
+        busy=true; defer { busy=false }
+        let settings: [String:Any] = ["timezone":TimeZone.current.identifier,"paused_until":pausedUntil as Any? ?? NSNull(),
+            "grant":["active":active,"action_types":Array(allowedTypes).sorted(),"start_minute":actionStart,"end_minute":actionEnd,
+                "max_minutes":maxMinutes,"max_per_day":actionDaily,"max_per_week":actionWeekly,"min_interval_minutes":intervalMinutes,"expires_at":ISO8601DateFormatter().string(from:expires)],
+            "notifications":["enabled":enabled,"start_minute":quietStart,"end_minute":quietEnd,"max_per_day":notifyDaily,"max_per_week":notifyWeekly,
+                "opportunities":opportunities,"interventions":interventions,"failures":failures]]
+        do { let response=try await request(["action":"bmb_save_settings","settings":settings,"version":version]); version=response["version"] as? Int ?? version; status="Saved." }
+        catch { status="Could not save. Reopen to refresh preferences and retry." }
+    }
+    private func feedback(_ event: [String:Any],_ value: String) async {
+        do { _ = try await request(["action":"bmb_feedback","event_id":event["id"] ?? "","feedback":value]); status="Feedback saved." }
+        catch { status="Could not save feedback." }
     }
 }

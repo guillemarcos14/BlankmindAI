@@ -376,6 +376,9 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
     var endMinute: Int
     var weekdays: [Int]
     var expiresAt: Date?
+    var startsAt: Date?
+    var endsAt: Date?
+    var timeZoneIdentifier: String?
 
     init(
         id: UUID = UUID(),
@@ -384,7 +387,10 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
         startMinute: Int = 23 * 60 + 30,
         endMinute: Int = 8 * 60,
         weekdays: [Int] = Array(1...7),
-        expiresAt: Date? = nil
+        expiresAt: Date? = nil,
+        startsAt: Date? = nil,
+        endsAt: Date? = nil,
+        timeZoneIdentifier: String? = nil
     ) {
         self.id = id
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -395,10 +401,16 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
         self.endMinute = min(max(endMinute, 0), 1439)
         self.weekdays = Self.normalizedWeekdays(weekdays)
         self.expiresAt = expiresAt
+        self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.timeZoneIdentifier = timeZoneIdentifier
     }
 
     func contains(_ date: Date, calendar: Calendar = .current) -> Bool {
         guard enabled, expiresAt.map({ $0 > date }) ?? true else { return false }
+        if let startsAt, let endsAt { return date >= startsAt && date < endsAt }
+        var calendar = calendar
+        if let timeZoneIdentifier, let zone = TimeZone(identifier: timeZoneIdentifier) { calendar.timeZone = zone }
         let minute = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
         let activeWeekday = activeWeekday(for: date, minute: minute, calendar: calendar)
         guard weekdays.contains(activeWeekday) else { return false }
@@ -416,6 +428,7 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
     }
 
     func remainingMinutes(from date: Date, calendar: Calendar = .current) -> Int {
+        if let endsAt { return max(1, Int(ceil(endsAt.timeIntervalSince(date) / 60))) }
         let minute = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
         let remaining: Int
         if startMinute < endMinute {
@@ -453,6 +466,7 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
         case endMinute
         case weekdays
         case expiresAt
+        case startsAt, endsAt, timeZoneIdentifier
     }
 
     init(from decoder: Decoder) throws {
@@ -464,6 +478,9 @@ struct BlankHabitWindow: Codable, Identifiable, Equatable {
         endMinute = min(max(try container.decodeIfPresent(Int.self, forKey: .endMinute) ?? 8 * 60, 0), 1439)
         weekdays = Self.normalizedWeekdays(try container.decodeIfPresent([Int].self, forKey: .weekdays) ?? Array(1...7))
         expiresAt = try container.decodeIfPresent(Date.self, forKey: .expiresAt)
+        startsAt = try container.decodeIfPresent(Date.self, forKey: .startsAt)
+        endsAt = try container.decodeIfPresent(Date.self, forKey: .endsAt)
+        timeZoneIdentifier = try container.decodeIfPresent(String.self, forKey: .timeZoneIdentifier)
     }
 }
 

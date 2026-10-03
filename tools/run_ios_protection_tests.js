@@ -25,7 +25,7 @@ assert.match(monitor, /ManagedSettingsStore\(named: ManagedSettingsStore\.Name\(
 assert.match(store, /dailyLimitRegistered = DeviceActivityTimerScheduler\.startDailyLimit/);
 assert.match(store, /recurringScheduleRegistered = DeviceActivityTimerScheduler\.syncRecurringSchedule/);
 assert.match(store, /blankActiveUntil == nil \|\| deviceActivityTimerScheduled/);
-const capacity = scheduler.indexOf('guard intervals.count + expirations.count <= maxScheduleActivities');
+const capacity = scheduler.indexOf('guard intervals.count + expirations.count + dated.count <= maxScheduleActivities');
 assert(capacity >= 0 && scheduler.indexOf('center.stopMonitoring', capacity) > capacity);
 const polling = between(home, '    private func pollPendingAssistantActionIfNeeded', '    private func clearAssistantNotificationRequest');
 assert.equal((polling.match(/guard assistantIdentityMatches\(code: code, channel: channel, owner: accountID\)/g) || []).length, 2);
@@ -52,6 +52,11 @@ const intervals = scheduler.slice(scheduler.indexOf('    private static func rec
 const extensionModel = between(monitor, '    private struct StoredWindow:', '    private static func recurringScheduleIsActive')
   .replace('private struct StoredWindow', 'struct StoredWindow');
 const fixtures = `
+final class ScheduleEndFixture {
+    var schedule: BlankFocusSchedule
+    init(_ schedule: BlankFocusSchedule) { self.schedule = schedule }
+${between(store, '    private func scheduleEndDate(containing', '    private var currentSelectionSnapshot').replace('private func scheduleEndDate', 'func scheduleEndDate')}
+}
 struct InboxDateFixture {
     var requestedAt: String?
 ${between(control, '    var requestedDate: Date?', '\n}').replace(/\n}\s*$/, '')}

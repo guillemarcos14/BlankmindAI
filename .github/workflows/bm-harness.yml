@@ -57,8 +57,11 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/023_assistant_app_recovery.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/024_restore_bm_legacy_context_snapshots.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/026_blankmind_brain_memory.sql
+          psql -v ON_ERROR_STOP=1 -f tools/bmb_database_setup.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/027_bmb_autonomy.sql
           psql -v ON_ERROR_STOP=1 -f tools/assistant_app_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/bm_brain_database_test.sql
+          psql -v ON_ERROR_STOP=1 -f tools/bmb_database_test.sql
   harness:
     name: Contract and runtime gate
     runs-on: ubuntu-latest

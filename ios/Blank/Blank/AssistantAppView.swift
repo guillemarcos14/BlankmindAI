@@ -711,12 +711,14 @@ struct AssistantAppView: View {
             }
         }
         .onReceive(Timer.publish(every: 8, on: .main, in: .common).autoconnect()) { _ in
+            if scenePhase == .active { BlankBrain.shared.chatIsOpen = true; BlankBrain.shared.sync() }
             guard scenePhase == .active, !preview, !simulatorGuest, !isSending else { return }
             if composer.pending != nil || latest.map({ !$0.actionId.isEmpty && !AssistantActionCopy.terminal.contains($0.actionStatus) }) == true {
                 Task { await reload() }
             }
         }
         .onChange(of: scenePhase) { phase in
+            BlankBrain.shared.chatIsOpen = phase == .active
             if phase == .active && !preview && !simulatorGuest { Task { restoreOwner(); await reload() } }
             else {
                 // Permission alerts temporarily deactivate the scene. Keep that
@@ -738,6 +740,8 @@ struct AssistantAppView: View {
                 foreground: foreground, background: background, onApplyAction: { id in Task { await applyAction(id) } })
                 .preferredColorScheme(dark ? .dark : .light)
         }
+        .onAppear { BlankBrain.shared.chatIsOpen = true; BlankBrain.shared.sync() }
+        .onDisappear { BlankBrain.shared.chatIsOpen = false; BlankBrain.shared.sync() }
         .sheet(isPresented: $showAccountSignIn, onDismiss: { Task { restoreOwner(); await reload() } }) {
             AppAccountSignInSheet()
         }

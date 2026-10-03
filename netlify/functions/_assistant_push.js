@@ -68,7 +68,9 @@ function normalizeDevicePush(value) {
   };
 }
 
-function pushPayload(action) {
+function pushPayload(action, options = {}) {
+  if (options.notification) return {aps:{alert:{title:"Blankmind",body:options.notification.text},sound:"default"},bm_event_id:options.notification.id,blank_url:"blank://assistant"};
+  if (options.silent) return {aps:{"content-available":1},bm_action_id:action.id,bm_autonomous:true};
   const alertBody = action?.type === "open_app_picker"
     ? "Tap to choose your distractions in Blankmind."
     : action?.type === "request_screen_time_permission"
@@ -93,14 +95,14 @@ function pushExpiration(action) {
   return Math.floor((Number.isFinite(expiresAt) ? expiresAt : fallback) / 1000);
 }
 
-async function sendAssistantActionPushOnce(devicePush, action) {
+async function sendAssistantActionPushOnce(devicePush, action, options = {}) {
   const device = normalizeDevicePush(devicePush);
   const auth = providerToken();
   const topic = String(process.env.APNS_TOPIC || "com.blanknfc.app.ios").trim();
   if (!device) return { sent: false, reason: "missing_device_token" };
   if (!auth || !topic) return { sent: false, reason: "apns_not_configured" };
   const host = device.environment === "sandbox" ? "https://api.sandbox.push.apple.com" : "https://api.push.apple.com";
-  const body = JSON.stringify(pushPayload(action));
+  const body = JSON.stringify(pushPayload(action, options));
   const apnsId = crypto.randomUUID();
 
   return new Promise((resolve) => {
@@ -121,8 +123,8 @@ async function sendAssistantActionPushOnce(devicePush, action) {
       ":path": `/3/device/${device.token}`,
       authorization: `bearer ${auth}`,
       "apns-topic": topic,
-      "apns-push-type": "alert",
-      "apns-priority": "10",
+      "apns-push-type": options.silent ? "background" : "alert",
+      "apns-priority": options.silent ? "5" : "10",
       "apns-expiration": String(pushExpiration(action)),
       "apns-collapse-id": String(action?.id || "blankmind-action").slice(0, 64),
       "apns-id": apnsId,
@@ -141,10 +143,10 @@ async function sendAssistantActionPushOnce(devicePush, action) {
   });
 }
 
-async function sendAssistantActionPush(devicePush, action) {
+async function sendAssistantActionPush(devicePush, action, options = {}) {
   let result = { sent: false, reason: "apns_not_attempted" };
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    result = await sendAssistantActionPushOnce(devicePush, action);
+    result = await sendAssistantActionPushOnce(devicePush, action, options);
     result.attempt = attempt;
     if (result.sent) return result;
     const retryableStatus = result.status === 429 || result.status >= 500;
@@ -154,4 +156,5 @@ async function sendAssistantActionPush(devicePush, action) {
   return result;
 }
 
-module.exports = { apnsCredentials, normalizeDevicePush, pushPayload, pushExpiration, sendAssistantActionPush };
+const sendBMBNotification = (device,event) => sendAssistantActionPush(device,{id:event.id,expires_at:event.expires_at},{notification:event});
+module.exports = { apnsCredentials, normalizeDevicePush, pushPayload, pushExpiration, sendAssistantActionPush, sendBMBNotification };

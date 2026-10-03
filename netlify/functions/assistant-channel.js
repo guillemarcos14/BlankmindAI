@@ -343,7 +343,14 @@ function normalizePendingAction(value) {
     weekdays: Array.isArray(value.weekdays)
       ? value.weekdays.filter((day) => Number.isInteger(day) && day >= 1 && day <= 7).slice(0, 7)
       : [],
-    duration_days: Number.isInteger(value.duration_days) ? Math.min(Math.max(value.duration_days, 1), 14) : null,
+    duration_days: Number.isInteger(value.duration_days) ? Math.min(Math.max(value.duration_days, 1), 365) : null,
+    recurrence: value.recurrence || null,
+    local_date: value.local_date || null,
+    timezone: value.timezone || null,
+    starts_at: value.starts_at || null,
+    ends_at: value.ends_at || null,
+    autonomous: value.autonomous === true,
+    grant_version: Number.isSafeInteger(value.grant_version) ? value.grant_version : null,
     hours: Number.isInteger(value.hours) ? Math.min(Math.max(value.hours, 1), 168) : null,
     app_names: Array.isArray(value.app_names)
       ? value.app_names.map((name) => cleanText(name, 40)).filter(Boolean).slice(0, 12)
@@ -479,6 +486,11 @@ async function pollPendingAction(body, appAuth = null) {
 
   const memory = await getAssistantMemory(result.connection.channel, result.connection.channelUser);
   const pending = normalizePendingAction(memory.pending_assistant_action);
+  if (pending?.autonomous && result.appAuth && !await require("./bmb-service").autonomousPendingAllowed(result.appAuth.user.id,pending,memory.user_context || {})) {
+    await transitionPendingAssistantAction({channel:"app",channelUser:result.appAuth.user.id,previous:memory.pending_assistant_action,pending:null,
+      outcome:{id:pending.id,type:pending.type,status:"dismissed",detail:"autonomy_revoked_or_outside_limits",resolved_at:new Date().toISOString()},source:"bmb_current_authorization"});
+    return json(200,{ok:true,linked:true,pending_action:null});
+  }
   if (!pending && memory.pending_assistant_action) {
     const expired = memory.pending_assistant_action;
     const expiredAt = Date.parse(expired.expires_at || "");
@@ -569,6 +581,10 @@ async function acknowledgePendingAction(body, appAuth = null) {
     if (!pending || pending.id !== actionId) return json(200, { ok: true, acknowledged: false, reason: pending ? "action_mismatch" : "no_pending_action" });
   }
   const transition = pendingActionTransition(pending.status, status);
+  if (pending.autonomous && ["confirmed","execution_started"].includes(status)
+      && (!result.appAuth || !await require("./bmb-service").autonomousPendingAllowed(result.appAuth.user.id,pending,memory.user_context || {}))) {
+    return json(200,{ok:true,acknowledged:false,reason:"autonomy_revoked_or_outside_limits"});
+  }
   if (!transition.allowed) {
     return json(200, {
       ok: true,
@@ -597,6 +613,7 @@ async function acknowledgePendingAction(body, appAuth = null) {
     return json(200, { ok: true, acknowledged: false, reason: "delayed_status_without_measured_delay" });
   }
   if (terminal) await persistAppActionReceipt(result, body, actionId, status);
+  if (terminal && actionId.startsWith("bmb_") && result.appAuth) await require("./bmb-service").receipt(result.appAuth.user.id,actionId,status,execution);
   const timestampKey = status === "confirmed" ? "confirmed_at"
     : status === "execution_started" ? "execution_started_at"
       : status === "delivered" ? "delivered_at" : "resolved_at";

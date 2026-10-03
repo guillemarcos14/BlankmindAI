@@ -11,3 +11,6 @@
   for = "/.well-known/assetlinks.json"
   [headers.values]
     Content-Type = "application/json"
+
+[functions."bmb-tick"]
+  schedule = "*/5 * * * *"
