@@ -15,6 +15,9 @@ final class BlankBrain {
     private var notificationsAuthorized = false
     private var lastSyncedContent: Data?
     private var lastSyncedAt = Date.distantPast
+    private var archiveOwner: String?
+    private var syncedSessionPages: [Int: Data] = [:]
+    private var syncedSignalIDs = Set<String>()
     var chatIsOpen = false
     private var executionInFlight = false
     private var backgroundStore: SessionStore?
@@ -135,6 +138,7 @@ final class BlankBrain {
         syncTask?.cancel()
         syncTask = Task {
             let owner = AssistantAppSession.userID
+            BlankSharedState.defaults.set(owner ?? "",forKey:"blankBMBSignalOwner")
             let settings = await UNUserNotificationCenter.current().notificationSettings()
             guard owner == AssistantAppSession.userID, !Task.isCancelled else { return }
             notificationsAuthorized = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional || settings.authorizationStatus == .ephemeral
@@ -146,6 +150,8 @@ final class BlankBrain {
             var content = payload
             content.removeValue(forKey: "context_revision")
             content.removeValue(forKey: "context_generated_at")
+            content.removeValue(forKey: "chat_active_until")
+            content["chat_is_open"] = chatIsOpen
             if var history = content["brain_snapshot"] as? [String: Any] {
                 history.removeValue(forKey: "generated_at")
                 content["brain_snapshot"] = history
@@ -166,9 +172,11 @@ final class BlankBrain {
 
     private func syncAllSessions(owner: String?) async {
         guard let owner, owner == AssistantAppSession.userID, let store else { return }
-        let signals = (BlankSharedState.defaults.array(forKey:"blankBMBDeviceSignals") as? [[String: Any]] ?? []).filter { $0["owner"] as? String == owner }
+        if archiveOwner != owner { archiveOwner = owner; syncedSessionPages = [:]; syncedSignalIDs = [] }
+        let signals = (BlankSharedState.defaults.array(forKey:"blankBMBDeviceSignals") as? [[String: Any]] ?? []).filter { $0["owner"] as? String == owner && !syncedSignalIDs.contains($0["id"] as? String ?? "") }
         if !signals.isEmpty, let data = try? JSONSerialization.data(withJSONObject:["action":"bmb_sync_signals","app_install_id":BlankSharedState.appInstallId,"signals":signals]) {
-            _ = try? await AssistantAppClient().postAuthorized(path:"assistant-app",payload:data,timeout:8)
+            if let (_,response) = try? await AssistantAppClient().postAuthorized(path:"assistant-app",payload:data,timeout:8), response.statusCode == 200,
+               owner == AssistantAppSession.userID, !Task.isCancelled { syncedSignalIDs.formUnion(signals.compactMap { $0["id"] as? String }) }
         }
         let all = store.brainSessions.sorted { $0.startedAt < $1.startedAt }
         for offset in stride(from: 0, to: all.count, by: 2000) {
@@ -183,11 +191,14 @@ final class BlankBrain {
                 if let mode = s.entryMode { row["entry_mode"] = mode.rawValue }
                 return row
             }
+            guard let digest = try? JSONSerialization.data(withJSONObject:rows,options:[.sortedKeys]) else { return }
+            if syncedSessionPages[offset] == digest { continue }
             let payload: [String: Any] = ["action":"bmb_sync_sessions","app_install_id":BlankSharedState.appInstallId,
                 "snapshot":["schema_version":1,"generated_at":iso.string(from:Date()),"timezone":TimeZone.current.identifier,
                     "history_complete":all.count<=2000,"sessions":rows]]
             guard let body = try? JSONSerialization.data(withJSONObject:payload) else { return }
-            _ = try? await AssistantAppClient().postAuthorized(path:"assistant-app",payload:body,timeout:8)
+            if let (_,response) = try? await AssistantAppClient().postAuthorized(path:"assistant-app",payload:body,timeout:8), response.statusCode == 200,
+               owner == AssistantAppSession.userID, !Task.isCancelled { syncedSessionPages[offset] = digest }
         }
     }
 
@@ -201,7 +212,7 @@ final class BlankBrain {
         }
         guard let store, let blocker else { return false }
         let code = BlankSharedState.defaults.string(forKey:"blankAssistantConnectCode") ?? ""
-        let client = AssistantActionInboxClient()
+        let client = AssistantActionInboxClient(requestTimeout:5)
         if let receipt = AssistantActionReceiptStore.load(), receipt.actionId.hasPrefix("bmb_") {
             let ack = await client.acknowledgeLifecycle(receipt:receipt,connectCode:code,channel:"app")
             if ack == .acknowledged || ack == .stale { AssistantActionReceiptStore.clear(actionId:receipt.actionId) }
@@ -212,7 +223,13 @@ final class BlankBrain {
               actionID == nil || actionID == action.id, owner == AssistantAppSession.userID else { return false }
         blocker.refreshAuthorizationStatus()
         guard blocker.authorizationStatus == .approved, store.hasSelectedApps, !store.isVacationModeActive,
-              store.schedulePausedUntil.map({ $0 <= Date() }) ?? true else { return false }
+              store.schedulePausedUntil.map({ $0 <= Date() }) ?? true else {
+            let receipt = AssistantActionReceipt(actionId:action.id,status:"failed",detail:"native_permission_selection_or_pause",executionStarted:false)
+            AssistantActionReceiptStore.save(actionId:receipt.actionId,status:receipt.status,detail:receipt.detail,executionStarted:false)
+            let ack = await client.acknowledgeLifecycle(receipt:receipt,connectCode:code,channel:"app")
+            if ack == .acknowledged || ack == .stale { AssistantActionReceiptStore.clear(actionId:receipt.actionId) }
+            return false
+        }
         let mark = "blankBMBExecuted.\(owner).\(action.id)"
         guard !BlankSharedState.defaults.bool(forKey:mark) else { return false }
         guard await client.acknowledge(actionId:action.id,status:"confirmed",connectCode:code,channel:"app") == .acknowledged,
@@ -243,7 +260,7 @@ final class BlankBrain {
         AssistantActionReceiptStore.save(actionId:receipt.actionId,status:receipt.status,detail:receipt.detail,executionStarted:receipt.executionStarted,
             requestedAt:receipt.requestedAt,startedAt:receipt.startedAt,requestedDurationMinutes:receipt.requestedDurationMinutes,
             effectiveUntil:receipt.effectiveUntil,origin:receipt.origin,result:receipt.result,startDelaySeconds:receipt.startDelaySeconds,mergedWithExisting:receipt.mergedWithExisting)
-        let ack = await client.acknowledgeLifecycle(receipt:receipt,connectCode:code,channel:"app")
+        let ack = await client.acknowledge(actionId:receipt.actionId,status:receipt.status,connectCode:code,channel:"app",detail:receipt.detail,evidence:receipt)
         if ack == .acknowledged || ack == .stale { AssistantActionReceiptStore.clear(actionId:receipt.actionId) }
         sync()
         return ["verified","delayed"].contains(receipt.status)

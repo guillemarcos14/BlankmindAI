@@ -66,6 +66,23 @@ async function main() {
   assert.equal(policy.notificationGate(event,p,nc,Date.parse("2026-10-03T21:00:00Z")).allowed,false);
   assert.equal(policy.notificationGate({...event,expires_at:"2020-01-01"},p,nc).allowed,false);
   assert.equal(policy.settings().notifications.max_per_day,1);assert.equal(policy.settings().notifications.max_per_week,3);
+  const sources=require("../netlify/functions/bmb-sources");
+  const scrubbed=sources.sanitize({token:"secret",nested:{encrypted_access_token:"secret",goal:"sleep",applicationTokens:["private"]}});
+  assert.deepEqual(scrubbed,{nested:{goal:"sleep"}});
+  assert(sources.SOURCE_NAMES.includes("onboarding")&&sources.SOURCE_NAMES.includes("learned_signals")&&sources.SOURCE_NAMES.includes("protection_statistics"));
+  let sourcePath;
+  await sources.readSource("A",{anonymous_user_id:"verified-A"},{source:"wearable_connections",offset:0},null,async p=>{sourcePath=p;return [];});
+  assert(!sourcePath.includes("encrypted")&&sourcePath.includes("anonymous_user_id=eq.verified-A"));
+  await sources.readSource("A",{anonymous_user_id:"verified-A"},{source:"onboarding",offset:0},"2026-10-01",async p=>{sourcePath=p;return [];});
+  assert(sourcePath.includes("data_consent=eq.true")&&sourcePath.includes("created_at=gt.2026-10-01"));
+  const all=sources.readSource("A",null,{source:"protection_statistics",offset:0,from:"2026-10-01T10:00:00Z",to:"2026-10-01T12:00:00Z",timezone:"UTC"},null,async()=>[
+    {id:"one",started_at:"2026-10-01T10:00:00Z",ended_at:"2026-10-01T11:00:00Z",observed_at:new Date().toISOString()},
+    {id:"two",started_at:"2026-10-01T10:30:00Z",ended_at:"2026-10-01T11:30:00Z",pause_started_at:"2026-10-01T11:00:00Z",pause_ended_at:"2026-10-01T11:15:00Z",observed_at:new Date().toISOString()}]);
+  assert.equal((await all).rows[0].protected_seconds,4500,"Overlaps or pause double-counted");
+  const common=policy.settings({timezone:"UTC",grant:{active:true,action_types:["start_protection"],expires_at:"2027-01-01"},notifications:{enabled:true}});
+  const ledger=[{id:"act",kind:"action",event_key:"A",meaning_key:"A",initiative_key:"A",created_at:new Date().toISOString()}];
+  assert.equal(policy.budgetGate("notification",{event_key:"B",meaning_key:"B"},common,ledger).allowed,false,"Two unrelated initiatives consumed default daily budget");
+  assert.equal(policy.budgetGate("notification",{event_key:"receipt:act",meaning_key:"receipt:act",facts:{source:"native_receipt",event_id:"act"}},common,ledger).allowed,true,"Receipt counted as an unrelated initiative");
   const push=require("../netlify/functions/_assistant_push").pushPayload({id:"x"},{silent:true});assert.equal(push.aps.alert,undefined);assert.equal(push.bm_autonomous,true);
   const prose=require("../netlify/functions/assistant-app").visibleReply({bmb_generated:true,message_text:"I'll give this a try.",actions:[action()]},context(),action());assert.equal(prose,"I'll give this a try.");
   console.log("BMB: generative output, exact acceptance, detours/cancellation, account history/pagination, memory tombstones, date/DST/overnight/continuous schedules, current grants/pauses/revocation and separate notifications passed");

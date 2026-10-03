@@ -338,7 +338,10 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         let hasAssistantAction = notification.request.content.userInfo["bm_action_id"] != nil
-        completionHandler(hasAssistantAction ? [.banner, .list, .sound] : [])
+        let hasBMBEvent = notification.request.content.userInfo["bm_event_id"] != nil
+        Task { @MainActor in
+            completionHandler((hasAssistantAction || hasBMBEvent) && !BlankBrain.shared.chatIsOpen ? [.banner, .list, .sound] : [])
+        }
     }
 
     func userNotificationCenter(
@@ -348,6 +351,9 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
     ) {
         let userInfo = response.notification.request.content.userInfo
         let isAssistantAction = userInfo["bm_action_id"] != nil
+        if userInfo["bm_event_id"] != nil, let url = URL(string:"blank://assistant") {
+            DispatchQueue.main.async { UIApplication.shared.open(url) }
+        }
         let shouldApply = response.actionIdentifier == AssistantRemoteNotification.applyActionIdentifier
             || response.actionIdentifier == UNNotificationDefaultActionIdentifier
         if isAssistantAction && shouldApply {

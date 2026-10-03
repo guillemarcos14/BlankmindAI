@@ -44,4 +44,18 @@ function notificationGate(event, policy, context, now=Date.now()) {
   if (!n[{opportunity:"opportunities",intervention:"interventions",failure:"failures"}[event.kind]]) return {allowed:false,reason:"preference"};
   return {allowed:true};
 }
-module.exports={TYPES,fingerprint,zone,minute,inWindow,settings,actionGate,notificationGate};
+function budgetGate(kind,event,policy,ledger,now=Date.now()) {
+  const limits=kind==="action"?policy.grant:policy.notifications;
+  const day=t=>new Intl.DateTimeFormat("en-CA",{timeZone:policy.timezone,year:"numeric",month:"2-digit",day:"2-digit"}).format(t);
+  const recent=ledger.filter(e=>Date.parse(e.created_at)>now-7*86400000);
+  if(recent.some(e=>e.kind===kind&&(e.event_key===event.event_key||e.meaning_key===event.meaning_key)))return {allowed:false,reason:"duplicate"};
+  const own=recent.filter(e=>e.kind===kind);
+  if(own.length>=limits.max_per_week||own.filter(e=>day(Date.parse(e.created_at))===day(now)).length>=limits.max_per_day)return {allowed:false,reason:"budget"};
+  if(kind==="action"&&own.some(e=>Date.parse(e.created_at)>now-limits.min_interval_minutes*60000))return {allowed:false,reason:"minimum_interval"};
+  const root=event.facts?.source==="native_receipt"?recent.find(e=>e.id===event.facts.event_id)?.initiative_key:event.meaning_key;
+  const roots=list=>new Set(list.map(e=>e.initiative_key||e.meaning_key));
+  const caps=k=>Math.max(policy.grant?.active?policy.grant[k]:0,policy.notifications?.enabled?policy.notifications[k]:0);
+  if(!roots(recent).has(root)&&(roots(recent).size>=caps("max_per_week")||roots(recent.filter(e=>day(Date.parse(e.created_at))===day(now))).size>=caps("max_per_day")))return {allowed:false,reason:"shared_initiative_budget"};
+  return {allowed:true};
+}
+module.exports={TYPES,fingerprint,zone,minute,inWindow,settings,actionGate,notificationGate,budgetGate};

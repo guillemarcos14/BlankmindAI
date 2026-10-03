@@ -20,7 +20,9 @@ exports.handler=async event=>{
     const result=await supabaseFetch("rpc/bmb_claim_due_account",{method:"POST",body:"{}"});
     const account=Array.isArray(result)?result[0]:result;
     if(!account?.auth_user_id)return {statusCode:200};
-    try{await require("./bmb-service").tickAccount(account);}catch(_){/* Durable events remain retryable; no fabricated outcome. */}
+    try{await require("./bmb-service").tickAccount(account);}catch(error){
+      console.error(JSON.stringify({event:"bmb_tick_failed",code:/^bmb_[a-z_]+$/.test(error.message)?error.message:"dependency_error"}));
+    }
   }
   await dispatch();return {statusCode:200};
 };

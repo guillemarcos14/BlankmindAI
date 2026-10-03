@@ -103,6 +103,7 @@ struct AssistantActionReceipt: Equatable {
 }
 
 enum AssistantActionReceiptStore {
+    private static let ownerKey = "blankBMBReceiptOwner"
     private static let actionIdKey = "blankAssistantReceiptActionId"
     private static let statusKey = "blankAssistantReceiptStatus"
     private static let detailKey = "blankAssistantReceiptDetail"
@@ -112,6 +113,7 @@ enum AssistantActionReceiptStore {
     static func load(defaults: UserDefaults = BlankSharedState.defaults) -> AssistantActionReceipt? {
         guard let actionId = defaults.string(forKey: actionIdKey), !actionId.isEmpty,
               let status = defaults.string(forKey: statusKey), !status.isEmpty else { return nil }
+        if actionId.hasPrefix("bmb_"), defaults.string(forKey:ownerKey) != AssistantAppSession.userID { return nil }
         let evidence = defaults.dictionary(forKey: evidenceKey) ?? [:]
         return AssistantActionReceipt(
             actionId: actionId,
@@ -145,6 +147,7 @@ enum AssistantActionReceiptStore {
         defaults: UserDefaults = BlankSharedState.defaults
     ) {
         defaults.set(actionId, forKey: actionIdKey)
+        if actionId.hasPrefix("bmb_") { defaults.set(AssistantAppSession.userID,forKey:ownerKey) }
         defaults.set(status, forKey: statusKey)
         defaults.set(detail, forKey: detailKey)
         defaults.set(executionStarted, forKey: executionStartedKey)
@@ -164,6 +167,7 @@ enum AssistantActionReceiptStore {
     static func clear(actionId: String, defaults: UserDefaults = BlankSharedState.defaults) {
         guard defaults.string(forKey: actionIdKey) == actionId else { return }
         defaults.removeObject(forKey: actionIdKey)
+        defaults.removeObject(forKey: ownerKey)
         defaults.removeObject(forKey: statusKey)
         defaults.removeObject(forKey: detailKey)
         defaults.removeObject(forKey: executionStartedKey)
@@ -172,6 +176,7 @@ enum AssistantActionReceiptStore {
 }
 
 struct AssistantActionInboxClient {
+    var requestTimeout: TimeInterval = 8
     func actionForApplication(actionId: String, connectCode: String, channel: String) async throws -> AssistantInboxAction {
         let data = try await request(action: "poll_pending_action", connectCode: connectCode, channel: channel)
         let response = try JSONDecoder().decode(AssistantInboxResponse.self, from: data)
@@ -292,7 +297,7 @@ struct AssistantActionInboxClient {
         if let environment, !environment.isEmpty { body["environment"] = environment }
         let payload = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await AssistantAppClient().postAuthorized(
-            path: "assistant-channel", payload: payload, timeout: 8
+            path: "assistant-channel", payload: payload, timeout: requestTimeout
         )
         guard (200..<300).contains(response.statusCode) else {
             throw URLError(.badServerResponse)
@@ -1669,7 +1674,7 @@ struct HomeView: View {
             )
         case .applySchedule(_, let start, let end, let weekdays, let days, let appNames):
             if let remote = pendingAssistantInboxAction, remote.recurrence != nil {
-                let registered = sessionStore.applyDatedAssistantSchedule(remote)
+                let registered = sessionStore.applyBMBProtectionSchedule(remote)
                 applyScreenTimeControls()
                 finishPendingAssistantAction(status: registered ? "verified" : "failed",
                     detail: registered ? "dated_schedule_registered" : "dated_schedule_registration_failed")
@@ -1701,7 +1706,9 @@ struct HomeView: View {
             messageAction = nil
             finishPendingAssistantAction(status: sessionStore.recurringScheduleRegistered ? "verified" : "failed", detail: sessionStore.recurringScheduleRegistered ? "schedule_registered" : "device_activity_registration_failed")
         case .updateSchedule(let windowId, let name, let start, let end, let weekdays):
-            let updated = sessionStore.updateScheduleWindow(
+            let updated = pendingAssistantInboxAction?.recurrence != nil
+                ? sessionStore.applyBMBProtectionSchedule(pendingAssistantInboxAction!)
+                : sessionStore.updateScheduleWindow(
                 id: windowId,
                 name: name,
                 startMinute: start,
@@ -2630,7 +2637,10 @@ private struct ScheduleEditorContent: View {
                 startMinute: window.startMinute,
                 endMinute: window.endMinute,
                 weekdays: window.weekdays,
-                expiresAt: window.expiresAt
+                expiresAt: window.expiresAt,
+                startsAt: window.startsAt,
+                endsAt: window.endsAt,
+                timeZoneIdentifier: window.timeZoneIdentifier
             )
         }
         let first = normalized.first ?? BlankHabitWindow(enabled: false)
@@ -2816,7 +2826,7 @@ private struct HabitWindowCard: View {
             HStack(spacing: 8) {
                 routineMetric(title: "start", value: formatMinute(window.startMinute))
                 routineMetric(title: "end", value: formatMinute(window.endMinute))
-                routineMetric(title: "days", value: daysSummary)
+                routineMetric(title: window.startsAt == nil ? "days" : "date", value: daysSummary)
             }
 
             if isExpanded {
@@ -2826,12 +2836,14 @@ private struct HabitWindowCard: View {
                         WheelTimePicker(minute: $window.endMinute)
                     }
                     .padding(.top, 2)
+                    .disabled(window.startsAt != nil)
 
                     HabitDaysPicker(
                         selectedWeekdays: $window.weekdays,
                         textColor: textColor,
                         secondaryColor: secondaryColor
                     )
+                    .disabled(window.startsAt != nil)
 
                     if canDelete {
                         Button(action: onDelete) {
@@ -2875,6 +2887,11 @@ private struct HabitWindowCard: View {
     }
 
     private var daysSummary: String {
+        if let start = window.startsAt {
+            let formatter = DateFormatter(); formatter.dateFormat = "MMM d"
+            if let timezone = window.timeZoneIdentifier { formatter.timeZone = TimeZone(identifier:timezone) }
+            return formatter.string(from:start)
+        }
         if window.runsEveryDay {
             return "everyday"
         }
