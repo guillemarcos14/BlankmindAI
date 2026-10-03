@@ -6,6 +6,19 @@ create table public.bmb_accounts (
  version bigint not null default 1,
  updated_at timestamptz not null default now()
 );
+alter table public.bmb_accounts add column next_check_at timestamptz not null default now();
+create function public.bmb_claim_due_account() returns jsonb language plpgsql security definer set search_path=public as $$
+declare a public.bmb_accounts%rowtype;
+begin
+ select * into a from bmb_accounts where next_check_at<=clock_timestamp()
+ and (coalesce((settings#>>'{grant,active}')::boolean,false) or coalesce((settings#>>'{notifications,enabled}')::boolean,false))
+ order by next_check_at,auth_user_id for update skip locked limit 1;
+ if not found then return null; end if;
+ update bmb_accounts set next_check_at=clock_timestamp()+interval '30 minutes' where auth_user_id=a.auth_user_id;
+ return to_jsonb(a);
+end $$;
+revoke all on function public.bmb_claim_due_account() from public,anon,authenticated;
+grant execute on function public.bmb_claim_due_account() to service_role;
 create table public.bmb_sessions (
  auth_user_id uuid not null references auth.users(id) on delete cascade,
  id uuid not null, started_at timestamptz not null, ended_at timestamptz,

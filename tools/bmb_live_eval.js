@@ -27,7 +27,9 @@ async function main(){
     {prompt:"Which day do I actually use my phone most?",check:p=>!p.actions.length&&/usage|use|data|screen time/i.test(p.response_text)},
     {prompt:"Block my distractions tonight from 22:30 to 07:00, only tonight.",check:p=>p.actions[0]?.recurrence==="once"&&p.actions[0]?.starts_at&&p.actions[0]?.ends_at},
   ];
+  const caseArg=process.argv.indexOf("--case");
   for(const [index,test] of cases.entries()){
+    if(caseArg>=0&&index!==Number(process.argv[caseArg+1])-1)continue;
     const ctx=context();if(pending)ctx.memory.conversation_state={bmb_state:pending};
     if(index===6)memories=[{key:"goal",value:"dormir mejor",source_at:"2026-09-01T10:00:00Z",source:"user_statement"}];else memories=[];
     const record={prompt:test.prompt};
@@ -36,7 +38,7 @@ async function main(){
     records.push(record);
   }
   const report={provider_real:true,deployed_model_tested:false,sources:"synthetic",native_actions_executed:0,model:process.env.OPENAI_MODEL||"gpt-5.6-luna",calls,tokens,passed:records.filter(r=>r.passed).length,total:records.length,records};
-  fs.mkdirSync("tmp/bmb",{recursive:true});fs.writeFileSync("tmp/bmb/live-eval.json",JSON.stringify(report,null,2));
+  fs.mkdirSync("tmp/bmb",{recursive:true});fs.writeFileSync(`tmp/bmb/live-eval${caseArg>=0?"-case-"+process.argv[caseArg+1]:""}.json`,JSON.stringify(report,null,2));
   console.log(JSON.stringify({...report,records:undefined}));if(report.passed!==report.total)process.exitCode=1;
 }
 main().catch(e=>{console.error(e.message);process.exitCode=1;});

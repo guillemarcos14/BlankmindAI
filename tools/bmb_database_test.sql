@@ -18,7 +18,7 @@ begin
  if (bmb_claim_event(u,ev||'{"event_key":"another","meaning_key":"another"}',1)->>'claimed')::boolean then raise exception 'Frequency bypass'; end if;
  key:='assistant:'||substr(encode(digest('app:'||u::text,'sha256'),'hex'),1,32);
  insert into assistant_semantic_conversations(anonymous_user_id,channel,state,storage_version,updated_at,expires_at)
- values(key,'app','{"semantic_state":{"schema_version":1}}',1,now(),now()+interval '2 hours');
+ values(key,'whatsapp','{"semantic_state":{"schema_version":1}}',1,now(),now()+interval '2 hours');
  action:=action||jsonb_build_object('id','bmb_'||event_id::text,'status','queued','expires_at',now()+interval '30 minutes');
  r:=bmb_enqueue_event(u,event_id,action);
  if not (r->>'enqueued')::boolean then raise exception 'Native inbox queue failed %',r; end if;
