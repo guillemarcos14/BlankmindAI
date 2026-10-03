@@ -11,6 +11,7 @@ enum DeviceActivityTimerScheduler {
     static let recurringSchedulePrefix = "BlankRecurringSchedule"
     static let dailyLimitActivity = "BlankDailyLimit"
     static let dailyLimitEvent = "BlankDailyLimitReached"
+    static private(set) var recurringScheduleFailure: String?
 
     // Apple permits twenty monitored activities across the app and extensions.
     // Keep one slot for the daily limit and one for an immediate strategy timer.
@@ -34,6 +35,7 @@ enum DeviceActivityTimerScheduler {
 
     @discardableResult
     static func syncRecurringSchedule(_ schedule: BlankFocusSchedule, until _: Date? = nil) -> Bool {
+        recurringScheduleFailure = nil
         #if canImport(DeviceActivity)
         let center = DeviceActivityCenter()
         let activityNames = (0..<maxScheduleActivities).map {
@@ -54,12 +56,16 @@ enum DeviceActivityTimerScheduler {
             .flatMap(recurringIntervals(for:))
         let dated = schedule.activeWindows.filter { $0.startsAt != nil && ($0.endsAt ?? .distantPast) > now }
         let expirations = schedule.activeWindows.filter { $0.startsAt == nil }.compactMap(\.expiresAt).filter { $0 > now }
-        guard intervals.count + expirations.count + dated.count <= maxScheduleActivities else { return false }
+        guard intervals.count + expirations.count + dated.count <= maxScheduleActivities else {
+            recurringScheduleFailure = "schedule_activity_limit"; return false
+        }
         // Reject an oversized plan before removing working monitors.
         center.stopMonitoring(activityNames + expiryNames + [DeviceActivityName(rawValue: recurringExpiryActivity)])
         for (index, window) in dated.enumerated() {
             guard let start = window.startsAt, let end = window.endsAt,
-                  let timezone = window.timeZoneIdentifier.flatMap(TimeZone.init(identifier:)) else { return false }
+                  let timezone = window.timeZoneIdentifier.flatMap(TimeZone.init(identifier:)) else {
+                recurringScheduleFailure = "schedule_invalid_metadata"; return false
+            }
             var calendar = Calendar(identifier: .gregorian)
             calendar.timeZone = timezone
             let components: Set<Calendar.Component> = [.calendar, .timeZone, .year, .month, .day, .hour, .minute, .second]
@@ -67,7 +73,7 @@ enum DeviceActivityTimerScheduler {
                 try center.startMonitoring(DeviceActivityName(rawValue: "\(recurringSchedulePrefix):\(intervals.count + index)"),
                     during: DeviceActivitySchedule(intervalStart: calendar.dateComponents(components, from: start),
                         intervalEnd: calendar.dateComponents(components, from: end), repeats: false))
-            } catch { return false }
+            } catch { return recordScheduleFailure(error) }
         }
         for (index, interval) in intervals.enumerated() {
             let name = DeviceActivityName(rawValue: "\(recurringSchedulePrefix):\(index)")
@@ -79,33 +85,40 @@ enum DeviceActivityTimerScheduler {
             do {
                 try center.startMonitoring(name, during: activity)
             } catch {
-                return false
+                return recordScheduleFailure(error)
             }
         }
         for (index, expiry) in expirations.enumerated() {
-            let calendar = Calendar.current
-            let start = calendar.dateComponents(
-                [.calendar, .timeZone, .year, .month, .day, .hour, .minute, .second],
-                from: expiry
-            )
-            let end = calendar.dateComponents(
-                [.calendar, .timeZone, .year, .month, .day, .hour, .minute, .second],
-                from: expiry.addingTimeInterval(120)
-            )
+            let interval = makeExpiryInterval(expiry: expiry)
             do {
                 try center.startMonitoring(
                     DeviceActivityName(rawValue: "\(recurringExpiryPrefix)\(index)"),
-                    during: DeviceActivitySchedule(intervalStart: start, intervalEnd: end, repeats: false)
+                    during: DeviceActivitySchedule(intervalStart: interval.start, intervalEnd: interval.end, repeats: false)
                 )
             } catch {
-                return false
+                return recordScheduleFailure(error)
             }
         }
         return true
         #else
+        recurringScheduleFailure = "schedule_native_unavailable"
         return false
         #endif
     }
+
+    #if canImport(DeviceActivity)
+    private static func recordScheduleFailure(_ error: Error) -> Bool {
+        switch error as? DeviceActivityCenter.MonitoringError {
+        case .excessiveActivities: recurringScheduleFailure = "schedule_activity_limit"
+        case .intervalTooLong: recurringScheduleFailure = "schedule_interval_too_long"
+        case .intervalTooShort: recurringScheduleFailure = "schedule_interval_too_short"
+        case .invalidDateComponents: recurringScheduleFailure = "schedule_invalid_dates"
+        case .unauthorized: recurringScheduleFailure = "schedule_monitoring_unauthorized"
+        default: recurringScheduleFailure = "schedule_monitoring_failed"
+        }
+        return false
+    }
+    #endif
 
     static func start(protectionId: UUID, durationMinutes: Int) -> Bool {
         guard durationMinutes > 0 else { return false }
@@ -189,6 +202,14 @@ enum DeviceActivityTimerScheduler {
             start: calendar.dateComponents(components, from: startDate),
             end: calendar.dateComponents(components, from: endDate)
         )
+    }
+
+    private static func makeExpiryInterval(expiry: Date, calendar: Calendar = .current) -> (start: DateComponents, end: DateComponents) {
+        // The callback at the START releases the expired window. This monitoring
+        // span meets Apple's 15-minute minimum without extending protection.
+        let components: Set<Calendar.Component> = [.calendar, .timeZone, .year, .month, .day, .hour, .minute, .second]
+        return (calendar.dateComponents(components, from: expiry),
+                calendar.dateComponents(components, from: expiry.addingTimeInterval(15 * 60)))
     }
 
     private static func recurringIntervals(for window: BlankHabitWindow) -> [(start: DateComponents, end: DateComponents)] {

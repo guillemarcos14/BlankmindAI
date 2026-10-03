@@ -111,6 +111,7 @@ enum BlankSharedState {
 enum AssistantAppSession { static var userID: String? = "account-A" }
 enum DeviceActivityTimerScheduler {
     static var hasIndependentProtection = false
+${between(scheduler, '    private static func makeExpiryInterval', '    private static func recurringIntervals').replace('private static func makeExpiryInterval', 'static func makeExpiryInterval')}
 ${intervals}
 final class SelectionFixture {
     var isBlankActive = false

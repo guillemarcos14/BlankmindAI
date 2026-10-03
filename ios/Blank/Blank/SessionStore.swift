@@ -182,6 +182,7 @@ final class SessionStore: ObservableObject {
     }
 
     @Published private(set) var recurringScheduleRegistered = false
+    private(set) var bmbScheduleFailure = "dated_schedule_registration_failed"
     @Published private(set) var dailyLimitRegistered = false
 
     @Published var pendingWidgetTimerMinutes: Int? {
@@ -1156,6 +1157,7 @@ final class SessionStore: ObservableObject {
 
     @discardableResult
     func applyBMBProtectionSchedule(_ command: AssistantInboxAction) -> Bool {
+        bmbScheduleFailure = "schedule_invalid_metadata"
         guard let timezone = command.timezone, TimeZone(identifier: timezone) != nil,
               let startMinute = command.startMinute, let endMinute = command.endMinute,
               let id = UUID(uuidString: String(command.id.dropFirst(4))) else { return false }
@@ -1177,7 +1179,12 @@ final class SessionStore: ObservableObject {
                 weekdays:weekdays,expiresAt:expiry,timeZoneIdentifier:timezone)
         }
         schedule = BlankFocusSchedule(enabled: true, windows: previous.windows.filter { $0.id != targetID } + [window])
-        guard recurringScheduleRegistered else { schedule = previous; return false }
+        guard recurringScheduleRegistered else {
+            // Capture the failure before restoring the old monitors overwrites it.
+            bmbScheduleFailure = DeviceActivityTimerScheduler.recurringScheduleFailure ?? "dated_schedule_registration_failed"
+            schedule = previous
+            return false
+        }
         return true
     }
 
