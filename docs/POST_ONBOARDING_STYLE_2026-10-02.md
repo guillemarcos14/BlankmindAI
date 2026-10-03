@@ -3,7 +3,9 @@
 Guillem approved the onboarding visual proposal for Home, Progress, Settings,
 Chat and Distractions on 2026-10-02. Blankmind inputs are explicitly excluded.
 
-- Titles use the onboarding Times New Roman font; body and controls remain sans serif.
+- Section titles use the onboarding Times New Roman font; body and controls remain sans serif.
+- On 2026-10-03, Home was changed to sans serif only (Helvetica Neue, 32 pt regular
+  for its menu and start/unblank labels); its composer and other sections are unchanged.
 - Black cards use 4 pt corners, 16 pt padding and regular control labels.
 - Settings adds status checks and navigation symbols; Progress retains all metrics.
 - Distractions groups native Apple token labels into Apps, Categories and Websites,

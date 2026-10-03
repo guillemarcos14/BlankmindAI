@@ -910,7 +910,7 @@ struct HomeView: View {
                             Button("unblank") {
                                 beginFullScreenUnblankHold()
                             }
-                            .font(.blankSectionEditorial())
+                            .font(.blankInter(size: 32, relativeTo: .title))
                             .tracking(-0.9)
                             .foregroundStyle(BlankColors.homeDarkSecondary)
                             .frame(minWidth: 44, minHeight: 44, alignment: .leading)
@@ -1087,7 +1087,7 @@ struct HomeView: View {
             setMessage(for: result)
         } label: {
             Text(title)
-                .font(.blankSectionEditorial())
+                .font(.blankInter(size: 32, relativeTo: .title))
                 .foregroundStyle(titleColor)
                 .tracking(-0.9)
                 .lineLimit(1)
@@ -2140,7 +2140,7 @@ struct HomeView: View {
 
 private extension View {
     func blankHomeDisplayTextStyle(color: Color) -> some View {
-        font(.blankSectionEditorial())
+        font(.blankInter(size: 32, relativeTo: .title))
             .foregroundStyle(color)
             .tracking(-0.9)
             .lineLimit(1)
