@@ -23,15 +23,15 @@ extension EnvironmentValues {
 
 enum BlankColors {
     // Blankmind web palette. Existing color names remain as aliases for app surfaces.
-    static let porcelain = Color(red: 248 / 255.0, green: 249 / 255.0, blue: 244 / 255.0)
+    static let porcelain = pureWhite
     static let lichenGray = Color(red: 201 / 255.0, green: 202 / 255.0, blue: 196 / 255.0)
     static let stoneGray = Color(red: 142 / 255.0, green: 143 / 255.0, blue: 138 / 255.0)
-    static let deepOliveCharcoal = Color(red: 48 / 255.0, green: 49 / 255.0, blue: 42 / 255.0)
+    static let deepOliveCharcoal = Color(red: 41 / 255.0, green: 41 / 255.0, blue: 41 / 255.0)
     static let charcoal = deepOliveCharcoal
     static let paleSteelBlue = lichenGray
     static let seafoam = stoneGray
     static let powderGray = porcelain
-    static let pureWhite = Color.white
+    static let pureWhite = Color(red: 1, green: 1, blue: 252 / 255.0)
 
     // Semantic alert color: retained for error/destructive states because the brand palette has no alert equivalent.
     static let red = Color(red: 0.827, green: 0.184, blue: 0.184)
@@ -263,7 +263,7 @@ extension View {
             .foregroundStyle(BlankColors.pureWhite)
             .padding(16)
             .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Color.black))
+            .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(BlankColors.charcoal))
             .environment(\.colorScheme, .dark)
     }
 

@@ -149,8 +149,8 @@ struct SetupView: View {
                 .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .foregroundStyle(Color.black)
-        .tint(Color.black)
+        .foregroundStyle(BlankColors.charcoal)
+        .tint(BlankColors.charcoal)
         .preferredColorScheme(.light)
         .background(BlankColors.pureWhite.ignoresSafeArea())
     }
@@ -218,10 +218,10 @@ struct SetupView: View {
             }
             .font(.system(size: permissionLabelSize, weight: .regular))
             .multilineTextAlignment(.leading)
-            .foregroundStyle(Color.white)
+            .foregroundStyle(BlankColors.pureWhite)
             .padding(.horizontal, 14)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .background(Color.black, in: RoundedRectangle(cornerRadius: 4))
+            .background(BlankColors.charcoal, in: RoundedRectangle(cornerRadius: 4))
             .contentShape(Rectangle())
             .environment(\.isEnabled, true)
         }

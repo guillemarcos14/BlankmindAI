@@ -775,8 +775,8 @@ struct AssistantAppView: View {
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 12)
                                         .frame(minHeight: 44)
-                                        .background(RoundedRectangle(cornerRadius: 4).fill(dark ? Color.white : Color.black))
-                                        .foregroundStyle(dark ? Color.black : Color.white)
+                                        .background(RoundedRectangle(cornerRadius: 4).fill(dark ? BlankColors.pureWhite : BlankColors.charcoal))
+                                        .foregroundStyle(dark ? BlankColors.charcoal : BlankColors.pureWhite)
                                 }
                                 .disabled(isApplyingAction)
                                 .accessibilityHint(spanish ? "Aplica la acción sobre tus distracciones seleccionadas" : "Applies the action to your selected distractions")
