@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-03T20:36:15Z",
+  "title": "Design System: Blankmind",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Paper", "tonalRamp": ["oklch(15% 0.004 106)", "oklch(27% 0.004 106)", "oklch(39% 0.004 106)", "oklch(51% 0.004 106)", "oklch(63% 0.004 106)", "oklch(75% 0.004 106)", "oklch(87% 0.004 106)", "oklch(95% 0.004 106)"] },
+      "charcoal": { "role": "primary", "displayName": "Charcoal", "tonalRamp": ["oklch(15% 0 0)", "oklch(27% 0 0)", "oklch(39% 0 0)", "oklch(51% 0 0)", "oklch(63% 0 0)", "oklch(75% 0 0)", "oklch(87% 0 0)", "oklch(95% 0 0)"] },
+      "lichen-gray": { "role": "neutral", "displayName": "Lichen Gray", "tonalRamp": ["oklch(15% 0.008 112)", "oklch(27% 0.008 112)", "oklch(39% 0.008 112)", "oklch(51% 0.008 112)", "oklch(63% 0.008 112)", "oklch(75% 0.008 112)", "oklch(87% 0.008 112)", "oklch(95% 0.008 112)"] },
+      "stone-gray": { "role": "neutral", "displayName": "Stone Gray", "tonalRamp": ["oklch(15% 0.008 113)", "oklch(27% 0.008 113)", "oklch(39% 0.008 113)", "oklch(51% 0.008 113)", "oklch(63% 0.008 113)", "oklch(75% 0.008 113)", "oklch(87% 0.008 113)", "oklch(95% 0.008 113)"] },
+      "alert-red": { "role": "semantic", "displayName": "Alert Red", "tonalRamp": ["oklch(15% 0.194 27)", "oklch(27% 0.194 27)", "oklch(39% 0.194 27)", "oklch(51% 0.194 27)", "oklch(63% 0.194 27)", "oklch(75% 0.194 27)", "oklch(87% 0.194 27)", "oklch(95% 0.194 27)"] }
+    },
+    "typographyMeta": {
+      "home-menu": { "displayName": "Home menu", "purpose": "Home-only rows; Dynamic Type title scaling, minimumScaleFactor 0.72." },
+      "section-title": { "displayName": "Interior title", "purpose": "Preserved serif section headings; native title scaling." },
+      "body": { "displayName": "Body", "purpose": "Existing Helvetica Neue body text; native body scaling." },
+      "chat-input": { "displayName": "BMB input", "purpose": "Existing chat text input; native body scaling." },
+      "button-label": { "displayName": "Button label", "purpose": "Minimal primary button labels; native headline scaling." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "home-menu-open", "value": "SwiftUI.easeOut(duration: 0.38)", "purpose": "Home menu enters from bottom with opacity; removal uses opacity." },
+      { "name": "home-menu-reduce-motion", "value": "SwiftUI.easeOut(duration: 0.12)", "purpose": "Opacity-only menu transition under Reduce Motion." },
+      { "name": "home-orb-return", "value": "UIView.animate(duration: 0.3, curveEaseOut, beginFromCurrentState)", "purpose": "Circle returns to rest after pan; duration becomes zero under Reduce Motion." },
+      { "name": "home-orb-drag", "value": "x: clamp(-120, translation.x, 24); y: clamp(-120, translation.y, 80) pt", "purpose": "Circle follows pan only when Reduce Motion is disabled." },
+      { "name": "home-section-transition", "value": "SwiftUI.easeInOut(duration: 0.35); Reduce Motion: 0.12", "purpose": "Existing active-section transition; imperative open/close helpers still use 0.35 seconds." },
+      { "name": "primary-pressed-scale", "value": "0.985", "purpose": "Existing minimal primary button pressed scale." }
+    ],
+    "breakpoints": [],
+    "gestures": {
+      "scope": "Home only",
+      "swipeDistancePoints": 48,
+      "dominantAxisRatio": 1.25,
+      "holdSeconds": 2,
+      "holdMovementTolerancePoints": 12,
+      "arbitration": "Pan requires long press to fail; completed hold consumes the touch.",
+      "actions": { "up": "Open menu", "left": "Activate existing manual protection", "hold": "Open existing chat", "downWithMenuOpen": "Close menu" },
+      "accessibility": "VoiceOver activation toggles menu; custom actions expose protection and chat."
+    },
+    "provenance": {
+      "platform": "ios",
+      "sourceCommit": "018f2a8",
+      "sourcePaths": [
+        "PRODUCT.md",
+        "docs/HOME_ORB_2026-10-03.md",
+        "ios/Blank/Blank/HomeView.swift",
+        "ios/Blank/Blank/HomeOrbControl.swift",
+        "ios/Blank/Blank/BlankColors.swift",
+        "ios/Blank/Blank/AssistantAppView.swift",
+        "ios/Blank/BlankWidgetExtension/BlankWidget.swift",
+        "ios/Blank/BlankShieldConfiguration/ShieldConfigurationExtension.swift"
+      ],
+      "previewUnits": "CSS pixels stand in for native base points; native Dynamic Type is authoritative.",
+      "tonalRampStatus": "Synthesized panel swatch ramps; not app tokens or new palette permissions.",
+      "validation": "Source extraction only; no physical protection validation or final review claim."
+    }
+  },
+  "components": [
+    {
+      "name": "Home circle",
+      "kind": "custom",
+      "refersTo": "home-orb",
+      "description": "Flat native Home control. Preview uses a representative 60-point diameter; native bounds are 44–72. Browser focus ring is preview-only.",
+      "html": "<button class=\"ds-home-orb\" aria-label=\"Blankmind controls\"></button>",
+      "css": ".ds-home-orb { display:block; width:60px; height:60px; padding:0; border:0; border-radius:50%; background:#292929; cursor:pointer; } .ds-home-orb:hover { background:#292929; } .ds-home-orb:active { background:#292929; } .ds-home-orb:focus-visible { outline:2px solid #292929; outline-offset:4px; }"
+    },
+    {
+      "name": "Home menu row",
+      "kind": "nav",
+      "refersTo": "home-menu-row",
+      "description": "Lower-left Home navigation row; native Dynamic Type scaling remains in SwiftUI. Browser focus ring is preview-only.",
+      "html": "<button class=\"ds-home-row\">progress</button>",
+      "css": ".ds-home-row { display:block; min-height:44px; padding:0; border:0; background:transparent; color:#292929; text-align:left; font:400 32px 'Helvetica Neue',sans-serif; letter-spacing:-0.9px; cursor:pointer; } .ds-home-row:hover { color:#292929; } .ds-home-row:active { color:#292929; } .ds-home-row:focus-visible { outline:2px solid #292929; outline-offset:2px; }"
+    },
+    {
+      "name": "Black card",
+      "kind": "card",
+      "refersTo": "black-card",
+      "description": "Existing interior card treatment; minimum native height 64 points, no Home geometry implied.",
+      "html": "<div class=\"ds-black-card\">Notifications</div>",
+      "css": ".ds-black-card { min-height:32px; padding:16px; border-radius:4px; background:#292929; color:#FFFFFC; font:400 16px 'Helvetica Neue',sans-serif; }"
+    },
+    {
+      "name": "Minimal primary button — light surface",
+      "kind": "button",
+      "refersTo": "primary-light",
+      "description": "Existing minimal primary button in light color scheme; default/pressed alpha and scale copied from BlankPrimaryButtonStyle. Browser focus ring is preview-only.",
+      "html": "<button class=\"ds-primary-light\">Continue</button>",
+      "css": ".ds-primary-light { width:100%; max-width:342px; height:52px; padding:0; border:0; border-radius:0; background:rgba(41,41,41,0.94); color:#FFFFFC; font:500 16px 'Helvetica Neue',sans-serif; cursor:pointer; } .ds-primary-light:hover { background:rgba(41,41,41,0.94); } .ds-primary-light:active { background:rgba(41,41,41,0.72); transform:scale(0.985); } .ds-primary-light:focus-visible { outline:2px solid #292929; outline-offset:3px; }"
+    },
+    {
+      "name": "Minimal primary button — dark surface",
+      "kind": "button",
+      "refersTo": "primary-dark",
+      "description": "Existing minimal primary button in dark color scheme. Browser focus ring is preview-only.",
+      "html": "<div class=\"ds-dark-canvas\"><button class=\"ds-primary-dark\">Continue</button></div>",
+      "css": ".ds-dark-canvas { padding:16px; background:#292929; } .ds-primary-dark { width:100%; max-width:342px; height:52px; padding:0; border:0; border-radius:0; background:rgba(255,255,252,0.94); color:#292929; font:500 16px 'Helvetica Neue',sans-serif; cursor:pointer; } .ds-primary-dark:hover { background:rgba(255,255,252,0.94); } .ds-primary-dark:active { background:rgba(255,255,252,0.72); transform:scale(0.985); } .ds-primary-dark:focus-visible { outline:2px solid #FFFFFC; outline-offset:3px; }"
+    },
+    {
+      "name": "BMB composer field",
+      "kind": "input",
+      "refersTo": "chat-composer",
+      "description": "Visual excerpt of the preserved light BMB composer; native microphone/send controls, multiline behavior and accessibility layout remain in source. Browser focus ring is preview-only.",
+      "html": "<div class=\"ds-composer\"><textarea class=\"ds-chat-field\" rows=\"1\" aria-label=\"Message Blankmind\" placeholder=\"Write a message\"></textarea></div>",
+      "css": ".ds-composer { max-width:640px; padding-left:18px; padding-right:16px; border-radius:28px; background:rgba(41,41,41,0.06); } .ds-chat-field { width:100%; padding:14px 0; border:0; background:transparent; resize:none; color:#292929; font:400 17px 'Helvetica Neue',sans-serif; } .ds-chat-field::placeholder { color:rgba(41,41,41,0.72); } .ds-chat-field:hover { background:transparent; } .ds-chat-field:focus-visible { outline:2px solid #292929; outline-offset:2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Silencio visual",
+    "overview": "Home leaves the screen empty around one circular control. The shared paper-and-charcoal palette applies throughout the iPhone app and its widget/shield surfaces; Home composition and gestures apply only to Home. Existing interiors, section hierarchy and BMB controls remain authoritative.",
+    "keyCharacteristics": ["Quiet Home with one lower-right circle.", "Shared white/black primitives with preserved supporting grays and semantic errors.", "Native accessibility and existing protected actions."],
+    "rules": [{ "name": "The Shared Palette Rule", "body": "All custom app white/black roles use Paper/Charcoal, including widget and shield tokens; this does not replace supporting grays, error semantics or native Apple controls.", "section": "colors" }],
+    "dos": ["**Do** use the shared Paper/Charcoal primitives for custom app white/black roles.", "**Do** preserve interior structures, BMB controls, Dynamic Type, VoiceOver and Reduce Motion.", "**Do** keep Home geometry and gesture rules scoped to Home."],
+    "donts": ["**Don't** add borders, shadows, copy or extra controls to resting Home.", "**Don't** replace supporting grays, semantic errors or native Apple button styling with brand primitives.", "**Don't** claim Simulator evidence proves physical Screen Time protection or gesture latency."]
+  }
+}

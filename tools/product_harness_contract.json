@@ -22,7 +22,7 @@
     ".github/**",
     "supabase/migrations/**",
     "supabase/functions/**"
-    ,"netlify.toml"
+    ,"netlify.toml", "PRODUCT.md", "DESIGN.md", ".impeccable/design.json"
   ],
   "acceptance": [
     "El cambio tiene contexto mínimo de Blank Brain y del proceso de desarrollo.",
