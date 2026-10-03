@@ -205,7 +205,7 @@ function validateReportArtifacts(report) {
   for (const fn of report.functions) {
     const expected = path.join(report.package_directory, "functions", `${fn.name}.zip`);
     if (typeof fn.path !== "string" || path.resolve(fn.path) !== path.resolve(expected)
-        || !/^[a-f0-9]{64}$/.test(fn.sha256 || "") || fn.schedule
+        || !/^[a-f0-9]{64}$/.test(fn.sha256 || "") || (fn.schedule && (fn.name !== "bmb-tick" || fn.schedule !== "*/5 * * * *"))
         || !fs.existsSync(fn.path) || sha256(fn.path) !== fn.sha256
         || fs.statSync(fn.path).size !== fn.bytes) fail("Original function artifact is missing or changed");
   }
@@ -217,7 +217,7 @@ async function verifyDeployment(report, token, fetcher) {
   report.environment_verification = validateEnvironment(await apiGet(`/accounts/${site.account_id}/env?site_id=${SITE_ID}`, token, fetcher));
   const deployment = await apiGet(`/deploys/${report.deploy_id}`, token, fetcher);
   if (deployment.site_id !== SITE_ID || deployment.state !== "ready" ) fail("Staging deploy is not ready or contains scheduled functions");
-  if (deployment.function_schedules?.length !== 1 || deployment.function_schedules[0].name !== "bmb-tick" || deployment.function_schedules[0].schedule !== "*/5 * * * *") fail("BMB scheduled tick missing or unexpected");
+  if (deployment.function_schedules?.length !== 1 || deployment.function_schedules[0].name !== "bmb-tick" || deployment.function_schedules[0].cron !== "*/5 * * * *") fail("BMB scheduled tick missing or unexpected");
   const remote = productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
   if (remote.some((fn) => (fn.schedule && (fn.n || fn.name) !== "bmb-tick") || (fn.d || fn.sha) !== report.functions.find((item) => item.name === (fn.n || fn.name))?.sha256)) fail("Remote function digests differ from the eight packaged ZIPs");
   await requirePrivateSite(fetcher);
