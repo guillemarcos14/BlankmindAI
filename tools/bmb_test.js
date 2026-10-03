@@ -26,14 +26,14 @@ async function main() {
   result=await turn({...base(),message_kind:"statement",decision:"respond"},ctx);
   assert.equal(result.plan.bmb_state.proposal.fingerprint,proposed.fingerprint,"Detour erased proposal");
   await assert.rejects(()=>turn({...base(),message_kind:"statement",decision:"execute",action:action()},ctx),/not_authorized/);
-  await assert.rejects(()=>turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:action({minutes:45})},ctx),/not_authorized/);
+  const mismatch=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:action({minutes:45})},ctx);assert.deepEqual(mismatch.plan.actions,[]);assert.equal(mismatch.context.brain_request.execute,false);
   result=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:action()},ctx);
   assert.equal(result.plan.actions[0].minutes,30);assert.equal(result.context.brain_request.execute,true);
   const reorderedAction=Object.fromEntries(Object.entries(action()).reverse());
   result=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:reorderedAction},ctx);
   assert.equal(result.context.brain_request.execute,true,"JSON field order changed proposal authority");
   const expired=context();expired.memory.conversation_state={bmb_state:{proposal:{...proposed,expires_at:"2020-01-01"}}};
-  await assert.rejects(()=>turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:action()},expired),/not_authorized/);
+  const expiredReply=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:action()},expired);assert.deepEqual(expiredReply.plan.actions,[]); const missing=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:null,action:action()});assert.deepEqual(missing.plan.actions,[]);assert.match(missing.plan.response_text,/haven.t applied/);assert.equal(missing.plan.bmb_state.proposal,null);
   result=await turn({...base(),message_kind:"action_request",decision:"execute",action:action()});assert.equal(result.plan.actions.length,1);
   const stale=context();stale.brain_snapshot.generated_at="2020-01-01";
   await assert.rejects(()=>turn({...base(),message_kind:"action_request",decision:"execute",action:action()},stale),/stale_device/);
