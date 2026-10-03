@@ -23,6 +23,17 @@ struct ProtectionTests {
             calendar.date(from: DateComponents(year: 2026, month: 9, day: day, hour: hour, minute: minute))!
         }
         let work = BlankHabitWindow(name: "Work", startMinute: 9 * 60, endMinute: 17 * 60, weekdays: [2, 3, 4, 5, 6])
+        let expiry = date(26, 7)
+        let expiryInterval = DeviceActivityTimerScheduler.makeExpiryInterval(expiry: expiry, calendar: calendar)
+        let expiryStart = calendar.date(from: expiryInterval.start)!
+        let expiryEnd = calendar.date(from: expiryInterval.end)!
+        expect(expiryStart == expiry, "Expiry callback must preserve the exact release time")
+        expect(expiryEnd.timeIntervalSince(expiryStart) >= 15 * 60, "iOS rejects expiry monitors shorter than fifteen minutes")
+        let fractionalExpiry = expiry.addingTimeInterval(0.549)
+        let fractionalInterval = DeviceActivityTimerScheduler.makeExpiryInterval(expiry: fractionalExpiry, calendar: calendar)
+        let fractionalCallback = calendar.date(from: fractionalInterval.start)!
+        expect(fractionalCallback >= fractionalExpiry && fractionalCallback.timeIntervalSince(fractionalExpiry) < 1,
+               "Fractional expiry must not trigger early and retain an expired shield")
         expect(work.contains(date(25, 10), calendar: calendar), "Friday work window missing")
         expect(!work.contains(date(26, 10), calendar: calendar), "Weekday window incorrectly blocks Saturday")
         expect(!work.contains(date(25, 17), calendar: calendar), "Window end must be exclusive")

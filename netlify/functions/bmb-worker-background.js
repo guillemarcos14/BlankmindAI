@@ -6,7 +6,13 @@ async function dispatch(){
   const base=process.env.URL;
   if(!base||new URL(base).protocol!=="https:")throw Error("bmb_worker_origin_missing");
   const body=JSON.stringify({expires:Date.now()+5*60000,nonce:crypto.randomUUID()});
-  const result=await fetch(new URL("/.netlify/functions/bmb-worker-background",base),{method:"POST",headers:{"content-type":"application/json","x-bmb-signature":signature(body)},body,signal:AbortSignal.timeout(8000)});
+  const headers={"content-type":"application/json","x-bmb-signature":signature(body)};
+  // Private QA keeps Netlify password protection; never send its cookie elsewhere.
+  if(process.env.BMB_PRIVATE_STAGE_COOKIE){
+    if(new URL(base).origin!=="https://blank-product-staging-20260926.netlify.app")throw Error("bmb_private_stage_origin_invalid");
+    headers.cookie=process.env.BMB_PRIVATE_STAGE_COOKIE;
+  }
+  const result=await fetch(new URL("/.netlify/functions/bmb-worker-background",base),{method:"POST",headers,body,signal:AbortSignal.timeout(8000)});
   if(result.status!==202)throw Error("bmb_worker_dispatch_failed");
   return {accepted:true};
 }

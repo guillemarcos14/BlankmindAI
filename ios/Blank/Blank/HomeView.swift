@@ -1677,7 +1677,7 @@ struct HomeView: View {
                 let registered = sessionStore.applyBMBProtectionSchedule(remote)
                 applyScreenTimeControls()
                 finishPendingAssistantAction(status: registered ? "verified" : "failed",
-                    detail: registered ? "dated_schedule_registered" : "dated_schedule_registration_failed")
+                    detail: registered ? "dated_schedule_registered" : sessionStore.bmbScheduleFailure)
                 return
             }
             guard sessionStore.restoreSavedSelectionForAssistant(appNames: appNames) else {
