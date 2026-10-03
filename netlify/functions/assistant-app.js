@@ -363,7 +363,13 @@ exports.handler = async (event) => {
     }
     if (body.action === "send") return await send(auth, body);
     return json(400, { error: "unsupported_action" });
-  } catch (_) {
+  } catch (error) {
+    // Diagnostic codes only: never log messages, tokens or provider payloads.
+    console.error("assistant_app_failure", JSON.stringify({
+      action: ["activate","history","status","send","transcribe"].includes(body.action) ? body.action : "other",
+      code: /^\w{1,100}$/.test(error.message || "") ? error.message : "unexpected_failure",
+      location: String(error.stack || "").match(/(?:bmb-brain|assistant-app|_membership)\.js:\d+:\d+/)?.[0] || null,
+    }));
     return json(503, { error: "assistant_app_unavailable", retry_after: 3 });
   }
 };
