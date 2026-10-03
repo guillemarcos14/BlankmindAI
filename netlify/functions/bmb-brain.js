@@ -57,6 +57,11 @@ function normalizeAction(a, now=Date.now()) {
   return result;
 }
 function proposal(a) {return {action:a,fingerprint:fingerprint(a),expires_at:new Date(Date.now()+2*3600000).toISOString()};}
+// JSONB and model output can reorder fields without changing the instruction.
+// Keep the saved token for existing proposals, compare their actual parameters.
+function actionIdentity(a) {
+  return JSON.stringify(Object.fromEntries(Object.entries(a).sort(([a],[b])=>a.localeCompare(b))));
+}
 async function generate(input,{model=readModelJson}={}) {
   const {body}=await model({request:{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:1800,
     input:[{role:"system",content:INSTRUCTIONS},{role:"user",content:JSON.stringify(input)}],
@@ -117,7 +122,8 @@ async function plan({prompt,context,userId,identity,proactive=null},{run=generat
   if(result.decision==="execute"&&action&&!proactive) {
     execute=result.message_kind==="action_request";
     if(result.message_kind==="acceptance")execute=prior.proposal?.fingerprint===result.accepted_proposal
-      && Date.parse(prior.proposal.expires_at)>Date.now()&&fingerprint(action)===prior.proposal.fingerprint;
+      && Date.parse(prior.proposal.expires_at)>Date.now()&&prior.proposal.action
+      && actionIdentity(action)===actionIdentity(normalizeAction(prior.proposal.action));
     if(!execute)throw Error("bmb_action_not_authorized");
     if(!freshness(context.brain_snapshot))throw Error("bmb_stale_device_state");
   }

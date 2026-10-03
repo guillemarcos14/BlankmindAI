@@ -29,6 +29,9 @@ async function main() {
   await assert.rejects(()=>turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:action({minutes:45})},ctx),/not_authorized/);
   result=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:action()},ctx);
   assert.equal(result.plan.actions[0].minutes,30);assert.equal(result.context.brain_request.execute,true);
+  const reorderedAction=Object.fromEntries(Object.entries(action()).reverse());
+  result=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:reorderedAction},ctx);
+  assert.equal(result.context.brain_request.execute,true,"JSON field order changed proposal authority");
   const expired=context();expired.memory.conversation_state={bmb_state:{proposal:{...proposed,expires_at:"2020-01-01"}}};
   await assert.rejects(()=>turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:action()},expired),/not_authorized/);
   result=await turn({...base(),message_kind:"action_request",decision:"execute",action:action()});assert.equal(result.plan.actions.length,1);
