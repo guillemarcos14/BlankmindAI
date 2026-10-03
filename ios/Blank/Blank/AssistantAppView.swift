@@ -1,6 +1,5 @@
 import AVFoundation
 import Security
-import Speech
 import SwiftUI
 
 enum AssistantAppSession {
@@ -161,6 +160,7 @@ private struct AssistantAppEnvelope: Decodable {
     let turn: AssistantAppTurn?
     let nextBefore: String?
     let assistantConnectCode: String?
+    let text: String?
 }
 
 struct AssistantAppHistoryPage {
@@ -273,6 +273,12 @@ struct AssistantAppClient {
         }
         BlankSharedState.defaults.set(code, forKey: "blankAssistantConnectCode")
         return code
+    }
+
+    func transcribe(audio: Data) async throws -> String {
+        let result = try await request(action: "transcribe", extra: ["audio_base64": audio.base64EncodedString()])
+        guard let text = result.text, !text.isEmpty else { throw AssistantAppError.invalidResponse }
+        return text
     }
 
     func history(before: String? = nil) async throws -> AssistantAppHistoryPage {
@@ -405,128 +411,111 @@ final class AssistantSpeechInput: ObservableObject {
     @Published var isRecording = false
     @Published var isStarting = false
     @Published var error: String?
-
-    private let engine = AVAudioEngine()
-    private let recognizer = SFSpeechRecognizer(locale: Locale.current)
-    private var request: SFSpeechAudioBufferRecognitionRequest?
-    private var task: SFSpeechRecognitionTask?
+    @Published var hasAudio = false
+    @Published var levels: [CGFloat] = Array(repeating: 3, count: 24)
+    private var recorder: AVAudioRecorder?
+    private var timer: Timer?
+    private var file: URL?
     private var generation = UUID()
-    private var tapInstalled = false
-    private var audioSessionActive = false
-    private var interruptionObserver: NSObjectProtocol?
+    private var transcription: Task<Void, Never>?
+    private var observer: NSObjectProtocol?
 
     init() {
-        interruptionObserver = NotificationCenter.default.addObserver(
-            forName: AVAudioSession.interruptionNotification, object: nil, queue: .main
-        ) { [weak self] notification in
-            guard let raw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
-                  AVAudioSession.InterruptionType(rawValue: raw) == .began else { return }
+        observer = NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification,
+            object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor [weak self] in self?.stop() }
         }
     }
+    deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
 
-    deinit {
-        if let interruptionObserver { NotificationCenter.default.removeObserver(interruptionObserver) }
-    }
-
-    private func message(_ spanish: String, _ english: String) -> String {
+    private func copy(_ spanish: String, _ english: String) -> String {
         Locale.current.languageCode == "es" ? spanish : english
     }
 
     func toggle() {
-        if isRecording || isStarting { stop(); return }
+        if isRecording { finish(); return }
+        if isStarting { return }
+        if file != nil { finish(); return }
         generation = UUID()
         let current = generation
-        isStarting = true
-        transcript = ""
-        error = nil
-        SFSpeechRecognizer.requestAuthorization { [weak self] status in
-            DispatchQueue.main.async {
-                guard let self, self.generation == current, self.isStarting else { return }
-                guard status == .authorized else {
-                    self.isStarting = false
-                    self.error = self.message("Activa Reconocimiento de voz en Ajustes.", "Enable Speech Recognition in Settings.")
-                    return
-                }
-                AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
-                    DispatchQueue.main.async {
-                        guard let self, self.generation == current, self.isStarting else { return }
-                        if allowed { self.start(generation: current) }
-                        else {
-                            self.isStarting = false
-                            self.error = self.message("Activa el acceso al micrófono en Ajustes.", "Enable Microphone access in Settings.")
+        let owner = AssistantAppSession.userID
+        transcript = ""; error = nil; isStarting = true
+        AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
+            Task { @MainActor [weak self] in
+                guard let self, self.generation == current, owner == AssistantAppSession.userID else { return }
+                guard allowed else { self.isStarting = false; self.error = self.copy("Activa el acceso al micrófono en Ajustes.", "Enable Microphone access in Settings."); return }
+                do {
+                    let audio = AVAudioSession.sharedInstance()
+                    try audio.setCategory(.record, mode: .measurement)
+                    try audio.setActive(true)
+                    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+                    self.file = url; self.hasAudio = true
+                    let recorder = try AVAudioRecorder(url: url, settings: [
+                        AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: 24000,
+                        AVNumberOfChannelsKey: 1, AVEncoderBitRateKey: 48000])
+                    recorder.isMeteringEnabled = true
+                    guard recorder.record() else { throw AssistantAppError.invalidResponse }
+                    self.recorder = recorder; self.isStarting = false; self.isRecording = true
+                    self.timer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { [weak self] _ in
+                        Task { @MainActor [weak self] in
+                            guard let self, let recorder = self.recorder else { return }
+                            recorder.updateMeters()
+                            self.levels.removeFirst()
+                            self.levels.append(CGFloat(max(3, min(28, pow(10, Double(recorder.averagePower(forChannel: 0)) / 40) * 28))))
+                            if recorder.currentTime >= 90 { self.finish() }
                         }
                     }
-                }
+                } catch { self.stop(); self.error = self.copy("No se pudo iniciar el micrófono. Reintenta.", "Could not start the microphone. Try again.") }
             }
         }
     }
 
-    private func start(generation current: UUID) {
-        guard let recognizer, recognizer.isAvailable else {
-            isStarting = false
-            error = message("El dictado no está disponible ahora. Puedes escribir tu mensaje.", "Dictation is unavailable right now. You can type your message.")
-            return
-        }
-        do {
-            let audio = AVAudioSession.sharedInstance()
-            try audio.setCategory(.record, mode: .measurement, options: .duckOthers)
-            try audio.setActive(true, options: .notifyOthersOnDeactivation)
-            audioSessionActive = true
-            let request = SFSpeechAudioBufferRecognitionRequest()
-            request.shouldReportPartialResults = true
-            self.request = request
-            let input = engine.inputNode
-            let format = input.outputFormat(forBus: 0)
-            guard format.sampleRate > 0, format.channelCount > 0 else {
-                stop()
-                error = message("No se detecta un micrófono disponible.", "No microphone is available.")
-                return
+    private func finish() {
+        timer?.invalidate(); timer = nil
+        recorder?.stop(); recorder = nil; isRecording = false
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        guard let file else { return }
+        isStarting = true; error = nil
+        let current = generation
+        let owner = AssistantAppSession.userID
+        transcription = Task { [weak self] in
+            do {
+                let data = try Data(contentsOf: file)
+                let text = try await AssistantAppClient().transcribe(audio: data)
+                guard let self, self.generation == current, owner == AssistantAppSession.userID else { return }
+                self.isStarting = false
+                try? FileManager.default.removeItem(at: file); self.file = nil; self.hasAudio = false
+                self.transcript = text
+            } catch {
+                guard let self, self.generation == current else { return }
+                self.isStarting = false
+                self.error = self.copy("No se pudo transcribir. Pulsa el micrófono para reintentar o cancela.", "Could not transcribe audio. Tap the microphone to retry, or cancel.")
             }
-            input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
-                request.append(buffer)
-            }
-            tapInstalled = true
-            engine.prepare()
-            try engine.start()
-            isStarting = false
-            isRecording = true
-            task = recognizer.recognitionTask(with: request) { [weak self] result, failure in
-                DispatchQueue.main.async {
-                    guard let self, self.generation == current else { return }
-                    if let result { self.transcript = result.bestTranscription.formattedString }
-                    if failure != nil || result?.isFinal == true {
-                        self.stop()
-                        if failure != nil {
-                            self.error = self.message("El dictado se interrumpió. Conservamos el texto; puedes seguir escribiendo.", "Dictation stopped. Your text is kept; you can continue typing.")
-                        }
-                    }
-                }
-            }
-        } catch {
-            stop()
-            self.error = message("No se pudo iniciar el micrófono. Puedes escribir o reintentar.", "Could not start the microphone. You can type or retry.")
         }
     }
 
     func stop() {
-        // Invalidates permission prompts and callbacks from a previous session.
-        generation = UUID()
-        if engine.isRunning { engine.stop() }
-        if tapInstalled {
-            engine.inputNode.removeTap(onBus: 0)
-            tapInstalled = false
-        }
-        request?.endAudio()
-        task?.cancel()
-        task = nil
-        request = nil
-        isRecording = false
-        isStarting = false
-        if audioSessionActive {
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-            audioSessionActive = false
-        }
+        generation = UUID(); transcription?.cancel(); transcription = nil
+        timer?.invalidate(); timer = nil; recorder?.stop(); recorder = nil
+        if let file { try? FileManager.default.removeItem(at: file) }; file = nil; hasAudio = false
+        isRecording = false; isStarting = false
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+}
+
+struct AssistantAudioWaveform: View {
+    @ObservedObject var audio: AssistantSpeechInput
+    var body: some View {
+        HStack(spacing: 3) {
+            if audio.isStarting { ProgressView() }
+            else { ForEach(Array(audio.levels.enumerated()), id: \.offset) { _, level in
+                Capsule().frame(width: 3, height: level)
+            } }
+            Spacer(minLength: 0)
+            Button { audio.stop() } label: { Image(systemName: "xmark").frame(width: 44, height: 44) }
+                .accessibilityLabel("Cancel audio")
+        }.frame(maxWidth: .infinity, minHeight: 50)
+        .accessibilityLabel(audio.isStarting ? "Processing audio" : "Recording audio")
     }
 }
 
@@ -542,7 +531,6 @@ struct AssistantAppView: View {
     @State private var nextHistoryCursor: String?
     @State private var composer = AssistantComposerState()
     @State private var owner = ""
-    @State private var speechPrefix = ""
     @State private var acceptingSpeech = false
     @State private var sendRequestID: UUID?
     @State private var isLoading = true
@@ -555,7 +543,6 @@ struct AssistantAppView: View {
     @State private var showAccountSignIn = false
     @State private var saveTask: Task<Void, Never>?
     @State private var initialMessageHandled = false
-    @State private var composerHeight: CGFloat = 56
 
     var initialMessage: String? = nil
     var simulatorGuest = false
@@ -590,9 +577,9 @@ struct AssistantAppView: View {
                 VStack(spacing: 0) {
             HStack {
                 Button { dismiss() } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 19, weight: .semibold))
-                        .frame(width: 48, height: 48)
+                    Label(spanish ? "Volver" : "Back", systemImage: "chevron.left")
+                        .font(.blankInter(size: 14))
+                        .frame(minWidth: 76, minHeight: 48, alignment: .leading)
                 }
                 .accessibilityLabel(spanish ? "Volver a Inicio" : "Back to Home")
                 .disabled(isApplyingAction)
@@ -614,19 +601,28 @@ struct AssistantAppView: View {
                 }
                 .accessibilityLabel(spanish ? "Menú de Blankmind" : "Blankmind menu")
                 Spacer(minLength: 0)
-                Color.clear.frame(width: 48, height: 48)
+                Color.clear.frame(width: 76, height: 48)
             }
             .frame(height: 56)
+            .padding(.horizontal, 24)
             .layoutPriority(1)
             .background(background)
             .zIndex(1)
 
                     ScrollView {
                     VStack(alignment: .leading, spacing: 26) {
+                        VStack(alignment: .leading, spacing: 24) {
+                            Text("Chat")
+                                .font(.blankSectionEditorial())
+                                .tracking(-0.9)
+                                .accessibilityAddTraits(.isHeader)
+                            Text("Blankmind")
+                                .font(.blankInter(size: 14, relativeTo: .subheadline))
+                                .foregroundStyle(foreground.opacity(0.72))
+                        }
                         if let latest {
                             Text(latest.assistantText)
-                                .font(.blankEditorial(size: 28))
-                                .tracking(-0.5)
+                                .font(.blankInter(size: 20))
                                 .lineSpacing(4)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
@@ -637,7 +633,7 @@ struct AssistantAppView: View {
                             Text(requiresVerification
                                  ? (spanish ? "Tu conversación en Blankmind." : "Your conversation in Blankmind.")
                                  : (spanish ? "¿Qué tienes en mente?" : "What is on your mind?"))
-                                .font(.blankEditorial(size: 28))
+                                .font(.blankInter(size: 20))
                                 .fixedSize(horizontal: false, vertical: true)
                             if simulatorGuest {
                                 Text("Simulator navigation preview")
@@ -653,34 +649,25 @@ struct AssistantAppView: View {
                     }
                         .frame(maxWidth: 640, alignment: .leading)
                         .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 28)
+                        .padding(.horizontal, 24)
                         .padding(.vertical, 16)
                     }
                     .scrollDismissesKeyboard(.interactively)
-                    .frame(height: max(0, geometry.size.height / 2 - composerHeight / 2 - 72))
+                    .frame(maxHeight: .infinity)
                     .clipped()
                     Spacer(minLength: 0)
                 }
-                composerBar
-                    .background {
-                        GeometryReader { bar in
-                            Color.clear.preference(key: AssistantComposerHeightKey.self, value: bar.size.height)
-                        }
-                    }
-                    .overlay(alignment: .bottom) {
-                        ScrollView {
-                            status
-                        }
-                        .frame(width: geometry.size.width, height: max(0, geometry.size.height / 2 - composerHeight / 2 - 16))
-                        .alignmentGuide(.bottom) { dimensions in dimensions[.top] - 12 }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 8) {
+                    ScrollView { status }.frame(maxHeight: 120)
+                    composerBar
+                }.padding(.bottom, 8).background(background)
             }
             .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: waiting)
             .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: isLoading)
             .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: latest?.id)
         }
-        .onPreferenceChange(AssistantComposerHeightKey.self) { composerHeight = $0 }
         .foregroundStyle(foreground)
         .background(background.ignoresSafeArea())
         .preferredColorScheme(dark ? .dark : .light)
@@ -705,7 +692,10 @@ struct AssistantAppView: View {
             }
         }
         .onChange(of: speech.transcript) { transcript in
-            if acceptingSpeech { composer.draft = speechPrefix + transcript }
+            if acceptingSpeech && !transcript.isEmpty && composer.pending == nil {
+                acceptingSpeech = false
+                Task { await send(audioText: transcript) }
+            }
         }
         .onChange(of: speech.error) { value in
             if let value {
@@ -769,20 +759,20 @@ struct AssistantAppView: View {
             if let latest {
                             if let name = latest.controlSection, let section = controlSection(name) {
                                 Button(spanish ? "Abrir" : "Open") { openControls(section) }
-                                    .font(.blankInter(size: 17, weight: .semibold))
+                                    .font(.blankOnboardingControl)
                             }
                             if latest.canApply && !waiting {
                                 Button {
                                     Task { await applyAction(latest.actionId) }
                                 } label: {
                                     Text(latest.actionLabel.isEmpty ? (spanish ? "Aplicar ahora" : "Apply now") : latest.actionLabel)
-                                        .font(.blankInter(size: 17, weight: .semibold))
+                                        .font(.blankOnboardingControl)
                                         .multilineTextAlignment(.leading)
-                                        .padding(.horizontal, 26)
-                                        .padding(.vertical, 14)
-                                        .frame(minHeight: 52)
-                                        .background(Capsule().fill(foreground))
-                                        .foregroundStyle(background)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .frame(minHeight: 44)
+                                        .background(RoundedRectangle(cornerRadius: 4).fill(dark ? Color.white : Color.black))
+                                        .foregroundStyle(dark ? Color.black : Color.white)
                                 }
                                 .disabled(isApplyingAction)
                                 .accessibilityHint(spanish ? "Aplica la acción sobre tus distracciones seleccionadas" : "Applies the action to your selected distractions")
@@ -817,7 +807,7 @@ struct AssistantAppView: View {
                 }
             } else if waiting {
                 BlankLoadingIndicator(color: foreground)
-            } else if speech.isRecording || speech.isStarting {
+            } else if speech.isRecording || speech.isStarting || speech.hasAudio {
                 Text(spanish ? "Dictando. Revisa el texto antes de enviar." : "Dictating. Review your words before sending.")
             }
             if draftTooLong {
@@ -850,14 +840,17 @@ struct AssistantAppView: View {
                 }
             }
         }
-        .padding(.leading, 18).padding(.trailing, 8)
+        .padding(.leading, 18).padding(.trailing, 16)
         .background(RoundedRectangle(cornerRadius: 28).fill(foreground.opacity(dark ? 0.11 : 0.06)))
         .frame(maxWidth: 640)
         .padding(.horizontal, 22)
         .layoutPriority(1)
     }
 
-    private var composerField: some View {
+    @ViewBuilder private var composerField: some View {
+        if speech.isRecording || speech.isStarting || speech.hasAudio {
+            AssistantAudioWaveform(audio: speech)
+        } else {
         TextField("", text: $composer.draft,
                       prompt: Text(spanish ? "Escribe un mensaje" : "Write a message")
                         .foregroundColor(foreground.opacity(0.72)), axis: .vertical)
@@ -870,13 +863,13 @@ struct AssistantAppView: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .disabled(requiresVerification || simulatorGuest)
                 .accessibilityLabel(spanish ? "Mensaje para Blankmind" : "Message Blankmind")
+        }
     }
 
     @ViewBuilder private var composerActions: some View {
         Button {
                 if !speech.isRecording && !speech.isStarting {
-                    let prefix = composer.draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    speechPrefix = prefix.isEmpty ? "" : "\(prefix) "
+                    composerFocused = false
                     acceptingSpeech = true
                 }
                 speech.toggle()
@@ -885,12 +878,12 @@ struct AssistantAppView: View {
                     .font(.system(size: 22)).frame(width: 44, height: 50)
             }
             .fixedSize(horizontal: true, vertical: false)
-            .disabled(requiresVerification || isSending)
+            .disabled(requiresVerification || simulatorGuest || waiting || speech.isStarting)
             .opacity(requiresVerification || isSending ? 0.45 : 1)
             .accessibilityLabel(speech.isRecording || speech.isStarting
-                                ? (spanish ? "Detener dictado" : "Stop dictation")
-                                : (spanish ? "Dictar mensaje" : "Dictate message"))
-            if !composer.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                ? (spanish ? "Enviar audio" : "Send audio")
+                                : (spanish ? "Grabar audio" : "Record audio"))
+            if !speech.hasAudio && !speech.isRecording && !speech.isStarting && !composer.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Button { Task { await send() } } label: {
                     Image(systemName: "arrow.up.circle.fill").font(.system(size: 29))
                         .frame(width: 44, height: 50)
@@ -1000,12 +993,12 @@ struct AssistantAppView: View {
         persist()
     }
 
-    private func send() async {
+    private func send(audioText: String? = nil) async {
         guard !preview, !simulatorGuest, !isSending, !requiresVerification else { return }
         acceptingSpeech = false
         speech.stop()
         let before = composer
-        guard let pending = composer.begin() else { return }
+        guard let pending = composer.begin(audioText: audioText) else { return }
         guard persist() else {
             composer = before
             error = spanish ? "No se pudo guardar el mensaje en este iPhone. Reintenta." : "Could not save the message on this iPhone. Try again."
@@ -1165,12 +1158,12 @@ private struct AssistantAppHistoryView: View {
                                             Task { await apply(turn) }
                                         } label: {
                                             Text(turn.actionLabel.isEmpty ? (spanish ? "Aplicar ahora" : "Apply now") : turn.actionLabel)
-                                                .font(.blankInter(size: 15, weight: .semibold))
+                                                .font(.blankOnboardingControl)
                                                 .multilineTextAlignment(.leading)
                                                 .padding(.horizontal, 20)
                                                 .padding(.vertical, 12)
                                                 .frame(minHeight: 44)
-                                                .background(Capsule().fill(foreground))
+                                                .background(RoundedRectangle(cornerRadius: 4).fill(foreground))
                                                 .foregroundStyle(background)
                                         }
                                         .disabled(loading)

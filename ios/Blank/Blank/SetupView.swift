@@ -17,6 +17,7 @@ private enum OnboardingStep: Int {
 }
 
 struct SetupView: View {
+    @ScaledMetric(relativeTo: .body) private var permissionLabelSize: CGFloat = 16
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var screenTimeBlocker: ScreenTimeBlocker
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
@@ -168,13 +169,11 @@ struct SetupView: View {
             VStack(spacing: 12) {
                 permissionButton(
                     title: "Allow Screen Time",
-                    completedTitle: "Screen Time enabled",
                     ready: screenTimeBlocker.authorizationStatus == .approved,
                     action: authorizeScreenTime
                 )
                 permissionButton(
                     title: "Choose apps",
-                    completedTitle: "Apps selected",
                     ready: sessionStore.hasSelectedApps
                 ) {
                     if screenTimeBlocker.authorizationStatus == .approved {
@@ -185,7 +184,6 @@ struct SetupView: View {
                 }
                 permissionButton(
                     title: "Enable notifications",
-                    completedTitle: "Notifications enabled",
                     ready: notificationReady,
                     action: requestNotifications
                 )
@@ -202,27 +200,35 @@ struct SetupView: View {
 
     private func permissionButton(
         title: String,
-        completedTitle: String,
         ready: Bool,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
+                Text(title)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                Spacer(minLength: 8)
                 if ready {
-                    Image(systemName: "checkmark").accessibilityHidden(true)
+                    Image(systemName: "checkmark")
+                        .font(.body.weight(.medium))
+                        .scaleEffect(0.65)
+                        .accessibilityHidden(true)
                 }
-                Text(ready ? completedTitle : title)
             }
-            .font(.blankInter(size: 16, weight: .medium, relativeTo: .body))
-            .foregroundStyle(ready ? BlankColors.charcoal : Color.white)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .padding(.vertical, 2)
-            .background(ready ? BlankColors.lichenGray : Color.black, in: RoundedRectangle(cornerRadius: 4))
+            .font(.system(size: permissionLabelSize, weight: .regular))
+            .multilineTextAlignment(.leading)
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .background(Color.black, in: RoundedRectangle(cornerRadius: 4))
             .contentShape(Rectangle())
+            .environment(\.isEnabled, true)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OnboardingPermissionButtonStyle())
         .disabled(ready)
-        .accessibilityLabel(ready ? completedTitle : title)
+        .accessibilityLabel(title)
+        .accessibilityValue(ready ? "Completed" : "Not completed")
     }
     private var canAutomaticallyComplete: Bool {
         currentStep == .device && deviceReady && !showingPicker
@@ -404,4 +410,10 @@ struct SetupView: View {
          "selection_count": sessionStore.selectionCount]
     }
 
+}
+
+private struct OnboardingPermissionButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.85 : 1)
+    }
 }

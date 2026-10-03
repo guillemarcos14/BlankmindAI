@@ -103,6 +103,7 @@ function normalizeStringArray(value, maxItems = 8, maxLength = 80) {
 function normalizeSchedule(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const result = {};
+
   if (typeof value.enabled === "boolean") result.enabled = value.enabled;
   for (const key of ["start_minute", "end_minute", "paused_until", "expires_at"]) {
     if (Number.isFinite(value[key])) result[key] = value[key];
@@ -327,6 +328,13 @@ function buildAgentContext(input = {}) {
   const shared = normalizeUserContext(source.user_context);
   const merged = { ...shared, ...source };
   const result = {};
+  if (source.channel === "app" && source.brain_request) {
+    const request = source.brain_request;
+    if (["control", "conversation", "statistics", "configuration", "memory", "history", "account"].includes(request.route)) {
+      result.brain_request = { route: request.route, execute: request.route === "control" && request.execute === true,
+        language: ["en", "es"].includes(request.language) ? request.language : "en" };
+    }
+  }
   const brainSnapshot = normalizeBrainSnapshot(merged.brain_snapshot);
   if (brainSnapshot) result.brain_snapshot = brainSnapshot;
   if (source.channel === "app" && Array.isArray(source.brain_memories)) result.brain_memories = source.brain_memories.slice(0, 7);

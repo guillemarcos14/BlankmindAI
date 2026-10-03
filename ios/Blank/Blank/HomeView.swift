@@ -319,7 +319,6 @@ struct HomeView: View {
     @State private var chatLaunchMessage: String?
     @State private var homeChatDraft = ""
     @FocusState private var homeChatFocused: Bool
-    @State private var homeSpeechPrefix = ""
     @State private var acceptingHomeSpeech = false
     @StateObject private var homeSpeech = AssistantSpeechInput()
     @State private var assistantNotificationsAuthorized = false
@@ -426,6 +425,9 @@ struct HomeView: View {
         .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.35), value: showingRelapseReview)
         .navigationBarBackButtonHidden()
         .onReceive(timer) { date in
+            #if DEBUG && targetEnvironment(simulator)
+            guard !PostOnboardingPreviewScene.enabled else { return }
+            #endif
             now = date
             finishDelayedManualUnlock(now: date)
             pollPendingAssistantActionIfNeeded(now: date)
@@ -442,12 +444,19 @@ struct HomeView: View {
             Task { await activateAppChannel() }
         }
         .onChange(of: homeSpeech.transcript) { transcript in
-            if acceptingHomeSpeech { homeChatDraft = homeSpeechPrefix + transcript }
+            if acceptingHomeSpeech && !transcript.isEmpty {
+                acceptingHomeSpeech = false
+                chatLaunchMessage = transcript
+                showingAssistantChat = true
+            }
         }
         .onChange(of: homeSpeech.error) { error in
             if let error { message = error }
         }
         .onAppear {
+            #if DEBUG && targetEnvironment(simulator)
+            guard !PostOnboardingPreviewScene.enabled else { return }
+            #endif
             now = Date()
             finishDelayedManualUnlock(now: now)
             Task { await activateAppChannel() }
@@ -463,6 +472,9 @@ struct HomeView: View {
             pollPendingAssistantActionIfNeeded(force: true)
         }
         .onChange(of: scenePhase) { phase in
+            #if DEBUG && targetEnvironment(simulator)
+            guard !PostOnboardingPreviewScene.enabled else { return }
+            #endif
             guard phase == .active else {
                 stopUnblankHoldHaptics()
                 if phase == .background {
@@ -822,22 +834,22 @@ struct HomeView: View {
 
     private func idleMinimalHome(layout: HomeLayoutMetrics) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: -8) {
+            VStack(alignment: .leading, spacing: 0) {
                 minimalStartRow
 
-                minimalHomeRow("progress", color: BlankColors.homeLightOption) {
+                minimalHomeRow("progress", color: .black) {
                     openSection(.report)
                 }
 
-                minimalHomeRow("distractions", color: BlankColors.homeLightOption) {
+                minimalHomeRow("distractions", color: .black) {
                     openSection(.distractions)
                 }
 
-                minimalHomeRow("settings", color: BlankColors.homeLightOption) {
+                minimalHomeRow("settings", color: .black) {
                     openSection(.settings)
                 }
 
-                minimalHomeRow("chat", color: BlankColors.homeLightOption) {
+                minimalHomeRow("chat", color: .black) {
                     openAssistantChat()
                 }
 
@@ -862,13 +874,14 @@ struct HomeView: View {
             .accessibilityHidden(homeChatFocused)
             .frame(height: homeChatFocused ? 0 : nil, alignment: .bottom)
             .clipped()
+            .padding(.horizontal, 24 - layout.horizontalPadding)
 
             homeChatComposer
 
         }
         .padding(.horizontal, layout.horizontalPadding)
         .padding(.bottom, homeChatFocused ? 0 : layout.bottomPadding * 2)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: homeChatFocused ? .center : .bottomLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
         .background {
             Color.clear
                 .contentShape(Rectangle())
@@ -890,15 +903,15 @@ struct HomeView: View {
                         activeExpandedNavigation
                             .transition(.opacity)
                     } else {
-                        VStack(alignment: .leading, spacing: -8) {
+                        VStack(alignment: .leading, spacing: 0) {
                             minimalStartRow
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
                             Button("unblank") {
                                 beginFullScreenUnblankHold()
                             }
-                            .font(.blankInter(size: 32, weight: .bold, relativeTo: .title))
-                            .tracking(0)
+                            .font(.blankInter(size: 32, relativeTo: .title))
+                            .tracking(-0.9)
                             .foregroundStyle(BlankColors.homeDarkSecondary)
                             .frame(minWidth: 44, minHeight: 44, alignment: .leading)
                             .buttonStyle(.plain)
@@ -1010,7 +1023,7 @@ struct HomeView: View {
     }
 
     private var activeExpandedNavigation: some View {
-        VStack(alignment: .leading, spacing: -8) {
+        VStack(alignment: .leading, spacing: 0) {
             minimalHomeRow("progress", color: BlankColors.homeDarkSecondary) {
                 openSection(.report)
             }
@@ -1044,7 +1057,7 @@ struct HomeView: View {
     private func minimalHomeRow(_ title: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .blankHomeDisplayTextStyle(color: color, weight: .semibold)
+                .blankHomeDisplayTextStyle(color: color)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
         }
@@ -1057,7 +1070,7 @@ struct HomeView: View {
         let title = isActive
             ? (sessionStore.hardBlankActive ? "blank active" : "menu")
             : "blank"
-        let titleColor = isActive ? BlankColors.pureWhite : BlankColors.homeLightInk
+        let titleColor = isActive ? BlankColors.pureWhite : Color.black
 
         return Button {
             if isActive {
@@ -1074,9 +1087,9 @@ struct HomeView: View {
             setMessage(for: result)
         } label: {
             Text(title)
-                .font(.blankInter(size: 32, weight: .semibold, relativeTo: .title))
+                .font(.blankInter(size: 32, relativeTo: .title))
                 .foregroundStyle(titleColor)
-                .tracking(0)
+                .tracking(-0.9)
                 .lineLimit(1)
                 .minimumScaleFactor(0.70)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -1141,8 +1154,11 @@ struct HomeView: View {
 
     private var homeChatComposer: some View {
         HStack(alignment: .bottom, spacing: 4) {
+            if homeSpeech.isRecording || homeSpeech.isStarting || homeSpeech.hasAudio {
+                AssistantAudioWaveform(audio: homeSpeech).padding(.leading, 18)
+            } else {
             TextField("", text: $homeChatDraft,
-                      prompt: Text("Ask Blankmind…").foregroundColor(BlankColors.homeLightSecondary),
+                      prompt: Text("Ask Blankmind").foregroundColor(BlankColors.homeLightSecondary),
                       axis: .vertical)
                 .font(.blankInter(size: 16, weight: .medium, relativeTo: .body))
                 .lineLimit(1...3)
@@ -1153,15 +1169,12 @@ struct HomeView: View {
                 .padding(.vertical, 14)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .accessibilityLabel("Message Blankmind")
+            }
 
             Button {
-                homeChatFocused = true
+                homeChatFocused = false
                 if !homeSpeech.isRecording && !homeSpeech.isStarting {
-                    let prefix = homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    homeSpeechPrefix = prefix.isEmpty ? "" : "\(prefix) "
                     acceptingHomeSpeech = true
-                } else {
-                    acceptingHomeSpeech = false
                 }
                 homeSpeech.toggle()
             } label: {
@@ -1169,9 +1182,10 @@ struct HomeView: View {
                     .font(.system(size: 21))
                     .frame(width: 44, height: 50)
             }
-            .accessibilityLabel(homeSpeech.isRecording || homeSpeech.isStarting ? "Stop dictation" : "Dictate message")
+            .disabled(homeSpeech.isStarting)
+            .accessibilityLabel(homeSpeech.isRecording || homeSpeech.isStarting ? "Send audio" : "Record audio")
 
-            if !homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if !homeSpeech.hasAudio && !homeSpeech.isRecording && !homeSpeech.isStarting && !homeChatDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Button(action: sendHomeChatMessage) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 28))
@@ -1182,9 +1196,10 @@ struct HomeView: View {
             }
         }
         .foregroundStyle(BlankColors.homeLightInk)
+        .padding(.trailing, 12)
         .background(RoundedRectangle(cornerRadius: 26).fill(BlankColors.homeLightInk.opacity(0.06)))
         .padding(.top, 22)
-        .onTapGesture { homeChatFocused = true }
+        .onTapGesture { if !homeSpeech.isRecording && !homeSpeech.isStarting { homeChatFocused = true } }
     }
 
     private func openAssistantChat() {
@@ -2124,10 +2139,10 @@ struct HomeView: View {
 }
 
 private extension View {
-    func blankHomeDisplayTextStyle(color: Color, weight: Font.Weight = .regular) -> some View {
-        font(.blankInter(size: 32, weight: weight, relativeTo: .title))
+    func blankHomeDisplayTextStyle(color: Color) -> some View {
+        font(.blankInter(size: 32, relativeTo: .title))
             .foregroundStyle(color)
-            .tracking(0)
+            .tracking(-0.9)
             .lineLimit(1)
             .minimumScaleFactor(0.72)
             .lineSpacing(0)
@@ -2266,7 +2281,7 @@ struct HomeSectionScreen: View {
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
 
     var body: some View {
-        let sectionHorizontalPadding = min(max(screenWidth * 0.075, 28), 36)
+        let sectionHorizontalPadding: CGFloat = 24
         let contentWidth = screenWidth
         let minimalAppearance = true
 
@@ -2330,10 +2345,8 @@ struct SectionBackHeader: View {
     var body: some View {
         HStack {
             Button(action: action) {
-                Text("back")
-                    .font(.blankInter(size: 20, weight: .semibold, relativeTo: .headline))
-                    .underline()
-                    .tracking(-0.3)
+                Label("Back", systemImage: "chevron.left")
+                    .font(.blankInter(size: 14))
                     .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.premiumBlue)
                     .frame(minWidth: 44, minHeight: 44, alignment: .leading)
             }
@@ -2356,7 +2369,7 @@ struct SectionHeader: View {
     var subtitleColor: Color? = nil
 
     private var resolvedTitleColor: Color {
-        titleColor ?? (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink)
+        titleColor ?? (sessionStore.isBlankActive ? BlankColors.pureWhite : Color.black)
     }
 
     private var resolvedSubtitleColor: Color {
@@ -2367,20 +2380,20 @@ struct SectionHeader: View {
         VStack(alignment: .leading, spacing: 0) {
             SectionBackHeader(action: action)
 
-            Text(title.lowercased())
-                .font(.blankEditorial(size: 32))
-                .tracking(0)
+            Text(title.capitalized)
+                .font(.blankSectionEditorial())
+                .tracking(-0.9)
                 .foregroundStyle(resolvedTitleColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.86)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
 
-            Text(subtitle.lowercased())
-                .font(.blankInter(size: 13, weight: .medium, relativeTo: .caption))
+            Text(subtitle)
+                .font(.blankInter(size: 14, relativeTo: .subheadline))
                 .foregroundStyle(resolvedSubtitleColor)
                 .lineSpacing(0)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 5)
+                .padding(.top, 24)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -2405,7 +2418,7 @@ private struct SettingsScreen: View {
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(
                     title: "settings",
                     subtitle: "access, support and preferences.",
@@ -2413,7 +2426,7 @@ private struct SettingsScreen: View {
                     titleColor: textColor,
                     subtitleColor: secondaryColor
                 )
-                .padding(.bottom, 24)
+                .padding(.bottom, 12)
 
                 settingsRow(
                     title: "emergency",
@@ -2424,12 +2437,14 @@ private struct SettingsScreen: View {
                 settingsRow(
                     title: "screen time",
                     detail: "screen time \(screenTimeStatus.lowercased())",
+                    symbol: screenTimeStatus == "approved" ? "checkmark" : "chevron.right",
                     action: onRequestScreenTimePermission
                 )
 
                 settingsRow(
                     title: "health",
                     detail: "apple health \(healthStatus.lowercased())",
+                    symbol: healthStatus == "connected" ? "checkmark" : "chevron.right",
                     action: onRequestHealthAccess
                 )
 
@@ -2448,16 +2463,19 @@ private struct SettingsScreen: View {
                 settingsRow(
                     title: "privacy policy",
                     detail: "how Blankmind handles your data",
+                    symbol: "arrow.up.right",
                     action: { openURL(URL(string: "https://blankmind.ai/privacy")!) }
                 )
 
                 settingsRow(
                     title: "terms of service",
                     detail: "terms for using Blankmind",
+                    symbol: "arrow.up.right",
                     action: { openURL(URL(string: "https://blankmind.ai/terms")!) }
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 24)
         }
         .padding(.horizontal, sectionHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -2470,27 +2488,33 @@ private struct SettingsScreen: View {
     private func settingsRow(
         title: String,
         detail: String,
+        symbol: String = "chevron.right",
         color: Color? = nil,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(title)
-                    .font(.blankInter(size: 28, weight: .semibold, relativeTo: .title3))
-                    .tracking(-0.4)
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(title.capitalized)
+                        .font(.blankOnboardingControl)
 
-                Text(detail)
-                    .font(.blankInter(size: 12, weight: .medium, relativeTo: .caption))
-                    .foregroundStyle(secondaryColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
+                    Text(detail)
+                        .font(.blankInter(size: 12, relativeTo: .caption))
+                        .foregroundStyle(BlankColors.pureWhite.opacity(0.72))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: symbol)
+                    .font(.system(size: 12, weight: .regular))
+                    .accessibilityHidden(true)
             }
-            .foregroundStyle(color ?? textColor)
-            .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
-            .contentShape(Rectangle())
+            .foregroundStyle(color ?? BlankColors.pureWhite)
+            .blankBlackCard()
+            .contentShape(RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
+        .accessibilityValue(detail)
     }
 }
 
@@ -3325,54 +3349,60 @@ private struct DistractionsScreen: View {
                     SectionBackHeader(action: onClose)
 
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("distractions")
-                            .font(.blankInter(size: 32, weight: .semibold, relativeTo: .largeTitle))
-                            .tracking(0)
+                        Text("Distractions")
+                            .font(.blankSectionEditorial())
+                            .tracking(-0.9)
                             .foregroundStyle(textColor)
-                            .lineLimit(1)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                        scheduleRanges
-                            .padding(.top, 18)
+                        Text("Your protection list.")
+                            .font(.blankInter(size: 14, relativeTo: .subheadline))
+                            .foregroundStyle(secondaryColor)
+                            .padding(.top, 24)
+
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "clock")
+                                .accessibilityHidden(true)
+                            scheduleRanges
+                        }
+                        .font(.blankInter(size: 13, relativeTo: .subheadline))
+                        .foregroundStyle(secondaryColor)
+                        .padding(.top, 24)
                     }
 
-                    Spacer(minLength: 20)
-
                     ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: -8) {
+                        VStack(alignment: .leading, spacing: 12) {
                             if sessionStore.selection.blankedSelectionCount == 0 {
-                                Text("no distractions yet")
-                                    .font(.blankInter(size: 18, weight: .medium, relativeTo: .headline))
-                                    .foregroundStyle(secondaryColor)
-                                    .frame(minHeight: 44, alignment: .leading)
+                                Text("No distractions yet")
+                                    .font(.blankInter(size: 16, relativeTo: .headline))
+                                    .foregroundStyle(BlankColors.pureWhite.opacity(0.72))
+                                    .blankBlackCard()
                             } else {
-                                ForEach(Array(sessionStore.selection.applicationTokens), id: \.self) { token in
-                                    Label(token)
-                                        .labelStyle(.titleOnly)
-                                        .blankHomeDisplayTextStyle(color: textColor)
-                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                if !sessionStore.selection.applicationTokens.isEmpty {
+                                    distractionGroupHeading("Apps")
+                                    ForEach(Array(sessionStore.selection.applicationTokens), id: \.self) { token in
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon) }
+                                    }
                                 }
-                                ForEach(Array(sessionStore.selection.categoryTokens), id: \.self) { token in
-                                    Label(token)
-                                        .labelStyle(.titleOnly)
-                                        .blankHomeDisplayTextStyle(color: textColor)
-                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                if !sessionStore.selection.categoryTokens.isEmpty {
+                                    distractionGroupHeading("Categories")
+                                    ForEach(Array(sessionStore.selection.categoryTokens), id: \.self) { token in
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon) }
+                                    }
                                 }
-                                ForEach(Array(sessionStore.selection.webDomainTokens), id: \.self) { token in
-                                    Label(token)
-                                        .labelStyle(.titleOnly)
-                                        .blankHomeDisplayTextStyle(color: textColor)
-                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                if !sessionStore.selection.webDomainTokens.isEmpty {
+                                    distractionGroupHeading("Websites")
+                                    ForEach(Array(sessionStore.selection.webDomainTokens), id: \.self) { token in
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon) }
+                                    }
                                 }
                             }
                         }
-                        .frame(
-                            maxWidth: .infinity,
-                            minHeight: max(0, proxy.size.height - 310),
-                            alignment: .bottomLeading
-                        )
-                        .padding(.bottom, 78)
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .padding(.bottom, homeContentBottomMargin + 76)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    .padding(.top, 24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
                 .padding(.horizontal, sectionHorizontalPadding)
                 .padding(.bottom, 20)
@@ -3395,7 +3425,7 @@ private struct DistractionsScreen: View {
                 }
             }
         }
-        .font(.blankInter(size: 15, weight: .medium, relativeTo: .subheadline))
+        .font(.blankInter(size: 13, relativeTo: .subheadline))
         .foregroundStyle(secondaryColor)
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -3404,11 +3434,12 @@ private struct DistractionsScreen: View {
         Button {
             if sessionStore.canEditSelectedDistractions { showingPicker = true }
         } label: {
-            Image(systemName: "plus")
-                .font(.system(size: 22, weight: .medium))
+            Label("Edit distractions", systemImage: "plus")
+                .font(.blankInter(size: 16))
                 .foregroundStyle(BlankColors.pureWhite)
-                .frame(width: 56, height: 56)
-                .background(Circle().fill(Color.black))
+                .padding(.horizontal, 16)
+                .frame(minHeight: 44)
+                .background(RoundedRectangle(cornerRadius: 4).fill(Color.black))
         }
         .buttonStyle(.plain)
         .disabled(!sessionStore.canEditSelectedDistractions)
@@ -3416,6 +3447,28 @@ private struct DistractionsScreen: View {
         .accessibilityHint(sessionStore.canEditSelectedDistractions
                            ? "Choose apps to add or remove from your distractions"
                            : "Available when protection ends")
+    }
+
+    private func distractionGroupHeading(_ title: String) -> some View {
+        Text(title)
+            .font(.blankInter(size: 12, relativeTo: .caption))
+            .foregroundStyle(secondaryColor)
+            .padding(.top, 12)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private func distractionRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: 12) {
+            content()
+                .font(.blankOnboardingControl)
+            Spacer(minLength: 0)
+            Image(systemName: "checkmark")
+                .font(.system(size: 12, weight: .regular))
+                .accessibilityHidden(true)
+        }
+        .blankBlackCard()
+        .accessibilityElement(children: .combine)
+        .accessibilityValue("In protection list")
     }
 }
 
@@ -3842,6 +3895,58 @@ private struct HomePreviewScene: View {
 
 #Preview("Permission pending") {
     HomePreviewScene("Permission pending", authorizationApproved: false)
+}
+#endif
+
+#if DEBUG && targetEnvironment(simulator)
+// Isolated accounts and production views for CI screenshots; never an iPhone setup bypass.
+@MainActor
+struct PostOnboardingPreviewScene: View {
+    static var enabled: Bool {
+        ["product-home", "product-progress", "product-settings", "product-distractions"]
+            .contains(AssistantAppPreview.scenario)
+    }
+
+    @StateObject private var sessionStore = SessionStore.preview(protectedSelectionCount: 0)
+    @StateObject private var screenTimeBlocker = ScreenTimeBlocker.preview()
+    @State private var showingPicker = false
+
+    private var section: HomeSection? {
+        switch AssistantAppPreview.scenario {
+        case "product-progress": return .report
+        case "product-settings": return .settings
+        case "product-distractions": return .distractions
+        default: return nil
+        }
+    }
+
+    var body: some View {
+        GeometryReader { proxy in
+            if let section {
+                HomeSectionScreen(
+                    showingPicker: $showingPicker,
+                    section: section,
+                    screenWidth: proxy.size.width,
+                    screenHeight: proxy.size.height,
+                    intervention: RelapseIntervention(headline: "", cost: "", alternative: ""),
+                    onEmergencyUnlock: { false },
+                    onOpenSection: { _ in },
+                    onOpenAssistant: {},
+                    onRequestScreenTimePermission: {},
+                    onRequestHealthAccess: {},
+                    screenTimeStatus: screenTimeBlocker.authorizationStatusLabel,
+                    healthStatus: "not connected",
+                    onClose: {}
+                )
+            } else {
+                HomeView(simulatorGuest: true)
+            }
+        }
+        .ignoresSafeArea(.container)
+        .environmentObject(sessionStore)
+        .environmentObject(screenTimeBlocker)
+        .environment(\.blankMinimalAppearance, true)
+    }
 }
 #endif
 

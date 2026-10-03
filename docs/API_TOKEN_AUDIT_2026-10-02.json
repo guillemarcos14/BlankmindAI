@@ -1,0 +1,10 @@
+{
+  "reports": 79,
+  "unique_extraction_requests": 2760,
+  "input_tokens": 2488901,
+  "output_tokens": 285352,
+  "reasoning_tokens": 158910,
+  "cached_input_tokens": 128727,
+  "total_tokens": 2774253,
+  "limitations": "Local archived extraction usage only, deduplicated by provider request ID; excludes judges, missing usage, cancelled requests, app routers and real customer traffic. Not an invoice."
+}

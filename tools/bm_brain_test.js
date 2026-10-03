@@ -43,6 +43,8 @@ assert(!JSON.stringify(data.normalizeBrainSnapshot({...snapshot,password:"secret
 
 const request = (route,evidence,extra={}) => ({ route,evidence,execute:false,period:"this_week",start_date:null,end_date:null,
   compare_previous:false,search_terms:[],section:null,setting_change:null,memory:null,...extra });
+assert.equal(brain.validateRequest(request("memory", "Why do I scroll?", { message_kind: "question",
+  memory: { operation: "set", key: "weak_moments", value: "Why do I scroll?", evidence: "Why do I scroll?" } }), "Why do I scroll?").memory, null);
 assert.throws(() => brain.validateRequest(request("memory","not stated"),"remember bedtime"),/invalid_request/);
 assert.throws(() => brain.validateRequest(request("memory","Remember",{memory:{operation:"set",key:"bedtime",value:"23:00",evidence:"Remember"}}),"Remember bedtime"),/ungrounded_memory/);
 assert.throws(() => brain.validateRequest(request("memory","Remember",{memory:{operation:"set",key:"password",value:"Remember",evidence:"Remember"}}),"Remember"),/ungrounded_memory/);

@@ -94,6 +94,14 @@ extension Font {
         .custom("TimesNewRomanPSMT", size: size, relativeTo: textStyle)
     }
 
+    static func blankSectionEditorial(size: CGFloat = 32, relativeTo textStyle: TextStyle = .title) -> Font {
+        .blankOnboardingEditorial(size: size, relativeTo: textStyle)
+    }
+
+    static var blankOnboardingControl: Font {
+        .system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16), weight: .regular)
+    }
+
     static var blankBody: Font {
         .blankInter(size: 16)
     }
@@ -250,6 +258,15 @@ private struct BlankControlSurfaceModifier: ViewModifier {
 }
 
 extension View {
+    func blankBlackCard() -> some View {
+        self
+            .foregroundStyle(BlankColors.pureWhite)
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Color.black))
+            .environment(\.colorScheme, .dark)
+    }
+
     func blankGlassCard(cornerRadius: CGFloat = 22, tintOpacity: Double = 0.34) -> some View {
         modifier(BlankGlassCardModifier(cornerRadius: cornerRadius, tintOpacity: tintOpacity))
     }
@@ -268,16 +285,16 @@ struct TopSheetHeader: View {
 
     var body: some View {
         VStack(alignment: minimalAppearance ? .leading : .center, spacing: minimalAppearance ? 5 : 10) {
-            Text(minimalAppearance ? title.lowercased() : title)
-                .font(.blankEditorial(size: minimalAppearance ? 40 : 34))
+            Text(title.capitalized)
+                .font(.blankSectionEditorial(size: 32))
                 .foregroundStyle(titleColor)
                 .tracking(minimalAppearance ? -0.6 : 0)
                 .multilineTextAlignment(minimalAppearance ? .leading : .center)
                 .lineLimit(1)
                 .minimumScaleFactor(0.86)
 
-            Text(minimalAppearance ? subtitle.lowercased() : subtitle)
-                .font(minimalAppearance ? .blankInter(size: 13, weight: .medium, relativeTo: .caption) : .body)
+            Text(subtitle)
+                .font(.blankInter(size: 14, relativeTo: .subheadline))
                 .foregroundStyle(subtitleColor)
                 .multilineTextAlignment(minimalAppearance ? .leading : .center)
                 .lineSpacing(minimalAppearance ? 0 : 2)

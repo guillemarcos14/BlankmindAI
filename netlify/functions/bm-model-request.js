@@ -66,6 +66,7 @@ async function readModelJson({ request, timeoutMs, fetchImpl = fetch, errorPrefi
     metrics.elapsed_ms = Math.max(0, Date.now() - started);
     const usage = usageCounts(body?.usage);
     if (Object.keys(usage).length) metrics.usage = usage;
+    if (fetchImpl === fetch && Object.keys(usage).length) console.info(JSON.stringify({ event: "bm_token_usage", stage: errorPrefix, model: request.model, usage }));
     publishMetrics();
     return { body, metrics };
   } catch (caught) {
@@ -170,4 +171,4 @@ function runBoundedAttempts({ budgetMs, hedgeAfterMs, minRemainingMs = 1000,
   });
 }
 
-module.exports = { readModelJson, runBoundedAttempts };
+module.exports = { readModelJson, runBoundedAttempts, usageCounts };

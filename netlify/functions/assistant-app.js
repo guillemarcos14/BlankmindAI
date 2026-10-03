@@ -7,6 +7,7 @@ const { callBlankedAgent, queuePendingAssistantAction } = require("./whatsapp-ag
 const { normalizeUserContext } = require("./bm-context");
 const { persistCanonicalSnapshot } = require("./_bm_user_context");
 const { commitMemory } = require("./bm-brain");
+const { chatText, hasValidatedCopy } = require("./bm-conversation-copy");
 
 const TABLE = "assistant_app_turns";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -181,22 +182,22 @@ function actionCopy(action, spanish) {
       : `Block from ${clock(action.start_minute)} to ${clock(action.end_minute)}, ${weekdays}${horizon}`;
   }
   if (action.type === "request_screen_time_permission") return { label: spanish ? "Conceder permiso" : "Grant permission", text: spanish
-    ? "Concede el permiso de Tiempo de uso con el botón. Después dime cuando esté listo para continuar; todavía no se ha aplicado esta propuesta."
-    : "Use the button to grant Screen Time permission. Then tell me when you're ready to continue; this proposal has not been applied yet." };
+    ? "Pulsa el botón para dar permiso al bloqueo. Avísame cuando lo tengas y seguimos."
+    : "Tap the button to let Blankmind block your distractions. Let me know when you're ready and we'll carry on." };
   if (picker && !description) return { label: spanish ? "Elegir distracciones" : "Choose distractions", text: spanish
-    ? "Pulsa el botón para elegir tus distracciones y continuar. Todavía no hay una propuesta de bloqueo completa."
-    : "Tap the button to choose your distractions and continue. There is no complete blocking proposal yet." };
+    ? "Elige primero qué apps quieres bloquear con el botón y seguimos."
+    : "Choose which apps you'd like to block with the button and we'll carry on." };
   if (picker) return { label: spanish ? "Elegir distracciones" : "Choose distractions", text: `${description}. ${spanish
-    ? "Pulsa el botón para elegir tus distracciones. Al aceptar la selección, el iPhone intentará aplicar la propuesta; el resultado requiere su verificación."
-    : "Tap the button to choose your distractions. Accepting the selection lets your iPhone attempt the proposal; the result requires device verification."}` };
+    ? "Elige tus distracciones con el botón y confirma la selección. Entonces lo intentaré en tu iPhone."
+    : "Choose your distractions with the button and confirm your selection. Then I'll try it on your iPhone."}` };
   if (!description) return null;
   const label = type === "start_protection" ? (spanish ? `Bloquear ${action.minutes} min` : `Block ${action.minutes} min`)
     : type === "set_daily_limit" ? (spanish ? "Aplicar límite" : "Apply daily limit") : (spanish ? "Aplicar horario" : "Apply schedule");
-  return { label, text: `${description}. ${spanish ? "Pulsa el botón para aplicarlo; el resultado requiere la verificación del iPhone." : "Tap the button to apply it; the result requires verification from your iPhone."}` };
+  return { label, text: `${description}. ${spanish ? "Pulsa el botón para probarlo en tu iPhone. Te diré si se ha podido aplicar." : "Tap the button to try it on your iPhone. I'll let you know whether it worked."}` };
 }
 
 function visibleReply(plan, context, action) {
-  const answer = String(plan.message_text || plan.response_text || "").trim().slice(0, 4000);
+  const answer = chatText(String(plan.message_text || plan.response_text || "").trim().slice(0, 4000));
   if (!answer) throw new Error("assistant_empty_reply");
   const spanish = String(plan.response_language || context.language || "").startsWith("es");
   const proposedAction = Array.isArray(plan.actions) && plan.actions.length > 0;
@@ -205,8 +206,9 @@ function visibleReply(plan, context, action) {
       ? "No he podido preparar esta acción. No se ha aplicado ningún cambio. Puedes volver a pedírmela."
       : "I couldn't prepare this action. No change was applied. You can ask me to try again.";
   }
+  if (hasValidatedCopy(plan)) return answer;
   const copy = actionCopy(action, spanish);
-  if (copy) return copy.text;
+  if (copy) return chatText(copy.text);
   const claimsExecution = /\b(?:already blocked|blocked your|already applied|activated your|he bloqueado|he aplicado|ya est[aá]n bloquead[ao]s|ya est[aá] aplicado)\b/i.test(answer);
   const requestsNotification = /\b(?:notification|notificaci[oó]n)\b/i.test(answer);
   if (action && (claimsExecution || requestsNotification)) {
@@ -247,7 +249,7 @@ async function prepare(auth, row, leaseOwner, prompt, deviceContext) {
   const autoApply = Boolean(context.brain_request?.execute && action && plan.actions?.length === 1
     && ["start_protection","apply_schedule","update_schedule","set_daily_limit","enable_allow_only","enable_adult_filter","disable_pause"].includes(action.type)
     && context.brain_snapshot && context.has_selected_apps && context.screen_time_authorized);
-  if (autoApply) answer = spanish ? "Voy a aplicar tu petición. El resultado se comprobará en el iPhone." : "I'll apply your request. The result will be checked on your iPhone.";
+  if (autoApply && !hasValidatedCopy(plan)) answer = spanish ? "Voy a intentarlo en tu iPhone. Te diré si se ha podido aplicar." : "I'll try that on your iPhone. I'll let you know whether it worked.";
   const state = recordConversationTurnState(context.memory?.conversation_state, prompt, answer,
     context.memory?.last_topic || "", plan.semantic_state);
   const payload = {
@@ -352,6 +354,10 @@ exports.handler = async (event) => {
     if (body.action === "activate") return await activate(auth);
     if (body.action === "history") return await history(auth, body);
     if (body.action === "status") return await status(auth, body);
+    if (body.action === "transcribe") {
+      const result = await require("./bm-audio-input").transcribe(body);
+      return json(result.status, result.error ? { error: result.error } : { ok: true, text: result.text });
+    }
     if (body.action === "send") return await send(auth, body);
     return json(400, { error: "unsupported_action" });
   } catch (_) {
@@ -361,3 +367,4 @@ exports.handler = async (event) => {
 
 exports.authenticatedIdentity = authenticatedIdentity;
 exports.actionStatus = actionStatus;
+exports.visibleReply = visibleReply;
