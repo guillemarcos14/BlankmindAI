@@ -80,6 +80,7 @@ const SCALAR_KEYS = [
   "profile_name",
   "age_range",
   "context_generated_at",
+  "chat_active_until",
   "context_revision",
 ];
 
@@ -121,6 +122,7 @@ function normalizeSchedule(value) {
         if (Number.isFinite(window[key])) normalized[key] = Math.round(window[key]);
       }
       if (Number.isFinite(window.expires_at)) normalized.expires_at = window.expires_at;
+      for (const key of ["starts_at","ends_at","timezone"]) if (typeof window[key] === "string") normalized[key] = clean(window[key],80);
       if (Array.isArray(window.weekdays)) normalized.weekdays = window.weekdays.filter((day) => Number.isInteger(day) && day >= 1 && day <= 7).slice(0, 7);
       return Object.keys(normalized).length ? normalized : null;
     }).filter(Boolean);
@@ -283,6 +285,7 @@ function normalizeConversationState(value) {
     const semantic = require("./bm-semantic-state").normalizeSemanticState(value.semantic_state);
     if (semantic) result.semantic_state = semantic;
   }
+  if (value.bmb_state && JSON.stringify(value.bmb_state).length < 8000) result.bmb_state = value.bmb_state;
   return Object.keys(result).length ? result : null;
 }
 

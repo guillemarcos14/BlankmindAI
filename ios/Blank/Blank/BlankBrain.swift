@@ -15,6 +15,11 @@ final class BlankBrain {
     private var notificationsAuthorized = false
     private var lastSyncedContent: Data?
     private var lastSyncedAt = Date.distantPast
+    var chatIsOpen = false
+    private var executionInFlight = false
+    private var backgroundStore: SessionStore?
+    private var backgroundBlocker: ScreenTimeBlocker?
+    private var backgroundPurchases: StoreKitPurchaseStore?
 
     func configure(store: SessionStore, blocker: ScreenTimeBlocker, purchases: StoreKitPurchaseStore) {
         guard self.store !== store else { return }
@@ -70,6 +75,7 @@ final class BlankBrain {
         guard let store, let blocker, let owner = AssistantAppSession.userID else { return nil }
         let system = store.digitalWellnessV3
         let defaults = BlankSharedState.defaults
+        defaults.set(owner, forKey:"blankBMBSignalOwner")
         let currentRevision = Int64(now.timeIntervalSince1970 * 1_000_000)
         let previousRevision = (defaults.object(forKey: "blankAssistantContextRevision") as? NSNumber)?.int64Value ?? 0
         let nextRevision = previousRevision < Int64.max ? previousRevision + 1 : previousRevision
@@ -99,6 +105,7 @@ final class BlankBrain {
         if let first = retained.first { history["history_started_at"] = iso.string(from: first.startedAt) }
         var payload: [String: Any] = [
             "context_revision": contextRevision, "context_generated_at": iso.string(from: now),
+            "chat_active_until": chatIsOpen ? iso.string(from: now.addingTimeInterval(90)) : "",
             "anonymous_user_id": defaults.string(forKey: "blankOnboardingAnonymousUserId") ?? "",
             "profile_name": defaults.string(forKey: "blankBrainFirstHistoryOwner") == owner ? (defaults.string(forKey: "blankOnboardingName") ?? "") : "",
             "age_range": defaults.string(forKey: "blankBrainFirstHistoryOwner") == owner ? (defaults.string(forKey: "blankOnboardingAgeRange") ?? "") : "",
@@ -153,7 +160,92 @@ final class BlankBrain {
             guard digest != lastSyncedContent || Date().timeIntervalSince(lastSyncedAt) >= 60 else { return }
             let synced = await AssistantContextSyncClient().sync(connectCode: code, channel: "app", payload: payload)
             guard !Task.isCancelled, owner == AssistantAppSession.userID else { return }
-            if synced { lastSyncedContent = digest; lastSyncedAt = Date() }
+            if synced { lastSyncedContent = digest; lastSyncedAt = Date(); await syncAllSessions(owner: owner) }
         }
+    }
+
+    private func syncAllSessions(owner: String?) async {
+        guard let owner, owner == AssistantAppSession.userID, let store else { return }
+        let signals = (BlankSharedState.defaults.array(forKey:"blankBMBDeviceSignals") as? [[String: Any]] ?? []).filter { $0["owner"] as? String == owner }
+        if !signals.isEmpty, let data = try? JSONSerialization.data(withJSONObject:["action":"bmb_sync_signals","app_install_id":BlankSharedState.appInstallId,"signals":signals]) {
+            _ = try? await AssistantAppClient().postAuthorized(path:"assistant-app",payload:data,timeout:8)
+        }
+        let all = store.brainSessions.sorted { $0.startedAt < $1.startedAt }
+        for offset in stride(from: 0, to: all.count, by: 2000) {
+            guard owner == AssistantAppSession.userID, !Task.isCancelled else { return }
+            let iso = ISO8601DateFormatter()
+            let rows: [[String: Any]] = all[offset..<min(offset + 2000, all.count)].map { s in
+                var row: [String: Any] = ["id":s.id.uuidString,"started_at":iso.string(from:s.startedAt)]
+                if let end = s.endedAt { row["ended_at"] = iso.string(from:end) }
+                if let p = s.pauseStartedAt { row["pause_started_at"] = iso.string(from:p) }
+                if let p = s.pauseEndedAt { row["pause_ended_at"] = iso.string(from:p) }
+                if let reason = s.endedReason { row["ended_reason"] = reason.rawValue }
+                if let mode = s.entryMode { row["entry_mode"] = mode.rawValue }
+                return row
+            }
+            let payload: [String: Any] = ["action":"bmb_sync_sessions","app_install_id":BlankSharedState.appInstallId,
+                "snapshot":["schema_version":1,"generated_at":iso.string(from:Date()),"timezone":TimeZone.current.identifier,
+                    "history_complete":all.count<=2000,"sessions":rows]]
+            guard let body = try? JSONSerialization.data(withJSONObject:payload) else { return }
+            _ = try? await AssistantAppClient().postAuthorized(path:"assistant-app",payload:body,timeout:8)
+        }
+    }
+
+    func executeAutonomous(actionID: String? = nil) async -> Bool {
+        guard !executionInFlight, let owner = AssistantAppSession.userID else { return false }
+        executionInFlight = true
+        defer { executionInFlight = false }
+        if store == nil {
+            backgroundStore = SessionStore(); backgroundBlocker = ScreenTimeBlocker(); backgroundPurchases = StoreKitPurchaseStore()
+            configure(store:backgroundStore!,blocker:backgroundBlocker!,purchases:backgroundPurchases!)
+        }
+        guard let store, let blocker else { return false }
+        let code = BlankSharedState.defaults.string(forKey:"blankAssistantConnectCode") ?? ""
+        let client = AssistantActionInboxClient()
+        if let receipt = AssistantActionReceiptStore.load(), receipt.actionId.hasPrefix("bmb_") {
+            let ack = await client.acknowledgeLifecycle(receipt:receipt,connectCode:code,channel:"app")
+            if ack == .acknowledged || ack == .stale { AssistantActionReceiptStore.clear(actionId:receipt.actionId) }
+            return ack == .acknowledged
+        }
+        guard case .success(let maybeAction) = await client.poll(connectCode:code,channel:"app"),
+              let action = maybeAction, action.autonomous == true, action.id.hasPrefix("bmb_"),
+              actionID == nil || actionID == action.id, owner == AssistantAppSession.userID else { return false }
+        blocker.refreshAuthorizationStatus()
+        guard blocker.authorizationStatus == .approved, store.hasSelectedApps, !store.isVacationModeActive,
+              store.schedulePausedUntil.map({ $0 <= Date() }) ?? true else { return false }
+        let mark = "blankBMBExecuted.\(owner).\(action.id)"
+        guard !BlankSharedState.defaults.bool(forKey:mark) else { return false }
+        guard await client.acknowledge(actionId:action.id,status:"confirmed",connectCode:code,channel:"app") == .acknowledged,
+              await client.acknowledge(actionId:action.id,status:"execution_started",connectCode:code,channel:"app") == .acknowledged,
+              owner == AssistantAppSession.userID else { return false }
+        BlankSharedState.defaults.set(true,forKey:mark)
+        // Recovery reports uncertainty rather than repeating an interrupted effect.
+        AssistantActionReceiptStore.save(actionId:action.id,status:"failed",detail:"execution_interrupted",executionStarted:true)
+        await blocker.restore(selection:store.selection)
+        guard owner == AssistantAppSession.userID else { return false }
+        let iso = ISO8601DateFormatter()
+        var receipt: AssistantActionReceipt
+        if action.type == "start_protection", let minutes = action.minutes, let requested = action.requestedDate {
+            let result = store.applyAssistantProtection(actionId:action.id,requestedAt:requested,durationMinutes:minutes,hardMode:false)
+            blocker.updateSelection(store.selection,isBlankActive:store.isBlankActive)
+            receipt = AssistantActionReceipt(actionId:action.id,status:result.status,detail:result.detail,executionStarted:true,
+                requestedAt:iso.string(from:result.requestedAt),startedAt:iso.string(from:result.startedAt),requestedDurationMinutes:result.requestedDurationMinutes,
+                effectiveUntil:result.effectiveUntil.map(iso.string(from:)) ?? "",origin:"assistant_remote",result:result.result,startDelaySeconds:result.startDelaySeconds,mergedWithExisting:result.mergedWithExisting)
+        } else if action.type == "set_daily_limit", let minutes = action.minutes {
+            store.dailyLimitMinutes = minutes; store.dailyLimitEnabled = true; store.refreshDailyLimitMonitoring()
+            receipt = AssistantActionReceipt(actionId:action.id,status:store.dailyLimitRegistered ? "verified":"failed",detail:"daily_limit_native_checked",executionStarted:true)
+        } else if action.type == "enable_adult_filter" {
+            store.adultContentBlockingEnabled = true
+            blocker.updateAdvancedControls(allowOnlyModeEnabled:store.allowOnlyModeEnabled,adultContentBlockingEnabled:true)
+            blocker.apply(isBlankActive:store.isBlankActive)
+            receipt = AssistantActionReceipt(actionId:action.id,status:"verified",detail:"adult_filter_native_checked",executionStarted:true)
+        } else { receipt = AssistantActionReceipt(actionId:action.id,status:"failed",detail:"unsupported_background_action",executionStarted:true) }
+        AssistantActionReceiptStore.save(actionId:receipt.actionId,status:receipt.status,detail:receipt.detail,executionStarted:receipt.executionStarted,
+            requestedAt:receipt.requestedAt,startedAt:receipt.startedAt,requestedDurationMinutes:receipt.requestedDurationMinutes,
+            effectiveUntil:receipt.effectiveUntil,origin:receipt.origin,result:receipt.result,startDelaySeconds:receipt.startDelaySeconds,mergedWithExisting:receipt.mergedWithExisting)
+        let ack = await client.acknowledgeLifecycle(receipt:receipt,connectCode:code,channel:"app")
+        if ack == .acknowledged || ack == .stale { AssistantActionReceiptStore.clear(actionId:receipt.actionId) }
+        sync()
+        return ["verified","delayed"].contains(receipt.status)
     }
 }

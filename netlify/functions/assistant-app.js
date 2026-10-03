@@ -206,7 +206,7 @@ function visibleReply(plan, context, action) {
       ? "No he podido preparar esta acción. No se ha aplicado ningún cambio. Puedes volver a pedírmela."
       : "I couldn't prepare this action. No change was applied. You can ask me to try again.";
   }
-  if (hasValidatedCopy(plan)) return answer;
+  if (plan.bmb_generated || hasValidatedCopy(plan)) return answer;
   const copy = actionCopy(action, spanish);
   if (copy) return chatText(copy.text);
   const claimsExecution = /\b(?:already blocked|blocked your|already applied|activated your|he bloqueado|he aplicado|ya est[aá]n bloquead[ao]s|ya est[aá] aplicado)\b/i.test(answer);
@@ -247,11 +247,13 @@ async function prepare(auth, row, leaseOwner, prompt, deviceContext) {
   let answer = visibleReply(plan, context, action);
   const spanish = String(plan.response_language || context.language || "").startsWith("es");
   const autoApply = Boolean(context.brain_request?.execute && action && plan.actions?.length === 1
-    && ["start_protection","apply_schedule","update_schedule","set_daily_limit","enable_allow_only","enable_adult_filter","disable_pause"].includes(action.type)
+    && (plan.bmb_generated ? !["open_app_picker","request_screen_time_permission"].includes(action.type)
+      : ["start_protection","apply_schedule","update_schedule","set_daily_limit","enable_allow_only","enable_adult_filter","disable_pause"].includes(action.type))
     && context.brain_snapshot && context.has_selected_apps && context.screen_time_authorized);
-  if (autoApply && !hasValidatedCopy(plan)) answer = spanish ? "Voy a intentarlo en tu iPhone. Te diré si se ha podido aplicar." : "I'll try that on your iPhone. I'll let you know whether it worked.";
+  if (autoApply && !plan.bmb_generated && !hasValidatedCopy(plan)) answer = spanish ? "Voy a intentarlo en tu iPhone. Te diré si se ha podido aplicar." : "I'll try that on your iPhone. I'll let you know whether it worked.";
   const state = recordConversationTurnState(context.memory?.conversation_state, prompt, answer,
     context.memory?.last_topic || "", plan.semantic_state);
+  if (plan.bmb_state) state.bmb_state = plan.bmb_state;
   const payload = {
     assistant_text: answer, action,
     brain_memory_effect: context.brain_memory_effect || null,
@@ -259,7 +261,7 @@ async function prepare(auth, row, leaseOwner, prompt, deviceContext) {
     control_section: ["report","settings","schedule","distractions","emergency"].includes(plan.control_section) ? plan.control_section : null,
     action_label: actionCopy(action, spanish)?.label || (action ? (spanish ? "Aplicar ahora" : "Apply now") : null),
     semantic_version: version + 1,
-    invalidates: plan.semantic_state?.intent === "cancelled"
+    invalidates: plan.bmb_invalidates || plan.semantic_state?.intent === "cancelled"
       || (plan.semantic_state?.intent === "block" && ["collecting", "awaiting_confirmation"].includes(plan.semantic_state?.status)),
   };
   const result = await supabaseFetch("rpc/prepare_assistant_app_turn", {
@@ -352,6 +354,7 @@ exports.handler = async (event) => {
     const auth = await authenticatedIdentity(event, body, body.action);
     if (auth.error) return json(auth.status, { error: auth.error });
     if (body.action === "activate") return await activate(auth);
+    if (body.action?.startsWith("bmb_")) return await require("./bmb-service").api(auth,body) || json(400,{error:"unsupported_action"});
     if (body.action === "history") return await history(auth, body);
     if (body.action === "status") return await status(auth, body);
     if (body.action === "transcribe") {

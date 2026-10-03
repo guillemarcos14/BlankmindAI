@@ -430,7 +430,7 @@ async function agentContext(from, prompt, linkedConnection = null) {
     if (linkedConnection?.canonicalMemoryRequired === true || semanticPersistenceRequired()) throw error;
     savedMemory = {};
   }
-  const newFacts = memoryFactsFromText(prompt, savedMemory);
+  const newFacts = channel === "app" ? {} : memoryFactsFromText(prompt, savedMemory);
   const language = messageLanguage(prompt, savedMemory.language || savedMemory.conversation_state?.semantic_state?.language);
   const conversationState = freshConversationState(savedMemory.conversation_state);
   const memory = {
@@ -479,8 +479,8 @@ async function agentContext(from, prompt, linkedConnection = null) {
 async function callBlankedAgent(prompt, from, linkedConnection = null) {
   const context = await agentContext(from, prompt, linkedConnection);
   if (context.channel === "app") {
-    const brain = await require("./bm-brain").planBrainTurn({ prompt, context, userId: from });
-    if (brain) return brain;
+    const identity = await require("./_identity").identityForAuthUser(from);
+    return require("./bmb-brain").plan({ prompt, context, userId: from, identity });
   }
   const response = await blankedAgentHandler({
     httpMethod: "POST",

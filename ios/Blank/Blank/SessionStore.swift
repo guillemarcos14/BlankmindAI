@@ -808,9 +808,9 @@ final class SessionStore: ObservableObject {
         name: String = "AI Plan",
         weekdays: [Int] = Array(1...7)
     ) {
-        let candidateExpiry = Calendar.current.date(
+        let candidateExpiry = durationDays == 0 ? nil : Calendar.current.date(
             byAdding: .day,
-            value: max(1, min(14, durationDays)),
+            value: max(1, min(365, durationDays)),
             to: Date()
         )
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "AI Plan" : name
@@ -1145,6 +1145,30 @@ final class SessionStore: ObservableObject {
 
     private static func hasSelection(_ selection: FamilyActivitySelection) -> Bool {
         !selection.applicationTokens.isEmpty || !selection.categoryTokens.isEmpty || !selection.webDomainTokens.isEmpty
+    }
+
+    @discardableResult
+    func applyDatedAssistantSchedule(_ command: AssistantInboxAction) -> Bool {
+        guard let timezone = command.timezone, TimeZone(identifier: timezone) != nil,
+              let startMinute = command.startMinute, let endMinute = command.endMinute,
+              let id = UUID(uuidString: String(command.id.dropFirst(4))) else { return false }
+        if schedule.windows.contains(where: { $0.id == id }) { return recurringScheduleRegistered }
+        let previous = schedule
+        let window: BlankHabitWindow
+        if command.recurrence == "once" {
+            guard let start = AssistantInboxAction.parseDate(command.startsAt), let end = AssistantInboxAction.parseDate(command.endsAt),
+                  start > Date(), end > start else { return false }
+            window = BlankHabitWindow(id:id,name:"Protection",enabled:true,startMinute:startMinute,endMinute:endMinute,
+                expiresAt:end,startsAt:start,endsAt:end,timeZoneIdentifier:timezone)
+        } else {
+            guard ["weekly","continuous"].contains(command.recurrence ?? ""), let weekdays = command.weekdays, !weekdays.isEmpty else { return false }
+            let expiry = command.recurrence == "continuous" ? nil : Calendar.current.date(byAdding:.day,value:command.durationDays ?? 7,to:Date())
+            window = BlankHabitWindow(id:id,name:"Protection",enabled:true,startMinute:startMinute,endMinute:endMinute,
+                weekdays:weekdays,expiresAt:expiry,timeZoneIdentifier:timezone)
+        }
+        schedule = BlankFocusSchedule(enabled: true, windows: previous.windows + [window])
+        guard recurringScheduleRegistered else { schedule = previous; return false }
+        return true
     }
 
     @discardableResult

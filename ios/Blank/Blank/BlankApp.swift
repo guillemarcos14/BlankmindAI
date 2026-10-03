@@ -90,6 +90,7 @@ struct BlankApp: App {
                         BlankBrain.shared.configure(store: sessionStore, blocker: screenTimeBlocker, purchases: purchaseStore)
                     appDelegate.registerForRemoteActions()
                         BlankBrain.shared.sync()
+                        Task { _ = await BlankBrain.shared.executeAutonomous() }
                         checkAppleCredentialState()
                         screenTimeBlocker.refreshAuthorizationStatus()
                         sessionStore.syncRecurringSchedule()
@@ -385,10 +386,13 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
-        // A remote proposal is intentionally inert until the person taps
-        // its visible notification. This callback may be delivered silently by
-        // APNs, so it must never acknowledge or execute the pending action.
-        completionHandler(.noData)
+        guard userInfo["bm_autonomous"] as? Bool == true, let actionID = userInfo["bm_action_id"] as? String else {
+            completionHandler(.noData); return
+        }
+        Task { @MainActor in
+            let applied = await BlankBrain.shared.executeAutonomous(actionID:actionID)
+            completionHandler(applied ? .newData : .noData)
+        }
     }
 
     private func registerStoredTokenIfPossible() {

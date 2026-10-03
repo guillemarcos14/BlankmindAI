@@ -15,6 +15,12 @@ struct AssistantInboxAction: Decodable {
     let appNames: [String]?
     let requestedAt: String?
     let expiresAt: String?
+    var recurrence: String? = nil
+    var startsAt: String? = nil
+    var endsAt: String? = nil
+    var timezone: String? = nil
+    var autonomous: Bool? = nil
+    var grantVersion: Int? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -31,6 +37,10 @@ struct AssistantInboxAction: Decodable {
         case appNames = "app_names"
         case requestedAt = "requested_at"
         case expiresAt = "expires_at"
+        case recurrence, timezone, autonomous
+        case startsAt = "starts_at"
+        case endsAt = "ends_at"
+        case grantVersion = "grant_version"
     }
 
     func toPendingAction() -> AssistantPendingAction? {
@@ -47,7 +57,7 @@ struct AssistantInboxAction: Decodable {
                 startMinute: min(max(startMinute, 0), 1439),
                 endMinute: min(max(endMinute, 0), 1439),
                 weekdays: (weekdays ?? Array(1...7)).filter { (1...7).contains($0) },
-                durationDays: min(max(durationDays ?? 7, 1), 14),
+                durationDays: recurrence == "continuous" ? 0 : min(max(durationDays ?? 7, 1), 365),
                 appNames: apps
             )
         case "update_schedule":

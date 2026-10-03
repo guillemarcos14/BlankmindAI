@@ -50,11 +50,25 @@ enum DeviceActivityTimerScheduler {
         let now = Date()
         let intervals = schedule.activeWindows
             .filter { $0.expiresAt.map { $0 > now } ?? true }
+            .filter { $0.startsAt == nil }
             .flatMap(recurringIntervals(for:))
-        let expirations = schedule.activeWindows.compactMap(\.expiresAt).filter { $0 > now }
-        guard intervals.count + expirations.count <= maxScheduleActivities else { return false }
+        let dated = schedule.activeWindows.filter { $0.startsAt != nil && ($0.endsAt ?? .distantPast) > now }
+        let expirations = schedule.activeWindows.filter { $0.startsAt == nil }.compactMap(\.expiresAt).filter { $0 > now }
+        guard intervals.count + expirations.count + dated.count <= maxScheduleActivities else { return false }
         // Reject an oversized plan before removing working monitors.
         center.stopMonitoring(activityNames + expiryNames + [DeviceActivityName(rawValue: recurringExpiryActivity)])
+        for (index, window) in dated.enumerated() {
+            guard let start = window.startsAt, let end = window.endsAt,
+                  let timezone = window.timeZoneIdentifier.flatMap(TimeZone.init(identifier:)) else { return false }
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = timezone
+            let components: Set<Calendar.Component> = [.calendar, .timeZone, .year, .month, .day, .hour, .minute, .second]
+            do {
+                try center.startMonitoring(DeviceActivityName(rawValue: "\(recurringSchedulePrefix):\(intervals.count + index)"),
+                    during: DeviceActivitySchedule(intervalStart: calendar.dateComponents(components, from: start),
+                        intervalEnd: calendar.dateComponents(components, from: end), repeats: false))
+            } catch { return false }
+        }
         for (index, interval) in intervals.enumerated() {
             let name = DeviceActivityName(rawValue: "\(recurringSchedulePrefix):\(index)")
             let activity = DeviceActivitySchedule(
@@ -180,14 +194,14 @@ enum DeviceActivityTimerScheduler {
     private static func recurringIntervals(for window: BlankHabitWindow) -> [(start: DateComponents, end: DateComponents)] {
         let start = dateComponents(minute: window.startMinute, second: 0)
         let end = dateComponents(minute: window.endMinute, second: 0)
-        if window.startMinute < window.endMinute {
-            return [(start, end)]
+        let intervals: [(start: DateComponents, end: DateComponents)] = window.startMinute < window.endMinute
+            ? [(start,end)]
+            : [(start,dateComponents(minute:24*60-1,second:59)),(dateComponents(minute:0,second:0),end)]
+        return intervals.map { interval in
+            var start=interval.start, end=interval.end
+            if let timezone=window.timeZoneIdentifier.flatMap(TimeZone.init(identifier:)) { start.timeZone=timezone; end.timeZone=timezone }
+            return (start,end)
         }
-
-        return [
-            (start, dateComponents(minute: 24 * 60 - 1, second: 59)),
-            (dateComponents(minute: 0, second: 0), end)
-        ]
     }
 
     private static func dateComponents(minute: Int, second: Int) -> DateComponents {

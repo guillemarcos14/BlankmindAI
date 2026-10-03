@@ -192,7 +192,7 @@ struct AssistantActionInboxClient {
         return .success(response.pendingAction)
     }
 
-    private func acknowledge(
+    func acknowledge(
         actionId: String,
         status: String,
         connectCode: String,
@@ -1668,6 +1668,13 @@ struct HomeView: View {
                 execution: execution
             )
         case .applySchedule(_, let start, let end, let weekdays, let days, let appNames):
+            if let remote = pendingAssistantInboxAction, remote.recurrence != nil {
+                let registered = sessionStore.applyDatedAssistantSchedule(remote)
+                applyScreenTimeControls()
+                finishPendingAssistantAction(status: registered ? "verified" : "failed",
+                    detail: registered ? "dated_schedule_registered" : "dated_schedule_registration_failed")
+                return
+            }
             guard sessionStore.restoreSavedSelectionForAssistant(appNames: appNames) else {
                 sessionStore.requestBlockConfiguration(
                     appNames: appNames,
@@ -2404,6 +2411,7 @@ private struct SettingsScreen: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
     @State private var showingAccount = false
+    @State private var showingBMBSettings = false
 
     let onClose: () -> Void
     let onOpenEmergency: () -> Void
@@ -2428,6 +2436,7 @@ private struct SettingsScreen: View {
                 )
                 .padding(.bottom, 12)
 
+                settingsRow(title: "blankmind", detail: "autonomy and notifications", action: { showingBMBSettings = true })
                 settingsRow(
                     title: "emergency",
                     detail: "unlock access while blanked",
@@ -2479,6 +2488,7 @@ private struct SettingsScreen: View {
         }
         .padding(.horizontal, sectionHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .sheet(isPresented: $showingBMBSettings) { BMBSettingsView() }
         .sheet(isPresented: $showingAccount) {
             AccountSettingsSheet()
                 .environmentObject(sessionStore)
@@ -3996,5 +4006,141 @@ struct AccountJustifiedCopy: UIViewRepresentable {
 private final class AccountLegalLayoutManager: NSLayoutManager {
     override func drawUnderline(forGlyphRange glyphRange: NSRange, underlineType underlineVal: NSUnderlineStyle, baselineOffset: CGFloat, lineFragmentRect lineRect: CGRect, lineFragmentGlyphRange lineGlyphRange: NSRange, containerOrigin: CGPoint) {
         super.drawUnderline(forGlyphRange: glyphRange, underlineType: underlineVal, baselineOffset: baselineOffset - 2, lineFragmentRect: lineRect, lineFragmentGlyphRange: lineGlyphRange, containerOrigin: containerOrigin)
+    }
+}
+
+
+private struct BMBSettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var version = 0
+    @State private var active = false
+    @State private var enabled = false
+    @State private var allowedTypes = Set(["start_protection"])
+    @State private var actionStart = 0
+    @State private var actionEnd = 0
+    @State private var quietStart = 480
+    @State private var quietEnd = 1320
+    @State private var maxMinutes = 30
+    @State private var actionDaily = 1
+    @State private var actionWeekly = 3
+    @State private var notifyDaily = 1
+    @State private var notifyWeekly = 3
+    @State private var intervalMinutes = 1440
+    @State private var expires = Date().addingTimeInterval(30*86400)
+    @State private var pausedUntil: String?
+    @State private var opportunities = true
+    @State private var interventions = true
+    @State private var failures = true
+    @State private var busy = true
+    @State private var status = ""
+    @State private var events: [[String: Any]] = []
+    private func clock(_ value: Binding<Int>) -> Binding<Date> {
+        Binding(get: { Calendar.current.date(bySettingHour:value.wrappedValue/60,minute:value.wrappedValue%60,second:0,of:Date()) ?? Date() },
+                set: { value.wrappedValue = Calendar.current.component(.hour,from:$0)*60 + Calendar.current.component(.minute,from:$0) })
+    }
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Automatic protection") {
+                    Toggle("Allow BMB to act", isOn:$active)
+                    Text("BMB can try these actions within your limits. iOS may delay background delivery. Existing blocks keep their release rules.").font(.footnote)
+                    ForEach([("start_protection","Block selected distractions"),("set_daily_limit","Set daily limit"),("enable_adult_filter","Enable adult filter")], id: \.0) { type,label in
+                        Toggle(label,isOn:Binding(get:{ allowedTypes.contains(type) },set:{ if $0 { allowedTypes.insert(type) } else { allowedTypes.remove(type) } }))
+                    }
+                    DatePicker("From",selection:clock($actionStart),displayedComponents:.hourAndMinute)
+                    DatePicker("Until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
+                    Text("Matching times allow any hour.").font(.footnote)
+                    Stepper("Maximum duration \(maxMinutes) min",value:$maxMinutes,in:5...240,step:5)
+                    Stepper("Actions per day \(actionDaily)",value:$actionDaily,in:0...10)
+                    Stepper("Actions per 7 days \(actionWeekly)",value:$actionWeekly,in:0...30)
+                    Stepper("Minimum gap \(intervalMinutes) min",value:$intervalMinutes,in:15...10080,step:15)
+                    DatePicker("Permission expires",selection:$expires,in:Date()...,displayedComponents:[.date,.hourAndMinute])
+                }
+                Section("Notifications") {
+                    Toggle("Useful notifications",isOn:$enabled)
+                    Text("Notification permission is separate from acting. Quiet hours still apply to failures. No routine start or end alerts.").font(.footnote)
+                    Toggle("Useful opportunities",isOn:$opportunities)
+                    Toggle("Confirmed new interventions",isOn:$interventions)
+                    Toggle("Failures needing my help",isOn:$failures)
+                    DatePicker("Allowed from",selection:clock($quietStart),displayedComponents:.hourAndMinute)
+                    DatePicker("Allowed until",selection:clock($quietEnd),displayedComponents:.hourAndMinute)
+                    Stepper("Notifications per day \(notifyDaily)",value:$notifyDaily,in:0...10)
+                    Stepper("Notifications per 7 days \(notifyWeekly)",value:$notifyWeekly,in:0...30)
+                }
+                Section {
+                    Button("Pause BMB for 24 hours") { pausedUntil=ISO8601DateFormatter().string(from:Date().addingTimeInterval(86400)); Task { await save() } }
+                    Button("Resume BMB") { pausedUntil=nil; Task { await save() } }
+                    Button("Revoke automatic protection",role:.destructive) { active=false; Task { await save() } }
+                    Button("Save preferences") { Task { await save() } }
+                    if !status.isEmpty { Text(status).font(.footnote) }
+                }
+                if !events.isEmpty {
+                    Section("Recent help") {
+                        ForEach(events.indices,id: \.self) { index in
+                            let event=events[index]
+                            VStack(alignment:.leading) {
+                                Text((event["outcome"] as? [String:Any])?["message_text"] as? String ?? (event["kind"] as? String ?? "BMB"))
+                                Text(event["created_at"] as? String ?? "").font(.caption)
+                                HStack {
+                                    Button("Helpful") { Task { await feedback(event,"helpful") } }
+                                    Button("Wrong time") { Task { await feedback(event,"wrong_time") } }
+                                    Button("Too frequent") { Task { await feedback(event,"too_frequent") } }
+                                }.buttonStyle(.borderless)
+                            }
+                        }
+                    }
+                }
+            }
+            .disabled(busy)
+            .navigationTitle("Blankmind")
+            .toolbar { Button("Done") { dismiss() } }
+            .task { await load() }
+        }
+    }
+    private func request(_ body: [String: Any]) async throws -> [String: Any] {
+        let owner=AssistantAppSession.userID
+        var payload=body; payload["app_install_id"]=BlankSharedState.appInstallId
+        let data=try JSONSerialization.data(withJSONObject:payload)
+        let (result,response)=try await AssistantAppClient().postAuthorized(path:"assistant-app",payload:data,timeout:8)
+        guard owner != nil, owner==AssistantAppSession.userID, (200..<300).contains(response.statusCode),
+              let decoded=try JSONSerialization.jsonObject(with:result) as? [String:Any] else { throw URLError(.badServerResponse) }
+        return decoded
+    }
+    private func load() async {
+        busy=true; defer { busy=false }
+        do {
+            let result=try await request(["action":"bmb_settings"])
+            let account=result["account"] as? [String:Any] ?? [:]
+            version=account["version"] as? Int ?? 0
+            let settings=account["settings"] as? [String:Any] ?? [:]
+            let grant=settings["grant"] as? [String:Any] ?? [:], notifications=settings["notifications"] as? [String:Any] ?? [:]
+            active=grant["active"] as? Bool ?? false; enabled=notifications["enabled"] as? Bool ?? false
+            allowedTypes=Set(grant["action_types"] as? [String] ?? ["start_protection"])
+            if allowedTypes.isEmpty { allowedTypes=["start_protection"] }
+            actionStart=grant["start_minute"] as? Int ?? 0; actionEnd=grant["end_minute"] as? Int ?? 0
+            maxMinutes=grant["max_minutes"] as? Int ?? 30
+            actionDaily=grant["max_per_day"] as? Int ?? 1; actionWeekly=grant["max_per_week"] as? Int ?? 3
+            intervalMinutes=grant["min_interval_minutes"] as? Int ?? 1440
+            expires=AssistantInboxAction.parseDate(grant["expires_at"] as? String) ?? Date().addingTimeInterval(30*86400)
+            quietStart=notifications["start_minute"] as? Int ?? 480; quietEnd=notifications["end_minute"] as? Int ?? 1320
+            notifyDaily=notifications["max_per_day"] as? Int ?? 1; notifyWeekly=notifications["max_per_week"] as? Int ?? 3
+            opportunities=notifications["opportunities"] as? Bool ?? true; interventions=notifications["interventions"] as? Bool ?? true; failures=notifications["failures"] as? Bool ?? true
+            pausedUntil=settings["paused_until"] as? String
+            events=(try await request(["action":"bmb_activity"]))["events"] as? [[String:Any]] ?? []
+        } catch { status="Could not load preferences. Reopen to retry." }
+    }
+    private func save() async {
+        busy=true; defer { busy=false }
+        let settings: [String:Any] = ["timezone":TimeZone.current.identifier,"paused_until":pausedUntil as Any? ?? NSNull(),
+            "grant":["active":active,"action_types":Array(allowedTypes).sorted(),"start_minute":actionStart,"end_minute":actionEnd,
+                "max_minutes":maxMinutes,"max_per_day":actionDaily,"max_per_week":actionWeekly,"min_interval_minutes":intervalMinutes,"expires_at":ISO8601DateFormatter().string(from:expires)],
+            "notifications":["enabled":enabled,"start_minute":quietStart,"end_minute":quietEnd,"max_per_day":notifyDaily,"max_per_week":notifyWeekly,
+                "opportunities":opportunities,"interventions":interventions,"failures":failures]]
+        do { let response=try await request(["action":"bmb_save_settings","settings":settings,"version":version]); version=response["version"] as? Int ?? version; status="Saved." }
+        catch { status="Could not save. Reopen to refresh preferences and retry." }
+    }
+    private func feedback(_ event: [String:Any],_ value: String) async {
+        do { _ = try await request(["action":"bmb_feedback","event_id":event["id"] ?? "","feedback":value]); status="Feedback saved." }
+        catch { status="Could not save feedback." }
     }
 }

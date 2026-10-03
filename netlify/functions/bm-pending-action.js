@@ -40,6 +40,11 @@ function pendingActionFromPlan(plan = {}, options = {}) {
     weekdays: Array.isArray(action.weekdays) ? action.weekdays : [],
     duration_days: Number.isInteger(action.duration_days) ? action.duration_days : null,
     hours: Number.isInteger(action.hours) ? action.hours : null,
+    recurrence: action.recurrence || null,
+    local_date: action.local_date || null,
+    timezone: action.timezone || null,
+    starts_at: action.starts_at || null,
+    ends_at: action.ends_at || null,
     // App mentions are conversational context only. Native execution always
     // targets the one canonical distraction selection.
     app_names: [],
