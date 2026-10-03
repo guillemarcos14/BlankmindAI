@@ -124,7 +124,14 @@ async function plan({prompt,context,userId,identity,proactive=null},{run=generat
     if(result.message_kind==="acceptance")execute=prior.proposal?.fingerprint===result.accepted_proposal
       && Date.parse(prior.proposal.expires_at)>Date.now()&&prior.proposal.action
       && actionIdentity(action)===actionIdentity(normalizeAction(prior.proposal.action));
-    if(!execute)throw Error("bmb_action_not_authorized");
+    if(!execute) {
+      if(result.message_kind==="acceptance") console.error("bmb_acceptance_failure",JSON.stringify({
+        proposal_present:!!prior.proposal,token_matches:prior.proposal?.fingerprint===result.accepted_proposal,
+        proposal_current:Date.parse(prior.proposal?.expires_at)>Date.now(),
+        changed_fields:prior.proposal?.action?Object.keys(action).filter(k=>JSON.stringify(action[k])!==JSON.stringify(prior.proposal.action[k])):[],
+      }));
+      throw Error("bmb_action_not_authorized");
+    }
     if(!freshness(context.brain_snapshot))throw Error("bmb_stale_device_state");
   }
   if(result.memory) {
