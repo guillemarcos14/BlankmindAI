@@ -52,6 +52,11 @@ const intervals = scheduler.slice(scheduler.indexOf('    private static func rec
 const extensionModel = between(monitor, '    private struct StoredWindow:', '    private static func recurringScheduleIsActive')
   .replace('private struct StoredWindow', 'struct StoredWindow');
 const fixtures = `
+final class ScheduleEndFixture {
+    var schedule: BlankFocusSchedule
+    init(_ schedule: BlankFocusSchedule) { self.schedule = schedule }
+${between(store, '    private func scheduleEndDate(containing', '    private var currentSelectionSnapshot').replace('private func scheduleEndDate', 'func scheduleEndDate')}
+}
 struct InboxDateFixture {
     var requestedAt: String?
 ${between(control, '    var requestedDate: Date?', '\n}').replace(/\n}\s*$/, '')}

@@ -1,6 +1,6 @@
 "use strict";
 const {supabaseFetch,json}=require("./_membership");
-const {settings,actionGate,fingerprint,notificationGate,budgetGate}=require("./bmb-policy");
+const {settings,actionGate,fingerprint,notificationGate,budgetGate,notificationExpiry}=require("./bmb-policy");
 const {normalizeBrainSnapshot}=require("./bm-brain-data");
 async function account(userId) {
   const rows=await supabaseFetch(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=*`,{method:"GET"});
@@ -89,7 +89,9 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
   candidates.sort((a,b)=>b.priority-a.priority);
   if(!candidates.length)return {skipped:"no_verified_opportunity"};
   // Choose the highest-value verified event once; do not fill the budget for its own sake.
-  const selected=candidates[0];
+  const selected=candidates.find(c=>notificationGate(c,a.settings,context).allowed&&budgetGate("notification",c,a.settings,events).allowed
+    ||c.kind==="opportunity"&&a.settings.grant?.active&&budgetGate("action",c,a.settings,events).allowed);
+  if(!selected)return {skipped:"policy_or_budget"};
   const canNotify=notificationGate(selected,a.settings,context).allowed&&budgetGate("notification",selected,a.settings,events).allowed;
   const canAct=selected.kind==="opportunity"&&a.settings.grant?.active&&actionGate({type:a.settings.grant.action_types[0],minutes:Math.min(30,a.settings.grant.max_minutes)},a.settings,context).allowed&&budgetGate("action",selected,a.settings,events).allowed;
   if(!canNotify&&!canAct)return {skipped:"policy"};
@@ -117,9 +119,10 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
     return {skipped:"budget_or_duplicate"};
   }
   if(canNotify) {
-    const reserved=await claim("notification",{});
+    const expiry=notificationExpiry(selected,a.settings);
+    const reserved=await claim("notification",{expires_at:expiry});
     if(reserved.claimed) {
-      const result=await notify(memory.assistant_device_push,{id:reserved.id,text:plan.message_text,expires_at:selected.expires_at});
+      const result=await notify(memory.assistant_device_push,{id:reserved.id,text:plan.message_text,expires_at:expiry});
       await mergeOutcome(a.auth_user_id,reserved.id,{transport:result},db);
       return {notification_reserved:reserved.id};
     }

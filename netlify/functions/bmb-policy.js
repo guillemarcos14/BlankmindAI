@@ -58,4 +58,12 @@ function budgetGate(kind,event,policy,ledger,now=Date.now()) {
   if(!roots(recent).has(root)&&(roots(recent).size>=caps("max_per_week")||roots(recent.filter(e=>day(Date.parse(e.created_at))===day(now))).size>=caps("max_per_day")))return {allowed:false,reason:"shared_initiative_budget"};
   return {allowed:true};
 }
-module.exports={TYPES,fingerprint,zone,minute,inWindow,settings,actionGate,notificationGate,budgetGate};
+function notificationExpiry(event,policy,now=Date.now()) {
+  let until=Date.parse(event.expires_at);
+  const n=policy.notifications;
+  if(n.start_minute!==n.end_minute)for(let t=Math.floor(now/60000)*60000+60000;t<Math.min(until,now+26*3600000);t+=60000) {
+    if(!inWindow(minute(t,policy.timezone),n.start_minute,n.end_minute)){until=t;break;}
+  }
+  return new Date(until).toISOString();
+}
+module.exports={TYPES,fingerprint,zone,minute,inWindow,settings,actionGate,notificationGate,budgetGate,notificationExpiry};

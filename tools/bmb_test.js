@@ -64,9 +64,14 @@ async function main() {
   assert.equal(policy.notificationGate(event,p,nc,Date.parse("2026-10-03T12:00:00Z")).allowed,true);
   assert.equal(policy.notificationGate(event,p,{...nc,chat_active_until:"2027-01-01"},Date.parse("2026-10-03T12:00:00Z")).allowed,false);
   assert.equal(policy.notificationGate(event,p,nc,Date.parse("2026-10-03T21:00:00Z")).allowed,false);
+  assert.equal(policy.notificationExpiry({expires_at:"2026-10-04T01:00:00Z"},p,Date.parse("2026-10-03T19:59:00Z")),"2026-10-03T20:00:00.000Z","Stored APNs notification crossed local quiet boundary");
   assert.equal(policy.notificationGate({...event,expires_at:"2020-01-01"},p,nc).allowed,false);
   assert.equal(policy.settings().notifications.max_per_day,1);assert.equal(policy.settings().notifications.max_per_week,3);
   const sources=require("../netlify/functions/bmb-sources");
+  const accountSnapshot=require("../netlify/functions/bm-brain-data").normalizeBrainSnapshot({schema_version:1,generated_at:new Date().toISOString(),timezone:"UTC",sessions:[],
+    account:{signed_in:true,premium_access:true,active_product_ids:["blank_monthly","private&token"],referral_trial_ends_at:"2026-11-01T00:00:00Z",referral_count:2,token:"secret"}});
+  assert.deepEqual(accountSnapshot.account.active_product_ids,["blank_monthly"]);assert.equal(accountSnapshot.account.referral_count,2);
+  assert.equal(accountSnapshot.account.billing_details_available,false);assert.equal(accountSnapshot.account.token,undefined);
   const scrubbed=sources.sanitize({token:"secret",nested:{encrypted_access_token:"secret",goal:"sleep",applicationTokens:["private"]}});
   assert.deepEqual(scrubbed,{nested:{goal:"sleep"}});
   assert(sources.SOURCE_NAMES.includes("onboarding")&&sources.SOURCE_NAMES.includes("learned_signals")&&sources.SOURCE_NAMES.includes("protection_statistics"));

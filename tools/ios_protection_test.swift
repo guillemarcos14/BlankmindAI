@@ -49,6 +49,12 @@ struct ProtectionTests {
         expect(madrid.contains(date(25,7,30),calendar:calendar) && !madrid.contains(date(25,9,30),calendar:calendar),"Recurring schedule lost its own timezone")
         let continuous = try JSONDecoder().decode(BlankHabitWindow.self,from:JSONEncoder().encode(madrid))
         expect(continuous.expiresAt == nil && continuous.timeZoneIdentifier == "Europe/Madrid","Continuous horizon acquired an expiry")
+        let overnightMadrid = BlankHabitWindow(name:"Madrid night",startMinute:1350,endMinute:420,timeZoneIdentifier:"Europe/Madrid")
+        let deadline = ScheduleEndFixture(BlankFocusSchedule(enabled:true,windows:[overnightMadrid]))
+        let iso = ISO8601DateFormatter()
+        expect(deadline.scheduleEndDate(containing:iso.date(from:"2027-03-28T04:00:00Z")!,calendar:calendar) == iso.date(from:"2027-03-28T05:00:00Z"),"Spring DST moved the 07:00 deadline")
+        expect(deadline.scheduleEndDate(containing:iso.date(from:"2026-10-25T04:00:00Z")!,calendar:calendar) == iso.date(from:"2026-10-25T06:00:00Z"),"Fall DST moved the 07:00 deadline")
+        expect(ScheduleEndFixture(BlankFocusSchedule(enabled:true,windows:[once])).scheduleEndDate(containing:date(26,6),calendar:calendar) == once.endsAt,"Once deadline reconstructed from today's clock")
 
         var expiring = work
         expiring.expiresAt = date(25, 12)

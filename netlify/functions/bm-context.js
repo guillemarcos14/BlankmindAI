@@ -122,6 +122,7 @@ function normalizeSchedule(value) {
         if (Number.isFinite(window[key])) normalized[key] = Math.round(window[key]);
       }
       if (Number.isFinite(window.expires_at)) normalized.expires_at = window.expires_at;
+      if (["once","weekly","continuous"].includes(window.recurrence)) normalized.recurrence = window.recurrence;
       for (const key of ["starts_at","ends_at","timezone"]) if (typeof window[key] === "string") normalized[key] = clean(window[key],80);
       if (Array.isArray(window.weekdays)) normalized.weekdays = window.weekdays.filter((day) => Number.isInteger(day) && day >= 1 && day <= 7).slice(0, 7);
       return Object.keys(normalized).length ? normalized : null;

@@ -2094,20 +2094,10 @@ struct HomeView: View {
 
     private func showPendingBAIProactiveAlertIfNeeded() {
         let defaults = BlankSharedState.defaults
-        guard let id = defaults.string(forKey: "blankBAIProactiveAlertId"),
-              id != defaults.string(forKey: "blankBAIProactiveAlertConsumedId"),
-              let body = defaults.string(forKey: "blankBAIProactiveAlertBody"),
-              !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return
+        // Discard the previous brain's cached copy; BMB owns all proactive text.
+        for key in ["blankBAIProactiveAlertId","blankBAIProactiveAlertBody","blankBAIProactiveAlertCreatedAt","blankBAIProactiveAlertConsumedId"] {
+            defaults.removeObject(forKey:key)
         }
-        let createdAt = defaults.double(forKey: "blankBAIProactiveAlertCreatedAt")
-        guard createdAt <= 0 || Date().timeIntervalSince1970 - createdAt < 24 * 60 * 60 else {
-            defaults.set(id, forKey: "blankBAIProactiveAlertConsumedId")
-            return
-        }
-        message = body
-        messageAction = nil
-        defaults.set(id, forKey: "blankBAIProactiveAlertConsumedId")
     }
 
     private func setMessage(for result: SessionStore.NfcResult) {
@@ -4067,7 +4057,8 @@ private struct BMBSettingsView: View {
                     DatePicker("From",selection:clock($actionStart),displayedComponents:.hourAndMinute)
                     DatePicker("Until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
                     Text("Matching times allow any hour.").font(.footnote)
-                    Stepper("Maximum duration \(maxMinutes) min",value:$maxMinutes,in:5...240,step:5)
+                    Text("Daily limits and the adult filter stay on until you change them. Revoking permission stops future automatic changes.").font(.footnote)
+                    Stepper("Maximum minutes \(maxMinutes)",value:$maxMinutes,in:5...240,step:5)
                     Stepper("Actions per day \(actionDaily)",value:$actionDaily,in:0...10)
                     Stepper("Actions per 7 days \(actionWeekly)",value:$actionWeekly,in:0...30)
                     Stepper("Minimum gap \(intervalMinutes) min",value:$intervalMinutes,in:15...10080,step:15)

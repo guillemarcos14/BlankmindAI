@@ -104,7 +104,11 @@ final class BlankBrain {
         var history: [String: Any] = ["schema_version": 1, "generated_at": iso.string(from: now),
             "timezone": calendar.timeZone.identifier, "local_date": dayFormat.string(from: now), "week_starts_on": calendar.firstWeekday,
             "history_complete": all.count <= 2000, "sessions": sessionRows,
-            "account": ["signed_in": true, "premium_access": purchases?.hasPremiumAccess == true]]
+            "account": ["signed_in": true, "premium_access": purchases?.hasPremiumAccess == true,
+                "active_product_ids": Array(purchases?.purchasedProductIds ?? []),
+                "referral_trial_ends_at": purchases?.referralTrialEndsAt.map(iso.string(from:)) ?? "",
+                "referral_count": purchases?.referralCount ?? 0,
+                "demo_access": purchases?.demoProAccess == true]]
         if let first = retained.first { history["history_started_at"] = iso.string(from: first.startedAt) }
         var payload: [String: Any] = [
             "context_revision": contextRevision, "context_generated_at": iso.string(from: now),

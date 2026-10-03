@@ -1,0 +1,878 @@
+{
+  "date": "2026-10-03",
+  "scope": "real_provider_synthetic_sources_no_native_execution_or_notification",
+  "base": "40184e2d2a7eb325b5d32bf63b8cd0d7af9c348c",
+  "pr": "https://github.com/guillemarcos14/BlankmindAI/pull/12",
+  "physical_cases_passed": 0,
+  "physical_cases_required": 20,
+  "production_release_verified": false,
+  "migration_027_applied_cloud": false,
+  "new_build_distributed": false,
+  "real_provider_reports": {
+    "live-eval.json": {
+      "provider_real": true,
+      "deployed_model_tested": false,
+      "sources": "synthetic",
+      "native_actions_executed": 0,
+      "model": "gpt-5.6-luna",
+      "calls": 11,
+      "tokens": 26272,
+      "passed": 9,
+      "total": 9,
+      "records": [
+        {
+          "prompt": "How can I sleep better? I keep using my phone in bed.",
+          "plan": {
+            "intent": "general",
+            "response_text": "A good first step is to make your bed phone-free. Charge it across the room, enable Do Not Disturb, and use a wind-down routine for the last 30–60 minutes. If you wake and want to check it, keep a book or calming audio nearby instead.\n\nI can also set a one-night protection block before bed. What time do you usually go to bed and wake up?",
+            "message_text": "A good first step is to make your bed phone-free. Charge it across the room, enable Do Not Disturb, and use a wind-down routine for the last 30–60 minutes. If you wake and want to check it, keep a book or calming audio nearby instead.\n\nI can also set a one-night protection block before bed. What time do you usually go to bed and wake up?",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T13:59:12.926Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "ask",
+            "cited_sources": []
+          },
+          "passed": true
+        },
+        {
+          "prompt": "I go to bed at 23:00 and wake up at 07:00.",
+          "plan": {
+            "intent": "general",
+            "response_text": "I’ll remember that your usual sleep window is 23:00–07:00. For tonight, I can protect your selected distractions from 22:30 to 07:00 to give you a wind-down buffer. Want me to set that up?",
+            "message_text": "I’ll remember that your usual sleep window is 23:00–07:00. For tonight, I can protect your selected distractions from 22:30 to 07:00 to give you a wind-down buffer. Want me to set that up?",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T13:59:21.414Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "propose",
+            "cited_sources": []
+          },
+          "passed": true
+        },
+        {
+          "prompt": "Block my distractions now for 30 minutes, only once.",
+          "plan": {
+            "intent": "general",
+            "response_text": "Starting a one-time 30-minute block for your selected distractions now.",
+            "message_text": "Starting a one-time 30-minute block for your selected distractions now.",
+            "response_language": "en",
+            "actions": [
+              {
+                "type": "start_protection",
+                "minutes": 30,
+                "start_minute": null,
+                "end_minute": null,
+                "weekdays": [],
+                "duration_days": null,
+                "local_date": null,
+                "timezone": "Europe/Madrid",
+                "recurrence": "once",
+                "window_id": null,
+                "hours": null,
+                "hard_mode": false,
+                "app_names": []
+              }
+            ],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T13:59:24.106Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": true,
+            "proactive_action": null,
+            "proactive_decision": "execute",
+            "cited_sources": []
+          },
+          "passed": true
+        },
+        {
+          "prompt": "Block my distractions now",
+          "plan": {
+            "intent": "general",
+            "response_text": "How long should I block your distractions?",
+            "message_text": "How long should I block your distractions?",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T13:59:26.209Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": "Block my distractions now; duration is needed.",
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "ask",
+            "cited_sources": []
+          },
+          "passed": true
+        },
+        {
+          "prompt": "Actually, I had a rough morning and kept scrolling.",
+          "plan": {
+            "intent": "general",
+            "response_text": "That sounds rough. How long would you like me to block your selected distractions now?",
+            "message_text": "That sounds rough. How long would you like me to block your selected distractions now?",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T13:59:28.340Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": "Block my distractions now; duration is needed.",
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "ask",
+            "cited_sources": []
+          },
+          "passed": true
+        },
+        {
+          "prompt": "Forget the block",
+          "plan": {
+            "intent": "general",
+            "response_text": "Okay, I cancelled the pending block request.",
+            "message_text": "Okay, I cancelled the pending block request.",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T13:59:30.684Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": true,
+            "proactive_action": null,
+            "proactive_decision": "cancel",
+            "cited_sources": []
+          },
+          "passed": true
+        },
+        {
+          "prompt": "¿Qué recuerdas de mí?",
+          "plan": {
+            "intent": "general",
+            "response_text": "Recuerdo que tu objetivo es dormir mejor. No tengo otros recuerdos guardados sobre ti.",
+            "message_text": "Recuerdo que tu objetivo es dormir mejor. No tengo otros recuerdos guardados sobre ti.",
+            "response_language": "es",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T13:59:34.725Z",
+              "language": "es",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "respond",
+            "cited_sources": []
+          },
+          "passed": true
+        },
+        {
+          "prompt": "Which day do I actually use my phone most?",
+          "plan": {
+            "intent": "general",
+            "response_text": "I can’t verify which day you use your phone most. Apple’s DeviceActivityReport sandbox doesn’t let me access your day-by-day phone usage, and Blankmind’s protection data isn’t phone-use data. You can check it in iPhone Settings → Screen Time → See All App & Website Activity.",
+            "message_text": "I can’t verify which day you use your phone most. Apple’s DeviceActivityReport sandbox doesn’t let me access your day-by-day phone usage, and Blankmind’s protection data isn’t phone-use data. You can check it in iPhone Settings → Screen Time → See All App & Website Activity.",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T13:59:38.279Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "respond",
+            "cited_sources": []
+          },
+          "passed": true
+        },
+        {
+          "prompt": "Block my distractions tonight from 22:30 to 07:00, only tonight.",
+          "plan": {
+            "intent": "general",
+            "response_text": "I’ll apply a one-time distraction block for tonight from 22:30 to 07:00 tomorrow.",
+            "message_text": "I’ll apply a one-time distraction block for tonight from 22:30 to 07:00 tomorrow.",
+            "response_language": "en",
+            "actions": [
+              {
+                "type": "apply_schedule",
+                "minutes": null,
+                "start_minute": 1350,
+                "end_minute": 420,
+                "weekdays": [],
+                "duration_days": null,
+                "local_date": "2026-10-03",
+                "timezone": "Europe/Madrid",
+                "recurrence": "once",
+                "window_id": null,
+                "hours": null,
+                "hard_mode": false,
+                "app_names": [],
+                "starts_at": "2026-10-03T20:30:00.000Z",
+                "ends_at": "2026-10-04T05:00:00.000Z"
+              }
+            ],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T13:59:41.073Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": true,
+            "proactive_action": null,
+            "proactive_decision": "execute",
+            "cited_sources": []
+          },
+          "passed": true
+        }
+      ]
+    },
+    "proactive-live-eval.json": {
+      "provider_real": true,
+      "sources": "synthetic",
+      "native_actions_executed": 0,
+      "notifications_sent": 0,
+      "model": "gpt-5.6-luna",
+      "calls": 4,
+      "tokens": 9977,
+      "passed": 4,
+      "total": 4,
+      "records": [
+        {
+          "name": "opportunity_inside_grant",
+          "passed": true,
+          "plan": {
+            "intent": "general",
+            "response_text": "You’ve had 2 early exits from protection sessions, so I’m starting a 30-minute protection window now.",
+            "message_text": "You’ve had 2 early exits from protection sessions, so I’m starting a 30-minute protection window now.",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T14:01:49.110Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": {
+              "type": "start_protection",
+              "minutes": 30,
+              "start_minute": null,
+              "end_minute": null,
+              "weekdays": [],
+              "duration_days": null,
+              "local_date": null,
+              "timezone": null,
+              "recurrence": "once",
+              "window_id": null,
+              "hours": null,
+              "hard_mode": false,
+              "app_names": []
+            },
+            "proactive_decision": "execute",
+            "cited_sources": []
+          }
+        },
+        {
+          "name": "opportunity_without_grant",
+          "passed": true,
+          "plan": {
+            "intent": "general",
+            "response_text": "You’ve had 2 early exits from protection sessions recently. That isn’t a measure of phone use, but it may be a useful moment for a quick reset. Want to start one now?",
+            "message_text": "You’ve had 2 early exits from protection sessions recently. That isn’t a measure of phone use, but it may be a useful moment for a quick reset. Want to start one now?",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T14:01:51.703Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "propose",
+            "cited_sources": []
+          }
+        },
+        {
+          "name": "verified_intervention",
+          "passed": true,
+          "plan": {
+            "intent": "general",
+            "response_text": "30-minute protection was verified as started on your iPhone.",
+            "message_text": "30-minute protection was verified as started on your iPhone.",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T14:01:53.957Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "respond",
+            "cited_sources": []
+          }
+        },
+        {
+          "name": "permission_failure",
+          "passed": true,
+          "plan": {
+            "intent": "general",
+            "response_text": "The 30-minute protection couldn’t start because Screen Time permission was denied. Please allow Screen Time access in iPhone Settings, then try again.",
+            "message_text": "The 30-minute protection couldn’t start because Screen Time permission was denied. Please allow Screen Time access in iPhone Settings, then try again.",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T14:01:57.204Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "respond",
+            "cited_sources": []
+          }
+        }
+      ]
+    },
+    "live-eval-case-8.json": {
+      "provider_real": true,
+      "deployed_model_tested": false,
+      "sources": "synthetic",
+      "native_actions_executed": 0,
+      "model": "gpt-5.6-luna",
+      "calls": 1,
+      "tokens": 2367,
+      "passed": 1,
+      "total": 1,
+      "records": [
+        {
+          "prompt": "Which day do I actually use my phone most?",
+          "plan": {
+            "intent": "general",
+            "response_text": "I can’t determine which day you use your phone most because iPhone usage data isn’t available to me here. I can only report your recorded Blankmind protection, which isn’t the same as phone use.",
+            "message_text": "I can’t determine which day you use your phone most because iPhone usage data isn’t available to me here. I can only report your recorded Blankmind protection, which isn’t the same as phone use.",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T14:09:47.728Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "respond",
+            "cited_sources": []
+          },
+          "passed": true
+        }
+      ]
+    },
+    "proactive-live-eval-case-3.json": {
+      "provider_real": true,
+      "sources": "synthetic",
+      "native_actions_executed": 0,
+      "notifications_sent": 0,
+      "model": "gpt-5.6-luna",
+      "calls": 1,
+      "tokens": 2501,
+      "passed": 1,
+      "total": 1,
+      "records": [
+        {
+          "name": "verified_intervention",
+          "passed": true,
+          "plan": {
+            "intent": "general",
+            "response_text": "A 30-minute protection session has started for your selected distractions.",
+            "message_text": "A 30-minute protection session has started for your selected distractions.",
+            "response_language": "en",
+            "actions": [],
+            "semantic_state": {
+              "version": 1,
+              "revision": 0,
+              "turn": 0,
+              "updated_at": "2026-10-03T14:09:47.214Z",
+              "language": "en",
+              "intent": "general",
+              "slots": {
+                "apps": null,
+                "app_category": null,
+                "moment": null,
+                "action_type": null,
+                "hard_mode": null,
+                "requested_capability": null,
+                "start": null,
+                "end": null,
+                "duration_minutes": null,
+                "recurrence": null,
+                "schedule_horizon_days": null,
+                "confirmation": null
+              },
+              "corrections": [],
+              "pending_slots": [],
+              "status": "idle",
+              "next_question": null,
+              "errors": [],
+              "last_action_fingerprint": null,
+              "delivery": null
+            },
+            "bmb_state": {
+              "pending_request": null,
+              "proposal": null
+            },
+            "bmb_generated": true,
+            "bmb_invalidates": false,
+            "proactive_action": null,
+            "proactive_decision": "respond",
+            "cited_sources": []
+          }
+        }
+      ]
+    }
+  },
+  "runtime_file_sha256": {
+    "netlify/functions/bmb-brain.js": "4d76820afd0961cf42d9dbcd180c376e2ea82d399fc3f658822677bbb492cb1c",
+    "netlify/functions/bmb-policy.js": "234469dc6a6c79327792f5750ff834fcae150c94a3f8ca8a89da90286bc4030e",
+    "netlify/functions/bmb-service.js": "a618c7fc03336db39957a2175da5375cd5a5987a4faba707f571127552d672ee",
+    "netlify/functions/bmb-sources.js": "8f8ca21825adec08d62f45e37ce6fef0acf24d83c36c83689c0a292dcb5c0d3d",
+    "netlify/functions/bmb-tick.js": "137d9b8ade307f608061041edc08b20b37011e955ecba54868f8624b3e6c2bcc",
+    "netlify/functions/bmb-worker-background.js": "239b8b4cbffbb45ac7b154ab61c3d34eee55ba675b3560f7ac14b5ce0b5e53f0",
+    "netlify/functions/bm-brain-data.js": "00a1944f57c05877de177a309c160a216f9b9041634fa7369911d0cc922344f9",
+    "netlify/functions/bm-context.js": "cd88d32d083a28f51291680ef679af417bdc9b7401d903cbf9aa6b903818cd1a",
+    "ios/Blank/Blank/BlankBrain.swift": "2ed40e657a6253f6eea447ee95345b3518e32add87fa92839d494b86e4b3d375",
+    "ios/Blank/Blank/HomeView.swift": "e79698a255ee085bce3e1fbd3177f83ecb1ca050f6460d6c4587b34ca1fd25ab",
+    "ios/Blank/Blank/SessionStore.swift": "974a377022e7159b1da53a7ffa57cb9844ad9457a42a80957c5e8e6b8c1cddf2",
+    "ios/Blank/Blank/AssistantAppView.swift": "6cd835abbc89c7136efff95c2f9e34fab15de44d438cbb416eb05a55403b59ab",
+    "supabase/migrations/027_bmb_autonomy.sql": "029c250901625acb9fa4e5074d72f505e05a6fc99b48625ed3c60dc5fb5bc413"
+  },
+  "known_paid_tokens_lower_bound": 91508,
+  "full_suites_precede_final_plain_language_prompt": true,
+  "final_prompt_targeted_cases": [
+    "phone_usage_unavailable",
+    "verified_intervention"
+  ],
+  "ci_verified_before_final_native_adjustments": {
+    "implementation_commit": "b383c95f7953f1ef3dbcaaddc33490f9eefb33c5",
+    "ios_run": 37127876701,
+    "harness_run": 37127876700,
+    "conclusion": "success"
+  },
+  "final_validation": "See PR checks and tmp/product-harness/bmb-final.json; physical gate remains unfulfilled.",
+  "generated_at": "2026-10-03T14:25:55.157703+00:00",
+  "runtime_hash_format": "sha256 bytes normalized CRLF to LF"
+}

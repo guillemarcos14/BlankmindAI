@@ -994,7 +994,7 @@ final class SessionStore: ObservableObject {
             endDay = dayStart
         }
 
-        return calendar.date(byAdding: .minute, value: window.endMinute, to: endDay)
+        return calendar.date(bySettingHour: window.endMinute / 60, minute: window.endMinute % 60, second: 0, of: endDay)
     }
 
     private var currentSelectionSnapshot: BlankSelectionSnapshot {
