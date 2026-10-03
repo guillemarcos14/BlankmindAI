@@ -208,8 +208,11 @@ enum DeviceActivityTimerScheduler {
         // The callback at the START releases the expired window. This monitoring
         // span meets Apple's 15-minute minimum without extending protection.
         let components: Set<Calendar.Component> = [.calendar, .timeZone, .year, .month, .day, .hour, .minute, .second]
-        return (calendar.dateComponents(components, from: expiry),
-                calendar.dateComponents(components, from: expiry.addingTimeInterval(15 * 60)))
+        // DateComponents has whole seconds. A truncated callback could arrive
+        // before expiry and leave the old shield until the interval's end.
+        let callbackDate = Date(timeIntervalSince1970: ceil(expiry.timeIntervalSince1970))
+        return (calendar.dateComponents(components, from: callbackDate),
+                calendar.dateComponents(components, from: callbackDate.addingTimeInterval(15 * 60)))
     }
 
     private static func recurringIntervals(for window: BlankHabitWindow) -> [(start: DateComponents, end: DateComponents)] {
