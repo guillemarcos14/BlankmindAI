@@ -11,10 +11,8 @@ enum HomeOrbGesturePolicy {
 
     static func swipe(x: Double, y: Double, menuOpen: Bool) -> HomeOrbAction? {
         guard x.isFinite, y.isFinite else { return nil }
-        if -y >= swipeDistance, -y > abs(x) * 1.25 { return .menu }
-        if -x >= swipeDistance, -x > abs(y) * 1.25 { return .block }
-        if menuOpen, y >= swipeDistance, y > abs(x) * 1.25 { return .closeMenu }
-        return nil
+        guard hypot(x, y) >= swipeDistance else { return nil }
+        return menuOpen ? .closeMenu : .menu
     }
 }
 
@@ -51,11 +49,10 @@ struct HomeOrbControl: UIViewRepresentable {
         context.coordinator.parent = self
         view.accessibilityLabel = menuOpen ? "Close menu" : "Blankmind controls"
         view.accessibilityValue = protectionActive ? "Protection active" : "Protection inactive"
-        view.accessibilityHint = "Swipe up for menu, left to block distractions, or hold for two seconds for chat."
+        view.accessibilityHint = "Move in any direction for the menu, or hold for two seconds for chat."
         view.activate = { context.coordinator.perform(menuOpen ? .closeMenu : .menu) }
         view.accessibilityCustomActions = [
             UIAccessibilityCustomAction(name: menuOpen ? "Close menu" : "Open menu", target: context.coordinator, selector: #selector(Coordinator.accessibleMenu)),
-            UIAccessibilityCustomAction(name: "Block distractions", target: context.coordinator, selector: #selector(Coordinator.accessibleBlock)),
             UIAccessibilityCustomAction(name: "Open chat", target: context.coordinator, selector: #selector(Coordinator.accessibleChat))
         ]
     }
@@ -73,33 +70,39 @@ struct HomeOrbControl: UIViewRepresentable {
 
     final class Coordinator: NSObject {
         var parent: HomeOrbControl
+        private var activated = false
         init(_ parent: HomeOrbControl) { self.parent = parent }
         func perform(_ action: HomeOrbAction) {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             parent.onAction(action)
         }
         @objc func hold(_ recognizer: UILongPressGestureRecognizer) {
-            if recognizer.state == .began { perform(.chat) }
+            if recognizer.state == .began { activated = true; perform(.chat) }
+            if [.ended, .cancelled, .failed].contains(recognizer.state) { activated = false }
         }
         @objc func pan(_ recognizer: UIPanGestureRecognizer) {
             guard let view = recognizer.view else { return }
             let translation = recognizer.translation(in: view.superview)
             switch recognizer.state {
             case .began, .changed:
+                if recognizer.state == .began { activated = false; view.layer.removeAllAnimations(); view.alpha = 1 }
+                guard !activated else { return }
                 if !UIAccessibility.isReduceMotionEnabled {
-                    view.transform = CGAffineTransform(translationX: max(-120, min(24, translation.x)), y: max(-120, min(80, translation.y)))
+                    view.transform = CGAffineTransform(translationX: translation.x, y: translation.y)
+                }
+                if let action = HomeOrbGesturePolicy.swipe(x: Double(translation.x), y: Double(translation.y), menuOpen: parent.menuOpen) {
+                    activated = true
+                    UIView.animate(withDuration: 0.18, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) { view.alpha = 0 } completion: { _ in
+                        self.perform(action)
+                    }
                 }
             case .ended, .cancelled, .failed:
-                UIView.animate(withDuration: UIAccessibility.isReduceMotionEnabled ? 0 : 0.3, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) { view.transform = .identity }
-                if recognizer.state == .ended,
-                   let action = HomeOrbGesturePolicy.swipe(x: Double(translation.x), y: Double(translation.y), menuOpen: parent.menuOpen) {
-                    perform(action)
-                }
+                guard !activated else { return }
+                UIView.animate(withDuration: UIAccessibility.isReduceMotionEnabled ? 0 : 0.22, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) { view.transform = .identity }
             default: break
             }
         }
         @objc func accessibleMenu() -> Bool { perform(parent.menuOpen ? .closeMenu : .menu); return true }
-        @objc func accessibleBlock() -> Bool { perform(.block); return true }
         @objc func accessibleChat() -> Bool { perform(.chat); return true }
     }
 }

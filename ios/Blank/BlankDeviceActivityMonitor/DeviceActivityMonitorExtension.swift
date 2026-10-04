@@ -12,6 +12,7 @@ private let log = Logger(
 
 final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     private let strategyActivityPrefix = "BlankStrategyTimer"
+    private let strategyExpiryPrefix = "BlankStrategyExpiry"
     private let recurringSchedulePrefix = "BlankRecurringSchedule"
     private let recurringExpiryActivity = "BlankRecurringScheduleExpiry"
     private let recurringExpiryPrefix = "BlankRecurringScheduleExpiry:"
@@ -25,7 +26,9 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         super.intervalDidStart(for: activity)
         log.info("DeviceActivity interval started: \(activity.rawValue)")
 
-        if activity.rawValue == recurringExpiryActivity || activity.rawValue.hasPrefix(recurringExpiryPrefix) {
+        if activity.rawValue.hasPrefix(strategyExpiryPrefix) {
+            releaseExpiredStrategy()
+        } else if activity.rawValue == recurringExpiryActivity || activity.rawValue.hasPrefix(recurringExpiryPrefix) {
             if Self.recurringScheduleIsActive() {
                 applySelectedProtection(to: recurringStore)
             } else {
@@ -44,8 +47,8 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         super.intervalDidEnd(for: activity)
         log.info("DeviceActivity interval ended: \(activity.rawValue)")
 
-        if activity.rawValue.hasPrefix(strategyActivityPrefix) {
-            strategyStore.clearAllSettings()
+        if activity.rawValue.hasPrefix(strategyActivityPrefix) || activity.rawValue.hasPrefix(strategyExpiryPrefix) {
+            releaseExpiredStrategy()
         } else if activity.rawValue.hasPrefix(recurringSchedulePrefix) {
             if Self.recurringScheduleIsActive() {
                 applySelectedProtection(to: recurringStore)
@@ -69,6 +72,18 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : .specific(selection.categoryTokens)
         store.shield.webDomains = selection.webDomainTokens
         store.webContent.blockedByFilter = Self.adultContentBlockingEnabled ? .auto() : nil
+    }
+
+    private func releaseExpiredStrategy() {
+        // A delayed callback from an older timer must not release a newer block.
+        guard Self.strategyHasExpired(defaults: Self.sharedDefaults) else { return }
+        strategyStore.clearAllSettings()
+    }
+
+    private static func strategyHasExpired(defaults: UserDefaults, now: Date = Date()) -> Bool {
+        guard defaults.bool(forKey: "isBlankActive") else { return true }
+        guard let end = defaults.object(forKey: "blankActiveUntil") as? TimeInterval else { return false }
+        return now.timeIntervalSince1970 >= end
     }
 
     override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {

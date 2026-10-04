@@ -242,6 +242,10 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     ViewTransport.history = { .init(turns: [executable], nextBefore: nil) }
     await view.reloadForTest()
     check(view.appliedActions.count == 1, "History executed an old action")
+    check(view.visibleTurnID == executable.id, "Reload lost the reply submitted in this visit")
+    let freshVisit = ConversationFixture()
+    await freshVisit.reloadForTest()
+    check(freshVisit.visibleTurnID == nil, "Opening chat must not surface the last historical reply")
     view.composer.draft = "Retry block"
     ViewTransport.send = { _, _ in throw AssistantAppError.network }
     ViewTransport.status = { _ in executable }

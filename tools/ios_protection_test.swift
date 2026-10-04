@@ -7,8 +7,8 @@ private func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
 @main
 struct ProtectionTests {
     static func main() throws {
-        expect(UnblankHoldCadence.pulseTimes(duration: 20) == [0, 1, 3, 6, 10, 15], "Hold pulses must slow down without changing the 20-second hold")
-        expect(UnblankHoldCadence.pulseTimes(duration: 25) == [0, 1, 3, 6, 10, 15, 21], "Intervals must increase by one second")
+        expect(UnblankHoldCadence.pulseTimes(duration: 20) == (0..<20).map(Double.init), "20-second hold must vibrate every second")
+        expect(UnblankHoldCadence.pulseTimes(duration: 25) == (0..<25).map(Double.init), "Pulse interval must stay at one second")
         expect(UnblankHoldCadence.pulseTimes(duration: 0).isEmpty, "Inactive hold must not vibrate")
         expect(UnblankHoldCadence.pulseTimes(duration: .infinity).isEmpty, "Reject unbounded cadence")
         let precise = InboxDateFixture(requestedAt: "2026-10-01T12:00:00.123Z").requestedDate
@@ -29,6 +29,15 @@ struct ProtectionTests {
         let expiryEnd = calendar.date(from: expiryInterval.end)!
         expect(expiryStart == expiry, "Expiry callback must preserve the exact release time")
         expect(expiryEnd.timeIntervalSince(expiryStart) >= 15 * 60, "iOS rejects expiry monitors shorter than fifteen minutes")
+        let timerDefaults = UserDefaults(suiteName: "blank-test-expiry-\(UUID().uuidString)")!
+        timerDefaults.set(true, forKey: "isBlankActive")
+        timerDefaults.set(expiry.timeIntervalSince1970, forKey: "blankActiveUntil")
+        expect(!StrategyExpiryFixture.strategyHasExpired(defaults: timerDefaults, now: expiry.addingTimeInterval(-1)), "Short block must remain shielded before expiry")
+        expect(StrategyExpiryFixture.strategyHasExpired(defaults: timerDefaults, now: expiry), "Release at the start callback, without fifteen extra minutes")
+        timerDefaults.set(expiry.addingTimeInterval(300).timeIntervalSince1970, forKey: "blankActiveUntil")
+        expect(!StrategyExpiryFixture.strategyHasExpired(defaults: timerDefaults, now: expiry), "Stale callback must not release a newer five-minute block")
+        timerDefaults.removeObject(forKey: "blankActiveUntil")
+        expect(!StrategyExpiryFixture.strategyHasExpired(defaults: timerDefaults, now: expiry), "Stale callback must not release indefinite protection")
         let fractionalExpiry = expiry.addingTimeInterval(0.549)
         let fractionalInterval = DeviceActivityTimerScheduler.makeExpiryInterval(expiry: fractionalExpiry, calendar: calendar)
         let fractionalCallback = calendar.date(from: fractionalInterval.start)!

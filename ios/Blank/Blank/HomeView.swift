@@ -19,11 +19,9 @@ struct UnblankHoldCadence {
         guard duration.isFinite, duration > 0 else { return [] }
         var pulses = [0.0]
         var elapsed = 0.0
-        var interval = 1.0
-        while elapsed + interval < duration {
-            elapsed += interval
+        while elapsed + 1 < duration {
+            elapsed += 1
             pulses.append(elapsed)
-            interval += 1
         }
         return pulses
     }
@@ -840,18 +838,23 @@ struct HomeView: View {
             let bottom = max(proxy.safeAreaInsets.bottom + 16, proxy.size.height * 108 / 1920)
             ZStack(alignment: .bottomTrailing) {
                 if isHomeMenuOpen {
+                    Color.clear.contentShape(Rectangle())
+                        .onTapGesture { isHomeMenuOpen = false }
+                        .accessibilityLabel("Close menu")
+                        .accessibilityAddTraits(.isButton)
                     orbMenu(layout: layout, trailing: right + diameter + 16, bottom: bottom)
                         .transition(reduceMotion ? .opacity : .asymmetric(
                             insertion: .move(edge: .bottom).combined(with: .opacity),
                             removal: .opacity))
                 }
                 HomeOrbControl(menuOpen: isHomeMenuOpen, protectionActive: sessionStore.isBlankActive, onAction: handleHomeOrb)
+                    .id(isHomeMenuOpen)
                     .frame(width: diameter, height: diameter)
                     .padding(.trailing, right)
                     .padding(.bottom, bottom)
-                    .opacity(isHoldingToUnblank ? 0 : 1)
-                    .allowsHitTesting(!isHoldingToUnblank)
-                    .accessibilityHidden(isHoldingToUnblank)
+                    .opacity(isHoldingToUnblank || isHomeMenuOpen ? 0 : 1)
+                    .allowsHitTesting(!isHoldingToUnblank && !isHomeMenuOpen)
+                    .accessibilityHidden(isHoldingToUnblank || isHomeMenuOpen)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }

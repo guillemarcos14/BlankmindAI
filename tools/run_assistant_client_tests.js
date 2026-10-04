@@ -45,6 +45,8 @@ const viewFixture = `
     var canRetry = true
     var isApplyingAction = false
     var showHistory = false
+    var visibleTurnID: String?
+    var greeting: String?
     var appliedActions: [String] = []
     var dismissCount = 0
     func onApplyAction(_ id: String) async throws { appliedActions.append(id) }

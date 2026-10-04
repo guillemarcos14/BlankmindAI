@@ -25,6 +25,10 @@ assert.match(monitor, /ManagedSettingsStore\(named: ManagedSettingsStore\.Name\(
 assert.match(store, /dailyLimitRegistered = DeviceActivityTimerScheduler\.startDailyLimit/);
 assert.match(store, /recurringScheduleRegistered = DeviceActivityTimerScheduler\.syncRecurringSchedule/);
 assert.match(store, /blankActiveUntil == nil \|\| deviceActivityTimerScheduled/);
+const timer = between(scheduler, '    static func start(protectionId:', '    static func stop(protectionId:');
+assert.match(timer, /makeExpiryInterval\(expiry: Date\(\)\.addingTimeInterval/);
+assert.match(timer, /strategyExpiryPrefix/);
+assert.match(monitor, /hasPrefix\(strategyExpiryPrefix\) \{\s+releaseExpiredStrategy\(\)/);
 const capacity = scheduler.indexOf('guard intervals.count + expirations.count + dated.count <= maxScheduleActivities');
 assert(capacity >= 0 && scheduler.indexOf('center.stopMonitoring', capacity) > capacity);
 const polling = between(home, '    private func pollPendingAssistantActionIfNeeded', '    private func clearAssistantNotificationRequest');
@@ -51,6 +55,8 @@ const intervals = scheduler.slice(scheduler.indexOf('    private static func rec
   .replace('private static func recurringIntervals', 'static func recurringIntervals');
 const extensionModel = between(monitor, '    private struct StoredWindow:', '    private static func recurringScheduleIsActive')
   .replace('private struct StoredWindow', 'struct StoredWindow');
+const timerPredicate = between(monitor, '    private static func strategyHasExpired', '    override func eventDidReachThreshold')
+  .replace('private static func strategyHasExpired', 'static func strategyHasExpired');
 const fixtures = `
 final class ScheduleEndFixture {
     var schedule: BlankFocusSchedule
@@ -113,6 +119,9 @@ enum DeviceActivityTimerScheduler {
     static var hasIndependentProtection = false
 ${between(scheduler, '    private static func makeExpiryInterval', '    private static func recurringIntervals').replace('private static func makeExpiryInterval', 'static func makeExpiryInterval')}
 ${intervals}
+enum StrategyExpiryFixture {
+${timerPredicate}
+}
 final class SelectionFixture {
     var isBlankActive = false
     let defaults = UserDefaults.standard

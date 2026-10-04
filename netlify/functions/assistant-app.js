@@ -354,6 +354,10 @@ exports.handler = async (event) => {
     const auth = await authenticatedIdentity(event, body, body.action);
     if (auth.error) return json(auth.status, { error: auth.error });
     if (body.action === "activate") return await activate(auth);
+    if (body.action === "greeting") {
+      if (!["en", "es"].includes(body.language)) return json(400, { error: "invalid_language" });
+      return json(200, { ok: true, text: await require("./bmb-greeting").greeting(body.language) });
+    }
     if (body.action?.startsWith("bmb_")) return await require("./bmb-service").api(auth,body) || json(400,{error:"unsupported_action"});
     if (body.action === "history") return await history(auth, body);
     if (body.action === "status") return await status(auth, body);
