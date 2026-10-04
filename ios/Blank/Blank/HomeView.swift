@@ -336,6 +336,7 @@ struct HomeView: View {
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
     @State private var isHomeMenuOpen = false
+    @State private var showingHomeBlockError = false
     private var delayedManualUnlockAt: Date? { sessionStore.delayedManualUnlockAt }
     @State private var showingRelapseReview = false
     @AppStorage("blankPendingAssistantActionId", store: BlankSharedState.defaults) private var pendingAssistantActionId = ""
@@ -834,8 +835,23 @@ struct HomeView: View {
             let right = max(24, proxy.size.width * 108 / 1080)
             let bottom = max(proxy.safeAreaInsets.bottom + 16, proxy.size.height * 108 / 1920)
             ZStack(alignment: .bottomTrailing) {
-                if sessionStore.isBlankActive && !isHomeMenuOpen {
-                    activeMinimalHome(layout: layout)
+                if !isHomeMenuOpen {
+                    if sessionStore.isBlankActive {
+                        activeMinimalHome(layout: layout)
+                    } else {
+                        Color.clear.contentShape(Rectangle())
+                            .onLongPressGesture(
+                                minimumDuration: HomeBlockGesturePolicy.holdDuration,
+                                maximumDistance: CGFloat(HomeBlockGesturePolicy.movementTolerance)
+                            ) { handleHomeOrb(.block) }
+                            .accessibilityLabel("Home")
+                            .accessibilityHint("Hold the screen for three seconds to block distractions.")
+                            .accessibilityAction(named: Text("Block distractions")) { handleHomeOrb(.block) }
+                        holdScreenInstruction("hold the screen\nto blank", color: BlankColors.charcoal)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                            .padding(.horizontal, layout.horizontalPadding)
+                            .allowsHitTesting(false)
+                    }
                 }
                 if isHomeMenuOpen {
                     Color.clear.contentShape(Rectangle())
@@ -859,27 +875,31 @@ struct HomeView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
         .animation(.easeOut(duration: reduceMotion ? 0.12 : 0.38), value: isHomeMenuOpen)
+        .alert("Couldn't start protection", isPresented: $showingHomeBlockError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(message ?? "Check Screen Time permissions and selected distractions in Settings.")
+        }
+    }
+
+    private func holdScreenInstruction(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
+            .tracking(0)
+            .foregroundStyle(color)
+            .lineLimit(3)
+            .minimumScaleFactor(0.78)
+            .lineSpacing(0.8)
     }
 
     private func orbMenu(layout: HomeLayoutMetrics, trailing: CGFloat, bottom: CGFloat) -> some View {
         GeometryReader { proxy in
           ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                minimalHomeRow(sessionStore.isBlankActive ? "blank active" : "blank", color: BlankColors.foreground) {
-                    handleHomeOrb(.block)
-                }
-                if sessionStore.isBlankActive {
-                    minimalHomeRow("unblank", color: BlankColors.foreground) { beginFullScreenUnblankHold() }
-                        .disabled(sessionStore.hardBlankActive || delayedManualUnlockAt != nil)
-                    if sessionStore.hardBlankActive {
-                        minimalUtilityRow("emergency") { openSection(.emergency) }
-                    }
-                }
+                minimalHomeRow("chat", color: BlankColors.foreground) { openAssistantChat() }
                 minimalHomeRow("progress", color: BlankColors.foreground) { openSection(.report) }
                 minimalHomeRow("distractions", color: BlankColors.foreground) { openSection(.distractions) }
                 minimalHomeRow("settings", color: BlankColors.foreground) { openSection(.settings) }
-                minimalHomeRow("chat", color: BlankColors.foreground) { openAssistantChat() }
-                minimalStatus
             }
             .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .bottomLeading)
           }
@@ -905,7 +925,7 @@ struct HomeView: View {
             guard screenTimeBlocker.authorizationStatus == .approved else {
                 message = "Allow Screen Time in settings to block distractions."
                 messageAction = nil
-                isHomeMenuOpen = true
+                showingHomeBlockError = true
                 return
             }
             let result = sessionStore.activateBlank(usePendingWidgetTimer: false)
@@ -913,9 +933,10 @@ struct HomeView: View {
             setMessage(for: result)
             if !sessionStore.isBlankActive {
                 if message == nil { message = "Protection can restart after the unblank cooldown." }
-                isHomeMenuOpen = true
+                showingHomeBlockError = true
             } else {
                 isHomeMenuOpen = false
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 UIAccessibility.post(notification: .announcement, argument: "Distractions blocked")
             }
         }
@@ -986,7 +1007,6 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             }
             .padding(.horizontal, layout.horizontalPadding)
-            .padding(.bottom, layout.bottomPadding * 2)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .overlay {
@@ -1054,13 +1074,7 @@ struct HomeView: View {
     private var activePrimaryContent: some View {
         ZStack(alignment: .leading) {
             if !sessionStore.hardBlankActive && delayedManualUnlockAt == nil {
-                Text("hold the screen to unblank")
-                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
-                    .tracking(0)
-                    .foregroundStyle(BlankColors.pureWhite)
-                    .lineLimit(3)
-                    .minimumScaleFactor(0.78)
-                    .lineSpacing(0.8)
+                holdScreenInstruction("hold the screen\nto unblank", color: BlankColors.pureWhite)
                     .opacity(1 - unblankHoldProgress)
                     .transition(.opacity)
             } else if let cooldownText {
