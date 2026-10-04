@@ -24,7 +24,7 @@ async function main() {
     let observed;
     const advice = "Podrías bajar el ritmo un rato antes de acostarte. ¿Qué suele mantenerte despierto?";
     const chatted = await brain.plan({ prompt, context: { ...context(), is_blank_active: active }, userId: "A", identity: {} }, {
-      memories: [], run: async input => { observed = input; return { ...base(), response_text: advice, response_language: "es", message_kind: "question" }; }
+      memories: [], run: async input => { observed = input; return { ...base(), evidence: prompt, response_text: advice, response_language: "es", message_kind: "question" }; }
     });
     assert.equal(observed.current_message, prompt);
     assert.equal(observed.context.is_blank_active, active);

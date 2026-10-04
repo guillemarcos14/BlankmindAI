@@ -168,6 +168,15 @@ struct AssistantAppHistoryPage {
     let nextBefore: String?
 }
 
+enum AssistantGreetingFallback {
+    static func make() -> String {
+        let greetings = Locale.current.languageCode == "es"
+            ? ["Hola, ¿cómo estás hoy?", "Hola, ¿qué tienes en mente?", "Hey, ¿cómo va el día?"]
+            : ["Hey, how are you doing today?", "Hi, what's on your mind?", "Hey, how's your day going?"]
+        return greetings.randomElement()!
+    }
+}
+
 enum AssistantAppError: LocalizedError {
     case authenticationRequired
     case installationNotVerified
@@ -550,7 +559,7 @@ struct AssistantAppView: View {
     @State private var saveTask: Task<Void, Never>?
     @State private var initialMessageHandled = false
     @State private var visibleTurnID: String?
-    @State private var greeting: String?
+    @State private var greeting: String? = AssistantGreetingFallback.make()
 
     var initialMessage: String? = nil
     var simulatorGuest = false
@@ -938,7 +947,7 @@ struct AssistantAppView: View {
         owner = current
         turns = []
         visibleTurnID = nil
-        greeting = nil
+        greeting = AssistantGreetingFallback.make()
         nextHistoryCursor = nil
         composer = AssistantDraftVault.load(owner: current)
         error = nil
