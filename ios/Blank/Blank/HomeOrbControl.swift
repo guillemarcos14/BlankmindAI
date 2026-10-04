@@ -47,6 +47,9 @@ struct HomeOrbControl: UIViewRepresentable {
 
     func updateUIView(_ view: OrbView, context: Context) {
         context.coordinator.parent = self
+        view.backgroundColor = protectionActive
+            ? UIColor(red: 1, green: 1, blue: 252/255, alpha: 1)
+            : UIColor(red: 41/255, green: 41/255, blue: 41/255, alpha: 1)
         view.accessibilityLabel = menuOpen ? "Close menu" : "Blankmind controls"
         view.accessibilityValue = protectionActive ? "Protection active" : "Protection inactive"
         view.accessibilityHint = "Move in any direction for the menu, or hold for two seconds for chat."

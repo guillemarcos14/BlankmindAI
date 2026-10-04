@@ -18,7 +18,7 @@ xcrun simctl bootstatus "$device_id" -b
 xcrun simctl status_bar "$device_id" override --time '9:41' --batteryState charged --batteryLevel 100
 xcrun simctl install "$device_id" "$app"
 bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
-for scenario in action active active-empty active-error error empty signin history product-home product-menu product-menu-active product-progress product-settings product-distractions; do
+for scenario in action active active-empty active-error error empty signin history product-home product-home-active product-menu product-menu-active product-progress product-progress-active product-settings product-settings-active product-distractions product-distractions-active; do
   xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true
   SIMCTL_CHILD_BLANK_UI_SCENARIO="$scenario" xcrun simctl launch "$device_id" "$bundle" -AppleLanguages '(es)' -AppleLocale es_ES
   sleep 3

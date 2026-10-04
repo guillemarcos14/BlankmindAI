@@ -59,6 +59,7 @@ struct BlankApp: App {
                 .environmentObject(purchaseStore)
                 .environmentObject(screenTimeBlocker)
                 .environment(\.font, .blankBody)
+                .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
                 .task {
                     #if DEBUG
                     if AssistantAppPreview.enabled { return }
