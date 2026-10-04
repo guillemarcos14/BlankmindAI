@@ -123,10 +123,8 @@ struct BlankPrimaryButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
 
     func makeBody(configuration: Configuration) -> some View {
-        let minimalTextColor = light ? BlankColors.pureWhite :
-            (colorScheme == .dark ? BlankColors.charcoal : BlankColors.pureWhite)
-        let minimalSurfaceColor = light ? BlankColors.minimalInk :
-            (colorScheme == .dark ? BlankColors.pureWhite : BlankColors.charcoal)
+        let minimalTextColor = BlankColors.cardInk
+        let minimalSurfaceColor = BlankColors.cardSurface
 
         configuration.label
             .font(.blankInter(size: 16, weight: .medium, relativeTo: .headline))
