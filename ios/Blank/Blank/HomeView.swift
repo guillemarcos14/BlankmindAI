@@ -4162,6 +4162,9 @@ private struct BMBSettingsView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(BlankColors.canvas)
+            .foregroundStyle(BlankColors.foreground)
             .disabled(busy)
             .navigationTitle("Blankmind")
             .toolbar { Button("Done") { dismiss() } }
