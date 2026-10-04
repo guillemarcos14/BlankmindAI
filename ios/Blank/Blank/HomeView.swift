@@ -884,7 +884,7 @@ struct HomeView: View {
 
     private func holdScreenInstruction(_ text: String, color: Color) -> some View {
         Text(text)
-            .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
+            .font(.blankHomeDisplay)
             .tracking(0)
             .foregroundStyle(color)
             .lineLimit(3)
@@ -907,8 +907,23 @@ struct HomeView: View {
         }
         .padding(.leading, 24)
         .padding(.trailing, trailing)
-        .padding(.top, layout.topPadding)
+        .padding(.top, layout.topPadding + 60)
         .padding(.bottom, bottom)
+        .overlay(alignment: .topLeading) {
+            Button {
+                handleHomeOrb(.closeMenu)
+            } label: {
+                Text("<")
+                    .font(.blankHomeDisplay)
+                    .foregroundStyle(BlankColors.foreground)
+                    .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Back to home")
+            .padding(.leading, 24)
+            .padding(.top, layout.topPadding)
+        }
     }
 
     private func handleHomeOrb(_ action: HomeOrbAction) {
@@ -2222,9 +2237,15 @@ struct HomeView: View {
     }
 }
 
+private extension Font {
+    static var blankHomeDisplay: Font {
+        .blankInter(size: 32, weight: .medium, relativeTo: .title)
+    }
+}
+
 private extension View {
     func blankHomeDisplayTextStyle(color: Color) -> some View {
-        font(.blankInter(size: 32, relativeTo: .title))
+        font(.blankHomeDisplay)
             .foregroundStyle(color)
             .tracking(-0.9)
             .lineLimit(1)
