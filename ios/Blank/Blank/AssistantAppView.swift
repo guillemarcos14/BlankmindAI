@@ -168,6 +168,15 @@ struct AssistantAppHistoryPage {
     let nextBefore: String?
 }
 
+enum AssistantGreetingFallback {
+    static func make() -> String {
+        let greetings = Locale.current.languageCode == "es"
+            ? ["Hola, ¿cómo estás hoy?", "Hola, ¿qué tienes en mente?", "Hey, ¿cómo va el día?"]
+            : ["Hey, how are you doing today?", "Hi, what's on your mind?", "Hey, how's your day going?"]
+        return greetings.randomElement()!
+    }
+}
+
 enum AssistantAppError: LocalizedError {
     case authenticationRequired
     case installationNotVerified
@@ -277,6 +286,12 @@ struct AssistantAppClient {
 
     func transcribe(audio: Data) async throws -> String {
         let result = try await request(action: "transcribe", extra: ["audio_base64": audio.base64EncodedString()])
+        guard let text = result.text, !text.isEmpty else { throw AssistantAppError.invalidResponse }
+        return text
+    }
+
+    func greeting(spanish: Bool) async throws -> String {
+        let result = try await request(action: "greeting", extra: ["language": spanish ? "es" : "en"])
         guard let text = result.text, !text.isEmpty else { throw AssistantAppError.invalidResponse }
         return text
     }
@@ -543,6 +558,8 @@ struct AssistantAppView: View {
     @State private var showAccountSignIn = false
     @State private var saveTask: Task<Void, Never>?
     @State private var initialMessageHandled = false
+    @State private var visibleTurnID: String?
+    @State private var greeting: String? = AssistantGreetingFallback.make()
 
     var initialMessage: String? = nil
     var simulatorGuest = false
@@ -550,7 +567,10 @@ struct AssistantAppView: View {
     let onApplyAction: (String) async throws -> Void
     @State private var isApplyingAction = false
 
-    private var latest: AssistantAppTurn? { turns.last(where: { $0.status == "completed" }) }
+    private var latest: AssistantAppTurn? {
+        guard composer.pending == nil else { return nil }
+        return turns.first(where: { $0.id == visibleTurnID && $0.status == "completed" })
+    }
     private var spanish: Bool { Locale.current.languageCode == "es" }
     private var preview: Bool {
         #if DEBUG
@@ -561,7 +581,7 @@ struct AssistantAppView: View {
     }
     private var dark: Bool {
         #if DEBUG
-        if preview { return AssistantAppPreview.scenario == "active" }
+        if preview { return AssistantAppPreview.scenario.hasPrefix("active") }
         #endif
         return sessionStore.isBlankActive
     }
@@ -584,24 +604,6 @@ struct AssistantAppView: View {
                 .accessibilityLabel(spanish ? "Volver a Inicio" : "Back to Home")
                 .disabled(isApplyingAction)
                 Spacer(minLength: 0)
-                Menu {
-                    Button(spanish ? "Historial" : "Conversation history", systemImage: "clock.arrow.circlepath") { showHistory = true }
-                    Section {
-                        Button(spanish ? "Distracciones" : "Distractions", systemImage: "apps.iphone") { openControls(.distractions) }
-                        Button(spanish ? "Horarios" : "Schedules", systemImage: "calendar") { openControls(.schedule) }
-                        Button(spanish ? "Progreso" : "Progress", systemImage: "chart.bar") { openControls(.report) }
-                        Button(spanish ? "Ajustes" : "Settings", systemImage: "gearshape") { openControls(.settings) }
-                    }
-                    Button(spanish ? "Iniciar sesión con Apple" : "Sign in with Apple", systemImage: "apple.logo") { showAccountSignIn = true }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 23, weight: .bold))
-                        .frame(width: 48, height: 48)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel(spanish ? "Menú de Blankmind" : "Blankmind menu")
-                Spacer(minLength: 0)
-                Color.clear.frame(width: 76, height: 48)
             }
             .frame(height: 56)
             .padding(.horizontal, 24)
@@ -616,9 +618,6 @@ struct AssistantAppView: View {
                                 .font(.blankSectionEditorial())
                                 .tracking(-0.9)
                                 .accessibilityAddTraits(.isHeader)
-                            Text("Blankmind")
-                                .font(.blankInter(size: 14, relativeTo: .subheadline))
-                                .foregroundStyle(foreground.opacity(0.72))
                         }
                         if let latest {
                             Text(latest.assistantText)
@@ -627,12 +626,10 @@ struct AssistantAppView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
                                 .accessibilityLabel("Blankmind: \(latest.assistantText)")
-                        } else if isLoading {
+                        } else if isSending || (composer.pending != nil && error == nil) {
                             BlankLoadingIndicator(color: foreground)
                         } else {
-                            Text(requiresVerification
-                                 ? (spanish ? "Tu conversación en Blankmind." : "Your conversation in Blankmind.")
-                                 : (spanish ? "¿Qué tienes en mente?" : "What is on your mind?"))
+                            Text(greeting ?? (spanish ? "Hola, ¿cómo estás hoy?" : "Hey, how are you doing today?"))
                                 .font(.blankInter(size: 20))
                                 .fixedSize(horizontal: false, vertical: true)
                             if simulatorGuest {
@@ -645,6 +642,11 @@ struct AssistantAppView: View {
                                     .font(.blankInter(size: 17, weight: .semibold))
                                     .frame(minHeight: 44)
                             }
+                        }
+                        if !turns.isEmpty {
+                            Button(spanish ? "Historial" : "Conversation history") { showHistory = true }
+                                .font(.blankInter(size: 14))
+                                .frame(minHeight: 44)
                         }
                     }
                         .frame(maxWidth: 640, alignment: .leading)
@@ -660,7 +662,7 @@ struct AssistantAppView: View {
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 8) {
-                    ScrollView { status }.frame(maxHeight: 120)
+                    status
                     composerBar
                 }.padding(.bottom, 8).background(background)
             }
@@ -671,6 +673,14 @@ struct AssistantAppView: View {
         .foregroundStyle(foreground)
         .background(background.ignoresSafeArea())
         .preferredColorScheme(dark ? .dark : .light)
+        .task {
+            guard !preview, !simulatorGuest, initialMessage == nil,
+                  let expectedOwner = AssistantAppSession.userID else { return }
+            if let text = try? await AssistantAppClient().greeting(spanish: spanish),
+               expectedOwner == AssistantAppSession.userID, visibleTurnID == nil, composer.pending == nil {
+                greeting = text
+            }
+        }
         .task {
             #if targetEnvironment(simulator)
             if simulatorGuest {
@@ -775,8 +785,8 @@ struct AssistantAppView: View {
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 12)
                                         .frame(minHeight: 44)
-                                        .background(RoundedRectangle(cornerRadius: 4).fill(dark ? Color.white : Color.black))
-                                        .foregroundStyle(dark ? Color.black : Color.white)
+                                        .background(RoundedRectangle(cornerRadius: 4).fill(dark ? BlankColors.pureWhite : BlankColors.charcoal))
+                                        .foregroundStyle(dark ? BlankColors.charcoal : BlankColors.pureWhite)
                                 }
                                 .disabled(isApplyingAction)
                                 .accessibilityHint(spanish ? "Aplica la acción sobre tus distracciones seleccionadas" : "Applies the action to your selected distractions")
@@ -936,6 +946,8 @@ struct AssistantAppView: View {
         isLoading = true
         owner = current
         turns = []
+        visibleTurnID = nil
+        greeting = AssistantGreetingFallback.make()
         nextHistoryCursor = nil
         composer = AssistantDraftVault.load(owner: current)
         error = nil
@@ -993,7 +1005,10 @@ struct AssistantAppView: View {
     private func accept(_ turn: AssistantAppTurn) {
         if let index = turns.firstIndex(where: { $0.id == turn.id }) { turns[index] = turn }
         else { turns.append(turn) }
-        if turn.status == "completed" { composer.complete(turn.id) }
+        if turn.status == "completed" {
+            visibleTurnID = turn.id
+            composer.complete(turn.id)
+        }
         persist()
     }
 
@@ -1010,6 +1025,7 @@ struct AssistantAppView: View {
             return
         }
         composerFocused = false
+        visibleTurnID = nil
         let requestID = UUID()
         sendRequestID = requestID
         conversationRevision += 1
@@ -1051,13 +1067,15 @@ struct AssistantAppView: View {
         isLoading = false
         let scenario = AssistantAppPreview.scenario
         if scenario == "loading" { isLoading = true; return }
-        if scenario == "empty" { return }
+        if scenario == "empty" || scenario == "active-empty" { return }
         if scenario == "signin" { requiresVerification = true; return }
         turns = [AssistantAppTurn(id: "preview", userText: "Necesito concentrarme esta tarde.",
             assistantText: "Me dijiste que las tardes son el momento más difícil.\n\n¿Protegemos tus distracciones durante 45 minutos?",
             status: "completed", actionId: "preview_action", actionLabel: "Bloquear 45 min",
             actionStatus: scenario == "active" ? "verified" : "queued", createdAt: "2026-09-26T12:00:00Z")]
-        if scenario == "error" {
+        visibleTurnID = "preview"
+        if scenario == "error" || scenario == "active-error" {
+            visibleTurnID = nil
             error = "No hay conexión. Tu mensaje está guardado; puedes reintentar sin enviarlo dos veces."
             composer.pending = .init(id: "preview_pending", text: "Bloquea ahora 45 minutos.")
             composer.draft = "Después quiero revisar mis horarios."

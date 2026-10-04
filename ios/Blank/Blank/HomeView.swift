@@ -19,11 +19,9 @@ struct UnblankHoldCadence {
         guard duration.isFinite, duration > 0 else { return [] }
         var pulses = [0.0]
         var elapsed = 0.0
-        var interval = 1.0
-        while elapsed + interval < duration {
-            elapsed += interval
+        while elapsed + 1 < duration {
+            elapsed += 1
             pulses.append(elapsed)
-            interval += 1
         }
         return pulses
     }
@@ -337,6 +335,7 @@ struct HomeView: View {
     @State private var isAnimatingUnblankHold = false
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
+    @State private var isHomeMenuOpen = false
     private var delayedManualUnlockAt: Date? { sessionStore.delayedManualUnlockAt }
     @State private var showingRelapseReview = false
     @AppStorage("blankPendingAssistantActionId", store: BlankSharedState.defaults) private var pendingAssistantActionId = ""
@@ -382,7 +381,7 @@ struct HomeView: View {
 
             ZStack(alignment: .topLeading) {
                 if activeSection == nil {
-                    (sessionStore.isBlankActive ? BlankColors.homeDarkBackground : BlankColors.homeLightBackground)
+                    BlankColors.homeLightBackground
                         .frame(width: viewportWidth, height: viewportHeight)
                         .ignoresSafeArea()
                 } else {
@@ -421,9 +420,11 @@ struct HomeView: View {
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
         }
         .ignoresSafeArea(.container)
-        .foregroundStyle(activeSection == nil ? (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.homeLightInk) : (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink))
+        .foregroundStyle(activeSection == nil ? BlankColors.homeLightInk : (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink))
         .toolbar(.hidden, for: .navigationBar)
-        .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
+        .preferredColorScheme(activeSection == nil ? .light : (sessionStore.isBlankActive ? .dark : .light))
+        .statusBarHidden(activeSection == nil)
+        .persistentSystemOverlays(activeSection == nil ? .hidden : .automatic)
         .environment(\.blankMinimalAppearance, true)
         .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.45), value: sessionStore.isBlankActive)
         .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.35), value: activeSection)
@@ -460,6 +461,7 @@ struct HomeView: View {
         }
         .onAppear {
             #if DEBUG && targetEnvironment(simulator)
+            isHomeMenuOpen = ["product-menu", "product-menu-active"].contains(AssistantAppPreview.scenario)
             guard !PostOnboardingPreviewScene.enabled else { return }
             #endif
             now = Date()
@@ -830,10 +832,100 @@ struct HomeView: View {
 
     @ViewBuilder
     private func minimalHome(layout: HomeLayoutMetrics) -> some View {
-        if sessionStore.isBlankActive {
-            activeMinimalHome(layout: layout)
-        } else {
-            idleMinimalHome(layout: layout)
+        GeometryReader { proxy in
+            let diameter = max(44, min(72, proxy.size.width * 150 / 1080))
+            let right = max(24, proxy.size.width * 108 / 1080)
+            let bottom = max(proxy.safeAreaInsets.bottom + 16, proxy.size.height * 108 / 1920)
+            ZStack(alignment: .bottomTrailing) {
+                if isHomeMenuOpen {
+                    Color.clear.contentShape(Rectangle())
+                        .onTapGesture { isHomeMenuOpen = false }
+                        .accessibilityLabel("Close menu")
+                        .accessibilityAddTraits(.isButton)
+                    orbMenu(layout: layout, trailing: right + diameter + 16, bottom: bottom)
+                        .transition(reduceMotion ? .opacity : .asymmetric(
+                            insertion: .move(edge: .bottom).combined(with: .opacity),
+                            removal: .opacity))
+                }
+                HomeOrbControl(menuOpen: isHomeMenuOpen, protectionActive: sessionStore.isBlankActive, onAction: handleHomeOrb)
+                    .id(isHomeMenuOpen)
+                    .frame(width: diameter, height: diameter)
+                    .padding(.trailing, right)
+                    .padding(.bottom, bottom)
+                    .opacity(isHoldingToUnblank || isHomeMenuOpen ? 0 : 1)
+                    .allowsHitTesting(!isHoldingToUnblank && !isHomeMenuOpen)
+                    .accessibilityHidden(isHoldingToUnblank || isHomeMenuOpen)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        }
+        .animation(.easeOut(duration: reduceMotion ? 0.12 : 0.38), value: isHomeMenuOpen)
+        .overlay {
+            if isHoldingToUnblank {
+                // Retain the existing protected release gesture and persisted cooldown.
+                activeMinimalHome(layout: layout)
+                    .background(BlankColors.homeDarkBackground)
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    private func orbMenu(layout: HomeLayoutMetrics, trailing: CGFloat, bottom: CGFloat) -> some View {
+        GeometryReader { proxy in
+          ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                minimalHomeRow(sessionStore.isBlankActive ? "blank active" : "blank", color: BlankColors.charcoal) {
+                    handleHomeOrb(.block)
+                }
+                if sessionStore.isBlankActive {
+                    minimalHomeRow("unblank", color: BlankColors.charcoal) { beginFullScreenUnblankHold() }
+                        .disabled(sessionStore.hardBlankActive || delayedManualUnlockAt != nil)
+                    if sessionStore.hardBlankActive {
+                        minimalUtilityRow("emergency") { openSection(.emergency) }
+                    }
+                }
+                minimalHomeRow("progress", color: BlankColors.charcoal) { openSection(.report) }
+                minimalHomeRow("distractions", color: BlankColors.charcoal) { openSection(.distractions) }
+                minimalHomeRow("settings", color: BlankColors.charcoal) { openSection(.settings) }
+                minimalHomeRow("chat", color: BlankColors.charcoal) { openAssistantChat() }
+                minimalStatus
+            }
+            .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .bottomLeading)
+          }
+          .scrollIndicators(.hidden)
+        }
+        .padding(.leading, 24)
+        .padding(.trailing, trailing)
+        .padding(.top, layout.topPadding)
+        .padding(.bottom, bottom)
+    }
+
+    private func handleHomeOrb(_ action: HomeOrbAction) {
+        switch action {
+        case .menu: isHomeMenuOpen = true
+        case .closeMenu: isHomeMenuOpen = false
+        case .chat: openAssistantChat()
+        case .block:
+            guard !sessionStore.isBlankActive else {
+                isHomeMenuOpen = true
+                return
+            }
+            screenTimeBlocker.refreshAuthorizationStatus()
+            guard screenTimeBlocker.authorizationStatus == .approved else {
+                message = "Allow Screen Time in settings to block distractions."
+                messageAction = nil
+                isHomeMenuOpen = true
+                return
+            }
+            let result = sessionStore.activateBlank(usePendingWidgetTimer: false)
+            screenTimeBlocker.apply(isBlankActive: sessionStore.isBlankActive)
+            setMessage(for: result)
+            if !sessionStore.isBlankActive {
+                if message == nil { message = "Protection can restart after the unblank cooldown." }
+                isHomeMenuOpen = true
+            } else {
+                isHomeMenuOpen = false
+                UIAccessibility.post(notification: .announcement, argument: "Distractions blocked")
+            }
         }
     }
 
@@ -842,19 +934,19 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 0) {
                 minimalStartRow
 
-                minimalHomeRow("progress", color: .black) {
+                minimalHomeRow("progress", color: BlankColors.charcoal) {
                     openSection(.report)
                 }
 
-                minimalHomeRow("distractions", color: .black) {
+                minimalHomeRow("distractions", color: BlankColors.charcoal) {
                     openSection(.distractions)
                 }
 
-                minimalHomeRow("settings", color: .black) {
+                minimalHomeRow("settings", color: BlankColors.charcoal) {
                     openSection(.settings)
                 }
 
-                minimalHomeRow("chat", color: .black) {
+                minimalHomeRow("chat", color: BlankColors.charcoal) {
                     openAssistantChat()
                 }
 
@@ -1075,7 +1167,7 @@ struct HomeView: View {
         let title = isActive
             ? (sessionStore.hardBlankActive ? "blank active" : "menu")
             : "blank"
-        let titleColor = isActive ? BlankColors.pureWhite : Color.black
+        let titleColor = isActive ? BlankColors.pureWhite : BlankColors.charcoal
 
         return Button {
             if isActive {
@@ -1144,7 +1236,7 @@ struct HomeView: View {
             }
         }
         .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
-        .foregroundStyle(sessionStore.isBlankActive ? BlankColors.homeDarkSecondary : BlankColors.homeLightSecondary)
+        .foregroundStyle(isHoldingToUnblank ? BlankColors.homeDarkSecondary : BlankColors.homeLightSecondary)
         .fixedSize(horizontal: false, vertical: true)
         .padding(.top, 6)
     }
@@ -2373,7 +2465,7 @@ struct SectionHeader: View {
     var subtitleColor: Color? = nil
 
     private var resolvedTitleColor: Color {
-        titleColor ?? (sessionStore.isBlankActive ? BlankColors.pureWhite : Color.black)
+        titleColor ?? (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.charcoal)
     }
 
     private var resolvedSubtitleColor: Color {
@@ -3456,7 +3548,7 @@ private struct DistractionsScreen: View {
                 .foregroundStyle(BlankColors.pureWhite)
                 .padding(.horizontal, 16)
                 .frame(minHeight: 44)
-                .background(RoundedRectangle(cornerRadius: 4).fill(Color.black))
+                .background(RoundedRectangle(cornerRadius: 4).fill(BlankColors.charcoal))
         }
         .buttonStyle(.plain)
         .disabled(!sessionStore.canEditSelectedDistractions)
@@ -3531,7 +3623,7 @@ struct AppAccountSignInSheet: View {
                     Text("Sign in to Blankmind")
                         .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
                         .tracking(-0.9)
-                        .foregroundStyle(Color.black)
+                        .foregroundStyle(BlankColors.charcoal)
                         .padding(.bottom, 24)
                     AccountJustifiedCopy(text: NSAttributedString(string: "Blankmind AI's core model is trained to identify recurring behavioral patterns, detect high-risk moments, and adapt interventions in real time."))
                         .padding(.bottom, 24)
@@ -3557,7 +3649,7 @@ struct AppAccountSignInSheet: View {
                         .disabled(isWorking)
                         .overlay {
                             if isWorking {
-                                ProgressView().tint(.white)
+                                ProgressView().tint(BlankColors.pureWhite)
                             }
                         }
                     if let errorMessage {
@@ -3575,7 +3667,7 @@ struct AppAccountSignInSheet: View {
                 .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .background(Color.white)
+        .background(BlankColors.pureWhite)
         .preferredColorScheme(.light)
     }
 
@@ -3920,11 +4012,12 @@ private struct HomePreviewScene: View {
 @MainActor
 struct PostOnboardingPreviewScene: View {
     static var enabled: Bool {
-        ["product-home", "product-progress", "product-settings", "product-distractions"]
+        ["product-home", "product-menu", "product-menu-active", "product-progress", "product-settings", "product-distractions"]
             .contains(AssistantAppPreview.scenario)
     }
 
-    @StateObject private var sessionStore = SessionStore.preview(protectedSelectionCount: 0)
+    @StateObject private var sessionStore = SessionStore.preview(
+        isBlankActive: AssistantAppPreview.scenario == "product-menu-active", protectedSelectionCount: 0)
     @StateObject private var screenTimeBlocker = ScreenTimeBlocker.preview()
     @State private var showingPicker = false
 

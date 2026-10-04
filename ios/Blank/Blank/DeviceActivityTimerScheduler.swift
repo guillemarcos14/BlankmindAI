@@ -8,6 +8,7 @@ import ManagedSettings
 
 enum DeviceActivityTimerScheduler {
     static let strategyActivityPrefix = "BlankStrategyTimer"
+    static let strategyExpiryPrefix = "BlankStrategyExpiry"
     static let recurringSchedulePrefix = "BlankRecurringSchedule"
     static let dailyLimitActivity = "BlankDailyLimit"
     static let dailyLimitEvent = "BlankDailyLimitReached"
@@ -125,13 +126,13 @@ enum DeviceActivityTimerScheduler {
 
         #if canImport(DeviceActivity)
         let center = DeviceActivityCenter()
-        let activityName = DeviceActivityName(rawValue: "\(strategyActivityPrefix):\(protectionId.uuidString)")
-        let timerInterval = makeTimerInterval(durationMinutes: durationMinutes)
+        let activityName = DeviceActivityName(rawValue: "\(strategyExpiryPrefix):\(protectionId.uuidString)")
+        let timerInterval = makeExpiryInterval(expiry: Date().addingTimeInterval(TimeInterval(durationMinutes * 60)))
         guard timerInterval.start != timerInterval.end else {
             return false
         }
 
-        center.stopMonitoring([activityName])
+        center.stopMonitoring([activityName, DeviceActivityName(rawValue: "\(strategyActivityPrefix):\(protectionId.uuidString)")])
         let schedule = DeviceActivitySchedule(
             intervalStart: timerInterval.start,
             intervalEnd: timerInterval.end,
@@ -152,7 +153,8 @@ enum DeviceActivityTimerScheduler {
     static func stop(protectionId: UUID) {
         #if canImport(DeviceActivity)
         let center = DeviceActivityCenter()
-        center.stopMonitoring([DeviceActivityName(rawValue: "\(strategyActivityPrefix):\(protectionId.uuidString)")])
+        center.stopMonitoring([DeviceActivityName(rawValue: "\(strategyActivityPrefix):\(protectionId.uuidString)"),
+                               DeviceActivityName(rawValue: "\(strategyExpiryPrefix):\(protectionId.uuidString)")])
         #endif
     }
 

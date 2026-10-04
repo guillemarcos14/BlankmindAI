@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA0030030000000000000001 /* HomeOrbControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0030030000000000000002 /* HomeOrbControl.swift */; };
 		BA10000000000000000000032 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
 		BA10000000000000000000033 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
 		BA10000000000000000000022 /* AssistantControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000021 /* AssistantControl.swift */; };
@@ -93,6 +94,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AA0030030000000000000002 /* HomeOrbControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeOrbControl.swift; sourceTree = "<group>"; };
 		BA10000000000000000000031 /* BlankBrainMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankBrainMetrics.swift; sourceTree = "<group>"; };
 		BA10000000000000000000021 /* AssistantControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantControl.swift; sourceTree = "<group>"; };
 		BA10000000000000000000011 /* BlankBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankBrain.swift; sourceTree = "<group>"; };
@@ -202,6 +204,7 @@
 				8A0000010000000000000016 /* BlankColors.swift */,
 				8A0000010000000000000017 /* SetupView.swift */,
 				8A0000010000000000000018 /* HomeView.swift */,
+				AA0030030000000000000002 /* HomeOrbControl.swift */,
 				8A00000100000000000000F1 /* AssistantAppView.swift */,
 				8A00000100000000000000F3 /* AssistantComposerState.swift */,
 				8A000001000000000000001B /* BlankDomainModels.swift */,
@@ -497,6 +500,7 @@
 				8A0000010000000000000006 /* BlankColors.swift in Sources */,
 				8A0000010000000000000007 /* SetupView.swift in Sources */,
 				8A0000010000000000000008 /* HomeView.swift in Sources */,
+				AA0030030000000000000001 /* HomeOrbControl.swift in Sources */,
 				8A00000100000000000000F0 /* AssistantAppView.swift in Sources */,
 				8A00000100000000000000F2 /* AssistantComposerState.swift in Sources */,
 				8A0000010000000000000009 /* BlankDomainModels.swift in Sources */,

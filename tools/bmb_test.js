@@ -19,6 +19,18 @@ async function turn(response,ctx=context(),prompt="help") {return brain.plan({pr
 async function main() {
   let response=base(), result=await turn(response);
   assert.equal(result.plan.bmb_generated,true);assert.deepEqual(result.plan.actions,[]);
+  for (const active of [false, true]) {
+    const prompt = "¿Cómo puedo dormir mejor esta noche? ¿Qué debería hacer?";
+    let observed;
+    const advice = "Podrías bajar el ritmo un rato antes de acostarte. ¿Qué suele mantenerte despierto?";
+    const chatted = await brain.plan({ prompt, context: { ...context(), is_blank_active: active }, userId: "A", identity: {} }, {
+      memories: [], run: async input => { observed = input; return { ...base(), evidence: prompt, response_text: advice, response_language: "es", message_kind: "question" }; }
+    });
+    assert.equal(observed.current_message, prompt);
+    assert.equal(observed.context.is_blank_active, active);
+    assert.equal(chatted.plan.response_text, advice, "Protection state altered model wording");
+    assert.deepEqual(chatted.plan.actions, [], "Advice should not create a block");
+  }
   response={...base(),message_kind:"question",decision:"propose",action:action()};result=await turn(response);
   assert.equal(result.plan.actions.length,0);assert.equal(result.context.brain_request.execute,false);
   const proposed=result.plan.bmb_state.proposal;

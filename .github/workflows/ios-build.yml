@@ -39,6 +39,8 @@ jobs:
           node tools/run_ios_protection_tests.js
           node tools/run_brain_native_tests.js
           node tools/run_private_stage_qa_tests.js
+          swiftc ios/Blank/Blank/HomeOrbControl.swift tools/home_orb_test.swift -o tmp/native-tests/home-orb
+          tmp/native-tests/home-orb
       - name: Build simulator
         run: |
           xcodebuild \

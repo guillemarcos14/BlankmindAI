@@ -22,7 +22,7 @@
     ".github/**",
     "supabase/migrations/**",
     "supabase/functions/**"
-    ,"netlify.toml"
+    ,"netlify.toml", "PRODUCT.md", "DESIGN.md", ".impeccable/design.json"
   ],
   "acceptance": [
     "El cambio tiene contexto mínimo de Blank Brain y del proceso de desarrollo.",
@@ -63,6 +63,7 @@
     "max_repair_attempts": 0,
     "repair_commands": [],
     "commands": [
+      { "name": "bmb_greeting", "run": "node tools/bmb_greeting_test.js" },
       { "name": "bmb_vision", "run": "node tools/bmb_test.js" },
       { "name": "bmb_autonomy_loop", "run": "node tools/bmb_loop_test.js" },
       { "name": "bm_audio_input", "run": "node tools/bm_audio_input_test.js" },

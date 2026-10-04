@@ -5,9 +5,9 @@ import SwiftUI
 import WidgetKit
 
 private enum BlankWidgetPalette {
-    static let charcoal = Color(red: 48 / 255.0, green: 49 / 255.0, blue: 42 / 255.0)
-    static let powderGray = Color(red: 248 / 255.0, green: 249 / 255.0, blue: 244 / 255.0)
-    static let pureWhite = Color.white
+    static let charcoal = Color(red: 41 / 255.0, green: 41 / 255.0, blue: 41 / 255.0)
+    static let powderGray = pureWhite
+    static let pureWhite = Color(red: 1, green: 1, blue: 252 / 255.0)
 }
 
 struct StartQuickBlockIntent: AppIntent {

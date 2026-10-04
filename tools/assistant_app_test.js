@@ -191,6 +191,16 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
   assert.equal((await request({ action: "history" })).status, 403, "a signed-in account must activate its install first");
   assert.equal((await request({ action: "activate" })).status, 200);
   assert.equal(activated, true);
+  const greetingModule = require("../netlify/functions/bmb-greeting");
+  greetingModule.greeting = async language => language === "es" ? "Hola, ¿cómo estás?" : "Hey, how are you?";
+  const beforeGreeting = { memory: copy(memory), effects: copy(effects), turns: rows.size };
+  assert.equal((await request({ action: "greeting", language: "es" }, "invalid")).status, 401);
+  assert.equal((await request({ action: "greeting", language: "es", app_install_id: "other-install" })).status, 403);
+  assert.equal((await request({ action: "greeting", language: "fr" })).status, 400);
+  assert.equal((await request({ action: "greeting", language: "es" })).body.text, "Hola, ¿cómo estás?");
+  assert.deepEqual(memory, beforeGreeting.memory, "Greeting changed personal memory");
+  assert.deepEqual(effects, beforeGreeting.effects, "Greeting invoked planner or action effects");
+  assert.equal(rows.size, beforeGreeting.turns, "Greeting created a conversation turn");
   assert.equal((await request({ action: "activate" })).status, 200);
   assert.equal((await send(crypto.randomUUID(), { text: "not a string" })).status, 400);
   assert.equal((await send(crypto.randomUUID(), "x".repeat(4001))).status, 400);

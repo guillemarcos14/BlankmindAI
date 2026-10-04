@@ -27,7 +27,7 @@ struct ReportView: View {
     private var reportSecondary: Color { BlankColors.pureWhite.opacity(0.72) }
     private var accentBlue: Color { BlankColors.pureWhite }
     private var recoveryGreen: Color { sessionStore.isBlankActive ? BlankColors.seafoam : BlankColors.pureWhite.opacity(0.84) }
-    private var headerPrimary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : Color.black }
+    private var headerPrimary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.charcoal }
     private var headerSecondary: Color { sessionStore.isBlankActive ? reportSecondary : BlankColors.mutedInk }
 
     private var report: BlankProgressReport {
@@ -1125,7 +1125,7 @@ private struct ReportFlatCardModifier: ViewModifier {
         content
             .background {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(colorScheme == .dark ? BlankColors.pureWhite.opacity(0.12) : Color.black)
+                    .fill(colorScheme == .dark ? BlankColors.pureWhite.opacity(0.12) : BlankColors.charcoal)
             }
     }
 }
