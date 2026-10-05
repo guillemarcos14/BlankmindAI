@@ -833,7 +833,8 @@ struct HomeView: View {
             let bottom = max(proxy.safeAreaInsets.bottom + 16, proxy.size.height * 108 / 1920)
             orbMenu(layout: layout, trailing: right + diameter + 16, bottom: bottom)
                 .contentShape(Rectangle())
-                .highPriorityGesture(
+                // Observe holds alongside the menu buttons; priority here consumes their taps.
+                .simultaneousGesture(
                     LongPressGesture(
                         minimumDuration: sessionStore.isBlankActive ? 20 : HomeBlockGesturePolicy.holdDuration,
                         maximumDistance: CGFloat(HomeBlockGesturePolicy.movementTolerance)
