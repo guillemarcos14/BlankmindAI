@@ -4024,7 +4024,7 @@ private struct HomePreviewScene: View {
 @MainActor
 struct PostOnboardingPreviewScene: View {
     static var enabled: Bool {
-        ["product-home", "product-home-active", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active"]
+        ["product-home", "product-home-active", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-automatic", "product-automatic-active", "product-notifications", "product-notifications-active"]
             .contains(AssistantAppPreview.scenario)
     }
 
@@ -4045,7 +4045,11 @@ struct PostOnboardingPreviewScene: View {
 
     var body: some View {
         GeometryReader { proxy in
-            if let section {
+            if AssistantAppPreview.scenario.hasPrefix("product-automatic") {
+                BMBSettingsView(section: .automaticProtection)
+            } else if AssistantAppPreview.scenario.hasPrefix("product-notifications") {
+                BMBSettingsView(section: .notifications)
+            } else if let section {
                 HomeSectionScreen(
                     showingPicker: $showingPicker,
                     section: section,
@@ -4285,6 +4289,13 @@ private struct BMBSettingsView: View {
     }
     private func load() async {
         busy=true; defer { busy=false }
+        #if DEBUG && targetEnvironment(simulator)
+        if AssistantAppPreview.scenario.hasPrefix("product-automatic") || AssistantAppPreview.scenario.hasPrefix("product-notifications") {
+            // Isolated visual fixtures; no account requests or writes.
+            loaded=true
+            return
+        }
+        #endif
         do {
             let result=try await request(["action":"bmb_settings"])
             let account=result["account"] as? [String:Any] ?? [:]
@@ -4313,6 +4324,9 @@ private struct BMBSettingsView: View {
     }
     private func save() async {
         guard loaded, !busy else { return }
+        #if DEBUG && targetEnvironment(simulator)
+        if AssistantAppPreview.scenario.hasPrefix("product-automatic") || AssistantAppPreview.scenario.hasPrefix("product-notifications") { return }
+        #endif
         busy=true; defer { busy=false }
         let settings: [String:Any] = ["timezone":TimeZone.current.identifier,"paused_until":pausedUntil as Any? ?? NSNull(),
             "grant":["active":active,"action_types":Array(allowedTypes).sorted(),"start_minute":actionStart,"end_minute":actionEnd,
