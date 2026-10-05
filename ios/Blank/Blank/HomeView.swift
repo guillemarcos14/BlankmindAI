@@ -332,10 +332,14 @@ struct HomeView: View {
     @StateObject private var healthKitStore = HealthKitStore()
     @State private var unblankHoldProgress = 0.0
     @State private var unblankHapticTask: Task<Void, Never>?
+    @State private var blockHapticTask: Task<Void, Never>?
     @State private var isAnimatingUnblankHold = false
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
     @GestureState private var isHomePressing = false
+    // Halve the visible gap around the existing 32pt lettering; scale with Dynamic Type.
+    @ScaledMetric(relativeTo: .title) private var homeMenuRowHeight: CGFloat =
+        (44 + (UIFont(name: "HelveticaNeue-Medium", size: 32)?.capHeight ?? 23)) / 2
     @State private var showingHomeBlockError = false
     private var delayedManualUnlockAt: Date? { sessionStore.delayedManualUnlockAt }
     @State private var showingRelapseReview = false
@@ -478,6 +482,7 @@ struct HomeView: View {
             #endif
             guard phase == .active else {
                 stopUnblankHoldHaptics()
+                stopBlockHoldHaptics()
                 if phase == .background {
                     acceptingHomeSpeech = false
                     homeSpeech.stop()
@@ -500,6 +505,7 @@ struct HomeView: View {
         }
         .onDisappear {
             stopUnblankHoldHaptics()
+            stopBlockHoldHaptics()
             acceptingHomeSpeech = false
             homeSpeech.stop()
         }
@@ -636,18 +642,7 @@ struct HomeView: View {
             AssistantAppView(initialMessage: chatLaunchMessage, simulatorGuest: simulatorGuest, onOpenControls: { section in
                 if let section { openSection(section) }
             }) { actionId in
-                let owner = AssistantAppSession.userID
-                let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-                let remote = try await AssistantActionInboxClient().actionForApplication(
-                    actionId: actionId, connectCode: code, channel: "app")
-                guard assistantIdentityMatches(code: code, channel: "app", owner: owner),
-                      !assistantActionExecutionInFlight,
-                      sessionStore.pendingAssistantAction == nil,
-                      let pending = remote.toPendingAction() else { throw AssistantAppError.sessionChanged }
-                clearAssistantNotificationRequest()
-                pendingAssistantActionId = remote.id
-                pendingAssistantInboxAction = remote
-                sessionStore.requestAssistantActionConfirmation(pending)
+                try await prepareAssistantAction(actionId)
             }
         }
         .sheet(isPresented: $showingRelink) {
@@ -683,10 +678,10 @@ struct HomeView: View {
                 },
                 onRequestHealthAccess: { healthKitStore.requestAccess() },
                 screenTimeStatus: screenTimeBlocker.authorizationStatusLabel,
-                healthStatus: healthPermissionLabel
-            ) {
-                closeSection()
-            }
+                healthStatus: healthPermissionLabel,
+                onClose: closeSection,
+                onApplyHistoryAction: applyHistoryAction
+            )
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
             .transition(.opacity)
             .zIndex(5)
@@ -820,6 +815,34 @@ struct HomeView: View {
         }
     }
 
+    private func prepareAssistantAction(_ actionId: String) async throws {
+        let owner = AssistantAppSession.userID
+        let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        let remote = try await AssistantActionInboxClient().actionForApplication(
+            actionId: actionId, connectCode: code, channel: "app")
+        guard assistantIdentityMatches(code: code, channel: "app", owner: owner),
+              !assistantActionExecutionInFlight,
+              sessionStore.pendingAssistantAction == nil,
+              let pending = remote.toPendingAction() else { throw AssistantAppError.sessionChanged }
+        clearAssistantNotificationRequest()
+        pendingAssistantActionId = remote.id
+        pendingAssistantInboxAction = remote
+        sessionStore.requestAssistantActionConfirmation(pending)
+    }
+
+    private func applyHistoryAction(_ actionId: String) {
+        Task { @MainActor in
+            do {
+                try await prepareAssistantAction(actionId)
+                closeSection()
+                confirmPendingAssistantAction()
+            } catch {
+                message = error.localizedDescription
+                showingHomeBlockError = true
+            }
+        }
+    }
+
     private func closeSection() {
         withAnimation(.easeInOut(duration: 0.35)) {
             activeSection = nil
@@ -850,7 +873,12 @@ struct HomeView: View {
                     }
                 )
                 .onChange(of: isHomePressing) { pressing in
-                    guard sessionStore.isBlankActive else { return }
+                    guard sessionStore.isBlankActive else {
+                        if pressing { startBlockHoldHaptics() }
+                        else { stopBlockHoldHaptics() }
+                        return
+                    }
+                    stopBlockHoldHaptics()
                     if pressing && !sessionStore.hardBlankActive && delayedManualUnlockAt == nil {
                         isHoldingToUnblank = true
                         isAnimatingUnblankHold = true
@@ -875,14 +903,14 @@ struct HomeView: View {
                         .frame(width: proxy.size.width * unblankHoldProgress, height: 1.5)
                         .allowsHitTesting(false)
                 }
-                .overlay(alignment: .topLeading) {
+                .overlay(alignment: .leading) {
                     if let cooldownText {
                         Text(cooldownText)
                             .font(.blankHomeDisplay)
                             .foregroundStyle(BlankColors.foreground)
                             .monospacedDigit()
                             .padding(.leading, 24)
-                            .padding(.top, layout.topPadding)
+                            .frame(maxHeight: .infinity, alignment: .center)
                             .allowsHitTesting(false)
                     }
                 }
@@ -928,6 +956,7 @@ struct HomeView: View {
         case .menu, .closeMenu: break
         case .chat: openAssistantChat()
         case .block:
+            stopBlockHoldHaptics()
             guard !sessionStore.isBlankActive else { return }
             screenTimeBlocker.refreshAuthorizationStatus()
             guard screenTimeBlocker.authorizationStatus == .approved else {
@@ -1149,7 +1178,8 @@ struct HomeView: View {
         Button(action: action) {
             Text(title)
                 .blankHomeDisplayTextStyle(color: color)
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: homeMenuRowHeight, alignment: .leading)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1533,6 +1563,26 @@ struct HomeView: View {
             presentRelapseReview()
         }
         return unlocked
+    }
+
+    private func stopBlockHoldHaptics() {
+        blockHapticTask?.cancel()
+        blockHapticTask = nil
+    }
+
+    private func startBlockHoldHaptics() {
+        stopBlockHoldHaptics()
+        blockHapticTask = Task { @MainActor in
+            let feedback = UIImpactFeedbackGenerator(style: .light)
+            for _ in 1..<Int(HomeBlockGesturePolicy.holdDuration) {
+                do { try await Task.sleep(nanoseconds: 1_000_000_000) }
+                catch { return }
+                guard !Task.isCancelled, scenePhase == .active, isHomePressing,
+                      !sessionStore.isBlankActive else { return }
+                feedback.prepare()
+                feedback.impactOccurred(intensity: 0.65)
+            }
+        }
     }
 
     private func stopUnblankHoldHaptics() {
@@ -2366,6 +2416,7 @@ struct HomeSectionScreen: View {
     let screenTimeStatus: String
     let healthStatus: String
     let onClose: () -> Void
+    var onApplyHistoryAction: (String) -> Void = { _ in }
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
 
     var body: some View {
@@ -2420,7 +2471,8 @@ struct HomeSectionScreen: View {
                 onRequestScreenTimePermission: onRequestScreenTimePermission,
                 onRequestHealthAccess: onRequestHealthAccess,
                 screenTimeStatus: screenTimeStatus,
-                healthStatus: healthStatus
+                healthStatus: healthStatus,
+                onApplyHistoryAction: onApplyHistoryAction
             )
         }
     }
@@ -2493,6 +2545,7 @@ private struct SettingsScreen: View {
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
     @State private var showingAccount = false
     @State private var showingBMBSettings = false
+    @State private var showingHistory = false
 
     let onClose: () -> Void
     let onOpenEmergency: () -> Void
@@ -2501,6 +2554,7 @@ private struct SettingsScreen: View {
     let onRequestHealthAccess: () -> Void
     let screenTimeStatus: String
     let healthStatus: String
+    let onApplyHistoryAction: (String) -> Void
 
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
     private var secondaryColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.70) : BlankColors.mutedInk }
@@ -2510,7 +2564,7 @@ private struct SettingsScreen: View {
             VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(
                     title: "settings",
-                    subtitle: "access, support and preferences.",
+                    subtitle: "Manage your account and preferences.\nReview access, support and privacy.",
                     action: onClose,
                     titleColor: textColor,
                     subtitleColor: secondaryColor
@@ -2518,57 +2572,38 @@ private struct SettingsScreen: View {
                 .padding(.bottom, 12)
 
                 settingsRow(title: "blankmind", detail: "autonomy and notifications", action: { showingBMBSettings = true })
-                settingsRow(
-                    title: "emergency",
-                    detail: "unlock access while blanked",
-                    action: onOpenEmergency
-                )
-
-                settingsRow(
-                    title: "screen time",
-                    detail: "screen time \(screenTimeStatus.lowercased())",
-                    symbol: screenTimeStatus == "approved" ? "checkmark" : "chevron.right",
-                    action: onRequestScreenTimePermission
-                )
-
-                settingsRow(
-                    title: "health",
-                    detail: "apple health \(healthStatus.lowercased())",
-                    symbol: healthStatus == "connected" ? "checkmark" : "chevron.right",
-                    action: onRequestHealthAccess
-                )
-
-                settingsRow(
-                    title: "assistant",
-                    detail: "conversation and account",
-                    action: onOpenAssistant
-                )
-
-                settingsRow(
-                    title: "account",
-                    detail: "Apple sign-in and account controls",
-                    action: { showingAccount = true }
-                )
-
-                settingsRow(
-                    title: "privacy policy",
-                    detail: "how Blankmind handles your data",
-                    symbol: "arrow.up.right",
-                    action: { openURL(URL(string: "https://blankmind.ai/privacy")!) }
-                )
-
-                settingsRow(
-                    title: "terms of service",
-                    detail: "terms for using Blankmind",
-                    symbol: "arrow.up.right",
-                    action: { openURL(URL(string: "https://blankmind.ai/terms")!) }
-                )
+                settingsRow(title: "emergency", detail: "unlock access while blanked", action: onOpenEmergency)
+                settingsRow(title: "conversation history", detail: "review previous conversations", action: { showingHistory = true })
+                settingsRow(title: "assistant", detail: "conversation and account", action: onOpenAssistant)
+                settingsRow(title: "account", detail: "Apple sign-in and account controls", action: { showingAccount = true })
+                if screenTimeStatus != "approved" {
+                    settingsRow(title: "screen time", detail: screenTimeStatus, action: onRequestScreenTimePermission)
+                }
+                if healthStatus != "connected" {
+                    settingsRow(title: "health", detail: healthStatus, action: onRequestHealthAccess)
+                }
+                if screenTimeStatus == "approved" {
+                    settingsRow(title: "screen time", detail: screenTimeStatus, symbol: "checkmark", secondary: true, action: onRequestScreenTimePermission)
+                }
+                if healthStatus == "connected" {
+                    settingsRow(title: "health", detail: healthStatus, symbol: "checkmark", secondary: true, action: onRequestHealthAccess)
+                }
+                settingsRow(title: "privacy policy", detail: "how Blankmind handles your data", symbol: "arrow.up.right", secondary: true,
+                            action: { openURL(URL(string: "https://blankmind.ai/privacy")!) })
+                settingsRow(title: "terms of service", detail: "terms for using Blankmind", symbol: "arrow.up.right", secondary: true,
+                            action: { openURL(URL(string: "https://blankmind.ai/terms")!) })
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.bottom, 24)
         }
         .padding(.horizontal, sectionHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .sheet(isPresented: $showingHistory) {
+            AssistantAppHistoryView(turns: [], nextBefore: nil,
+                foreground: textColor, background: sessionStore.isBlankActive ? BlankColors.charcoal : BlankColors.pureWhite,
+                onApplyAction: onApplyHistoryAction)
+                .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
+        }
         .sheet(isPresented: $showingBMBSettings) { BMBSettingsView() }
         .sheet(isPresented: $showingAccount) {
             AccountSettingsSheet()
@@ -2581,26 +2616,22 @@ private struct SettingsScreen: View {
         detail: String,
         symbol: String = "chevron.right",
         color: Color? = nil,
+        secondary: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(title.capitalized)
-                        .font(.blankOnboardingControl)
-
-                    Text(detail)
-                        .font(.blankInter(size: 12, relativeTo: .caption))
-                        .foregroundStyle(BlankColors.cardInk.opacity(0.72))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Text(title.capitalized)
+                    .font(.blankOnboardingControl)
                 Spacer(minLength: 0)
                 Image(systemName: symbol)
                     .font(.system(size: 12, weight: .regular))
                     .accessibilityHidden(true)
             }
-            .foregroundStyle(color ?? BlankColors.cardInk)
-            .blankBlackCard()
+            .foregroundStyle(color ?? (secondary ? BlankColors.charcoal : BlankColors.pureWhite))
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 4).fill(secondary ? BlankColors.lichenGray : BlankColors.charcoal))
             .contentShape(RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)
@@ -3442,77 +3473,57 @@ private struct DistractionsScreen: View {
     }
 
     var body: some View {
-        GeometryReader { proxy in
-            let homeContentBottomMargin = max(proxy.safeAreaInsets.bottom + 18, 34) * 2
-
-            ZStack(alignment: .bottomLeading) {
-                VStack(alignment: .leading, spacing: 0) {
-                    SectionBackHeader(action: onClose)
-
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Distractions")
-                            .font(.blankSectionEditorial())
-                            .tracking(-0.9)
-                            .foregroundStyle(textColor)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Text("Your protection list.")
-                            .font(.blankInter(size: 14, relativeTo: .subheadline))
-                            .foregroundStyle(secondaryColor)
-                            .padding(.top, 24)
-
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "clock")
-                                .accessibilityHidden(true)
-                            scheduleRanges
-                        }
-                        .font(.blankInter(size: 13, relativeTo: .subheadline))
+        VStack(alignment: .leading, spacing: 0) {
+            SectionBackHeader(action: onClose)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Distractions")
+                        .font(.blankSectionEditorial())
+                        .tracking(-0.9)
+                        .foregroundStyle(textColor)
+                    Text("Choose what pulls you away.\nSee when your distractions are blocked.")
+                        .font(.blankInter(size: 14, relativeTo: .subheadline))
                         .foregroundStyle(secondaryColor)
-                        .padding(.top, 24)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 12)
+                    distractionGroupHeading("Blocks")
+                    if sessionStore.isBlankActive {
+                        Text("Protection active")
+                            .font(.blankOnboardingControl)
+                            .blankBlackCard()
                     }
-
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            if sessionStore.selection.blankedSelectionCount == 0 {
-                                Text("No distractions yet")
-                                    .font(.blankInter(size: 16, relativeTo: .headline))
-                                    .foregroundStyle(BlankColors.cardInk.opacity(0.72))
-                                    .blankBlackCard()
-                            } else {
+                    scheduleRanges
+                    distractionGroupHeading("Apps")
+                    editButton
+                    if sessionStore.selection.blankedSelectionCount == 0 {
+                        Text("No distractions yet")
+                            .font(.blankInter(size: 16, relativeTo: .headline))
+                            .blankBlackCard()
+                    } else {
                                 if !sessionStore.selection.applicationTokens.isEmpty {
-                                    distractionGroupHeading("Apps")
                                     ForEach(Array(sessionStore.selection.applicationTokens), id: \.self) { token in
-                                        distractionRow { Label(token).labelStyle(.titleAndIcon) }
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .light : .dark) }
                                     }
                                 }
                                 if !sessionStore.selection.categoryTokens.isEmpty {
                                     distractionGroupHeading("Categories")
                                     ForEach(Array(sessionStore.selection.categoryTokens), id: \.self) { token in
-                                        distractionRow { Label(token).labelStyle(.titleAndIcon) }
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .light : .dark) }
                                     }
                                 }
                                 if !sessionStore.selection.webDomainTokens.isEmpty {
                                     distractionGroupHeading("Websites")
                                     ForEach(Array(sessionStore.selection.webDomainTokens), id: \.self) { token in
-                                        distractionRow { Label(token).labelStyle(.titleAndIcon) }
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .light : .dark) }
                                     }
                                 }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                        .padding(.bottom, homeContentBottomMargin + 76)
                     }
-                    .padding(.top, 24)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
-                .padding(.horizontal, sectionHorizontalPadding)
-                .padding(.bottom, 20)
-
-                editButton
-                    .padding(.leading, sectionHorizontalPadding)
-                    .padding(.bottom, homeContentBottomMargin)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(.bottom, 34)
             }
         }
+        .padding(.horizontal, sectionHorizontalPadding)
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
     }
 
@@ -3523,6 +3534,8 @@ private struct DistractionsScreen: View {
             } else {
                 ForEach(activeWindows) { window in
                     Text("\(distractionTimeLabel(window.startMinute)) to \(distractionTimeLabel(window.endMinute))")
+                        .font(.blankOnboardingControl)
+                        .blankBlackCard()
                 }
             }
         }

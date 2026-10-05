@@ -9,10 +9,15 @@ const originalFlag = process.env.BM_FINAL_APP_LINKED_ROUTING_ENABLED;
 
 async function main() {
   const app = fs.readFileSync(path.join(__dirname, "../ios/Blank/Blank/AssistantAppView.swift"), "utf8");
-  const history = app.slice(app.indexOf("private struct AssistantAppHistoryView: View"));
+  const home = fs.readFileSync(path.join(__dirname, "../ios/Blank/Blank/HomeView.swift"), "utf8");
+  const history = app.slice(app.indexOf("struct AssistantAppHistoryView: View"));
   const apply = history.slice(history.indexOf("private func apply(_ turn:"), history.indexOf("private func loadEarlier()"));
-  assert.match(app, /background: background, onApplyAction: \{ id in Task \{ await applyAction\(id\) \} \}\)/,
+  assert.match(home, /onApplyAction: onApplyHistoryAction\)/,
     "older actionable turns must reach the existing native application callback");
+  assert.match(home, /onApplyHistoryAction: applyHistoryAction/);
+  const nativeHistory = home.slice(home.indexOf("private func applyHistoryAction("), home.indexOf("private func closeSection("));
+  assert(nativeHistory.indexOf("try await prepareAssistantAction(actionId)") < nativeHistory.indexOf("confirmPendingAssistantAction()"),
+    "history must validate the exact native inbox before applying");
   const handoff = app.slice(app.indexOf("private func applyAction("), app.indexOf("private func openControls("));
   assert(handoff.indexOf("try await onApplyAction(actionID)") < handoff.indexOf("dismiss()"),
     "chat must validate the native inbox before navigating away");

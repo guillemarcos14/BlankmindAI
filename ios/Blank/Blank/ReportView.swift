@@ -187,7 +187,7 @@ struct ReportView: View {
             if let onClose {
                 SectionHeader(
                     title: "progress",
-                    subtitle: "your time, rhythm and patterns.",
+                    subtitle: "See how your focus changes over time.\nExplore your rhythm and daily patterns.",
                     action: onClose,
                     titleColor: headerPrimary,
                     subtitleColor: headerSecondary
@@ -196,7 +196,7 @@ struct ReportView: View {
             } else {
                 TopSheetHeader(
                     title: "progress",
-                    subtitle: "your time, rhythm and patterns.",
+                    subtitle: "See how your focus changes over time.\nExplore your rhythm and daily patterns.",
                     titleColor: headerPrimary,
                     subtitleColor: headerSecondary
                 )
