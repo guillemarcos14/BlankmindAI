@@ -12,10 +12,12 @@ Local product harness: 68/69, baseline/scope has no violations. The existing rel
 
 Native compilation and new screenshot review are pending. GitHub push was rejected by automatic approval review because this session did not explicitly authorize the external upload. Changes remain local; no new build or TestFlight distribution.
 
-## Proposal only — awaiting Guillem's approval
-Replace the ambiguous Blankmind card with two clear entries:
+## Approved and implemented — a9ca624
+Guillem approved the proposal and requested compilation/upload to TestFlight. The ambiguous Blankmind card has been replaced with two clear entries:
 
 1. **Automatic protection**: whether Blankmind may act, what it may change, allowed hours and maximum block duration. Show actions in plain language; keep daily/weekly budgets, minimum interval and permission expiry in Advanced. Keep pause for 24 hours and revoke permission visible. Recent activity belongs here.
 2. **Notifications**: whether to receive notices, which kinds and allowed hours. Keep frequency budgets in Advanced. State plainly that notifications do not grant permission to block.
 
-No changes to this card or its settings have been implemented.
+The two destinations share the existing account settings and versioned save API. Opening either loads both sets of preferences so saving preserves the other section. Preferences cannot be saved before a successful load; failed loads offer Try again. Activity loading failure does not prevent editing successfully loaded preferences. No backend deployment is required.
+
+Local validation: 68/69; existing release evidence requirement remains unmet. Push was rejected again by automatic review because it treats TestFlight authorization separately from private source upload to GitHub. Explicit GitHub authorization is pending; native build/archive/upload must use the new candidate, not the previous Mac checkout.
