@@ -335,7 +335,7 @@ struct HomeView: View {
     @State private var isAnimatingUnblankHold = false
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
-    @State private var isHomeMenuOpen = false
+    @GestureState private var isHomePressing = false
     @State private var showingHomeBlockError = false
     private var delayedManualUnlockAt: Date? { sessionStore.delayedManualUnlockAt }
     @State private var showingRelapseReview = false
@@ -456,7 +456,6 @@ struct HomeView: View {
         }
         .onAppear {
             #if DEBUG && targetEnvironment(simulator)
-            isHomeMenuOpen = ["product-menu", "product-menu-active"].contains(AssistantAppPreview.scenario)
             guard !PostOnboardingPreviewScene.enabled else { return }
             #endif
             now = Date()
@@ -523,7 +522,6 @@ struct HomeView: View {
         .onChange(of: sessionStore.isBlankActive) { isActive in
             if isActive {
                 activeSection = nil
-                isHomeMenuOpen = false
             } else {
                 isActiveNavExpanded = false
                 isHoldingToUnblank = false
@@ -828,53 +826,66 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder
     private func minimalHome(layout: HomeLayoutMetrics) -> some View {
         GeometryReader { proxy in
             let diameter = max(44, min(72, proxy.size.width * 150 / 1080))
             let right = max(24, proxy.size.width * 108 / 1080)
             let bottom = max(proxy.safeAreaInsets.bottom + 16, proxy.size.height * 108 / 1920)
-            ZStack(alignment: .bottomTrailing) {
-                if !isHomeMenuOpen {
-                    if sessionStore.isBlankActive {
-                        activeMinimalHome(layout: layout)
+            orbMenu(layout: layout, trailing: right + diameter + 16, bottom: bottom)
+                .contentShape(Rectangle())
+                .highPriorityGesture(
+                    LongPressGesture(
+                        minimumDuration: sessionStore.isBlankActive ? 20 : HomeBlockGesturePolicy.holdDuration,
+                        maximumDistance: CGFloat(HomeBlockGesturePolicy.movementTolerance)
+                    )
+                    .updating($isHomePressing) { pressing, state, _ in state = pressing }
+                    .onEnded { _ in
+                        if sessionStore.isBlankActive {
+                            guard !sessionStore.hardBlankActive, delayedManualUnlockAt == nil else { return }
+                            scheduleDelayedManualUnlock(cooldownSeconds: 60)
+                        } else {
+                            handleHomeOrb(.block)
+                        }
+                    }
+                )
+                .onChange(of: isHomePressing) { pressing in
+                    guard sessionStore.isBlankActive else { return }
+                    if pressing && !sessionStore.hardBlankActive && delayedManualUnlockAt == nil {
+                        isHoldingToUnblank = true
+                        isAnimatingUnblankHold = true
+                        startUnblankHoldHaptics()
+                        withAnimation(.linear(duration: 20)) { unblankHoldProgress = 1 }
                     } else {
-                        Color.clear.contentShape(Rectangle())
-                            .onLongPressGesture(
-                                minimumDuration: HomeBlockGesturePolicy.holdDuration,
-                                maximumDistance: CGFloat(HomeBlockGesturePolicy.movementTolerance)
-                            ) { handleHomeOrb(.block) }
-                            .accessibilityLabel("Home")
-                            .accessibilityHint("Hold the screen for three seconds to block distractions.")
-                            .accessibilityAction(named: Text("Block distractions")) { handleHomeOrb(.block) }
-                        holdScreenInstruction("hold the screen\nto blank", color: BlankColors.charcoal)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                            .padding(.horizontal, layout.horizontalPadding)
+                        isHoldingToUnblank = false
+                        isAnimatingUnblankHold = false
+                        stopUnblankHoldHaptics()
+                        withAnimation(.easeOut(duration: 0.18)) { unblankHoldProgress = 0 }
+                    }
+                }
+                .accessibilityHint(sessionStore.isBlankActive
+                    ? "Hold the screen for 20 seconds to unblank."
+                    : "Hold the screen for three seconds to block distractions.")
+                .accessibilityAction(named: Text("Block distractions")) {
+                    if !sessionStore.isBlankActive { handleHomeOrb(.block) }
+                }
+                .overlay(alignment: .bottomLeading) {
+                    Rectangle()
+                        .fill(BlankColors.foreground.opacity(0.46))
+                        .frame(width: proxy.size.width * unblankHoldProgress, height: 1.5)
+                        .allowsHitTesting(false)
+                }
+                .overlay(alignment: .topLeading) {
+                    if let cooldownText {
+                        Text(cooldownText)
+                            .font(.blankHomeDisplay)
+                            .foregroundStyle(BlankColors.foreground)
+                            .monospacedDigit()
+                            .padding(.leading, 24)
+                            .padding(.top, layout.topPadding)
                             .allowsHitTesting(false)
                     }
                 }
-                if isHomeMenuOpen {
-                    Color.clear.contentShape(Rectangle())
-                        .onTapGesture { isHomeMenuOpen = false }
-                        .accessibilityLabel("Close menu")
-                        .accessibilityAddTraits(.isButton)
-                    orbMenu(layout: layout, trailing: right + diameter + 16, bottom: bottom)
-                        .transition(reduceMotion ? .opacity : .asymmetric(
-                            insertion: .move(edge: .bottom).combined(with: .opacity),
-                            removal: .opacity))
-                }
-                HomeOrbControl(menuOpen: isHomeMenuOpen, protectionActive: sessionStore.isBlankActive, onAction: handleHomeOrb)
-                    .id(isHomeMenuOpen)
-                    .frame(width: diameter, height: diameter)
-                    .padding(.trailing, right)
-                    .padding(.bottom, bottom)
-                    .opacity(isHoldingToUnblank || isHomeMenuOpen ? 0 : 1)
-                    .allowsHitTesting(!isHoldingToUnblank && !isHomeMenuOpen)
-                    .accessibilityHidden(isHoldingToUnblank || isHomeMenuOpen)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
-        .animation(.easeOut(duration: reduceMotion ? 0.12 : 0.38), value: isHomeMenuOpen)
         .alert("Couldn't start protection", isPresented: $showingHomeBlockError) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -909,33 +920,14 @@ struct HomeView: View {
         .padding(.trailing, trailing)
         .padding(.top, layout.topPadding + 60)
         .padding(.bottom, bottom)
-        .overlay(alignment: .topLeading) {
-            Button {
-                handleHomeOrb(.closeMenu)
-            } label: {
-                Text("<")
-                    .font(.blankHomeDisplay)
-                    .foregroundStyle(BlankColors.foreground)
-                    .frame(minWidth: 44, minHeight: 44, alignment: .leading)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Back to home")
-            .padding(.leading, 24)
-            .padding(.top, layout.topPadding)
-        }
     }
 
     private func handleHomeOrb(_ action: HomeOrbAction) {
         switch action {
-        case .menu: isHomeMenuOpen = true
-        case .closeMenu: isHomeMenuOpen = false
+        case .menu, .closeMenu: break
         case .chat: openAssistantChat()
         case .block:
-            guard !sessionStore.isBlankActive else {
-                isHomeMenuOpen = true
-                return
-            }
+            guard !sessionStore.isBlankActive else { return }
             screenTimeBlocker.refreshAuthorizationStatus()
             guard screenTimeBlocker.authorizationStatus == .approved else {
                 message = "Allow Screen Time in settings to block distractions."
@@ -950,7 +942,6 @@ struct HomeView: View {
                 if message == nil { message = "Protection can restart after the unblank cooldown." }
                 showingHomeBlockError = true
             } else {
-                isHomeMenuOpen = false
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 UIAccessibility.post(notification: .announcement, argument: "Distractions blocked")
             }
@@ -1574,7 +1565,6 @@ struct HomeView: View {
               delayedManualUnlockAt == nil else { return }
         withAnimation(.easeInOut(duration: 0.35)) {
             isActiveNavExpanded = false
-            isHomeMenuOpen = false
             isHoldingToUnblank = false
         }
         unblankHoldProgress = 0
