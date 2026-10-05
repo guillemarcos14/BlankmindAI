@@ -2290,7 +2290,7 @@ private extension View {
             .foregroundStyle(color)
             .tracking(-0.9)
             .lineLimit(1)
-            .minimumScaleFactor(0.72)
+            .minimumScaleFactor(0.5)
             .lineSpacing(0)
     }
 }
