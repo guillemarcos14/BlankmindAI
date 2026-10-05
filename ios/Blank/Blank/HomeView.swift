@@ -2544,7 +2544,7 @@ private struct SettingsScreen: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
     @State private var showingAccount = false
-    @State private var showingBMBSettings = false
+    @State private var selectedBMBSettings: BMBSettingsSection?
     @State private var showingHistory = false
 
     let onClose: () -> Void
@@ -2572,7 +2572,8 @@ private struct SettingsScreen: View {
                 .padding(.bottom, 12)
 
                 settingsRow(title: "emergency", detail: "unlock access while blanked", action: onOpenEmergency)
-                settingsRow(title: "blankmind", detail: "autonomy and notifications", action: { showingBMBSettings = true })
+                settingsRow(title: "automatic protection", detail: "choose when and how Blankmind may act", action: { selectedBMBSettings = .automaticProtection })
+                settingsRow(title: "notifications", detail: "choose which notices you receive and when", action: { selectedBMBSettings = .notifications })
                 settingsRow(title: "conversation history", detail: "review previous conversations", action: { showingHistory = true })
                 settingsRow(title: "account", detail: "Apple sign-in and account controls", action: { showingAccount = true })
                 if screenTimeStatus != "approved" {
@@ -2603,7 +2604,7 @@ private struct SettingsScreen: View {
                 onApplyAction: onApplyHistoryAction)
                 .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
         }
-        .sheet(isPresented: $showingBMBSettings) { BMBSettingsView() }
+        .sheet(item: $selectedBMBSettings) { BMBSettingsView(section: $0) }
         .sheet(isPresented: $showingAccount) {
             AccountSettingsSheet()
                 .environmentObject(sessionStore)
@@ -4126,7 +4127,21 @@ private final class AccountLegalLayoutManager: NSLayoutManager {
 }
 
 
+private enum BMBSettingsSection: String, Identifiable {
+    case automaticProtection
+    case notifications
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .automaticProtection: return "Automatic protection"
+        case .notifications: return "Notifications"
+        }
+    }
+}
+
 private struct BMBSettingsView: View {
+    let section: BMBSettingsSection
     @Environment(\.dismiss) private var dismiss
     @State private var version = 0
     @State private var active = false
@@ -4148,6 +4163,7 @@ private struct BMBSettingsView: View {
     @State private var interventions = true
     @State private var failures = true
     @State private var busy = true
+    @State private var loaded = false
     @State private var status = ""
     @State private var events: [[String: Any]] = []
     private func clock(_ value: Binding<Int>) -> Binding<Date> {
@@ -4157,42 +4173,71 @@ private struct BMBSettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Automatic protection") {
-                    Toggle("Allow BMB to act", isOn:$active)
-                    Text("BMB can try these actions within your limits. iOS may delay background delivery. Existing blocks keep their release rules.").font(.footnote)
+                if section == .automaticProtection {
+                  Section("Permission") {
+                    Toggle("Allow automatic protection", isOn:$active)
+                    Text("Blankmind may make only the changes you allow, within your limits. iOS may delay delivery. Existing blocks keep their release rules.").font(.footnote)
+                  }
+                  Section("Allowed changes") {
                     ForEach([("start_protection","Block selected distractions"),("set_daily_limit","Set daily limit"),("enable_adult_filter","Enable adult filter")], id: \.0) { type,label in
                         Toggle(label,isOn:Binding(get:{ allowedTypes.contains(type) },set:{ if $0 { allowedTypes.insert(type) } else { allowedTypes.remove(type) } }))
                     }
-                    DatePicker("From",selection:clock($actionStart),displayedComponents:.hourAndMinute)
-                    DatePicker("Until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
-                    Text("Matching times allow any hour.").font(.footnote)
                     Text("Daily limits and the adult filter stay on until you change them. Revoking permission stops future automatic changes.").font(.footnote)
-                    Stepper("Maximum minutes \(maxMinutes)",value:$maxMinutes,in:5...240,step:5)
+                  }
+                  Section("When and for how long") {
+                    DatePicker("Allowed from",selection:clock($actionStart),displayedComponents:.hourAndMinute)
+                    DatePicker("Allowed until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
+                    Text("Set the same start and end time to allow any hour.").font(.footnote)
+                    Stepper("Maximum block: \(maxMinutes) min",value:$maxMinutes,in:5...240,step:5)
+                  }
+                  Section {
+                   DisclosureGroup("Advanced") {
                     Stepper("Actions per day \(actionDaily)",value:$actionDaily,in:0...10)
                     Stepper("Actions per 7 days \(actionWeekly)",value:$actionWeekly,in:0...30)
-                    Stepper("Minimum gap \(intervalMinutes) min",value:$intervalMinutes,in:15...10080,step:15)
+                    Stepper("Time between actions: \(intervalMinutes) min",value:$intervalMinutes,in:15...10080,step:15)
                     DatePicker("Permission expires",selection:$expires,in:Date()...,displayedComponents:[.date,.hourAndMinute])
+                   }
+                  }
                 }
-                Section("Notifications") {
-                    Toggle("Useful notifications",isOn:$enabled)
-                    Text("Notification permission is separate from acting. Quiet hours still apply to failures. No routine start or end alerts.").font(.footnote)
-                    Toggle("Useful opportunities",isOn:$opportunities)
-                    Toggle("Confirmed new interventions",isOn:$interventions)
-                    Toggle("Failures needing my help",isOn:$failures)
+                if section == .notifications {
+                  Section("Permission") {
+                    Toggle("Receive notifications",isOn:$enabled)
+                    Text("Notifications do not give Blankmind permission to block. All notices follow your allowed hours. No routine start or end alerts.").font(.footnote)
+                  }
+                  Section("What to receive") {
+                    Toggle("Helpful suggestions",isOn:$opportunities)
+                    Toggle("Protection updates",isOn:$interventions)
+                    Toggle("Problems needing your help",isOn:$failures)
+                  }
+                  Section("Allowed hours") {
                     DatePicker("Allowed from",selection:clock($quietStart),displayedComponents:.hourAndMinute)
                     DatePicker("Allowed until",selection:clock($quietEnd),displayedComponents:.hourAndMinute)
+                  }
+                  Section {
+                   DisclosureGroup("Advanced") {
                     Stepper("Notifications per day \(notifyDaily)",value:$notifyDaily,in:0...10)
                     Stepper("Notifications per 7 days \(notifyWeekly)",value:$notifyWeekly,in:0...30)
+                   }
+                  }
+                }
+                if section == .automaticProtection {
+                  Section("Control") {
+                    Text("Pausing stops automatic changes and notifications for 24 hours. Existing blocks remain in place.").font(.footnote)
+                    if let pause = pausedUntil, let date = AssistantInboxAction.parseDate(pause), date > Date() {
+                        Text("Paused until \(date.formatted(date: .abbreviated, time: .shortened))").font(.footnote)
+                        Button("Resume Blankmind") { pausedUntil=nil; Task { await save() } }
+                    } else {
+                        Button("Pause Blankmind for 24 hours") { pausedUntil=ISO8601DateFormatter().string(from:Date().addingTimeInterval(86400)); Task { await save() } }
+                    }
+                    Button("Revoke automatic protection",role:.destructive) { active=false; Task { await save() } }
+                  }
                 }
                 Section {
-                    Button("Pause BMB for 24 hours") { pausedUntil=ISO8601DateFormatter().string(from:Date().addingTimeInterval(86400)); Task { await save() } }
-                    Button("Resume BMB") { pausedUntil=nil; Task { await save() } }
-                    Button("Revoke automatic protection",role:.destructive) { active=false; Task { await save() } }
                     Button("Save preferences") { Task { await save() } }
                     if !status.isEmpty { Text(status).font(.footnote) }
                 }
-                if !events.isEmpty {
-                    Section("Recent help") {
+                if section == .automaticProtection && !events.isEmpty {
+                    Section("Recent activity") {
                         ForEach(events.indices,id: \.self) { index in
                             let event=events[index]
                             VStack(alignment:.leading) {
@@ -4211,8 +4256,20 @@ private struct BMBSettingsView: View {
             .scrollContentBackground(.hidden)
             .background(BlankColors.canvas)
             .foregroundStyle(BlankColors.foreground)
-            .disabled(busy)
-            .navigationTitle("Blankmind")
+            .disabled(busy || !loaded)
+            .overlay {
+                if busy && !loaded { ProgressView("Loading preferences") }
+                else if !loaded {
+                    VStack(spacing: 12) {
+                        Text(status).multilineTextAlignment(.center)
+                        Button("Try again") { Task { await load() } }
+                    }
+                    .padding(24)
+                    .background(BlankColors.canvas)
+                }
+            }
+            .navigationTitle(section.title)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar { Button("Done") { dismiss() } }
             .task { await load() }
         }
@@ -4246,10 +4303,16 @@ private struct BMBSettingsView: View {
             notifyDaily=notifications["max_per_day"] as? Int ?? 1; notifyWeekly=notifications["max_per_week"] as? Int ?? 3
             opportunities=notifications["opportunities"] as? Bool ?? true; interventions=notifications["interventions"] as? Bool ?? true; failures=notifications["failures"] as? Bool ?? true
             pausedUntil=settings["paused_until"] as? String
-            events=(try await request(["action":"bmb_activity"]))["events"] as? [[String:Any]] ?? []
-        } catch { status="Could not load preferences. Reopen to retry." }
+            loaded=true
+            status=""
+            if section == .automaticProtection {
+                do { events=(try await request(["action":"bmb_activity"]))["events"] as? [[String:Any]] ?? [] }
+                catch { status="Preferences loaded. Recent activity is unavailable." }
+            }
+        } catch { loaded=false; status="Could not load preferences. Try again." }
     }
     private func save() async {
+        guard loaded, !busy else { return }
         busy=true; defer { busy=false }
         let settings: [String:Any] = ["timezone":TimeZone.current.identifier,"paused_until":pausedUntil as Any? ?? NSNull(),
             "grant":["active":active,"action_types":Array(allowedTypes).sorted(),"start_minute":actionStart,"end_minute":actionEnd,
