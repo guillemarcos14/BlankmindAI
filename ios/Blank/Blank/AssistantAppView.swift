@@ -809,8 +809,6 @@ struct AssistantAppView: View {
                 }
             } else if isApplyingAction {
                 BlankLoadingIndicator(color: foreground)
-            } else if speech.isRecording || speech.isStarting || speech.hasAudio {
-                Text(spanish ? "Dictando. Revisa el texto antes de enviar." : "Dictating. Review your words before sending.")
             }
             if draftTooLong {
                 Text(spanish ? "Acorta el mensaje a 4.000 caracteres." : "Keep your message under 4,000 characters.")

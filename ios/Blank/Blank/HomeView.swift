@@ -337,9 +337,8 @@ struct HomeView: View {
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
     @GestureState private var isHomePressing = false
-    // Halve the visible gap around the existing 32pt lettering; scale with Dynamic Type.
-    @ScaledMetric(relativeTo: .title) private var homeMenuRowHeight: CGFloat =
-        (44 + (UIFont(name: "HelveticaNeue-Medium", size: 32)?.capHeight ?? 23)) / 2
+    // Larger lettering with a tighter optical gap; keep the existing row footprint.
+    @ScaledMetric(relativeTo: .title) private var homeMenuRowHeight: CGFloat = 34
     @State private var showingHomeBlockError = false
     private var delayedManualUnlockAt: Date? { sessionStore.delayedManualUnlockAt }
     @State private var showingRelapseReview = false
@@ -2280,7 +2279,7 @@ struct HomeView: View {
 
 private extension Font {
     static var blankHomeDisplay: Font {
-        .blankInter(size: 32, weight: .medium, relativeTo: .title)
+        .blankInter(size: 36, weight: .medium, relativeTo: .title)
     }
 }
 
@@ -2436,7 +2435,7 @@ struct HomeSectionScreen: View {
             routeContent
                 .environment(\.blankMinimalAppearance, minimalAppearance)
                 .environment(\.blankSectionHorizontalPadding, sectionHorizontalPadding)
-                .padding(.top, 60)
+                .padding(.top, section == .emergency ? 0 : 60)
                 .frame(width: contentWidth, height: screenHeight, alignment: .top)
                 .frame(width: screenWidth, height: screenHeight, alignment: .top)
                 .offset(x: horizontalOffset)
@@ -2571,10 +2570,9 @@ private struct SettingsScreen: View {
                 )
                 .padding(.bottom, 12)
 
-                settingsRow(title: "blankmind", detail: "autonomy and notifications", action: { showingBMBSettings = true })
                 settingsRow(title: "emergency", detail: "unlock access while blanked", action: onOpenEmergency)
+                settingsRow(title: "blankmind", detail: "autonomy and notifications", action: { showingBMBSettings = true })
                 settingsRow(title: "conversation history", detail: "review previous conversations", action: { showingHistory = true })
-                settingsRow(title: "assistant", detail: "conversation and account", action: onOpenAssistant)
                 settingsRow(title: "account", detail: "Apple sign-in and account controls", action: { showingAccount = true })
                 if screenTimeStatus != "approved" {
                     settingsRow(title: "screen time", detail: screenTimeStatus, action: onRequestScreenTimePermission)
@@ -3239,12 +3237,10 @@ private struct EmergencyScreen: View {
     private var secondaryColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.70) : BlankColors.mutedInk }
 
     var body: some View {
-        VStack(alignment: minimalAppearance ? .leading : .center, spacing: 0) {
-            if minimalAppearance {
-                SectionBackHeader(action: onClose)
-            }
-
-            VStack(alignment: minimalAppearance ? .leading : .center, spacing: minimalAppearance ? 0 : 10) {
+        GeometryReader { proxy in
+          ScrollView(.vertical, showsIndicators: false) {
+           VStack(alignment: .center, spacing: 0) {
+            VStack(alignment: .center, spacing: minimalAppearance ? 0 : 10) {
                 if !minimalAppearance {
                     Image(systemName: isConfirming ? "lock.open.fill" : "shield.lefthalf.filled")
                         .font(.system(size: 22, weight: .semibold))
@@ -3263,18 +3259,18 @@ private struct EmergencyScreen: View {
                     ))
                     .tracking(minimalAppearance ? -0.6 : 0)
                     .foregroundStyle(textColor)
-                    .multilineTextAlignment(minimalAppearance ? .leading : .center)
+                    .multilineTextAlignment(.center)
 
                 Text(bodyText)
                     .font(.blankInter(size: minimalAppearance ? 14 : 16, weight: .regular, relativeTo: .body))
                     .foregroundStyle(secondaryColor)
-                    .multilineTextAlignment(minimalAppearance ? .leading : .center)
+                    .multilineTextAlignment(.center)
                     .lineSpacing(minimalAppearance ? 0 : 3)
                     .frame(maxWidth: 300)
                     .padding(.top, minimalAppearance ? 5 : 0)
                     .padding(.bottom, minimalAppearance ? 24 : 0)
             }
-            .frame(maxWidth: .infinity, alignment: minimalAppearance ? .leading : .center)
+            .frame(maxWidth: .infinity, alignment: .center)
 
             emergencyAllowance
                 .padding(.bottom, minimalAppearance ? 24 : 0)
@@ -3303,7 +3299,16 @@ private struct EmergencyScreen: View {
             }
             .frame(maxWidth: 300)
 
-            Spacer(minLength: 0)
+           }
+           .padding(.vertical, 120)
+           .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .center)
+          }
+          .overlay(alignment: .topLeading) {
+            if minimalAppearance {
+                SectionBackHeader(action: onClose)
+                    .padding(.top, 60)
+            }
+          }
         }
         .padding(.horizontal, sectionHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -4017,7 +4022,7 @@ private struct HomePreviewScene: View {
 @MainActor
 struct PostOnboardingPreviewScene: View {
     static var enabled: Bool {
-        ["product-home", "product-home-active", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active"]
+        ["product-home", "product-home-active", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active"]
             .contains(AssistantAppPreview.scenario)
     }
 
@@ -4031,6 +4036,7 @@ struct PostOnboardingPreviewScene: View {
         case "product-progress", "product-progress-active": return .report
         case "product-settings", "product-settings-active": return .settings
         case "product-distractions", "product-distractions-active": return .distractions
+        case "product-emergency", "product-emergency-active": return .emergency
         default: return nil
         }
     }
