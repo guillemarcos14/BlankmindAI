@@ -332,10 +332,14 @@ struct HomeView: View {
     @StateObject private var healthKitStore = HealthKitStore()
     @State private var unblankHoldProgress = 0.0
     @State private var unblankHapticTask: Task<Void, Never>?
+    @State private var blockHapticTask: Task<Void, Never>?
     @State private var isAnimatingUnblankHold = false
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
-    @State private var isHomeMenuOpen = false
+    @GestureState private var isHomePressing = false
+    // Larger lettering with a tighter optical gap; keep the existing row footprint.
+    @ScaledMetric(relativeTo: .title) private var homeMenuRowHeight: CGFloat = 34
+    @State private var showingHomeBlockError = false
     private var delayedManualUnlockAt: Date? { sessionStore.delayedManualUnlockAt }
     @State private var showingRelapseReview = false
     @AppStorage("blankPendingAssistantActionId", store: BlankSharedState.defaults) private var pendingAssistantActionId = ""
@@ -380,15 +384,9 @@ struct HomeView: View {
             let layout = HomeLayoutMetrics(size: CGSize(width: viewportWidth, height: viewportHeight), safeAreaInsets: proxy.safeAreaInsets)
 
             ZStack(alignment: .topLeading) {
-                if activeSection == nil {
-                    BlankColors.homeLightBackground
-                        .frame(width: viewportWidth, height: viewportHeight)
-                        .ignoresSafeArea()
-                } else {
-                    AppBackground(isActive: sessionStore.isBlankActive)
-                        .frame(width: viewportWidth, height: viewportHeight)
-                        .clipped()
-                }
+                (sessionStore.isBlankActive ? BlankColors.charcoal : BlankColors.pureWhite)
+                    .frame(width: viewportWidth, height: viewportHeight)
+                    .ignoresSafeArea()
 
                 if activeSection == nil {
                     minimalHome(layout: layout)
@@ -420,9 +418,9 @@ struct HomeView: View {
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
         }
         .ignoresSafeArea(.container)
-        .foregroundStyle(activeSection == nil ? BlankColors.homeLightInk : (sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink))
+        .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink)
         .toolbar(.hidden, for: .navigationBar)
-        .preferredColorScheme(activeSection == nil ? .light : (sessionStore.isBlankActive ? .dark : .light))
+        .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
         .statusBarHidden(activeSection == nil)
         .persistentSystemOverlays(activeSection == nil ? .hidden : .automatic)
         .environment(\.blankMinimalAppearance, true)
@@ -461,7 +459,6 @@ struct HomeView: View {
         }
         .onAppear {
             #if DEBUG && targetEnvironment(simulator)
-            isHomeMenuOpen = ["product-menu", "product-menu-active"].contains(AssistantAppPreview.scenario)
             guard !PostOnboardingPreviewScene.enabled else { return }
             #endif
             now = Date()
@@ -484,6 +481,7 @@ struct HomeView: View {
             #endif
             guard phase == .active else {
                 stopUnblankHoldHaptics()
+                stopBlockHoldHaptics()
                 if phase == .background {
                     acceptingHomeSpeech = false
                     homeSpeech.stop()
@@ -506,6 +504,7 @@ struct HomeView: View {
         }
         .onDisappear {
             stopUnblankHoldHaptics()
+            stopBlockHoldHaptics()
             acceptingHomeSpeech = false
             homeSpeech.stop()
         }
@@ -526,7 +525,9 @@ struct HomeView: View {
         }
         .onChange(of: sessionStore.schedule) { _ in syncAssistantContext() }
         .onChange(of: sessionStore.isBlankActive) { isActive in
-            if !isActive {
+            if isActive {
+                activeSection = nil
+            } else {
                 isActiveNavExpanded = false
                 isHoldingToUnblank = false
                 unblankHoldProgress = 0
@@ -640,18 +641,7 @@ struct HomeView: View {
             AssistantAppView(initialMessage: chatLaunchMessage, simulatorGuest: simulatorGuest, onOpenControls: { section in
                 if let section { openSection(section) }
             }) { actionId in
-                let owner = AssistantAppSession.userID
-                let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
-                let remote = try await AssistantActionInboxClient().actionForApplication(
-                    actionId: actionId, connectCode: code, channel: "app")
-                guard assistantIdentityMatches(code: code, channel: "app", owner: owner),
-                      !assistantActionExecutionInFlight,
-                      sessionStore.pendingAssistantAction == nil,
-                      let pending = remote.toPendingAction() else { throw AssistantAppError.sessionChanged }
-                clearAssistantNotificationRequest()
-                pendingAssistantActionId = remote.id
-                pendingAssistantInboxAction = remote
-                sessionStore.requestAssistantActionConfirmation(pending)
+                try await prepareAssistantAction(actionId)
             }
         }
         .sheet(isPresented: $showingRelink) {
@@ -687,10 +677,10 @@ struct HomeView: View {
                 },
                 onRequestHealthAccess: { healthKitStore.requestAccess() },
                 screenTimeStatus: screenTimeBlocker.authorizationStatusLabel,
-                healthStatus: healthPermissionLabel
-            ) {
-                closeSection()
-            }
+                healthStatus: healthPermissionLabel,
+                onClose: closeSection,
+                onApplyHistoryAction: applyHistoryAction
+            )
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
             .transition(.opacity)
             .zIndex(5)
@@ -824,70 +814,131 @@ struct HomeView: View {
         }
     }
 
+    private func prepareAssistantAction(_ actionId: String) async throws {
+        let owner = AssistantAppSession.userID
+        let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        let remote = try await AssistantActionInboxClient().actionForApplication(
+            actionId: actionId, connectCode: code, channel: "app")
+        guard assistantIdentityMatches(code: code, channel: "app", owner: owner),
+              !assistantActionExecutionInFlight,
+              sessionStore.pendingAssistantAction == nil,
+              let pending = remote.toPendingAction() else { throw AssistantAppError.sessionChanged }
+        clearAssistantNotificationRequest()
+        pendingAssistantActionId = remote.id
+        pendingAssistantInboxAction = remote
+        sessionStore.requestAssistantActionConfirmation(pending)
+    }
+
+    private func applyHistoryAction(_ actionId: String) {
+        Task { @MainActor in
+            do {
+                try await prepareAssistantAction(actionId)
+                closeSection()
+                confirmPendingAssistantAction()
+            } catch {
+                message = error.localizedDescription
+                showingHomeBlockError = true
+            }
+        }
+    }
+
     private func closeSection() {
         withAnimation(.easeInOut(duration: 0.35)) {
             activeSection = nil
         }
     }
 
-    @ViewBuilder
     private func minimalHome(layout: HomeLayoutMetrics) -> some View {
         GeometryReader { proxy in
             let diameter = max(44, min(72, proxy.size.width * 150 / 1080))
             let right = max(24, proxy.size.width * 108 / 1080)
             let bottom = max(proxy.safeAreaInsets.bottom + 16, proxy.size.height * 108 / 1920)
-            ZStack(alignment: .bottomTrailing) {
-                if isHomeMenuOpen {
-                    Color.clear.contentShape(Rectangle())
-                        .onTapGesture { isHomeMenuOpen = false }
-                        .accessibilityLabel("Close menu")
-                        .accessibilityAddTraits(.isButton)
-                    orbMenu(layout: layout, trailing: right + diameter + 16, bottom: bottom)
-                        .transition(reduceMotion ? .opacity : .asymmetric(
-                            insertion: .move(edge: .bottom).combined(with: .opacity),
-                            removal: .opacity))
+            orbMenu(layout: layout, trailing: right + diameter + 16, bottom: bottom)
+                .contentShape(Rectangle())
+                // Observe holds alongside the menu buttons; priority here consumes their taps.
+                .simultaneousGesture(
+                    LongPressGesture(
+                        minimumDuration: sessionStore.isBlankActive ? 20 : HomeBlockGesturePolicy.holdDuration,
+                        maximumDistance: CGFloat(HomeBlockGesturePolicy.movementTolerance)
+                    )
+                    .updating($isHomePressing) { pressing, state, _ in state = pressing }
+                    .onEnded { _ in
+                        if sessionStore.isBlankActive {
+                            guard !sessionStore.hardBlankActive, delayedManualUnlockAt == nil else { return }
+                            scheduleDelayedManualUnlock(cooldownSeconds: 60)
+                        } else {
+                            handleHomeOrb(.block)
+                        }
+                    }
+                )
+                .onChange(of: isHomePressing) { pressing in
+                    guard sessionStore.isBlankActive else {
+                        if pressing { startBlockHoldHaptics() }
+                        else { stopBlockHoldHaptics() }
+                        return
+                    }
+                    stopBlockHoldHaptics()
+                    if pressing && !sessionStore.hardBlankActive && delayedManualUnlockAt == nil {
+                        isHoldingToUnblank = true
+                        isAnimatingUnblankHold = true
+                        startUnblankHoldHaptics()
+                        withAnimation(.linear(duration: 20)) { unblankHoldProgress = 1 }
+                    } else {
+                        isHoldingToUnblank = false
+                        isAnimatingUnblankHold = false
+                        stopUnblankHoldHaptics()
+                        withAnimation(.easeOut(duration: 0.18)) { unblankHoldProgress = 0 }
+                    }
                 }
-                HomeOrbControl(menuOpen: isHomeMenuOpen, protectionActive: sessionStore.isBlankActive, onAction: handleHomeOrb)
-                    .id(isHomeMenuOpen)
-                    .frame(width: diameter, height: diameter)
-                    .padding(.trailing, right)
-                    .padding(.bottom, bottom)
-                    .opacity(isHoldingToUnblank || isHomeMenuOpen ? 0 : 1)
-                    .allowsHitTesting(!isHoldingToUnblank && !isHomeMenuOpen)
-                    .accessibilityHidden(isHoldingToUnblank || isHomeMenuOpen)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .accessibilityHint(sessionStore.isBlankActive
+                    ? "Hold the screen for 20 seconds to unblank."
+                    : "Hold the screen for three seconds to block distractions.")
+                .accessibilityAction(named: Text("Block distractions")) {
+                    if !sessionStore.isBlankActive { handleHomeOrb(.block) }
+                }
+                .overlay(alignment: .bottomLeading) {
+                    Rectangle()
+                        .fill(BlankColors.foreground.opacity(0.46))
+                        .frame(width: proxy.size.width * unblankHoldProgress, height: 1.5)
+                        .allowsHitTesting(false)
+                }
+                .overlay(alignment: .leading) {
+                    if let cooldownText {
+                        Text(cooldownText)
+                            .font(.blankHomeDisplay)
+                            .foregroundStyle(BlankColors.foreground)
+                            .monospacedDigit()
+                            .padding(.leading, 24)
+                            .frame(maxHeight: .infinity, alignment: .center)
+                            .allowsHitTesting(false)
+                    }
+                }
         }
-        .animation(.easeOut(duration: reduceMotion ? 0.12 : 0.38), value: isHomeMenuOpen)
-        .overlay {
-            if isHoldingToUnblank {
-                // Retain the existing protected release gesture and persisted cooldown.
-                activeMinimalHome(layout: layout)
-                    .background(BlankColors.homeDarkBackground)
-                    .transition(.opacity)
-            }
+        .alert("Couldn't start protection", isPresented: $showingHomeBlockError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(message ?? "Check Screen Time permissions and selected distractions in Settings.")
         }
+    }
+
+    private func holdScreenInstruction(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.blankHomeDisplay)
+            .tracking(0)
+            .foregroundStyle(color)
+            .lineLimit(3)
+            .minimumScaleFactor(0.78)
+            .lineSpacing(0.8)
     }
 
     private func orbMenu(layout: HomeLayoutMetrics, trailing: CGFloat, bottom: CGFloat) -> some View {
         GeometryReader { proxy in
           ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                minimalHomeRow(sessionStore.isBlankActive ? "blank active" : "blank", color: BlankColors.charcoal) {
-                    handleHomeOrb(.block)
-                }
-                if sessionStore.isBlankActive {
-                    minimalHomeRow("unblank", color: BlankColors.charcoal) { beginFullScreenUnblankHold() }
-                        .disabled(sessionStore.hardBlankActive || delayedManualUnlockAt != nil)
-                    if sessionStore.hardBlankActive {
-                        minimalUtilityRow("emergency") { openSection(.emergency) }
-                    }
-                }
-                minimalHomeRow("progress", color: BlankColors.charcoal) { openSection(.report) }
-                minimalHomeRow("distractions", color: BlankColors.charcoal) { openSection(.distractions) }
-                minimalHomeRow("settings", color: BlankColors.charcoal) { openSection(.settings) }
-                minimalHomeRow("chat", color: BlankColors.charcoal) { openAssistantChat() }
-                minimalStatus
+                minimalHomeRow("chat", color: BlankColors.foreground) { openAssistantChat() }
+                minimalHomeRow("progress", color: BlankColors.foreground) { openSection(.report) }
+                minimalHomeRow("distractions", color: BlankColors.foreground) { openSection(.distractions) }
+                minimalHomeRow("settings", color: BlankColors.foreground) { openSection(.settings) }
             }
             .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .bottomLeading)
           }
@@ -895,25 +946,22 @@ struct HomeView: View {
         }
         .padding(.leading, 24)
         .padding(.trailing, trailing)
-        .padding(.top, layout.topPadding)
+        .padding(.top, layout.topPadding + 60)
         .padding(.bottom, bottom)
     }
 
     private func handleHomeOrb(_ action: HomeOrbAction) {
         switch action {
-        case .menu: isHomeMenuOpen = true
-        case .closeMenu: isHomeMenuOpen = false
+        case .menu, .closeMenu: break
         case .chat: openAssistantChat()
         case .block:
-            guard !sessionStore.isBlankActive else {
-                isHomeMenuOpen = true
-                return
-            }
+            stopBlockHoldHaptics()
+            guard !sessionStore.isBlankActive else { return }
             screenTimeBlocker.refreshAuthorizationStatus()
             guard screenTimeBlocker.authorizationStatus == .approved else {
                 message = "Allow Screen Time in settings to block distractions."
                 messageAction = nil
-                isHomeMenuOpen = true
+                showingHomeBlockError = true
                 return
             }
             let result = sessionStore.activateBlank(usePendingWidgetTimer: false)
@@ -921,9 +969,9 @@ struct HomeView: View {
             setMessage(for: result)
             if !sessionStore.isBlankActive {
                 if message == nil { message = "Protection can restart after the unblank cooldown." }
-                isHomeMenuOpen = true
+                showingHomeBlockError = true
             } else {
-                isHomeMenuOpen = false
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 UIAccessibility.post(notification: .announcement, argument: "Distractions blocked")
             }
         }
@@ -992,38 +1040,12 @@ struct HomeView: View {
             ZStack(alignment: .topLeading) {
                 activePrimaryContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-
-                VStack(alignment: .leading, spacing: 0) {
-                    Spacer(minLength: 0)
-
-                    if isActiveNavExpanded {
-                        activeExpandedNavigation
-                            .transition(.opacity)
-                    } else {
-                        VStack(alignment: .leading, spacing: 0) {
-                            minimalStartRow
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            Button("unblank") {
-                                beginFullScreenUnblankHold()
-                            }
-                            .font(.blankInter(size: 32, relativeTo: .title))
-                            .tracking(-0.9)
-                            .foregroundStyle(BlankColors.homeDarkSecondary)
-                            .frame(minWidth: 44, minHeight: 44, alignment: .leading)
-                            .buttonStyle(.plain)
-                        }
-                        .transition(.opacity)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
             .padding(.horizontal, layout.horizontalPadding)
-            .padding(.bottom, layout.bottomPadding * 2)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .overlay {
-            if isHoldingToUnblank {
+            if !sessionStore.hardBlankActive && delayedManualUnlockAt == nil {
                 Color.clear
                     .contentShape(Rectangle())
                     .ignoresSafeArea()
@@ -1057,6 +1079,7 @@ struct HomeView: View {
                                       !sessionStore.hardBlankActive,
                                       delayedManualUnlockAt == nil,
                                       !isAnimatingUnblankHold else { return }
+                                isHoldingToUnblank = true
                                 isAnimatingUnblankHold = true
                                 startUnblankHoldHaptics()
                                 unblankHoldProgress = 0
@@ -1075,6 +1098,7 @@ struct HomeView: View {
                                 }
                             }
                     )
+                    .padding(.bottom, max(120, layout.bottomPadding * 2 + 80))
                     .zIndex(10)
             }
         }
@@ -1084,14 +1108,8 @@ struct HomeView: View {
     @ViewBuilder
     private var activePrimaryContent: some View {
         ZStack(alignment: .leading) {
-            if isHoldingToUnblank {
-                Text("hold the screen to unblank")
-                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
-                    .tracking(0)
-                    .foregroundStyle(BlankColors.pureWhite)
-                    .lineLimit(3)
-                    .minimumScaleFactor(0.78)
-                    .lineSpacing(0.8)
+            if !sessionStore.hardBlankActive && delayedManualUnlockAt == nil {
+                holdScreenInstruction("hold the screen\nto unblank", color: BlankColors.pureWhite)
                     .opacity(1 - unblankHoldProgress)
                     .transition(.opacity)
             } else if let cooldownText {
@@ -1103,6 +1121,10 @@ struct HomeView: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.72)
                     .transition(.opacity)
+            } else if sessionStore.hardBlankActive {
+                Text(timerCountdownText ?? "hard protection active")
+                    .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
+                    .foregroundStyle(BlankColors.pureWhite)
             } else if let timerCountdownText {
                 Text(timerCountdownText)
                     .font(.blankInter(size: 32, weight: .bold, relativeTo: .largeTitle))
@@ -1155,7 +1177,9 @@ struct HomeView: View {
         Button(action: action) {
             Text(title)
                 .blankHomeDisplayTextStyle(color: color)
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: homeMenuRowHeight, alignment: .leading)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1236,7 +1260,7 @@ struct HomeView: View {
             }
         }
         .font(.blankInter(size: 13, weight: .medium, relativeTo: .footnote))
-        .foregroundStyle(isHoldingToUnblank ? BlankColors.homeDarkSecondary : BlankColors.homeLightSecondary)
+        .foregroundStyle(sessionStore.isBlankActive ? BlankColors.homeDarkSecondary : BlankColors.homeLightSecondary)
         .fixedSize(horizontal: false, vertical: true)
         .padding(.top, 6)
     }
@@ -1541,6 +1565,26 @@ struct HomeView: View {
         return unlocked
     }
 
+    private func stopBlockHoldHaptics() {
+        blockHapticTask?.cancel()
+        blockHapticTask = nil
+    }
+
+    private func startBlockHoldHaptics() {
+        stopBlockHoldHaptics()
+        blockHapticTask = Task { @MainActor in
+            let feedback = UIImpactFeedbackGenerator(style: .light)
+            for _ in 1..<Int(HomeBlockGesturePolicy.holdDuration) {
+                do { try await Task.sleep(nanoseconds: 1_000_000_000) }
+                catch { return }
+                guard !Task.isCancelled, scenePhase == .active, isHomePressing,
+                      !sessionStore.isBlankActive else { return }
+                feedback.prepare()
+                feedback.impactOccurred(intensity: 0.65)
+            }
+        }
+    }
+
     private func stopUnblankHoldHaptics() {
         unblankHapticTask?.cancel()
         unblankHapticTask = nil
@@ -1572,7 +1616,7 @@ struct HomeView: View {
               delayedManualUnlockAt == nil else { return }
         withAnimation(.easeInOut(duration: 0.35)) {
             isActiveNavExpanded = false
-            isHoldingToUnblank = true
+            isHoldingToUnblank = false
         }
         unblankHoldProgress = 0
         isAnimatingUnblankHold = false
@@ -2234,13 +2278,19 @@ struct HomeView: View {
     }
 }
 
+private extension Font {
+    static var blankHomeDisplay: Font {
+        .blankInter(size: 36, weight: .medium, relativeTo: .title)
+    }
+}
+
 private extension View {
     func blankHomeDisplayTextStyle(color: Color) -> some View {
-        font(.blankInter(size: 32, relativeTo: .title))
+        font(.blankHomeDisplay)
             .foregroundStyle(color)
             .tracking(-0.9)
             .lineLimit(1)
-            .minimumScaleFactor(0.72)
+            .minimumScaleFactor(0.5)
             .lineSpacing(0)
     }
 }
@@ -2342,16 +2392,8 @@ private enum HomeMessageAction {
 
 struct AppBackground: View {
     let isActive: Bool
-
     var body: some View {
-        ZStack {
-            Image(isActive ? "blank_home_background_active" : "blank_home_background_idle")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-        }
-        .ignoresSafeArea()
-        .animation(.easeInOut(duration: 0.75), value: isActive)
+        (isActive ? BlankColors.charcoal : BlankColors.pureWhite).ignoresSafeArea()
     }
 }
 
@@ -2374,6 +2416,7 @@ struct HomeSectionScreen: View {
     let screenTimeStatus: String
     let healthStatus: String
     let onClose: () -> Void
+    var onApplyHistoryAction: (String) -> Void = { _ in }
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
 
     var body: some View {
@@ -2393,7 +2436,7 @@ struct HomeSectionScreen: View {
             routeContent
                 .environment(\.blankMinimalAppearance, minimalAppearance)
                 .environment(\.blankSectionHorizontalPadding, sectionHorizontalPadding)
-                .padding(.top, 60)
+                .padding(.top, section == .emergency ? 0 : 60)
                 .frame(width: contentWidth, height: screenHeight, alignment: .top)
                 .frame(width: screenWidth, height: screenHeight, alignment: .top)
                 .offset(x: horizontalOffset)
@@ -2428,7 +2471,8 @@ struct HomeSectionScreen: View {
                 onRequestScreenTimePermission: onRequestScreenTimePermission,
                 onRequestHealthAccess: onRequestHealthAccess,
                 screenTimeStatus: screenTimeStatus,
-                healthStatus: healthStatus
+                healthStatus: healthStatus,
+                onApplyHistoryAction: onApplyHistoryAction
             )
         }
     }
@@ -2500,7 +2544,8 @@ private struct SettingsScreen: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
     @State private var showingAccount = false
-    @State private var showingBMBSettings = false
+    @State private var selectedBMBSettings: BMBSettingsSection?
+    @State private var showingHistory = false
 
     let onClose: () -> Void
     let onOpenEmergency: () -> Void
@@ -2509,6 +2554,7 @@ private struct SettingsScreen: View {
     let onRequestHealthAccess: () -> Void
     let screenTimeStatus: String
     let healthStatus: String
+    let onApplyHistoryAction: (String) -> Void
 
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
     private var secondaryColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.70) : BlankColors.mutedInk }
@@ -2518,66 +2564,47 @@ private struct SettingsScreen: View {
             VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(
                     title: "settings",
-                    subtitle: "access, support and preferences.",
+                    subtitle: "Manage your account and preferences.\nReview access, support and privacy.",
                     action: onClose,
                     titleColor: textColor,
                     subtitleColor: secondaryColor
                 )
                 .padding(.bottom, 12)
 
-                settingsRow(title: "blankmind", detail: "autonomy and notifications", action: { showingBMBSettings = true })
-                settingsRow(
-                    title: "emergency",
-                    detail: "unlock access while blanked",
-                    action: onOpenEmergency
-                )
-
-                settingsRow(
-                    title: "screen time",
-                    detail: "screen time \(screenTimeStatus.lowercased())",
-                    symbol: screenTimeStatus == "approved" ? "checkmark" : "chevron.right",
-                    action: onRequestScreenTimePermission
-                )
-
-                settingsRow(
-                    title: "health",
-                    detail: "apple health \(healthStatus.lowercased())",
-                    symbol: healthStatus == "connected" ? "checkmark" : "chevron.right",
-                    action: onRequestHealthAccess
-                )
-
-                settingsRow(
-                    title: "assistant",
-                    detail: "conversation and account",
-                    action: onOpenAssistant
-                )
-
-                settingsRow(
-                    title: "account",
-                    detail: "Apple sign-in and account controls",
-                    action: { showingAccount = true }
-                )
-
-                settingsRow(
-                    title: "privacy policy",
-                    detail: "how Blankmind handles your data",
-                    symbol: "arrow.up.right",
-                    action: { openURL(URL(string: "https://blankmind.ai/privacy")!) }
-                )
-
-                settingsRow(
-                    title: "terms of service",
-                    detail: "terms for using Blankmind",
-                    symbol: "arrow.up.right",
-                    action: { openURL(URL(string: "https://blankmind.ai/terms")!) }
-                )
+                settingsRow(title: "emergency", detail: "unlock access while blanked", action: onOpenEmergency)
+                settingsRow(title: "automatic protection", detail: "choose when and how Blankmind may act", action: { selectedBMBSettings = .automaticProtection })
+                settingsRow(title: "notifications", detail: "choose which notices you receive and when", action: { selectedBMBSettings = .notifications })
+                settingsRow(title: "conversation history", detail: "review previous conversations", action: { showingHistory = true })
+                settingsRow(title: "account", detail: "Apple sign-in and account controls", action: { showingAccount = true })
+                if screenTimeStatus != "approved" {
+                    settingsRow(title: "screen time", detail: screenTimeStatus, action: onRequestScreenTimePermission)
+                }
+                if healthStatus != "connected" {
+                    settingsRow(title: "health", detail: healthStatus, action: onRequestHealthAccess)
+                }
+                if screenTimeStatus == "approved" {
+                    settingsRow(title: "screen time", detail: screenTimeStatus, symbol: "checkmark", secondary: true, action: onRequestScreenTimePermission)
+                }
+                if healthStatus == "connected" {
+                    settingsRow(title: "health", detail: healthStatus, symbol: "checkmark", secondary: true, action: onRequestHealthAccess)
+                }
+                settingsRow(title: "privacy policy", detail: "how Blankmind handles your data", symbol: "arrow.up.right", secondary: true,
+                            action: { openURL(URL(string: "https://blankmind.ai/privacy")!) })
+                settingsRow(title: "terms of service", detail: "terms for using Blankmind", symbol: "arrow.up.right", secondary: true,
+                            action: { openURL(URL(string: "https://blankmind.ai/terms")!) })
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.bottom, 24)
         }
         .padding(.horizontal, sectionHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .sheet(isPresented: $showingBMBSettings) { BMBSettingsView() }
+        .sheet(isPresented: $showingHistory) {
+            AssistantAppHistoryView(turns: [], nextBefore: nil,
+                foreground: textColor, background: sessionStore.isBlankActive ? BlankColors.charcoal : BlankColors.pureWhite,
+                onApplyAction: onApplyHistoryAction)
+                .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
+        }
+        .sheet(item: $selectedBMBSettings) { BMBSettingsView(section: $0) }
         .sheet(isPresented: $showingAccount) {
             AccountSettingsSheet()
                 .environmentObject(sessionStore)
@@ -2589,26 +2616,22 @@ private struct SettingsScreen: View {
         detail: String,
         symbol: String = "chevron.right",
         color: Color? = nil,
+        secondary: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(title.capitalized)
-                        .font(.blankOnboardingControl)
-
-                    Text(detail)
-                        .font(.blankInter(size: 12, relativeTo: .caption))
-                        .foregroundStyle(BlankColors.pureWhite.opacity(0.72))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Text(title.capitalized)
+                    .font(.blankOnboardingControl)
                 Spacer(minLength: 0)
                 Image(systemName: symbol)
                     .font(.system(size: 12, weight: .regular))
                     .accessibilityHidden(true)
             }
-            .foregroundStyle(color ?? BlankColors.pureWhite)
-            .blankBlackCard()
+            .foregroundStyle(color ?? (secondary ? BlankColors.charcoal : BlankColors.pureWhite))
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 4).fill(secondary ? BlankColors.lichenGray : BlankColors.charcoal))
             .contentShape(RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)
@@ -3216,12 +3239,10 @@ private struct EmergencyScreen: View {
     private var secondaryColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.70) : BlankColors.mutedInk }
 
     var body: some View {
-        VStack(alignment: minimalAppearance ? .leading : .center, spacing: 0) {
-            if minimalAppearance {
-                SectionBackHeader(action: onClose)
-            }
-
-            VStack(alignment: minimalAppearance ? .leading : .center, spacing: minimalAppearance ? 0 : 10) {
+        GeometryReader { proxy in
+          ScrollView(.vertical, showsIndicators: false) {
+           VStack(alignment: .center, spacing: 0) {
+            VStack(alignment: .center, spacing: minimalAppearance ? 0 : 10) {
                 if !minimalAppearance {
                     Image(systemName: isConfirming ? "lock.open.fill" : "shield.lefthalf.filled")
                         .font(.system(size: 22, weight: .semibold))
@@ -3240,18 +3261,18 @@ private struct EmergencyScreen: View {
                     ))
                     .tracking(minimalAppearance ? -0.6 : 0)
                     .foregroundStyle(textColor)
-                    .multilineTextAlignment(minimalAppearance ? .leading : .center)
+                    .multilineTextAlignment(.center)
 
                 Text(bodyText)
                     .font(.blankInter(size: minimalAppearance ? 14 : 16, weight: .regular, relativeTo: .body))
                     .foregroundStyle(secondaryColor)
-                    .multilineTextAlignment(minimalAppearance ? .leading : .center)
+                    .multilineTextAlignment(.center)
                     .lineSpacing(minimalAppearance ? 0 : 3)
                     .frame(maxWidth: 300)
                     .padding(.top, minimalAppearance ? 5 : 0)
                     .padding(.bottom, minimalAppearance ? 24 : 0)
             }
-            .frame(maxWidth: .infinity, alignment: minimalAppearance ? .leading : .center)
+            .frame(maxWidth: .infinity, alignment: .center)
 
             emergencyAllowance
                 .padding(.bottom, minimalAppearance ? 24 : 0)
@@ -3280,7 +3301,16 @@ private struct EmergencyScreen: View {
             }
             .frame(maxWidth: 300)
 
-            Spacer(minLength: 0)
+           }
+           .padding(.vertical, 120)
+           .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .center)
+          }
+          .overlay(alignment: .topLeading) {
+            if minimalAppearance {
+                SectionBackHeader(action: onClose)
+                    .padding(.top, 60)
+            }
+          }
         }
         .padding(.horizontal, sectionHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -3450,77 +3480,57 @@ private struct DistractionsScreen: View {
     }
 
     var body: some View {
-        GeometryReader { proxy in
-            let homeContentBottomMargin = max(proxy.safeAreaInsets.bottom + 18, 34) * 2
-
-            ZStack(alignment: .bottomLeading) {
-                VStack(alignment: .leading, spacing: 0) {
-                    SectionBackHeader(action: onClose)
-
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Distractions")
-                            .font(.blankSectionEditorial())
-                            .tracking(-0.9)
-                            .foregroundStyle(textColor)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Text("Your protection list.")
-                            .font(.blankInter(size: 14, relativeTo: .subheadline))
-                            .foregroundStyle(secondaryColor)
-                            .padding(.top, 24)
-
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "clock")
-                                .accessibilityHidden(true)
-                            scheduleRanges
-                        }
-                        .font(.blankInter(size: 13, relativeTo: .subheadline))
+        VStack(alignment: .leading, spacing: 0) {
+            SectionBackHeader(action: onClose)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Distractions")
+                        .font(.blankSectionEditorial())
+                        .tracking(-0.9)
+                        .foregroundStyle(textColor)
+                    Text("Choose what pulls you away.\nSee when your distractions are blocked.")
+                        .font(.blankInter(size: 14, relativeTo: .subheadline))
                         .foregroundStyle(secondaryColor)
-                        .padding(.top, 24)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 12)
+                    distractionGroupHeading("Blocks")
+                    if sessionStore.isBlankActive {
+                        Text("Protection active")
+                            .font(.blankOnboardingControl)
+                            .blankBlackCard()
                     }
-
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            if sessionStore.selection.blankedSelectionCount == 0 {
-                                Text("No distractions yet")
-                                    .font(.blankInter(size: 16, relativeTo: .headline))
-                                    .foregroundStyle(BlankColors.pureWhite.opacity(0.72))
-                                    .blankBlackCard()
-                            } else {
+                    scheduleRanges
+                    distractionGroupHeading("Apps")
+                    editButton
+                    if sessionStore.selection.blankedSelectionCount == 0 {
+                        Text("No distractions yet")
+                            .font(.blankInter(size: 16, relativeTo: .headline))
+                            .blankBlackCard()
+                    } else {
                                 if !sessionStore.selection.applicationTokens.isEmpty {
-                                    distractionGroupHeading("Apps")
                                     ForEach(Array(sessionStore.selection.applicationTokens), id: \.self) { token in
-                                        distractionRow { Label(token).labelStyle(.titleAndIcon) }
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .light : .dark) }
                                     }
                                 }
                                 if !sessionStore.selection.categoryTokens.isEmpty {
                                     distractionGroupHeading("Categories")
                                     ForEach(Array(sessionStore.selection.categoryTokens), id: \.self) { token in
-                                        distractionRow { Label(token).labelStyle(.titleAndIcon) }
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .light : .dark) }
                                     }
                                 }
                                 if !sessionStore.selection.webDomainTokens.isEmpty {
                                     distractionGroupHeading("Websites")
                                     ForEach(Array(sessionStore.selection.webDomainTokens), id: \.self) { token in
-                                        distractionRow { Label(token).labelStyle(.titleAndIcon) }
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .light : .dark) }
                                     }
                                 }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                        .padding(.bottom, homeContentBottomMargin + 76)
                     }
-                    .padding(.top, 24)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
-                .padding(.horizontal, sectionHorizontalPadding)
-                .padding(.bottom, 20)
-
-                editButton
-                    .padding(.leading, sectionHorizontalPadding)
-                    .padding(.bottom, homeContentBottomMargin)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(.bottom, 34)
             }
         }
+        .padding(.horizontal, sectionHorizontalPadding)
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
     }
 
@@ -3531,6 +3541,8 @@ private struct DistractionsScreen: View {
             } else {
                 ForEach(activeWindows) { window in
                     Text("\(distractionTimeLabel(window.startMinute)) to \(distractionTimeLabel(window.endMinute))")
+                        .font(.blankOnboardingControl)
+                        .blankBlackCard()
                 }
             }
         }
@@ -3545,10 +3557,10 @@ private struct DistractionsScreen: View {
         } label: {
             Label("Edit distractions", systemImage: "plus")
                 .font(.blankInter(size: 16))
-                .foregroundStyle(BlankColors.pureWhite)
+                .foregroundStyle(BlankColors.cardInk)
                 .padding(.horizontal, 16)
                 .frame(minHeight: 44)
-                .background(RoundedRectangle(cornerRadius: 4).fill(BlankColors.charcoal))
+                .background(RoundedRectangle(cornerRadius: 4).fill(BlankColors.cardSurface))
         }
         .buttonStyle(.plain)
         .disabled(!sessionStore.canEditSelectedDistractions)
@@ -3623,7 +3635,7 @@ struct AppAccountSignInSheet: View {
                     Text("Sign in to Blankmind")
                         .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
                         .tracking(-0.9)
-                        .foregroundStyle(BlankColors.charcoal)
+                        .foregroundStyle(BlankColors.foreground)
                         .padding(.bottom, 24)
                     AccountJustifiedCopy(text: NSAttributedString(string: "Blankmind AI's core model is trained to identify recurring behavioral patterns, detect high-risk moments, and adapt interventions in real time."))
                         .padding(.bottom, 24)
@@ -3643,7 +3655,7 @@ struct AppAccountSignInSheet: View {
                         request.requestedScopes = [.email]
                         request.nonce = Self.hashNonce(nonce)
                     }, onCompletion: finishAppleAuthorization)
-                        .signInWithAppleButtonStyle(.black)
+                        .signInWithAppleButtonStyle(sessionStore.isBlankActive ? .white : .black)
                         .frame(width: accountTitleWidth, height: 44)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                         .disabled(isWorking)
@@ -3667,8 +3679,8 @@ struct AppAccountSignInSheet: View {
                 .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .background(BlankColors.pureWhite)
-        .preferredColorScheme(.light)
+        .background(BlankColors.canvas)
+        .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
     }
 
     private var accountTitleWidth: CGFloat {
@@ -4012,27 +4024,32 @@ private struct HomePreviewScene: View {
 @MainActor
 struct PostOnboardingPreviewScene: View {
     static var enabled: Bool {
-        ["product-home", "product-menu", "product-menu-active", "product-progress", "product-settings", "product-distractions"]
+        ["product-home", "product-home-active", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-automatic", "product-automatic-active", "product-notifications", "product-notifications-active"]
             .contains(AssistantAppPreview.scenario)
     }
 
     @StateObject private var sessionStore = SessionStore.preview(
-        isBlankActive: AssistantAppPreview.scenario == "product-menu-active", protectedSelectionCount: 0)
+        isBlankActive: AssistantAppPreview.scenario.hasSuffix("-active"), protectedSelectionCount: 0)
     @StateObject private var screenTimeBlocker = ScreenTimeBlocker.preview()
     @State private var showingPicker = false
 
     private var section: HomeSection? {
         switch AssistantAppPreview.scenario {
-        case "product-progress": return .report
-        case "product-settings": return .settings
-        case "product-distractions": return .distractions
+        case "product-progress", "product-progress-active": return .report
+        case "product-settings", "product-settings-active": return .settings
+        case "product-distractions", "product-distractions-active": return .distractions
+        case "product-emergency", "product-emergency-active": return .emergency
         default: return nil
         }
     }
 
     var body: some View {
         GeometryReader { proxy in
-            if let section {
+            if AssistantAppPreview.scenario.hasPrefix("product-automatic") {
+                BMBSettingsView(section: .automaticProtection)
+            } else if AssistantAppPreview.scenario.hasPrefix("product-notifications") {
+                BMBSettingsView(section: .notifications)
+            } else if let section {
                 HomeSectionScreen(
                     showingPicker: $showingPicker,
                     section: section,
@@ -4056,12 +4073,14 @@ struct PostOnboardingPreviewScene: View {
         .environmentObject(sessionStore)
         .environmentObject(screenTimeBlocker)
         .environment(\.blankMinimalAppearance, true)
+        .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
     }
 }
 #endif
 
 // TextKit supplies true paragraph justification while preserving native legal links.
 struct AccountJustifiedCopy: UIViewRepresentable {
+    @Environment(\.colorScheme) private var colorScheme
     let text: NSAttributedString
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -4083,7 +4102,9 @@ struct AccountJustifiedCopy: UIViewRepresentable {
     }
 
     func updateUIView(_ view: UITextView, context: Context) {
-        let color = UIColor(red: 100 / 255.0, green: 116 / 255.0, blue: 139 / 255.0, alpha: 1)
+        let color = colorScheme == .dark
+            ? UIColor(red: 1, green: 1, blue: 252/255, alpha: 0.72)
+            : UIColor(red: 41/255, green: 41/255, blue: 41/255, alpha: 0.72)
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .justified
         paragraph.lineSpacing = 4
@@ -4110,7 +4131,21 @@ private final class AccountLegalLayoutManager: NSLayoutManager {
 }
 
 
+private enum BMBSettingsSection: String, Identifiable {
+    case automaticProtection
+    case notifications
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .automaticProtection: return "Automatic protection"
+        case .notifications: return "Notifications"
+        }
+    }
+}
+
 private struct BMBSettingsView: View {
+    let section: BMBSettingsSection
     @Environment(\.dismiss) private var dismiss
     @State private var version = 0
     @State private var active = false
@@ -4132,6 +4167,7 @@ private struct BMBSettingsView: View {
     @State private var interventions = true
     @State private var failures = true
     @State private var busy = true
+    @State private var loaded = false
     @State private var status = ""
     @State private var events: [[String: Any]] = []
     private func clock(_ value: Binding<Int>) -> Binding<Date> {
@@ -4141,42 +4177,71 @@ private struct BMBSettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Automatic protection") {
-                    Toggle("Allow BMB to act", isOn:$active)
-                    Text("BMB can try these actions within your limits. iOS may delay background delivery. Existing blocks keep their release rules.").font(.footnote)
+                if section == .automaticProtection {
+                  Section("Permission") {
+                    Toggle("Allow automatic protection", isOn:$active)
+                    Text("Blankmind may make only the changes you allow, within your limits. iOS may delay delivery. Existing blocks keep their release rules.").font(.footnote)
+                  }
+                  Section("Allowed changes") {
                     ForEach([("start_protection","Block selected distractions"),("set_daily_limit","Set daily limit"),("enable_adult_filter","Enable adult filter")], id: \.0) { type,label in
                         Toggle(label,isOn:Binding(get:{ allowedTypes.contains(type) },set:{ if $0 { allowedTypes.insert(type) } else { allowedTypes.remove(type) } }))
                     }
-                    DatePicker("From",selection:clock($actionStart),displayedComponents:.hourAndMinute)
-                    DatePicker("Until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
-                    Text("Matching times allow any hour.").font(.footnote)
                     Text("Daily limits and the adult filter stay on until you change them. Revoking permission stops future automatic changes.").font(.footnote)
-                    Stepper("Maximum minutes \(maxMinutes)",value:$maxMinutes,in:5...240,step:5)
+                  }
+                  Section("When and for how long") {
+                    DatePicker("Allowed from",selection:clock($actionStart),displayedComponents:.hourAndMinute)
+                    DatePicker("Allowed until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
+                    Text("Set the same start and end time to allow any hour.").font(.footnote)
+                    Stepper("Maximum block: \(maxMinutes) min",value:$maxMinutes,in:5...240,step:5)
+                  }
+                  Section {
+                   DisclosureGroup("Advanced") {
                     Stepper("Actions per day \(actionDaily)",value:$actionDaily,in:0...10)
                     Stepper("Actions per 7 days \(actionWeekly)",value:$actionWeekly,in:0...30)
-                    Stepper("Minimum gap \(intervalMinutes) min",value:$intervalMinutes,in:15...10080,step:15)
+                    Stepper("Time between actions: \(intervalMinutes) min",value:$intervalMinutes,in:15...10080,step:15)
                     DatePicker("Permission expires",selection:$expires,in:Date()...,displayedComponents:[.date,.hourAndMinute])
+                   }
+                  }
                 }
-                Section("Notifications") {
-                    Toggle("Useful notifications",isOn:$enabled)
-                    Text("Notification permission is separate from acting. Quiet hours still apply to failures. No routine start or end alerts.").font(.footnote)
-                    Toggle("Useful opportunities",isOn:$opportunities)
-                    Toggle("Confirmed new interventions",isOn:$interventions)
-                    Toggle("Failures needing my help",isOn:$failures)
+                if section == .notifications {
+                  Section("Permission") {
+                    Toggle("Receive notifications",isOn:$enabled)
+                    Text("Notifications do not give Blankmind permission to block. All notices follow your allowed hours. No routine start or end alerts.").font(.footnote)
+                  }
+                  Section("What to receive") {
+                    Toggle("Helpful suggestions",isOn:$opportunities)
+                    Toggle("Protection updates",isOn:$interventions)
+                    Toggle("Problems needing your help",isOn:$failures)
+                  }
+                  Section("Allowed hours") {
                     DatePicker("Allowed from",selection:clock($quietStart),displayedComponents:.hourAndMinute)
                     DatePicker("Allowed until",selection:clock($quietEnd),displayedComponents:.hourAndMinute)
+                  }
+                  Section {
+                   DisclosureGroup("Advanced") {
                     Stepper("Notifications per day \(notifyDaily)",value:$notifyDaily,in:0...10)
                     Stepper("Notifications per 7 days \(notifyWeekly)",value:$notifyWeekly,in:0...30)
+                   }
+                  }
+                }
+                if section == .automaticProtection {
+                  Section("Control") {
+                    Text("Pausing stops automatic changes and notifications for 24 hours. Existing blocks remain in place.").font(.footnote)
+                    if let pause = pausedUntil, let date = AssistantInboxAction.parseDate(pause), date > Date() {
+                        Text("Paused until \(date.formatted(date: .abbreviated, time: .shortened))").font(.footnote)
+                        Button("Resume Blankmind") { pausedUntil=nil; Task { await save() } }
+                    } else {
+                        Button("Pause Blankmind for 24 hours") { pausedUntil=ISO8601DateFormatter().string(from:Date().addingTimeInterval(86400)); Task { await save() } }
+                    }
+                    Button("Revoke automatic protection",role:.destructive) { active=false; Task { await save() } }
+                  }
                 }
                 Section {
-                    Button("Pause BMB for 24 hours") { pausedUntil=ISO8601DateFormatter().string(from:Date().addingTimeInterval(86400)); Task { await save() } }
-                    Button("Resume BMB") { pausedUntil=nil; Task { await save() } }
-                    Button("Revoke automatic protection",role:.destructive) { active=false; Task { await save() } }
                     Button("Save preferences") { Task { await save() } }
                     if !status.isEmpty { Text(status).font(.footnote) }
                 }
-                if !events.isEmpty {
-                    Section("Recent help") {
+                if section == .automaticProtection && !events.isEmpty {
+                    Section("Recent activity") {
                         ForEach(events.indices,id: \.self) { index in
                             let event=events[index]
                             VStack(alignment:.leading) {
@@ -4192,8 +4257,23 @@ private struct BMBSettingsView: View {
                     }
                 }
             }
-            .disabled(busy)
-            .navigationTitle("Blankmind")
+            .scrollContentBackground(.hidden)
+            .background(BlankColors.canvas)
+            .foregroundStyle(BlankColors.foreground)
+            .disabled(busy || !loaded)
+            .overlay {
+                if busy && !loaded { ProgressView("Loading preferences") }
+                else if !loaded {
+                    VStack(spacing: 12) {
+                        Text(status).multilineTextAlignment(.center)
+                        Button("Try again") { Task { await load() } }
+                    }
+                    .padding(24)
+                    .background(BlankColors.canvas)
+                }
+            }
+            .navigationTitle(section.title)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar { Button("Done") { dismiss() } }
             .task { await load() }
         }
@@ -4209,6 +4289,13 @@ private struct BMBSettingsView: View {
     }
     private func load() async {
         busy=true; defer { busy=false }
+        #if DEBUG && targetEnvironment(simulator)
+        if AssistantAppPreview.scenario.hasPrefix("product-automatic") || AssistantAppPreview.scenario.hasPrefix("product-notifications") {
+            // Isolated visual fixtures; no account requests or writes.
+            loaded=true
+            return
+        }
+        #endif
         do {
             let result=try await request(["action":"bmb_settings"])
             let account=result["account"] as? [String:Any] ?? [:]
@@ -4227,10 +4314,19 @@ private struct BMBSettingsView: View {
             notifyDaily=notifications["max_per_day"] as? Int ?? 1; notifyWeekly=notifications["max_per_week"] as? Int ?? 3
             opportunities=notifications["opportunities"] as? Bool ?? true; interventions=notifications["interventions"] as? Bool ?? true; failures=notifications["failures"] as? Bool ?? true
             pausedUntil=settings["paused_until"] as? String
-            events=(try await request(["action":"bmb_activity"]))["events"] as? [[String:Any]] ?? []
-        } catch { status="Could not load preferences. Reopen to retry." }
+            loaded=true
+            status=""
+            if section == .automaticProtection {
+                do { events=(try await request(["action":"bmb_activity"]))["events"] as? [[String:Any]] ?? [] }
+                catch { status="Preferences loaded. Recent activity is unavailable." }
+            }
+        } catch { loaded=false; status="Could not load preferences. Try again." }
     }
     private func save() async {
+        guard loaded, !busy else { return }
+        #if DEBUG && targetEnvironment(simulator)
+        if AssistantAppPreview.scenario.hasPrefix("product-automatic") || AssistantAppPreview.scenario.hasPrefix("product-notifications") { return }
+        #endif
         busy=true; defer { busy=false }
         let settings: [String:Any] = ["timezone":TimeZone.current.identifier,"paused_until":pausedUntil as Any? ?? NSNull(),
             "grant":["active":active,"action_types":Array(allowedTypes).sorted(),"start_minute":actionStart,"end_minute":actionEnd,

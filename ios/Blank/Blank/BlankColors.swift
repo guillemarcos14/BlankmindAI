@@ -33,6 +33,16 @@ enum BlankColors {
     static let powderGray = porcelain
     static let pureWhite = Color(red: 1, green: 1, blue: 252 / 255.0)
 
+    // The root scheme follows protection, never the device appearance.
+    static let canvas = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
+        ? UIColor(red: 41/255, green: 41/255, blue: 41/255, alpha: 1)
+        : UIColor(red: 1, green: 1, blue: 252/255, alpha: 1) })
+    static let foreground = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
+        ? UIColor(red: 1, green: 1, blue: 252/255, alpha: 1)
+        : UIColor(red: 41/255, green: 41/255, blue: 41/255, alpha: 1) })
+    static let cardSurface = foreground
+    static let cardInk = canvas
+
     // Semantic alert color: retained for error/destructive states because the brand palette has no alert equivalent.
     static let red = Color(red: 0.827, green: 0.184, blue: 0.184)
     static let statusGreen = charcoal
@@ -113,10 +123,8 @@ struct BlankPrimaryButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
 
     func makeBody(configuration: Configuration) -> some View {
-        let minimalTextColor = light ? BlankColors.pureWhite :
-            (colorScheme == .dark ? BlankColors.charcoal : BlankColors.pureWhite)
-        let minimalSurfaceColor = light ? BlankColors.minimalInk :
-            (colorScheme == .dark ? BlankColors.pureWhite : BlankColors.charcoal)
+        let minimalTextColor = BlankColors.cardInk
+        let minimalSurfaceColor = BlankColors.cardSurface
 
         configuration.label
             .font(.blankInter(size: 16, weight: .medium, relativeTo: .headline))
@@ -260,11 +268,10 @@ private struct BlankControlSurfaceModifier: ViewModifier {
 extension View {
     func blankBlackCard() -> some View {
         self
-            .foregroundStyle(BlankColors.pureWhite)
+            .foregroundStyle(BlankColors.cardInk)
             .padding(16)
             .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(BlankColors.charcoal))
-            .environment(\.colorScheme, .dark)
+            .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(BlankColors.cardSurface))
     }
 
     func blankGlassCard(cornerRadius: CGFloat = 22, tintOpacity: Double = 0.34) -> some View {

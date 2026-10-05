@@ -52,6 +52,16 @@ struct BlankApp: App {
         UIScrollView.appearance().showsHorizontalScrollIndicator = false
     }
 
+    private var protectionAppearanceActive: Bool {
+        #if DEBUG && targetEnvironment(simulator)
+        if AssistantAppPreview.enabled {
+            let scenario = AssistantAppPreview.scenario
+            return scenario.hasPrefix("active") || scenario.hasSuffix("-active")
+        }
+        #endif
+        return sessionStore.isBlankActive
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -59,6 +69,8 @@ struct BlankApp: App {
                 .environmentObject(purchaseStore)
                 .environmentObject(screenTimeBlocker)
                 .environment(\.font, .blankBody)
+                .preferredColorScheme(protectionAppearanceActive ? .dark : .light)
+                .tint(protectionAppearanceActive ? BlankColors.pureWhite : BlankColors.charcoal)
                 .task {
                     #if DEBUG
                     if AssistantAppPreview.enabled { return }

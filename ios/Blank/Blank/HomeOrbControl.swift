@@ -4,9 +4,12 @@ enum HomeOrbAction: Equatable {
     case menu, closeMenu, block, chat
 }
 
-enum HomeOrbGesturePolicy {
-    static let holdDuration: TimeInterval = 2
+enum HomeBlockGesturePolicy {
+    static let holdDuration: TimeInterval = 3
     static let movementTolerance: Double = 12
+}
+
+enum HomeOrbGesturePolicy {
     static let swipeDistance: Double = 48
 
     static func swipe(x: Double, y: Double, menuOpen: Bool) -> HomeOrbAction? {
@@ -20,8 +23,7 @@ enum HomeOrbGesturePolicy {
 import SwiftUI
 import UIKit
 
-// Native recognizer arbitration: moving cancels the hold; a completed hold
-// consumes the touch so lifting or dragging afterwards cannot also block apps.
+// The circle opens navigation by tap or drag; blocking belongs to the Home surface.
 struct HomeOrbControl: UIViewRepresentable {
     let menuOpen: Bool
     let protectionActive: Bool
@@ -33,13 +35,11 @@ struct HomeOrbControl: UIViewRepresentable {
         let view = OrbView()
         view.isAccessibilityElement = true
         view.accessibilityTraits = .button
-        let hold = UILongPressGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.hold(_:)))
-        hold.minimumPressDuration = HomeOrbGesturePolicy.holdDuration
-        hold.allowableMovement = CGFloat(HomeOrbGesturePolicy.movementTolerance)
         let pan = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pan(_:)))
         pan.maximumNumberOfTouches = 1
-        pan.require(toFail: hold)
-        view.addGestureRecognizer(hold)
+        let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tap(_:)))
+        tap.require(toFail: pan)
+        view.addGestureRecognizer(tap)
         view.addGestureRecognizer(pan)
         view.activate = { context.coordinator.perform(.menu) }
         return view
@@ -47,13 +47,15 @@ struct HomeOrbControl: UIViewRepresentable {
 
     func updateUIView(_ view: OrbView, context: Context) {
         context.coordinator.parent = self
+        view.backgroundColor = protectionActive
+            ? UIColor(red: 1, green: 1, blue: 252/255, alpha: 1)
+            : UIColor(red: 41/255, green: 41/255, blue: 41/255, alpha: 1)
         view.accessibilityLabel = menuOpen ? "Close menu" : "Blankmind controls"
         view.accessibilityValue = protectionActive ? "Protection active" : "Protection inactive"
-        view.accessibilityHint = "Move in any direction for the menu, or hold for two seconds for chat."
+        view.accessibilityHint = "Tap or move in any direction to open the menu."
         view.activate = { context.coordinator.perform(menuOpen ? .closeMenu : .menu) }
         view.accessibilityCustomActions = [
-            UIAccessibilityCustomAction(name: menuOpen ? "Close menu" : "Open menu", target: context.coordinator, selector: #selector(Coordinator.accessibleMenu)),
-            UIAccessibilityCustomAction(name: "Open chat", target: context.coordinator, selector: #selector(Coordinator.accessibleChat))
+            UIAccessibilityCustomAction(name: menuOpen ? "Close menu" : "Open menu", target: context.coordinator, selector: #selector(Coordinator.accessibleMenu))
         ]
     }
 
@@ -76,9 +78,9 @@ struct HomeOrbControl: UIViewRepresentable {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             parent.onAction(action)
         }
-        @objc func hold(_ recognizer: UILongPressGestureRecognizer) {
-            if recognizer.state == .began { activated = true; perform(.chat) }
-            if [.ended, .cancelled, .failed].contains(recognizer.state) { activated = false }
+        @objc func tap(_ recognizer: UITapGestureRecognizer) {
+            guard recognizer.state == .ended else { return }
+            perform(parent.menuOpen ? .closeMenu : .menu)
         }
         @objc func pan(_ recognizer: UIPanGestureRecognizer) {
             guard let view = recognizer.view else { return }
@@ -103,7 +105,6 @@ struct HomeOrbControl: UIViewRepresentable {
             }
         }
         @objc func accessibleMenu() -> Bool { perform(parent.menuOpen ? .closeMenu : .menu); return true }
-        @objc func accessibleChat() -> Bool { perform(.chat); return true }
     }
 }
 #endif

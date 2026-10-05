@@ -18,8 +18,8 @@ struct HomeOrbTests {
             precondition(HomeOrbGesturePolicy.swipe(x: x, y: y, menuOpen: menu) == expected,
                          "Unexpected action for displacement \(x), \(y), menu \(menu)")
         }
-        precondition(HomeOrbGesturePolicy.holdDuration == 2)
-        precondition(HomeOrbGesturePolicy.movementTolerance < HomeOrbGesturePolicy.swipeDistance)
-        print("PASS home orb: 18 directional cases, two-second hold, radial activation without blocking")
+        precondition(HomeBlockGesturePolicy.holdDuration == 3)
+        precondition(HomeBlockGesturePolicy.movementTolerance < HomeOrbGesturePolicy.swipeDistance)
+        print("PASS home orb: 18 directional cases, three-second Home hold, radial activation without blocking")
     }
 }

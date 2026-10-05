@@ -554,7 +554,7 @@ struct AssistantAppView: View {
     @State private var error: String?
     @State private var requiresVerification = false
     @State private var canRetry = true
-    @State private var showHistory = false
+    @State private var showHistory = false // Debug screenshot fixture only; entry point lives in Settings.
     @State private var showAccountSignIn = false
     @State private var saveTask: Task<Void, Never>?
     @State private var initialMessageHandled = false
@@ -643,11 +643,7 @@ struct AssistantAppView: View {
                                     .frame(minHeight: 44)
                             }
                         }
-                        if !turns.isEmpty {
-                            Button(spanish ? "Historial" : "Conversation history") { showHistory = true }
-                                .font(.blankInter(size: 14))
-                                .frame(minHeight: 44)
-                        }
+
                     }
                         .frame(maxWidth: 640, alignment: .leading)
                         .frame(maxWidth: .infinity)
@@ -673,14 +669,6 @@ struct AssistantAppView: View {
         .foregroundStyle(foreground)
         .background(background.ignoresSafeArea())
         .preferredColorScheme(dark ? .dark : .light)
-        .task {
-            guard !preview, !simulatorGuest, initialMessage == nil,
-                  let expectedOwner = AssistantAppSession.userID else { return }
-            if let text = try? await AssistantAppClient().greeting(spanish: spanish),
-               expectedOwner == AssistantAppSession.userID, visibleTurnID == nil, composer.pending == nil {
-                greeting = text
-            }
-        }
         .task {
             #if targetEnvironment(simulator)
             if simulatorGuest {
@@ -819,10 +807,8 @@ struct AssistantAppView: View {
                     .frame(minHeight: 44)
                     .disabled(isSending)
                 }
-            } else if waiting {
+            } else if isApplyingAction {
                 BlankLoadingIndicator(color: foreground)
-            } else if speech.isRecording || speech.isStarting || speech.hasAudio {
-                Text(spanish ? "Dictando. Revisa el texto antes de enviar." : "Dictating. Review your words before sending.")
             }
             if draftTooLong {
                 Text(spanish ? "Acorta el mensaje a 4.000 caracteres." : "Keep your message under 4,000 characters.")
@@ -947,7 +933,6 @@ struct AssistantAppView: View {
         owner = current
         turns = []
         visibleTurnID = nil
-        greeting = AssistantGreetingFallback.make()
         nextHistoryCursor = nil
         composer = AssistantDraftVault.load(owner: current)
         error = nil
@@ -1105,7 +1090,7 @@ enum AssistantActionCopy {
     }
 }
 
-private struct AssistantAppHistoryView: View {
+struct AssistantAppHistoryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @State private var turns: [AssistantAppTurn]

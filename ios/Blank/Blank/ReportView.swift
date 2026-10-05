@@ -23,12 +23,12 @@ struct ReportView: View {
     @AppStorage("blankRemoteRecommendationId", store: BlankSharedState.defaults) private var remoteRecommendationId = ""
     @AppStorage("blankRemoteWellnessLastSyncAt", store: BlankSharedState.defaults) private var remoteWellnessLastSyncAt = 0.0
 
-    private var reportPrimary: Color { BlankColors.pureWhite }
-    private var reportSecondary: Color { BlankColors.pureWhite.opacity(0.72) }
-    private var accentBlue: Color { BlankColors.pureWhite }
-    private var recoveryGreen: Color { sessionStore.isBlankActive ? BlankColors.seafoam : BlankColors.pureWhite.opacity(0.84) }
+    private var reportPrimary: Color { BlankColors.cardInk }
+    private var reportSecondary: Color { BlankColors.cardInk.opacity(0.72) }
+    private var accentBlue: Color { BlankColors.cardInk }
+    private var recoveryGreen: Color { BlankColors.cardInk.opacity(0.84) }
     private var headerPrimary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.charcoal }
-    private var headerSecondary: Color { sessionStore.isBlankActive ? reportSecondary : BlankColors.mutedInk }
+    private var headerSecondary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk }
 
     private var report: BlankProgressReport {
         BlankProgressAggregator.aggregate(
@@ -187,7 +187,7 @@ struct ReportView: View {
             if let onClose {
                 SectionHeader(
                     title: "progress",
-                    subtitle: "your time, rhythm and patterns.",
+                    subtitle: "See how your focus changes over time.\nExplore your rhythm and daily patterns.",
                     action: onClose,
                     titleColor: headerPrimary,
                     subtitleColor: headerSecondary
@@ -196,7 +196,7 @@ struct ReportView: View {
             } else {
                 TopSheetHeader(
                     title: "progress",
-                    subtitle: "your time, rhythm and patterns.",
+                    subtitle: "See how your focus changes over time.\nExplore your rhythm and daily patterns.",
                     titleColor: headerPrimary,
                     subtitleColor: headerSecondary
                 )
@@ -549,11 +549,11 @@ struct ReportView: View {
     private func newLookRiskColor(_ level: ControlForecast.Level) -> Color {
         switch level {
         case .low:
-            return sessionStore.isBlankActive ? BlankColors.seafoam : BlankColors.pureWhite.opacity(0.72)
+            return BlankColors.cardInk.opacity(0.72)
         case .medium:
-            return sessionStore.isBlankActive ? BlankColors.paleSteelBlue : BlankColors.pureWhite.opacity(0.84)
+            return BlankColors.cardInk.opacity(0.84)
         case .high:
-            return sessionStore.isBlankActive ? BlankColors.red : BlankColors.pureWhite
+            return BlankColors.red
         }
     }
 
@@ -1125,7 +1125,7 @@ private struct ReportFlatCardModifier: ViewModifier {
         content
             .background {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(colorScheme == .dark ? BlankColors.pureWhite.opacity(0.12) : BlankColors.charcoal)
+                    .fill(BlankColors.cardSurface)
             }
     }
 }
