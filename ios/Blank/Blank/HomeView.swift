@@ -1177,6 +1177,7 @@ struct HomeView: View {
         Button(action: action) {
             Text(title)
                 .blankHomeDisplayTextStyle(color: color)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(height: homeMenuRowHeight, alignment: .leading)
                 .contentShape(Rectangle())
