@@ -1121,12 +1121,6 @@ struct AssistantAppView: View {
                 if let recovered, recovered.status == "completed" {
                     accept(recovered)
                     error = nil
-                    if isHomeVisible, recovered.autoApply == true, recovered.canApply {
-                        Task { @MainActor in
-                            guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID else { return }
-                            await applyAction(recovered.actionId)
-                        }
-                    }
                 } else if recovered == nil || recovered?.status == "failed" {
                     error = spanish ? "Tu mensaje está guardado. Reintenta para recuperar la respuesta." : "Your message is saved. Retry to recover the reply."
                     canRetry = true
@@ -1181,14 +1175,14 @@ struct AssistantAppView: View {
                 // Sending outlives this polling task when accept clears pending.
                 let retry = Task { @MainActor in
                     guard recoveryTaskID == identity else { return }
-                    await send()
+                    await send(allowAutoApply: false)
                 }
                 await retry.value
             }
         }
     }
 
-    private func send(audioText: String? = nil) async {
+    private func send(audioText: String? = nil, allowAutoApply: Bool = true) async {
         guard !preview, !simulatorGuest, !isSending, !requiresVerification else { return }
         acceptingSpeech = false
         speech.stop()
@@ -1218,7 +1212,7 @@ struct AssistantAppView: View {
                   expectedRevision == conversationRevision else { return }
             accept(turn)
             requiresVerification = false
-            if turn.autoApply == true, turn.canApply { await applyAction(turn.actionId) }
+            if allowAutoApply, turn.autoApply == true, turn.canApply { await applyAction(turn.actionId) }
         } catch {
             guard expectedOwner == owner, expectedRevision == conversationRevision else { return }
             handle(error)
@@ -1227,7 +1221,6 @@ struct AssistantAppView: View {
                expectedRevision == conversationRevision, recovered.status == "completed" {
                 accept(recovered)
                 self.error = nil
-                if recovered.autoApply == true, recovered.canApply { await applyAction(recovered.actionId) }
             }
         }
     }
