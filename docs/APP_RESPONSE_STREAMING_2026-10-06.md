@@ -40,6 +40,10 @@ client and cover progressive Unicode, final authority, truncation, fallback,
 refresh and account isolation.
 
 Native client tests and Simulator build passed on macOS CI `37491288772`.
+The same iOS source also passed native client tests, Simulator build and Home
+UI tests in PR CI `37491377965`. The redundant push run `37491288772` was
+cancelled after the PR run completed those checks; screenshot capture remains
+separate from the functional validation.
 The BM Harness Gate, PostgreSQL recovery and Android checks passed in
 `37491377923`. Local product harness passed 69/70 with no scope violations
 against baseline/diff `1915cad`; the existing quick production release gate
