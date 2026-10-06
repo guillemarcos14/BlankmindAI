@@ -22,6 +22,7 @@ struct SetupView: View {
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var currentStep: OnboardingStep = .account
     @State private var showingPicker = false
@@ -57,6 +58,7 @@ struct SetupView: View {
                 functionalStep
             }
         }
+        .statusBarHidden(true)
         .familyActivityPicker(isPresented: $showingPicker, selection: $sessionStore.selection)
         #if targetEnvironment(simulator)
         .overlay(alignment: .topLeading) {
@@ -134,48 +136,37 @@ struct SetupView: View {
     }
 
     private var functionalStep: some View {
-        GeometryReader { geometry in
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    deviceContent
+        MinimalOnboardingPanel {
+            deviceContent
 
-                    if completionInFlight {
-                        AccountJustifiedCopy(text: NSAttributedString(string: "Finishing setup..."))
-                            .padding(.top, 24)
-                            .accessibilityAddTraits(.updatesFrequently)
-                    } else if let message {
-                        AccountJustifiedCopy(text: NSAttributedString(string: message))
-                            .padding(.top, 24)
-                            .accessibilityAddTraits(.updatesFrequently)
-                        if deviceReady && automaticCompletionAttempted {
-                            Button("Retry") { Task { await completeSetup() } }
-                                .font(.blankInter(size: 17))
-                                .frame(minHeight: 44)
-                        }
-                    }
+            if completionInFlight {
+                AccountJustifiedCopy(text: NSAttributedString(string: "Finishing setup..."), foregroundColor: UIColor(MinimalHomeDesign.ink))
+                    .padding(.top, 24)
+                    .accessibilityAddTraits(.updatesFrequently)
+            } else if let message {
+                AccountJustifiedCopy(text: NSAttributedString(string: message), foregroundColor: UIColor(MinimalHomeDesign.ink))
+                    .padding(.top, 24)
+                    .accessibilityAddTraits(.updatesFrequently)
+                if deviceReady && automaticCompletionAttempted {
+                    Button("Retry") { Task { await completeSetup() } }
+                        .font(.blankInter(size: 17))
+                        .frame(minHeight: 44)
                 }
-                .frame(maxWidth: 400, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 24)
-                .padding(.top, 132)
-                .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .foregroundStyle(BlankColors.charcoal)
-        .tint(BlankColors.charcoal)
-        .preferredColorScheme(.light)
-        .background(MinimalSectionBackground())
     }
 
     private var deviceContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Set up Blankmind")
+            Text(dynamicTypeSize.isAccessibilitySize ? "Set up\nBlankmind" : "Set up Blankmind")
                 .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
                 .tracking(-0.9)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityLabel("Set up Blankmind")
                 .padding(.bottom, 24)
 
-            AccountJustifiedCopy(text: NSAttributedString(string: "Screen Time lets Blankmind block distractions. Choose apps for one reusable protection list, and enable notifications to receive block requests from chat."))
+            AccountJustifiedCopy(text: NSAttributedString(string: "Screen Time lets Blankmind block distractions. Choose apps for one reusable protection list, and enable notifications to receive block requests from chat."), foregroundColor: UIColor(MinimalHomeDesign.ink))
                 .padding(.bottom, 24)
 
             VStack(spacing: 12) {
@@ -202,6 +193,7 @@ struct SetupView: View {
             }
             .frame(maxWidth: .infinity)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .disabled(completionInFlight)
     }
 
@@ -224,11 +216,12 @@ struct SetupView: View {
             }
             .font(.blankOnboardingControl)
             .multilineTextAlignment(.leading)
-            .foregroundStyle(BlankColors.pureWhite)
+            .foregroundStyle(ready ? MinimalHomeDesign.ink : MinimalHomeDesign.voiceInk)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .background(BlankColors.charcoal, in: RoundedRectangle(cornerRadius: 16))
+            .background(ready ? MinimalHomeDesign.ink.opacity(0.12) : MinimalHomeDesign.ink,
+                        in: RoundedRectangle(cornerRadius: 16))
             .contentShape(Rectangle())
             .environment(\.isEnabled, true)
         }

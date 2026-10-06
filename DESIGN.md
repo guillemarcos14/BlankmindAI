@@ -97,8 +97,17 @@ components:
     textColor: "{colors.protected-ground}"
     typography: "{typography.action}"
     rounded: "{rounded.tonal-card}"
+  onboarding-panel:
+    textColor: "{colors.ivory}"
+    rounded: "{rounded.home-panel}"
   permission:
-    backgroundColor: "{colors.green-gray-ink}"
+    backgroundColor: "{colors.ivory}"
+    textColor: "{colors.green-gray-ink}"
+    typography: "{typography.body}"
+    rounded: "{rounded.tonal-card}"
+    padding: "12px 14px"
+  permission-completed:
+    backgroundColor: "rgba(255,254,245,0.12)"
     textColor: "{colors.ivory}"
     typography: "{typography.body}"
     rounded: "{rounded.tonal-card}"
@@ -111,7 +120,7 @@ components:
 
 **Creative North Star: "Silencio visual"**
 
-Blankmind uses the approved conversational Home as the material and type authority for the native app. Its real atmospheric image, ivory, cool ground, green-gray ink and bundled Neue Montreal extend across Control, Progress, detail screens, account, history, emergency and onboarding. Reading and editing use solid tonal surfaces with natural alignment; conversation and emergency content may remain centered.
+Blankmind uses the approved conversational Home as the material and type authority for the native app. Its real atmospheric image, ivory, cool ground, green-gray ink and bundled Neue Montreal extend across Control, Progress, detail screens, account, history, emergency and onboarding. Reading and editing use solid tonal surfaces with natural alignment; conversation and emergency content may remain centered. The approved onboarding exception places naturally aligned account and device setup content inside the full-height atmospheric Home panel.
 
 Guillem's explicit uniformity request of 2026-10-06 supersedes the former Home-only palette and Times/Helvetica interior rules. It preserves Home geometry, navigation, conversation, data, permissions and protection policies. [PRODUCT.md](PRODUCT.md) and [Uniformity](docs/UNIFORM_APP_2026-10-06.md) govern that extension; [Minimal App Home](docs/MINIMAL_HOME_2026-10-06.md) records the approved Home reference and its earlier evidence.
 
@@ -125,13 +134,13 @@ Guillem's explicit uniformity request of 2026-10-06 supersedes the former Home-o
 
 ### Primary
 
-Green-gray Ink carries inactive text, tint, actions and permission-button surfaces. Ivory carries atmospheric text and navigation, the voice circle and active-protection foreground. Alert Red retains its semantic error/destructive role; native alerts and Apple authentication keep platform semantics.
+Green-gray Ink carries inactive text, tint and actions, including uncompleted onboarding permission labels on Ivory fills. Ivory carries atmospheric text and navigation, the voice circle and active-protection foreground. Alert Red retains its semantic error/destructive role; native alerts and Apple authentication keep platform semantics.
 
 ### Neutral
 
 Cool Ground is the inactive canvas and exposed Home lower ground. Protected Ground is the active-protection interior canvas. Idle Card and Protected Card are the actual translucent tonal fills; judge text contrast against their composited backgrounds. Lichen Gray and Stone Gray remain supporting aliases, not alternate screen themes.
 
-**The Protection Appearance Rule.** Root appearance follows protection state, not device appearance: inactive uses Cool Ground with Green-gray Ink; active uses Protected Ground with Ivory. Onboarding uses the inactive appearance; Home's atmospheric conversation and exposed lower ground retain their approved colors.
+**The Protection Appearance Rule.** Root appearance follows protection state, not device appearance: inactive uses Cool Ground with Green-gray Ink; active uses Protected Ground with Ivory. Onboarding keeps Cool Ground below its atmosphere, with Ivory content and tint inside the panel; Home's atmospheric conversation and exposed lower ground retain their approved colors.
 
 Legacy names such as `charcoal`, `pureWhite`, `porcelain` and `blankBlackCard` are implementation aliases for this palette and tonal surfaces. They no longer prescribe the former charcoal-and-paper interior world.
 
@@ -151,19 +160,21 @@ Home preserves the center-phone reference: full-width atmospheric panel, navigat
 
 Navigation glyphs are 17 points inside actual 44-by-44-point targets, separated by Nav Gap; the selected underline is 32 by 1 point. Home conversation uses Conversation Inset and Control Vertical padding. Voice Gap separates panel and circle. Long responses scroll while navigation and voice stay fixed.
 
-Interior section content begins below the 132-point atmospheric header, uses Section Inset and reserves 40 points below. Native forms, lists, date pickers, switches, steppers and disclosures retain their structure and behavior. Onboarding scrolls a naturally aligned column with a 400-point maximum content width, Section Inset and the shared atmospheric header; buttons grow inside the viewport.
+Interior section content begins below the 132-point atmospheric header, uses Section Inset and reserves 40 points below. Native forms, lists, date pickers, switches, steppers and disclosures retain their structure and behavior.
+
+Onboarding account and device setup share Home's full-height panel formula and lower-only corners, with content top at `navigationTop(safeTop) + 68` points. The naturally aligned column has a 400-point maximum content width, Conversation Inset horizontally and Section Inset vertically. Its minimum height is `max(80, panelHeight - contentTop - 40)`; the scroll area reserves 40 points below, centers content when it fits and scrolls when it grows. Status bar is hidden as in Home; onboarding adds no main navigation or voice control. The account modal with Cancel retains its tonal canvas and Section Inset.
 
 **The Native Target Rule.** Every tappable control requires at least 44-by-44 points of reachable hit area. Preserve VoiceOver labels, selected traits and explicit actions; grouping a metric must not hide its protect action.
 
 ## Elevation & Depth
 
-The actual `MinimalAtmosphere` image supplies atmospheric depth, scaled to fill and clipped with a black shade at 0.28 opacity. Source pixels and font remain the supplied Minimal Web material; PNG metadata records image provenance. Interior backgrounds reuse it in the header and place solid tonal reading/editing ground below.
+The actual `MinimalAtmosphere` image supplies atmospheric depth, scaled to fill and clipped with a black shade at 0.28 opacity on Home and interior headers. Onboarding alone shades the same full-height image at 0.44 opacity for denser scrolling copy and translucent completed controls. Source pixels and font remain the supplied Minimal Web material; PNG metadata records image provenance. Interior backgrounds reuse it in the header and place solid tonal reading/editing ground below.
 
 Minimal app surfaces are flat: no added shadows on navigation, voice, primary buttons or tonal cards. Tonal fills and fine rules establish hierarchy. Native system controls and materials retain platform treatment; historical nonminimal glass branches do not define new interior surfaces.
 
 ## Shapes
 
-Home panel and interior atmospheric header have square upper corners and the recorded rounded lower corners. Voice is a true circle with five capsule waveform bars. Main navigation retains its custom stacked-diamond, five-dot and ascending-bar vectors, an explicit approved-reference exception to default native iconography.
+Home panel, onboarding panel and interior atmospheric header have square upper corners and the recorded rounded lower corners. Voice is a true circle with five capsule waveform bars. Main navigation retains its custom stacked-diamond, five-dot and ascending-bar vectors, an explicit approved-reference exception to default native iconography.
 
 Shared primary actions, permission buttons and tonal cards use the Tonal Card radius. Existing routine surfaces retain their recorded local radii; the home/standalone composer retains Chat Composer. Control rows use fine bottom rules rather than black cards. Preserve native picker, switch, disclosure, alert and Apple-button shapes.
 
@@ -181,7 +192,7 @@ Tapping the centered response opens the keyboard sheet; holding voice exposes Wr
 
 Minimal primary buttons have a 342-point maximum width, Control Vertical padding and a 52-point minimum height, growing with text. Default fill is the state foreground at 0.94 opacity, or full opacity for the light variant; pressed fill uses 0.72 or 0.78 respectively and scale 0.985. Text uses the state canvas. Disabled primary actions visibly dim to 0.42, including unavailable Emergency; eligibility and confirmation gates remain intact.
 
-Permission buttons use their component palette, naturally wrapping leading text and a native completion check. They have at least a 44-point height, expose Completed/Not completed to VoiceOver and retain completion/disabled behavior.
+Onboarding permission buttons use Ivory fill with Green-gray Ink text while uncompleted, and Ivory at 0.12 opacity with Ivory text and a native checkmark when completed. Their component tokens retain body typography, naturally wrapping leading text and padding; height is at least 44 points. Pressed opacity is 0.85; completion disables repeated action without dimming the recorded completed colors and exposes Completed/Not completed to VoiceOver. The native white Apple control remains 50 points high. Heading and body retain existing section-title/body roles; the device heading wraps after “Set up” at accessibility sizes, and every action remains reachable by scrolling.
 
 ### Tonal cards, metrics and rows
 
@@ -200,7 +211,7 @@ Sidecar HTML/CSS snippets are self-contained visual excerpts of native primitive
 ## Do's and Don'ts
 
 ### Do:
-- **Do** extend the shared palette, scalable Neue Montreal and tonal surfaces throughout authored app screens and onboarding.
+- **Do** extend the shared palette, scalable Neue Montreal and tonal surfaces throughout authored app screens; place onboarding content inside the atmospheric Home panel.
 - **Do** preserve approved Home geometry, glyph order, underline, centered response and fixed voice circle.
 - **Do** keep native controls, wrapping, 44-point targets, VoiceOver and Reduce Motion.
 - **Do** preserve conversation, data, permissions, canonical actions and protection policies.

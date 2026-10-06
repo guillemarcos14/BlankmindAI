@@ -126,6 +126,51 @@ struct MinimalHomePanelShape: Shape {
     }
 }
 
+// Onboarding shares Home's full atmospheric panel and quiet lower ground.
+// Content scrolls inside the panel when Dynamic Type or a short phone needs it.
+struct MinimalOnboardingPanel<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        GeometryReader { geometry in
+            let panelHeight = MinimalHomeDesign.panelHeight(geometry.size.height,
+                                                           bottomInset: geometry.safeAreaInsets.bottom)
+            let contentTop = MinimalHomeDesign.navigationTop(geometry.safeAreaInsets.top) + 68
+            ZStack(alignment: .top) {
+                MinimalHomeDesign.base
+                ZStack {
+                    Image("MinimalAtmosphere")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geometry.size.width, height: panelHeight)
+                        .clipped()
+                        // Denser onboarding copy needs contrast even when scrolled
+                        // over the brighter part of the same Home material.
+                        .overlay(Color.black.opacity(0.44))
+                        .accessibilityHidden(true)
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 0) { content }
+                            .frame(maxWidth: 400, alignment: .leading)
+                            .padding(.horizontal, 28)
+                            .padding(.vertical, 24)
+                            .frame(maxWidth: .infinity,
+                                   minHeight: max(80, panelHeight - contentTop - 40), alignment: .center)
+                    }
+                    .padding(.top, contentTop)
+                    .padding(.bottom, 40)
+                }
+                .frame(height: panelHeight)
+                .clipShape(MinimalHomePanelShape())
+                .accessibilityIdentifier("onboarding-panel")
+            }
+            .foregroundStyle(MinimalHomeDesign.ink)
+            .tint(MinimalHomeDesign.ink)
+        }
+        .ignoresSafeArea()
+        .preferredColorScheme(.dark)
+    }
+}
+
 // Every destination retains the same atmospheric navigation and quiet lower
 // ground. Reading/editing surfaces use solid tonal ink rather than imagery
 // behind small text. Only the conversational response is centered.

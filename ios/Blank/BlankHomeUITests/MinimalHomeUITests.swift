@@ -125,4 +125,32 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["spend emergency"].isHittable)
         XCTAssertFalse(confirm.exists)
     }
+
+    func testLargestTextKeepsOnboardingActionsReachable() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["BLANK_UI_SCENARIO"] = "product-onboarding-account"
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        let apple = app.buttons["Continue with Apple"]
+        XCTAssertTrue(apple.waitForExistence(timeout: 10))
+        for _ in 0..<8 {
+            if apple.isHittable { break }
+            app.scrollViews.firstMatch.swipeUp()
+        }
+        XCTAssertTrue(apple.isHittable)
+        app.buttons["Preview device setup"].tap()
+        for title in ["Allow Screen Time", "Choose apps", "Enable notifications"] {
+            let action = app.buttons[title]
+            XCTAssertTrue(action.waitForExistence(timeout: 5))
+            for _ in 0..<8 {
+                if action.isHittable { break }
+                app.scrollViews.firstMatch.swipeUp()
+            }
+            XCTAssertTrue(action.isHittable, title)
+            XCTAssertGreaterThanOrEqual(action.frame.height, 44)
+        }
+        XCTAssertTrue(app.buttons["Preview account sign-in"].isHittable)
+    }
 }
