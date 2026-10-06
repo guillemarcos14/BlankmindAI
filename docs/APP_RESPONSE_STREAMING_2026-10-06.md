@@ -79,3 +79,33 @@ during validation/repair; the final persisted reply always replaces it.
 
 Platform references: [Netlify streaming responses](https://docs.netlify.com/build/functions/api/#streaming-responses)
 and [OpenAI response streaming](https://developers.openai.com/api/docs/guides/streaming-responses).
+
+## Continuous writing haptics
+
+Requested by Guillem after the streaming implementation. iOS now uses one
+Core Haptics continuous waveform (intensity 0.16, sharpness 0.1), starting only
+when a fresh visible draft arrives. It does not emit a separate impact per token.
+The 30-second pattern can loop while writing continues; an idle watchdog stops
+playback after 350 ms without new text (checked every 100 ms). Repeated drafts
+and keepalive frames cannot prolong playback.
+
+Completion, errors, draft resets, account changes, leaving the chat, hiding the
+Home chat, scene inactivity and starting speech stop playback. Late callbacks
+cannot restart haptics in a hidden view or stop another reply's engine. Hardware
+capability is checked first; failures/interruption silently disable haptics for
+that reply. The engine plays haptics only and never changes conversational or
+native-action authority. A legacy buffered backend does not simulate typing or
+vibration.
+
+Native fake-motor tests compile the actual controller and verify one sustained
+player across updates, idle/duplicate-text handling, hidden/inactive gating,
+reset/end, stale engine callbacks, interruption, failures and unsupported hardware.
+They and the production client regressions passed in macOS CI `37493594386`,
+along with the complete iOS Simulator build, for runtime `5278b50`.
+Product harness 69/70, baseline/diff `b78bc18`, zero scope violations; the existing
+production release evidence gate remains pending. The actual motor sensation
+requires a physical iPhone; Simulator tests cannot establish it. No deployment,
+new archive or TestFlight distribution was performed.
+
+Apple references: [continuous haptic events](https://developer.apple.com/documentation/corehaptics/chhapticevent/eventtype/hapticcontinuous?language=objc)
+and [engine interruption handling](https://developer.apple.com/documentation/corehaptics/chhapticengine/stoppedhandler-swift.property).
