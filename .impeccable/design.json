@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-06T12:04:21.697Z",
+  "generatedAt": "2026-10-06T15:17:55.171Z",
   "title": "Design System: Blankmind",
   "extensions": {
     "colorMeta": {
@@ -112,7 +112,7 @@
           "card": "{colors.protected-card}"
         },
         "exceptions": [
-          "Onboarding forces inactive/light appearance.",
+          "Onboarding keeps Cool Ground below the full-height Home atmosphere, with Ivory content and tint inside its panel; native Apple control remains white.",
           "Home atmosphere, ivory response/navigation and exposed cool lower ground remain approved-reference colors."
         ]
       },
@@ -125,18 +125,28 @@
         "selectedUnderline": "32×1pt",
         "homeResponseAddedLineSpacing": "3pt",
         "homePanelHeight": "max(180, H - max(116, max(H × 0.144, safeBottom + 92)))",
-        "homeNavigationTop": "max(56, safeTop + 12)"
+        "homeNavigationTop": "max(56, safeTop + 12)",
+        "onboardingPanelHeight": "Same homePanelHeight formula",
+        "onboardingContentTop": "homeNavigationTop + 68pt",
+        "onboardingMaximumContentWidth": "400pt",
+        "onboardingHorizontalInset": "{spacing.conversation-inset}",
+        "onboardingVerticalInset": "{spacing.section-inset}",
+        "onboardingBottomClearance": "40pt",
+        "onboardingMinimumContentHeight": "max(80, panelHeight - contentTop - 40)",
+        "onboardingBehavior": "Center when content fits; scroll inside panel when it grows. Status bar hidden; no main navigation or voice control. Account modal with Cancel retains tonal layout."
       },
       "material": {
         "asset": "MinimalAtmosphere",
         "shade": "black at 0.28 opacity",
-        "application": "Native scaled-to-fill image; Home panel and interior header only. Solid tonal ground supports reading and editing."
+        "application": "Native scaled-to-fill image on Home and full-height onboarding panels, and interior headers. Solid tonal ground supports other reading and editing surfaces.",
+        "onboardingShade": "black at 0.44 opacity"
       },
       "accessibility": {
         "textScaling": "NeueMontreal-Regular via Font.custom(size:relativeTo:); frontmatter pixels represent native base points.",
         "reflow": "Explanations wrap; Progress/risk/action rows stack at accessibility sizes; routine days use target-sized grid; composer actions stack below field.",
         "states": "Progress/history small secondary text uses state foreground at 0.86 alpha; primary disabled opacity 0.42; waiting voice opacity 0.5.",
-        "recovery": "Unloaded preference form is hidden visually and from accessibility; loading/retry replaces it. Native action/selected traits remain reachable."
+        "recovery": "Unloaded preference form is hidden visually and from accessibility; loading/retry replaces it. Native action/selected traits remain reachable.",
+        "onboarding": "Unrestricted Dynamic Type; device heading wraps after Set up at accessibility sizes. Scroll to reach Apple and all permission actions; minimum permission height 44pt. Completed permissions keep Ivory at 0.12 alpha fill and Ivory text/checkmark without disabled dimming."
       },
       "platformExceptions": [
         "Approved custom three-glyph navigation and Home composition.",
@@ -153,7 +163,8 @@
         "uniformityVerdict": "ship for seven scored material fixes in e1497c5; 40 valid native Simulator captures and five passing XCTest cases, including Emergency confirmation44x44pt/cancel",
         "previewLimit": "HTML/CSS entries are portable visual excerpts with browser-only focus rings; no native behavior or Dynamic Type certification.",
         "physicalLimit": "Simulator evidence does not certify microphone, Screen Time or hardware performance.",
-        "release": "Xcode confirms App upload complete / Blankmind1.9(102) uploaded, TestFlight Internal Only, exact e1497c5 archive. Apple processing/tester access, physical QA and release gate remain pending."
+        "release": "Xcode confirms App upload complete / Blankmind1.9(102) uploaded, TestFlight Internal Only, exact e1497c5 archive. Apple processing/tester access, physical QA and release gate remain pending.",
+        "onboarding": "d8c1c3d: CI37483477613 SUCCESS, Simulator build/native tests and repeated largest-text onboarding XCTest passed; eleven final Simulator PNGs validated and inspected in .impeccable/review/onboarding-final/. MacinCloud BUILD SUCCEEDED and installed/visible on iPhone17Pro/iOS26.3. Independent review found no material rendering defects; documentation continuation resolved both findings, disposition ship for those scored fixes only. Runtime and captures unchanged. No new TestFlight or physical authentication/Screen Time certification."
       }
     }
   },
@@ -226,14 +237,14 @@
       "name": "Onboarding permission",
       "kind": "button",
       "refersTo": "permission",
-      "description": "Native permission row, Neue Montreal 17-point body, natural wrap, 44-point minimum height, padding 12 by 14. Pressed opacity is 0.85; native completion disables repeated action and exposes a completion check/value.",
-      "html": "<button class=\"ds-permission\">Allow Screen Time</button>",
-      "css": ".ds-permission { box-sizing:border-box; width:100%; min-height:44px; padding:12px 14px; border:0; border-radius:16px; text-align:left; background:#49544E; color:#FFFEF5; font:400 17px 'Neue Montreal',sans-serif; cursor:pointer; } .ds-permission:hover { background:#49544E; } .ds-permission:active { opacity:0.85; } .ds-permission:disabled { cursor:default; } .ds-permission:focus-visible { outline:2px solid #49544E; outline-offset:3px; }"
+      "description": "Native onboarding permission states: Ivory fill/Green-gray Ink while uncompleted, Ivory 0.12 fill/Ivory label/checkmark when completed. Neue Montreal 17-point body, natural wrap, min height 44, padding 12 by 14, radius 16. Pressed opacity 0.85; completed action is disabled without dimming. Preview canvas is an excerpt, not the native atmosphere; focus ring is browser-only.",
+      "html": "<div class=\"ds-permission-canvas\"><button class=\"ds-permission\">Allow Screen Time</button><button class=\"ds-permission ds-permission-completed\" disabled aria-label=\"Allow Screen Time, Completed\"><span>Allow Screen Time</span><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M3 8l3 3 7-7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button></div>",
+      "css": ".ds-permission-canvas { padding:28px; display:grid; gap:12px; background:#49544E; } .ds-permission { width:100%; min-height:44px; padding:12px 14px; border:0; border-radius:16px; text-align:left; background:#FFFEF5; color:#49544E; font:400 17px \"Neue Montreal\",sans-serif; cursor:pointer; white-space:normal; overflow-wrap:break-word; } .ds-permission:hover { background:#FFFEF5; } .ds-permission:active { opacity:0.85; } .ds-permission:focus-visible { outline:2px solid #FFFEF5; outline-offset:3px; } .ds-permission-completed,.ds-permission-completed:hover { display:flex; align-items:center; gap:8px; background:rgba(255,254,245,0.12); color:#FFFEF5; } .ds-permission-completed span { flex:1; } .ds-permission-completed svg { width:11px; height:11px; flex:none; } .ds-permission:disabled { opacity:1; cursor:default; }"
     }
   ],
   "narrative": {
     "northStar": "Silencio visual",
-    "overview": "Blankmind uses the approved conversational Home as the material and type authority for the native app. Its real atmospheric image, ivory, cool ground, green-gray ink and bundled Neue Montreal extend across Control, Progress, detail screens, account, history, emergency and onboarding. Reading and editing use solid tonal surfaces with natural alignment; conversation and emergency content may remain centered.\n\nGuillem's explicit uniformity request of 2026-10-06 supersedes the former Home-only palette and Times/Helvetica interior rules. It preserves Home geometry, navigation, conversation, data, permissions and protection policies. [PRODUCT.md](PRODUCT.md) and [Uniformity](docs/UNIFORM_APP_2026-10-06.md) govern that extension; [Minimal App Home](docs/MINIMAL_HOME_2026-10-06.md) records the approved Home reference and its earlier evidence.",
+    "overview": "Blankmind uses the approved conversational Home as the material and type authority for the native app. Its real atmospheric image, ivory, cool ground, green-gray ink and bundled Neue Montreal extend across Control, Progress, detail screens, account, history, emergency and onboarding. Reading and editing use solid tonal surfaces with natural alignment; conversation and emergency content may remain centered. The approved onboarding exception places naturally aligned account and device setup content inside the full-height atmospheric Home panel.\n\nGuillem's explicit uniformity request of 2026-10-06 supersedes the former Home-only palette and Times/Helvetica interior rules. It preserves Home geometry, navigation, conversation, data, permissions and protection policies. [PRODUCT.md](PRODUCT.md) and [Uniformity](docs/UNIFORM_APP_2026-10-06.md) govern that extension; [Minimal App Home](docs/MINIMAL_HOME_2026-10-06.md) records the approved Home reference and its earlier evidence.",
     "keyCharacteristics": [
       "Actual atmospheric material with tonal reading and editing surfaces.",
       "Scalable Neue Montreal throughout authored app content.",
@@ -243,7 +254,7 @@
     "rules": [
       {
         "name": "The Protection Appearance Rule",
-        "body": "Root appearance follows protection state, not device appearance: inactive uses Cool Ground with Green-gray Ink; active uses Protected Ground with Ivory. Onboarding uses the inactive appearance; Home's atmospheric conversation and exposed lower ground retain their approved colors.",
+        "body": "Root appearance follows protection state, not device appearance: inactive uses Cool Ground with Green-gray Ink; active uses Protected Ground with Ivory. Onboarding keeps Cool Ground below its atmosphere, with Ivory content and tint inside the panel; Home's atmospheric conversation and exposed lower ground retain their approved colors.",
         "section": "colors"
       },
       {
@@ -258,7 +269,7 @@
       }
     ],
     "dos": [
-      "**Do** extend the shared palette, scalable Neue Montreal and tonal surfaces throughout authored app screens and onboarding.",
+      "**Do** extend the shared palette, scalable Neue Montreal and tonal surfaces throughout authored app screens; place onboarding content inside the atmospheric Home panel.",
       "**Do** preserve approved Home geometry, glyph order, underline, centered response and fixed voice circle.",
       "**Do** keep native controls, wrapping, 44-point targets, VoiceOver and Reduce Motion.",
       "**Do** preserve conversation, data, permissions, canonical actions and protection policies.",
