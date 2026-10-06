@@ -4137,7 +4137,7 @@ private struct HomePreviewScene: View {
 @MainActor
 struct PostOnboardingPreviewScene: View {
     static var enabled: Bool {
-        ["product-home", "product-home-active", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-automatic", "product-automatic-active", "product-notifications", "product-notifications-active"]
+        ["product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-automatic", "product-automatic-active", "product-notifications", "product-notifications-active"]
             .contains(AssistantAppPreview.scenario)
     }
 

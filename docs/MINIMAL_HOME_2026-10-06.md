@@ -19,7 +19,8 @@ holds move to Control; the 3-second block and 20-second unlock plus 60-second
 cooldown preserve the original native policy, including hard protection.
 
 Home-specific tokens and vector glyphs live in `MinimalHomeDesign.swift`.
-The background image and font are copied byte-for-byte from the supplied web.
+The background pixels and font come unchanged from the supplied web; PNG
+metadata records the source material's origin.
 The image is shaded for ivory text contrast. No wearable integration is added.
 
 Validation: baseline created before editing; native CI renders default, response,
