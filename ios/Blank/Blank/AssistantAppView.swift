@@ -820,6 +820,7 @@ struct AssistantAppView: View {
                 .accessibilityIdentifier("home-chat-panel")
 
                 Button {
+                    guard !simulatorGuest else { return }
                     if requiresVerification { showAccountSignIn = true; return }
                     if !speech.isRecording && !speech.isStarting {
                         composerFocused = false
@@ -842,7 +843,7 @@ struct AssistantAppView: View {
                     .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .disabled(simulatorGuest || waiting || speech.isStarting)
+                .disabled(waiting || speech.isStarting)
                 .opacity(waiting ? 0.5 : 1)
                 .accessibilityLabel(speech.isRecording ? (spanish ? "Enviar audio" : "Send audio") : (spanish ? "Hablar con Blankmind" : "Speak to Blankmind"))
                 .accessibilityHint(spanish ? "Toca para hablar. Toca de nuevo para enviar. Mantén pulsado para escribir." : "Tap to speak. Tap again to send. Hold to write.")
@@ -906,14 +907,14 @@ struct AssistantAppView: View {
             if let latest {
                             if let name = latest.controlSection, let section = controlSection(name) {
                                 Button(spanish ? "Abrir" : "Open") { openControls(section) }
-                                    .font(.blankOnboardingControl)
+                                    .font(usesHomePresentation ? MinimalHomeDesign.font(16) : .blankOnboardingControl)
                             }
                             if latest.canApply && !waiting {
                                 Button {
                                     Task { await applyAction(latest.actionId) }
                                 } label: {
                                     Text(latest.actionLabel.isEmpty ? (spanish ? "Aplicar ahora" : "Apply now") : latest.actionLabel)
-                                        .font(.blankOnboardingControl)
+                                        .font(usesHomePresentation ? MinimalHomeDesign.font(16) : .blankOnboardingControl)
                                         .multilineTextAlignment(.leading)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 12)
@@ -925,7 +926,7 @@ struct AssistantAppView: View {
                                 .accessibilityHint(spanish ? "Aplica la acción sobre tus distracciones seleccionadas" : "Applies the action to your selected distractions")
                             } else if !latest.actionId.isEmpty && !latest.canApply {
                                 Text(AssistantActionCopy.outcome(latest.actionStatus, spanish: spanish))
-                                    .font(.blankInter(size: 15))
+                                    .font(usesHomePresentation ? MinimalHomeDesign.font(15) : .blankInter(size: 15))
                                     .foregroundStyle(foreground.opacity(0.74))
                             }
             }
@@ -948,7 +949,7 @@ struct AssistantAppView: View {
                             else { await reload() }
                         }
                     }
-                    .font(.blankInter(size: 15, weight: .semibold))
+                    .font(usesHomePresentation ? MinimalHomeDesign.font(15) : .blankInter(size: 15, weight: .semibold))
                     .frame(minHeight: 44)
                     .disabled(isSending)
                 }
@@ -999,7 +1000,7 @@ struct AssistantAppView: View {
         TextField("", text: $composer.draft,
                       prompt: Text(spanish ? "Escribe un mensaje" : "Write a message")
                         .foregroundColor((usesHomePresentation ? MinimalHomeDesign.voiceInk : foreground).opacity(0.72)), axis: .vertical)
-                .font(.blankInter(size: 17))
+                .font(usesHomePresentation ? MinimalHomeDesign.font(17) : .blankInter(size: 17))
                 .foregroundStyle(usesHomePresentation ? MinimalHomeDesign.voiceInk : foreground)
                 .lineLimit(1...(dynamicTypeSize.isAccessibilitySize ? 2 : 5))
                 .focused($composerFocused)

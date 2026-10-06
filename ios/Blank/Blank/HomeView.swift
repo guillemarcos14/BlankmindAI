@@ -831,8 +831,8 @@ struct HomeView: View {
             if let countdown = timerCountdownText {
                 Text(countdown).font(MinimalHomeDesign.font(16)).monospacedDigit()
             }
-            if isHomePressing {
-                ProgressView(value: sessionStore.isBlankActive ? unblankHoldProgress : 0.5)
+            if isHomePressing && sessionStore.isBlankActive {
+                ProgressView(value: unblankHoldProgress)
                     .tint(BlankColors.foreground)
             }
         }
@@ -852,14 +852,21 @@ struct HomeView: View {
             if !sessionStore.isBlankActive {
                 if pressing { startBlockHoldHaptics() } else { stopBlockHoldHaptics() }
             } else if pressing && !sessionStore.hardBlankActive && delayedManualUnlockAt == nil {
+                isHoldingToUnblank = true
+                isAnimatingUnblankHold = true
                 startUnblankHoldHaptics()
                 withAnimation(.linear(duration: 20)) { unblankHoldProgress = 1 }
             } else {
+                isHoldingToUnblank = false
+                isAnimatingUnblankHold = false
                 stopUnblankHoldHaptics()
                 unblankHoldProgress = 0
             }
         }
-        .onDisappear { stopBlockHoldHaptics(); stopUnblankHoldHaptics(); unblankHoldProgress = 0 }
+        .onDisappear {
+            stopBlockHoldHaptics(); stopUnblankHoldHaptics(); unblankHoldProgress = 0
+            isHoldingToUnblank = false; isAnimatingUnblankHold = false
+        }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction(named: Text("Block distractions")) {
