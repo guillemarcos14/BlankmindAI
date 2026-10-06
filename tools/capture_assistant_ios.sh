@@ -18,12 +18,12 @@ xcrun simctl bootstatus "$device_id" -b
 xcrun simctl status_bar "$device_id" override --time '9:41' --batteryState charged --batteryLevel 100
 xcrun simctl install "$device_id" "$app"
 bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
-scenarios='action active active-empty active-error error empty signin history product-home product-home-active product-home-response product-home-error product-home-long product-control product-control-active product-shell-progress product-menu product-menu-active product-progress product-progress-active product-settings product-settings-active product-distractions product-distractions-active product-emergency product-emergency-active product-automatic product-automatic-active product-notifications product-notifications-active'
+scenarios='action active active-empty active-error error empty signin history product-home product-home-active product-home-response product-home-error product-home-long product-control product-control-active product-shell-progress product-menu product-menu-active product-progress product-progress-active product-settings product-settings-active product-distractions product-distractions-active product-emergency product-emergency-active product-emergency-confirm-active product-automatic product-automatic-active product-notifications product-notifications-active'
 if [ "${3:-all}" = home ]; then
   scenarios='product-home product-home-active product-home-response product-home-error product-home-long product-control product-control-active product-shell-progress'
 fi
 if [ "${3:-all}" = uniform ]; then
-  scenarios='product-home product-home-active product-home-error product-home-long product-control product-control-active product-shell-progress product-progress-active product-distractions product-distractions-active product-schedule product-schedule-active product-emergency product-emergency-active product-automatic product-automatic-active product-automatic-error product-notifications product-notifications-active product-account product-onboarding-account product-onboarding-device history'
+  scenarios='product-home product-home-active product-home-error product-home-long product-control product-control-active product-shell-progress product-progress-active product-distractions product-distractions-active product-schedule product-schedule-active product-emergency product-emergency-active product-emergency-confirm-active product-automatic product-automatic-active product-automatic-error product-notifications product-notifications-active product-account product-onboarding-account product-onboarding-device history'
 fi
 for scenario in $scenarios; do
   xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true

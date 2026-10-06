@@ -53,7 +53,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
       - name: Test Home navigation and long responses on iPhone
-        timeout-minutes: 8
+        timeout-minutes: 10
         run: |
           device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for g in json.load(sys.stdin)["devices"].values() for d in g if d["name"].startswith("iPhone") and "Pro" in d["name"]))')
           xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank \

@@ -3401,14 +3401,18 @@ private struct EmergencyScreen: View {
                     }
                     .buttonStyle(BlankPrimaryButtonStyle())
 
-                    Button(minimalAppearance ? "confirm unlock" : "Confirm unlock") {
+                    Button {
                         _ = onUnlock()
+                    } label: {
+                        Text(minimalAppearance ? "confirm unlock" : "Confirm unlock")
+                            .font(.blankInter(size: 15, weight: .semibold, relativeTo: .subheadline))
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
-                    .font(.blankInter(size: 15, weight: .semibold, relativeTo: .subheadline))
-                    .frame(minWidth: 44, minHeight: 44)
                     .buttonStyle(.plain)
                     .foregroundStyle(secondaryColor)
                     .disabled(emergencyUnlocksRemaining <= 0)
+                    .accessibilityIdentifier("emergency-confirm-unlock")
                 } else {
                     Button(minimalAppearance ? "spend emergency" : "Spend emergency") {
                         isConfirming = true
@@ -3435,6 +3439,11 @@ private struct EmergencyScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.clear)
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
+        .onAppear {
+            #if DEBUG && targetEnvironment(simulator)
+            if AssistantAppPreview.scenario == "product-emergency-confirm-active" { isConfirming = true }
+            #endif
+        }
     }
 
     private var bodyText: String {
@@ -4142,7 +4151,7 @@ private struct HomePreviewScene: View {
 @MainActor
 struct PostOnboardingPreviewScene: View {
     static var enabled: Bool {
-        ["product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-automatic", "product-automatic-active", "product-automatic-error", "product-notifications", "product-notifications-active", "product-schedule", "product-schedule-active", "product-account", "product-onboarding-account", "product-onboarding-device"]
+        ["product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-emergency-confirm-active", "product-automatic", "product-automatic-active", "product-automatic-error", "product-notifications", "product-notifications-active", "product-schedule", "product-schedule-active", "product-account", "product-onboarding-account", "product-onboarding-device"]
             .contains(AssistantAppPreview.scenario)
     }
 
@@ -4156,7 +4165,7 @@ struct PostOnboardingPreviewScene: View {
         case "product-progress", "product-progress-active": return .report
         case "product-settings", "product-settings-active": return .settings
         case "product-distractions", "product-distractions-active": return .distractions
-        case "product-emergency", "product-emergency-active": return .emergency
+        case "product-emergency", "product-emergency-active", "product-emergency-confirm-active": return .emergency
         case "product-schedule", "product-schedule-active": return .schedule
         default: return nil
         }

@@ -87,4 +87,21 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertTrue(save.isHittable)
         XCTAssertTrue(app.buttons["Done"].isHittable)
     }
+
+    func testEmergencyConfirmationKeepsNativeTargetAndCancel() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["BLANK_UI_SCENARIO"] = "product-emergency-active"
+        app.launch()
+        XCTAssertTrue(app.buttons["spend emergency"].waitForExistence(timeout: 10))
+        app.buttons["spend emergency"].tap()
+        let confirm = app.buttons["emergency-confirm-unlock"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        XCTAssertTrue(confirm.isHittable)
+        XCTAssertGreaterThanOrEqual(confirm.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(confirm.frame.height, 44)
+        app.buttons["keep blocking"].tap()
+        XCTAssertTrue(app.buttons["spend emergency"].isHittable)
+        XCTAssertFalse(confirm.exists)
+    }
 }
