@@ -294,12 +294,107 @@ struct AssistantAppClient {
         return AssistantAppHistoryPage(turns: result.turns ?? [], nextBefore: result.nextBefore)
     }
 
-    func send(text: String, turnId: String, context: [String: Any]? = nil) async throws -> AssistantAppTurn {
+    func send(text: String, turnId: String, context: [String: Any]? = nil,
+              onDraft: (@MainActor (String) -> Void)? = nil) async throws -> AssistantAppTurn {
         var extra: [String: Any] = ["text": text, "turn_id": turnId]
         if let context { extra["context"] = context }
-        let result = try await request(action: "send", extra: extra)
+        let result: AssistantAppEnvelope
+        if let onDraft, let streamed = try await sendStream(extra: extra, turnId: turnId, onDraft: onDraft) {
+            result = streamed
+        } else {
+            // The new app remains usable against a backend without this route.
+            result = try await request(action: "send", extra: extra)
+        }
         guard let turn = result.turn else { throw AssistantAppError.invalidResponse }
         return turn
+    }
+
+    private func sendStream(extra: [String: Any], turnId: String,
+                            onDraft: @escaping @MainActor (String) -> Void) async throws -> AssistantAppEnvelope? {
+        let raw = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String ?? ""
+        guard let base = baseURL ?? (raw.contains("$(") ? nil : URL(string: raw)),
+              base.scheme == "https", base.host != nil else { throw AssistantAppError.notConfigured }
+        guard let access = AssistantAppSession.token("access"), let userID = AssistantAppSession.userID else {
+            throw AssistantAppError.authenticationRequired
+        }
+        var body = extra
+        body["action"] = "send"
+        body["app_install_id"] = BlankSharedState.appInstallId
+        let payload = try JSONSerialization.data(withJSONObject: body)
+        do {
+            return try await readStream(base: base, payload: payload, token: access, userID: userID,
+                                        turnId: turnId, onDraft: onDraft)
+        } catch AssistantAppError.authenticationRequired {
+            guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+            let refreshed = try await sessionRefresh.accessToken(rejected: access) {
+                try await refresh(base: base, rejectedToken: access)
+            }
+            guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+            try Task.checkCancellation()
+            return try await readStream(base: base, payload: payload, token: refreshed, userID: userID,
+                                        turnId: turnId, onDraft: onDraft)
+        }
+    }
+
+    private func readStream(base: URL, payload: Data, token: String, userID: String,
+                            turnId: String, onDraft: @escaping @MainActor (String) -> Void) async throws -> AssistantAppEnvelope? {
+        var request = URLRequest(url: base.appendingPathComponent("assistant-app-stream"))
+        request.httpMethod = "POST"
+        request.httpBody = payload
+        request.timeoutInterval = 60
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/x-ndjson", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        do {
+            let (bytes, response) = try await session.bytes(for: request)
+            guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+            guard let http = response as? HTTPURLResponse else { throw AssistantAppError.invalidResponse }
+            if [404, 405].contains(http.statusCode) { return nil }
+            if !(200..<300).contains(http.statusCode)
+                || !(http.value(forHTTPHeaderField: "Content-Type") ?? "").hasPrefix("application/x-ndjson") {
+                var data = Data()
+                for try await byte in bytes {
+                    guard data.count < 262144 else { throw AssistantAppError.invalidResponse }
+                    data.append(byte)
+                }
+                guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+                return try decode((data, http))
+            }
+            for try await line in bytes.lines {
+                try Task.checkCancellation()
+                guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+                if line.isEmpty { continue }
+                guard line.utf8.count <= 262144,
+                      let frame = try JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
+                      let type = frame["type"] as? String else { throw AssistantAppError.invalidResponse }
+                switch type {
+                case "draft":
+                    guard frame["turn_id"] as? String == turnId, let text = frame["text"] as? String,
+                          text.utf8.count <= 128000 else { throw AssistantAppError.invalidResponse }
+                    await onDraft(text)
+                case "result":
+                    guard let status = frame["status"] as? Int, let body = frame["body"] as? [String: Any],
+                          let finalHTTP = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)
+                    else { throw AssistantAppError.invalidResponse }
+                    let result = try decode((JSONSerialization.data(withJSONObject: body), finalHTTP))
+                    guard result.turn?.id == turnId else { throw AssistantAppError.invalidResponse }
+                    return result
+                case "start":
+                    guard frame["turn_id"] as? String == turnId else { throw AssistantAppError.invalidResponse }
+                case "keepalive": break
+                default: throw AssistantAppError.invalidResponse
+                }
+            }
+            // EOF after a draft is not a completed turn. Existing status/retry
+            // recovery owns the same saved message and UUID.
+            throw AssistantAppError.invalidResponse
+        } catch let error as URLError {
+            if error.code == .cancelled { throw CancellationError() }
+            if error.code == .timedOut { throw AssistantAppError.timeout }
+            if error.code == .notConnectedToInternet { throw AssistantAppError.offline }
+            throw AssistantAppError.network
+        }
     }
 
     func status(turnId: String) async throws -> AssistantAppTurn? {
@@ -553,6 +648,7 @@ struct AssistantAppView: View {
     @State private var saveTask: Task<Void, Never>?
     @State private var initialMessageHandled = false
     @State private var visibleTurnID: String?
+    @State private var streamedText = ""
     @State private var greeting: String? = AssistantGreetingFallback.make()
 
     var initialMessage: String? = nil
@@ -628,6 +724,11 @@ struct AssistantAppView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
                                 .accessibilityLabel("Blankmind: \(latest.assistantText)")
+                        } else if isSending && !streamedText.isEmpty {
+                            Text(streamedText)
+                                .font(.blankInter(size: 20))
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
                         } else if isSending || (composer.pending != nil && error == nil) {
                             BlankLoadingIndicator(color: foreground)
                         } else {
@@ -791,6 +892,8 @@ struct AssistantAppView: View {
                             } else if let latest {
                                 homeResponse(latest.assistantText)
                                     .accessibilityLabel("Blankmind: \(latest.assistantText)")
+                            } else if isSending && !streamedText.isEmpty {
+                                homeResponse(streamedText)
                             } else if isSending || (composer.pending != nil && error == nil) {
                                 BlankLoadingIndicator(color: foreground)
                             } else {
@@ -1076,6 +1179,7 @@ struct AssistantAppView: View {
         reloadRequestID = nil
         isLoading = true
         owner = current
+        streamedText = ""
         turns = []
         visibleTurnID = nil
         nextHistoryCursor = nil
@@ -1195,6 +1299,7 @@ struct AssistantAppView: View {
         showingHomeKeyboard = false
         visibleTurnID = nil
         let requestID = UUID()
+        streamedText = ""
         sendRequestID = requestID
         conversationRevision += 1
         let expectedRevision = conversationRevision
@@ -1202,9 +1307,15 @@ struct AssistantAppView: View {
         isLoading = false
         error = nil
         let expectedOwner = owner
-        defer { if sendRequestID == requestID { sendRequestID = nil } }
+        defer { if sendRequestID == requestID { sendRequestID = nil; streamedText = "" } }
         do {
-            let turn = try await AssistantAppClient().send(text: pending.text, turnId: pending.id, context: await BlankBrain.shared.freshSnapshot())
+            let turn = try await AssistantAppClient().send(text: pending.text, turnId: pending.id,
+                context: await BlankBrain.shared.freshSnapshot(), onDraft: { text in
+                    guard expectedOwner == self.owner, expectedOwner == AssistantAppSession.userID,
+                          expectedRevision == self.conversationRevision, self.sendRequestID == requestID,
+                          self.composer.pending?.id == pending.id else { return }
+                    self.streamedText = text
+                })
             guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
                   expectedRevision == conversationRevision else { return }
             accept(turn)

@@ -30,6 +30,7 @@ private final class TransportStub: URLProtocol {
         var status = 200
         var body = "{}"
         var error: Error?
+        var contentType = "application/json"
     }
     static var respond: (URLRequest) -> Reply = { _ in Reply() }
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -41,7 +42,7 @@ private final class TransportStub: URLProtocol {
             return
         }
         let response = HTTPURLResponse(url: request.url!, statusCode: reply.status,
-            httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!
+            httpVersion: "HTTP/1.1", headerFields: ["Content-Type": reply.contentType])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Data(reply.body.utf8))
         client?.urlProtocolDidFinishLoading(self)
@@ -156,6 +157,7 @@ struct AssistantClientTests {
         TransportStub.respond = { _ in .init(error: URLError(.cancelled)) }
         do { _ = try await client.history(); fatalError("Expected cancellation") }
         catch is CancellationError { }
+        try await verifyStreamingClient(client)
         try await verifyViewRaces()
         try await verifyAutomaticRecovery()
         try await verifyProblemNotices()
@@ -246,7 +248,72 @@ struct AssistantClientTests {
 struct ConversationTestClient {
     @MainActor func history() async throws -> AssistantAppHistoryPage { try await ViewTransport.history() }
     @MainActor func status(turnId: String) async throws -> AssistantAppTurn? { try await ViewTransport.status(turnId) }
-    @MainActor func send(text: String, turnId: String, context: [String: Any]? = nil) async throws -> AssistantAppTurn { try await ViewTransport.send(text, turnId) }
+    @MainActor func send(text: String, turnId: String, context: [String: Any]? = nil,
+                        onDraft: (@MainActor (String) -> Void)? = nil) async throws -> AssistantAppTurn {
+        onDraft?("Partial response")
+        return try await ViewTransport.send(text, turnId)
+    }
+}
+
+@MainActor private func verifyStreamingClient(_ client: AssistantAppClient) async throws {
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    let completed = #"{"ok":true,"turn":{"id":"turn-stream","user_text":"hello","assistant_text":"Hola 👋","status":"completed","action_id":"","action_label":"","action_status":"","created_at":"2026-10-06T12:00:00Z"}}"#
+    let frames = "{\"type\":\"start\",\"turn_id\":\"turn-stream\"}\n"
+        + "{\"type\":\"draft\",\"turn_id\":\"turn-stream\",\"text\":\"Hola\"}\n"
+        + "{\"type\":\"keepalive\"}\n"
+        + "{\"type\":\"draft\",\"turn_id\":\"turn-stream\",\"text\":\"Hola 👋\"}\n"
+    var drafts: [String] = []
+    TransportStub.respond = { _ in .init(body: frames + "{\"type\":\"result\",\"status\":200,\"body\":\(completed)}\n", contentType: "application/x-ndjson") }
+    let turn = try await client.send(text: "hello", turnId: "turn-stream", onDraft: { drafts.append($0) })
+    check(drafts == ["Hola", "Hola 👋"] && turn.status == "completed" && !turn.canApply, "Streaming changed final authority or lost Unicode drafts")
+    TransportStub.respond = { _ in .init(body: frames, contentType: "application/x-ndjson") }
+    do { _ = try await client.send(text: "hello", turnId: "turn-stream", onDraft: { _ in }); fatalError("Draft EOF cannot complete") }
+    catch let error as AssistantAppError { check(error.code == "invalid_response", "Truncated stream must use recovery") }
+    var sentIDs: [String] = []
+    TransportStub.respond = { request in
+        let body = try! JSONSerialization.jsonObject(with: requestBody(request)) as! [String: Any]
+        sentIDs.append(body["turn_id"] as! String)
+        if request.url!.lastPathComponent == "assistant-app-stream" { return .init(status: 404) }
+        return .init(body: completed)
+    }
+    _ = try await client.send(text: "hello", turnId: "turn-stream", onDraft: { _ in })
+    check(sentIDs == ["turn-stream", "turn-stream"], "Legacy fallback changed the durable UUID")
+    var refreshed = 0
+    AssistantAppSession.save(accessToken: "expired#A", refreshToken: "refresh-A")
+    TransportStub.respond = { request in
+        if request.url!.lastPathComponent == "app-auth" {
+            refreshed += 1
+            return .init(body: #"{"ok":true,"access_token":"fresh#A","refresh_token":"rotated-A"}"#)
+        }
+        if request.value(forHTTPHeaderField: "Authorization") == "Bearer expired#A" {
+            return .init(body: "{\"type\":\"result\",\"status\":401,\"body\":{\"error\":\"authentication_required\"}}\n", contentType: "application/x-ndjson")
+        }
+        return .init(body: frames + "{\"type\":\"result\",\"status\":200,\"body\":\(completed)}\n", contentType: "application/x-ndjson")
+    }
+    _ = try await client.send(text: "hello", turnId: "turn-stream", onDraft: { _ in })
+    check(refreshed == 1, "Stream 401 must refresh once")
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    TransportStub.respond = { _ in .init(body: frames + "{\"type\":\"result\",\"status\":200,\"body\":\(completed)}\n", contentType: "application/x-ndjson") }
+    do {
+        _ = try await client.send(text: "hello", turnId: "turn-stream", onDraft: { _ in
+            AssistantAppSession.save(accessToken: "session#B", refreshToken: "refresh-B")
+        })
+        fatalError("A switched account cannot receive the remaining stream")
+    } catch let error as AssistantAppError { check(error.code == "session_changed", "Stream account isolation failed") }
+    print("streaming client: progressive Unicode, final authority, truncated EOF, same-ID fallback, token refresh and account isolation passed")
+}
+
+private func requestBody(_ request: URLRequest) -> Data {
+    if let body = request.httpBody { return body }
+    guard let stream = request.httpBodyStream else { return Data() }
+    stream.open(); defer { stream.close() }
+    var body = Data(), buffer = [UInt8](repeating: 0, count: 4096)
+    while stream.hasBytesAvailable {
+        let count = stream.read(&buffer, maxLength: buffer.count)
+        if count <= 0 { break }
+        body.append(contentsOf: buffer.prefix(count))
+    }
+    return body
 }
 private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     .init(id: id, userText: text, assistantText: "Reply to \(text)", status: "completed", actionId: "",

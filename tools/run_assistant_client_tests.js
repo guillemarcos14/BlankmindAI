@@ -53,6 +53,7 @@ const viewFixture = `
     var homeActionPreparedCount = 0
     func onHomeActionPrepared() { homeActionPreparedCount += 1 }
     var visibleTurnID: String?
+    var streamedText = ""
     var greeting: String?
     var appliedActions: [String] = []
     var dismissCount = 0
