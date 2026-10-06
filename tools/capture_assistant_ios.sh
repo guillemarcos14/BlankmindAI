@@ -62,6 +62,6 @@ xcrun simctl terminate "$compact" "$bundle"
 SIMCTL_CHILD_BLANK_UI_SCENARIO=product-home-error xcrun simctl launch "$compact" "$bundle" -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL
 sleep 8
 xcrun simctl io "$compact" screenshot "$output/phone-compact-dynamic-error.png"
-xcrun simctl shutdown "$compact"
 xcrun simctl list devices -j > "$output/simulator.json"
 printf '%s\n' 'Synthetic Debug fixtures; production SwiftUI; no native blocking validation.' > "$output/README.txt"
+xcrun simctl shutdown "$compact"

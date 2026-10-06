@@ -29,6 +29,7 @@ keystore.properties
 /screenshots/*.xml
 /screenshots/*.preferences_pb
 /tmp/
+/.impeccable/review/
 
 # Generated visual experiments
 /tools/generated_backgrounds/

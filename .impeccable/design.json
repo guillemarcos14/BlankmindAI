@@ -1,76 +1,249 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-03T20:36:15Z",
+  "generatedAt": "2026-10-06T10:01:39.034Z",
   "title": "Design System: Blankmind",
   "extensions": {
     "colorMeta": {
-      "paper": { "role": "neutral", "displayName": "Paper", "tonalRamp": ["oklch(15% 0.004 106)", "oklch(27% 0.004 106)", "oklch(39% 0.004 106)", "oklch(51% 0.004 106)", "oklch(63% 0.004 106)", "oklch(75% 0.004 106)", "oklch(87% 0.004 106)", "oklch(95% 0.004 106)"] },
-      "charcoal": { "role": "primary", "displayName": "Charcoal", "tonalRamp": ["oklch(15% 0 0)", "oklch(27% 0 0)", "oklch(39% 0 0)", "oklch(51% 0 0)", "oklch(63% 0 0)", "oklch(75% 0 0)", "oklch(87% 0 0)", "oklch(95% 0 0)"] },
-      "lichen-gray": { "role": "neutral", "displayName": "Lichen Gray", "tonalRamp": ["oklch(15% 0.008 112)", "oklch(27% 0.008 112)", "oklch(39% 0.008 112)", "oklch(51% 0.008 112)", "oklch(63% 0.008 112)", "oklch(75% 0.008 112)", "oklch(87% 0.008 112)", "oklch(95% 0.008 112)"] },
-      "stone-gray": { "role": "neutral", "displayName": "Stone Gray", "tonalRamp": ["oklch(15% 0.008 113)", "oklch(27% 0.008 113)", "oklch(39% 0.008 113)", "oklch(51% 0.008 113)", "oklch(63% 0.008 113)", "oklch(75% 0.008 113)", "oklch(87% 0.008 113)", "oklch(95% 0.008 113)"] },
-      "alert-red": { "role": "semantic", "displayName": "Alert Red", "tonalRamp": ["oklch(15% 0.194 27)", "oklch(27% 0.194 27)", "oklch(39% 0.194 27)", "oklch(51% 0.194 27)", "oklch(63% 0.194 27)", "oklch(75% 0.194 27)", "oklch(87% 0.194 27)", "oklch(95% 0.194 27)"] }
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "tonalRamp": [
+          "oklch(15% 0.004 106)",
+          "oklch(27% 0.004 106)",
+          "oklch(39% 0.004 106)",
+          "oklch(51% 0.004 106)",
+          "oklch(63% 0.004 106)",
+          "oklch(75% 0.004 106)",
+          "oklch(87% 0.004 106)",
+          "oklch(95% 0.004 106)"
+        ]
+      },
+      "charcoal": {
+        "role": "primary",
+        "displayName": "Charcoal",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(27% 0 0)",
+          "oklch(39% 0 0)",
+          "oklch(51% 0 0)",
+          "oklch(63% 0 0)",
+          "oklch(75% 0 0)",
+          "oklch(87% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "lichen-gray": {
+        "role": "neutral",
+        "displayName": "Lichen Gray",
+        "tonalRamp": [
+          "oklch(15% 0.008 112)",
+          "oklch(27% 0.008 112)",
+          "oklch(39% 0.008 112)",
+          "oklch(51% 0.008 112)",
+          "oklch(63% 0.008 112)",
+          "oklch(75% 0.008 112)",
+          "oklch(87% 0.008 112)",
+          "oklch(95% 0.008 112)"
+        ]
+      },
+      "stone-gray": {
+        "role": "neutral",
+        "displayName": "Stone Gray",
+        "tonalRamp": [
+          "oklch(15% 0.008 113)",
+          "oklch(27% 0.008 113)",
+          "oklch(39% 0.008 113)",
+          "oklch(51% 0.008 113)",
+          "oklch(63% 0.008 113)",
+          "oklch(75% 0.008 113)",
+          "oklch(87% 0.008 113)",
+          "oklch(95% 0.008 113)"
+        ]
+      },
+      "alert-red": {
+        "role": "semantic",
+        "displayName": "Alert Red",
+        "tonalRamp": [
+          "oklch(15% 0.194 27)",
+          "oklch(27% 0.194 27)",
+          "oklch(39% 0.194 27)",
+          "oklch(51% 0.194 27)",
+          "oklch(63% 0.194 27)",
+          "oklch(75% 0.194 27)",
+          "oklch(87% 0.194 27)",
+          "oklch(95% 0.194 27)"
+        ]
+      },
+      "home-ink": {
+        "role": "neutral",
+        "displayName": "Home Ink",
+        "tonalRamp": [
+          "oklch(15% 0.015 106)",
+          "oklch(27% 0.015 106)",
+          "oklch(39% 0.015 106)",
+          "oklch(51% 0.015 106)",
+          "oklch(63% 0.015 106)",
+          "oklch(75% 0.015 106)",
+          "oklch(87% 0.015 106)",
+          "oklch(95% 0.015 106)"
+        ]
+      },
+      "home-base": {
+        "role": "neutral",
+        "displayName": "Home Base",
+        "tonalRamp": [
+          "oklch(15% 0.011 217)",
+          "oklch(27% 0.011 217)",
+          "oklch(39% 0.011 217)",
+          "oklch(51% 0.011 217)",
+          "oklch(63% 0.011 217)",
+          "oklch(75% 0.011 217)",
+          "oklch(87% 0.011 217)",
+          "oklch(95% 0.011 217)"
+        ]
+      },
+      "home-voice-ink": {
+        "role": "neutral",
+        "displayName": "Home Voice Ink",
+        "tonalRamp": [
+          "oklch(15% 0.014 149)",
+          "oklch(27% 0.014 149)",
+          "oklch(39% 0.014 149)",
+          "oklch(51% 0.014 149)",
+          "oklch(63% 0.014 149)",
+          "oklch(75% 0.014 149)",
+          "oklch(87% 0.014 149)",
+          "oklch(95% 0.014 149)"
+        ]
+      }
     },
     "typographyMeta": {
-      "home-menu": { "displayName": "Home menu", "purpose": "Home-only rows; Dynamic Type title scaling, minimumScaleFactor 0.72." },
-      "section-title": { "displayName": "Interior title", "purpose": "Preserved serif section headings; native title scaling." },
-      "body": { "displayName": "Body", "purpose": "Existing Helvetica Neue body text; native body scaling." },
-      "chat-input": { "displayName": "BMB input", "purpose": "Existing chat text input; native body scaling." },
-      "button-label": { "displayName": "Button label", "purpose": "Minimal primary button labels; native headline scaling." }
+      "section-title": {
+        "displayName": "Interior title",
+        "purpose": "Preserved serif section headings; native title scaling."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Existing Helvetica Neue body text; native body scaling."
+      },
+      "chat-input": {
+        "displayName": "BMB input",
+        "purpose": "Existing chat text input; native body scaling."
+      },
+      "button-label": {
+        "displayName": "Button label",
+        "purpose": "Minimal primary button labels; native headline scaling."
+      },
+      "home-response": {
+        "displayName": "Home response",
+        "purpose": "Bundled NeueMontreal-Regular; native 26-point custom font relative to .title3, centered; lineSpacing(3)."
+      },
+      "home-status": {
+        "displayName": "Home status",
+        "purpose": "Bundled NeueMontreal-Regular; default status text uses native body scaling."
+      },
+      "home-recovery": {
+        "displayName": "Home recovery",
+        "purpose": "Recovery button and action outcome text; native body scaling."
+      },
+      "home-action": {
+        "displayName": "Home action",
+        "purpose": "Control links, canonical apply actions and countdown; native body scaling."
+      },
+      "home-input": {
+        "displayName": "Home input",
+        "purpose": "Home keyboard-sheet input, native body scaling; standalone BMB font unchanged."
+      },
+      "home-sheet-title": {
+        "displayName": "Home keyboard title",
+        "purpose": "Native body scaling for the keyboard-sheet title."
+      },
+      "control-protection": {
+        "displayName": "Control protection",
+        "purpose": "Control-only protection hold prompt; native .title3 scaling."
+      }
     },
     "shadows": [],
     "motion": [
-      { "name": "home-menu-open", "value": "SwiftUI.easeOut(duration: 0.38)", "purpose": "Home menu enters from bottom with opacity; removal uses opacity." },
-      { "name": "home-menu-reduce-motion", "value": "SwiftUI.easeOut(duration: 0.12)", "purpose": "Opacity-only menu transition under Reduce Motion." },
-      { "name": "home-orb-return", "value": "UIView.animate(duration: 0.3, curveEaseOut, beginFromCurrentState)", "purpose": "Circle returns to rest after pan; duration becomes zero under Reduce Motion." },
-      { "name": "home-orb-drag", "value": "x: clamp(-120, translation.x, 24); y: clamp(-120, translation.y, 80) pt", "purpose": "Circle follows pan only when Reduce Motion is disabled." },
-      { "name": "home-section-transition", "value": "SwiftUI.easeInOut(duration: 0.35); Reduce Motion: 0.12", "purpose": "Existing active-section transition; imperative open/close helpers still use 0.35 seconds." },
-      { "name": "primary-pressed-scale", "value": "0.985", "purpose": "Existing minimal primary button pressed scale." }
+      {
+        "name": "home-section-transition",
+        "value": "SwiftUI.easeInOut(duration: 0.35); Reduce Motion: 0.12",
+        "purpose": "Existing active-section transition; imperative openSection/closeSection helpers retain 0.35 seconds."
+      },
+      {
+        "name": "primary-pressed-scale",
+        "value": "0.985",
+        "purpose": "Existing minimal primary button pressed scale."
+      }
     ],
     "breakpoints": [],
-    "gestures": {
-      "scope": "Home only",
-      "swipeDistancePoints": 48,
-      "dominantAxisRatio": 1.25,
-      "holdSeconds": 2,
-      "holdMovementTolerancePoints": 12,
-      "arbitration": "Pan requires long press to fail; completed hold consumes the touch.",
-      "actions": { "up": "Open menu", "left": "Activate existing manual protection", "hold": "Open existing chat", "downWithMenuOpen": "Close menu" },
-      "accessibility": "VoiceOver activation toggles menu; custom actions expose protection and chat."
-    },
     "provenance": {
       "platform": "ios",
-      "sourceCommit": "018f2a8",
+      "sourceCommit": "b6f3c65",
       "sourcePaths": [
         "PRODUCT.md",
-        "docs/HOME_ORB_2026-10-03.md",
+        "docs/MINIMAL_HOME_2026-10-06.md",
+        "ios/Blank/Blank/MinimalHomeDesign.swift",
         "ios/Blank/Blank/HomeView.swift",
-        "ios/Blank/Blank/HomeOrbControl.swift",
-        "ios/Blank/Blank/BlankColors.swift",
         "ios/Blank/Blank/AssistantAppView.swift",
-        "ios/Blank/BlankWidgetExtension/BlankWidget.swift",
-        "ios/Blank/BlankShieldConfiguration/ShieldConfigurationExtension.swift"
+        "ios/Blank/Blank/BlankColors.swift",
+        "ios/Blank/Blank/Assets.xcassets/MinimalAtmosphere.imageset/atmosphere.png"
       ],
-      "previewUnits": "CSS pixels stand in for native base points; native Dynamic Type is authoritative.",
+      "reference": "C:/Users/Guillem/Desktop/b07ac7231f97ea8e3e7b33f2fb1d4704.jpg — center phone only",
+      "materialAndFontSource": "C:/Users/Guillem/Desktop/Blanked/blankmind-web — pre-existing atmosphere pixels unchanged; PNG metadata records provenance; bundled NeueMontreal-Regular",
+      "scope": "Home and main navigation; existing interior tokens/components preserved. No backend, wearable integration, deployment or TestFlight.",
+      "legacyHome": "docs/HOME_ORB_2026-10-03.md records the superseded orb; it is not current Home guidance.",
+      "previewUnits": "CSS pixels stand in for native base points; native Dynamic Type is authoritative. Custom font must be installed for accurate portable typography.",
       "tonalRampStatus": "Synthesized panel swatch ramps; not app tokens or new palette permissions.",
-      "validation": "Source extraction only; no physical protection validation or final review claim."
+      "validation": "Native build, production-method conversation recovery and both HomeUITests passed in CI run 37444032673 on b6f3c65. Fresh reviewer disposition ship for all 14 native captures in .impeccable/review; report tmp/minimal-home-finish-review.md. Overall CI run failed on final simulator cleanup timeout after all PNGs. Capture timeout now 15 minutes/job 30 minutes with metadata before shutdown; no green rerun claimed. Local API/audio-input contract tests pass; harness 68/69 with no scope violations, pre-existing production release gate lacks replay/physical-device 0/20 evidence. Physical microphone and Screen Time remain outside review."
+    },
+    "homeLayout": {
+      "scope": "Approved Home and main navigation only",
+      "panelHeight": "max(180, H - max(116, max(0.144 * H, safeBottom + 92))) pt",
+      "navigationTop": "max(56, safeTop + 12) pt",
+      "glyphSizePoints": 17,
+      "navigationContentShape": "44 by 44 pt Rectangle",
+      "selectedUnderline": "32 by 1 pt",
+      "contentTop": "navigationTop + 68 pt",
+      "contentHeight": "max(80, panelHeight - contentTop - 88) pt",
+      "responseLineSpacingPoints": 3,
+      "responseVerticalPaddingPoints": 14,
+      "material": "Image(\"MinimalAtmosphere\").resizable().scaledToFill(), clipped to the lower-rounded panel; Color.black.opacity(0.28)",
+      "interaction": "Chat initial; Control/Chat/Progress order; fixed nav and voice outside scroll. Response tap or voice context menu opens native keyboard sheet. Recording stops on leaving Chat. Control retains 3-second block, 20-second unlock and 60-second cooldown."
     }
   },
   "components": [
     {
-      "name": "Home circle",
-      "kind": "custom",
-      "refersTo": "home-orb",
-      "description": "Flat native Home control. Preview uses a representative 60-point diameter; native bounds are 44–72. Browser focus ring is preview-only.",
-      "html": "<button class=\"ds-home-orb\" aria-label=\"Blankmind controls\"></button>",
-      "css": ".ds-home-orb { display:block; width:60px; height:60px; padding:0; border:0; border-radius:50%; background:#292929; cursor:pointer; } .ds-home-orb:hover { background:#292929; } .ds-home-orb:active { background:#292929; } .ds-home-orb:focus-visible { outline:2px solid #292929; outline-offset:4px; }"
+      "name": "Home navigation",
+      "kind": "nav",
+      "refersTo": "home-nav-target",
+      "description": "Three custom vectors with actual 44-point rectangular targets and one selected underline. Ivory on Chat; scheme-aware existing foreground in interiors. Browser focus treatment is preview-only.",
+      "html": "<nav class=\"ds-home-nav\" aria-label=\"Main navigation\"><button aria-label=\"Control\"><svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M50 12 L86 36 L50 60 L14 36 Z M14 62 L50 86 L86 62\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5.294\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button><button aria-label=\"Chat\" aria-current=\"page\"><svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><g fill=\"currentColor\"><circle cx=\"50\" cy=\"18\" r=\"4.706\"/><circle cx=\"80\" cy=\"40\" r=\"4.706\"/><circle cx=\"70\" cy=\"77\" r=\"4.706\"/><circle cx=\"29\" cy=\"79\" r=\"4.706\"/><circle cx=\"16\" cy=\"42\" r=\"4.706\"/></g></svg></button><button aria-label=\"Progress\"><svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M24 86 V58 M50 86 V36 M76 86 V14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5.294\" stroke-linecap=\"round\"/></svg></button></nav>",
+      "css": ".ds-home-nav { display:flex; justify-content:center; gap:20px; padding:12px; background:#49544E; color:#FFFEF5; } .ds-home-nav button { position:relative; width:44px; height:44px; padding:0; display:grid; place-items:center; border:0; background:transparent; color:inherit; cursor:pointer; } .ds-home-nav svg { width:17px; height:17px; } .ds-home-nav button[aria-current='page']::after { position:absolute; content:''; width:32px; height:1px; bottom:0; background:currentColor; } .ds-home-nav button:hover,.ds-home-nav button:active { color:inherit; } .ds-home-nav button:focus-visible { outline:2px solid currentColor; outline-offset:2px; }"
     },
     {
-      "name": "Home menu row",
-      "kind": "nav",
-      "refersTo": "home-menu-row",
-      "description": "Lower-left Home navigation row; native Dynamic Type scaling remains in SwiftUI. Browser focus ring is preview-only.",
-      "html": "<button class=\"ds-home-row\">progress</button>",
-      "css": ".ds-home-row { display:block; min-height:44px; padding:0; border:0; background:transparent; color:#292929; text-align:left; font:400 32px 'Helvetica Neue',sans-serif; letter-spacing:-0.9px; cursor:pointer; } .ds-home-row:hover { color:#292929; } .ds-home-row:active { color:#292929; } .ds-home-row:focus-visible { outline:2px solid #292929; outline-offset:2px; }"
+      "name": "Centered Home response",
+      "kind": "custom",
+      "refersTo": "home-response",
+      "description": "Portable type excerpt of native 26-point Neue Montreal response. Background is only a preview contrast canvas; actual atmosphere is visible in native captures. Font must be installed; native text scales with .title3.",
+      "html": "<div class=\"ds-response-canvas\"><p class=\"ds-home-response\">Hey, how are you doing today?</p></div>",
+      "css": ".ds-response-canvas { padding:28px; background:#49544E; color:#FFFEF5; } .ds-home-response { max-width:360px; margin:0 auto; text-align:center; font:400 26px 'Neue Montreal',sans-serif; }"
+    },
+    {
+      "name": "Home voice circle",
+      "kind": "button",
+      "refersTo": "home-voice",
+      "description": "Fixed native 70-point circle below the panel, with five capsule waveform bars. Toggle recording/send and hold for native Write a message; browser preview implements only visual states and a preview-only focus ring.",
+      "html": "<div class=\"ds-home-ground\"><button class=\"ds-home-voice\" aria-label=\"Speak to Blankmind\"><svg width=\"16\" height=\"19\" viewBox=\"0 0 15.6 19\" aria-hidden=\"true\"><g fill=\"currentColor\"><rect x=\"0\" y=\"6\" width=\"1.2\" height=\"7\" rx=\"0.6\"/><rect x=\"3.6\" y=\"3\" width=\"1.2\" height=\"13\" rx=\"0.6\"/><rect x=\"7.2\" y=\"0\" width=\"1.2\" height=\"19\" rx=\"0.6\"/><rect x=\"10.8\" y=\"4\" width=\"1.2\" height=\"11\" rx=\"0.6\"/><rect x=\"14.4\" y=\"6.5\" width=\"1.2\" height=\"6\" rx=\"0.6\"/></g></svg></button></div>",
+      "css": ".ds-home-ground { display:flex; justify-content:center; padding:22px; background:#D5DBDC; } .ds-home-voice { display:grid; place-items:center; width:70px; height:70px; padding:0; border:0; border-radius:50%; background:#FFFEF5; color:#49544E; cursor:pointer; } .ds-home-voice:hover,.ds-home-voice:active { background:#FFFEF5; } .ds-home-voice:disabled { opacity:0.5; } .ds-home-voice:focus-visible { outline:2px solid #49544E; outline-offset:3px; }"
+    },
+    {
+      "name": "Home keyboard composer",
+      "kind": "input",
+      "refersTo": "home-composer",
+      "description": "Native Home keyboard-sheet excerpt; Neue Montreal replaces only this Home input face. Microphone/send controls, multiline behavior and accessibility remain native. Browser focus ring is preview-only.",
+      "html": "<div class=\"ds-home-composer-canvas\"><div class=\"ds-home-composer\"><textarea class=\"ds-home-input\" rows=\"1\" aria-label=\"Message Blankmind\" placeholder=\"Write a message\"></textarea></div></div>",
+      "css": ".ds-home-composer-canvas { padding:22px; background:#D5DBDC; } .ds-home-composer { max-width:640px; padding-left:18px; padding-right:16px; border-radius:28px; background:rgba(73,84,78,0.08); } .ds-home-input { width:100%; padding:14px 0; border:0; background:transparent; resize:none; color:#49544E; font:400 17px 'Neue Montreal',sans-serif; } .ds-home-input::placeholder { color:rgba(73,84,78,0.72); } .ds-home-input:hover { background:transparent; } .ds-home-input:focus-visible { outline:2px solid #49544E; outline-offset:2px; }"
     },
     {
       "name": "Black card",
@@ -107,10 +280,29 @@
   ],
   "narrative": {
     "northStar": "Silencio visual",
-    "overview": "Home leaves the screen empty around one circular control. The shared paper-and-charcoal palette applies throughout the iPhone app and its widget/shield surfaces; Home composition and gestures apply only to Home. Existing interiors, section hierarchy and BMB controls remain authoritative.",
-    "keyCharacteristics": ["Quiet Home with one lower-right circle.", "Shared white/black primitives with preserved supporting grays and semantic errors.", "Native accessibility and existing protected actions."],
-    "rules": [{ "name": "The Shared Palette Rule", "body": "All custom app white/black roles use Paper/Charcoal, including widget and shield tokens; this does not replace supporting grays, error semantics or native Apple controls.", "section": "colors" }],
-    "dos": ["**Do** use the shared Paper/Charcoal primitives for custom app white/black roles.", "**Do** preserve interior structures, BMB controls, Dynamic Type, VoiceOver and Reduce Motion.", "**Do** keep Home geometry and gesture rules scoped to Home."],
-    "donts": ["**Don't** add borders, shadows, copy or extra controls to resting Home.", "**Don't** replace supporting grays, semantic errors or native Apple button styling with brand primitives.", "**Don't** claim Simulator evidence proves physical Screen Time protection or gesture latency."]
+    "overview": "Home presents one centered conversation inside an atmospheric panel, with quiet icon navigation above and a fixed circular voice control below. The approved center-phone reference governs Home geometry; the local Minimal Web supplies only the actual atmospheric material and Neue Montreal face. Existing interiors, section hierarchy and BMB controls remain authoritative.",
+    "keyCharacteristics": [
+      "Atmospheric conversational Home with centered response and fixed circular voice input.",
+      "Three custom-glyph destinations: Control, Chat and Progress.",
+      "Preserved paper-and-charcoal interiors and native accessibility."
+    ],
+    "rules": [
+      {
+        "name": "The Scoped Home Palette Rule",
+        "body": "Home-specific colors apply to the new Home shell; preserve the shared Paper/Charcoal primitives and supporting semantics elsewhere.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "**Do** keep the custom glyph order, selected underline, lower-rounded panel, centered response and fixed voice circle scoped to Home.",
+      "**Do** preserve interior structures, conversation/protection policies, Dynamic Type, VoiceOver and Reduce Motion.",
+      "**Do** use Home tokens for Home and shared Paper/Charcoal primitives for existing interiors, widgets and shields."
+    ],
+    "donts": [
+      "**Don't** restore the superseded lower-right orb or swipe menu as current Home guidance.",
+      "**Don't** transfer web composition or Home-specific geometry to existing interior screens.",
+      "**Don't** replace supporting grays, semantic errors or native Apple button styling.",
+      "**Don't** claim Simulator review proves physical microphone or Screen Time behavior."
+    ]
   }
 }
