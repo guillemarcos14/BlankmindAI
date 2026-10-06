@@ -563,6 +563,9 @@ struct AssistantAppView: View {
 
     var initialMessage: String? = nil
     var simulatorGuest = false
+    var usesHomePresentation = false
+    var isHomeVisible = true
+    var onHomeActionPrepared: () -> Void = {}
     var onOpenControls: (HomeSection?) -> Void = { _ in }
     let onApplyAction: (String) async throws -> Void
     @State private var isApplyingAction = false
@@ -585,13 +588,17 @@ struct AssistantAppView: View {
         #endif
         return sessionStore.isBlankActive
     }
-    private var foreground: Color { dark ? BlankColors.pureWhite : BlankColors.charcoal }
-    private var background: Color { dark ? BlankColors.charcoal : BlankColors.pureWhite }
+    private var foreground: Color { usesHomePresentation ? MinimalHomeDesign.ink : (dark ? BlankColors.pureWhite : BlankColors.charcoal) }
+    private var background: Color { usesHomePresentation ? MinimalHomeDesign.base : (dark ? BlankColors.charcoal : BlankColors.pureWhite) }
     private var draftTooLong: Bool { composer.draft.utf16.count > 4000 }
     private var isSending: Bool { sendRequestID != nil }
     private var waiting: Bool { isSending || composer.pending != nil || isApplyingAction }
 
     var body: some View {
+        Group {
+            if usesHomePresentation {
+                homeConversation
+            } else {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {
@@ -666,10 +673,18 @@ struct AssistantAppView: View {
             .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: isLoading)
             .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.3), value: latest?.id)
         }
+            }
+        }
         .foregroundStyle(foreground)
         .background(background.ignoresSafeArea())
         .preferredColorScheme(dark ? .dark : .light)
         .task {
+            #if DEBUG
+            if usesHomePresentation && preview {
+                loadHomePreview()
+                return
+            }
+            #endif
             #if targetEnvironment(simulator)
             if simulatorGuest {
                 isLoading = false
@@ -709,14 +724,14 @@ struct AssistantAppView: View {
             }
         }
         .onReceive(Timer.publish(every: 8, on: .main, in: .common).autoconnect()) { _ in
-            if scenePhase == .active { BlankBrain.shared.chatIsOpen = true; BlankBrain.shared.sync() }
-            guard scenePhase == .active, !preview, !simulatorGuest, !isSending else { return }
+            if scenePhase == .active { BlankBrain.shared.chatIsOpen = isHomeVisible; BlankBrain.shared.sync() }
+            guard isHomeVisible, scenePhase == .active, !preview, !simulatorGuest, !isSending else { return }
             if composer.pending != nil || latest.map({ !$0.actionId.isEmpty && !AssistantActionCopy.terminal.contains($0.actionStatus) }) == true {
                 Task { await reload() }
             }
         }
         .onChange(of: scenePhase) { phase in
-            BlankBrain.shared.chatIsOpen = phase == .active
+            BlankBrain.shared.chatIsOpen = phase == .active && isHomeVisible
             if phase == .active && !preview && !simulatorGuest { Task { restoreOwner(); await reload() } }
             else {
                 // Permission alerts temporarily deactivate the scene. Keep that
@@ -738,11 +753,133 @@ struct AssistantAppView: View {
                 foreground: foreground, background: background, onApplyAction: { id in Task { await applyAction(id) } })
                 .preferredColorScheme(dark ? .dark : .light)
         }
-        .onAppear { BlankBrain.shared.chatIsOpen = true; BlankBrain.shared.sync() }
+        .onAppear { BlankBrain.shared.chatIsOpen = isHomeVisible; BlankBrain.shared.sync() }
+        .onChange(of: isHomeVisible) { visible in
+            BlankBrain.shared.chatIsOpen = visible && scenePhase == .active
+            BlankBrain.shared.sync()
+            if !visible { acceptingSpeech = false; speech.stop(); composerFocused = false; persist() }
+        }
         .onDisappear { BlankBrain.shared.chatIsOpen = false; BlankBrain.shared.sync() }
         .sheet(isPresented: $showAccountSignIn, onDismiss: { Task { restoreOwner(); await reload() } }) {
             AppAccountSignInSheet()
         }
+    }
+
+    @State private var showingHomeKeyboard = false
+
+    private var homeConversation: some View {
+        GeometryReader { geometry in
+            let panelHeight = MinimalHomeDesign.panelHeight(geometry.size.height, bottomInset: geometry.safeAreaInsets.bottom)
+            let contentTop = MinimalHomeDesign.navigationTop(geometry.safeAreaInsets.top) + 68
+            let contentHeight = max(80, panelHeight - contentTop - 28)
+            VStack(spacing: 0) {
+                ZStack(alignment: .top) {
+                    Image("MinimalAtmosphere")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geometry.size.width, height: panelHeight)
+                        .clipped()
+                    // Retain the web's actual material, with enough shade for readable ivory text.
+                    Color.black.opacity(0.28)
+                    ScrollView {
+                        VStack(spacing: 22) {
+                            if speech.isRecording || speech.isStarting {
+                                Text(spanish ? "Te escucho…" : "I'm listening…")
+                                    .font(MinimalHomeDesign.font(26, relativeTo: .title3))
+                                AssistantAudioWaveform(audio: speech)
+                                    .frame(width: 160, height: 36)
+                            } else if let latest {
+                                homeResponse(latest.assistantText)
+                                    .accessibilityLabel("Blankmind: \(latest.assistantText)")
+                            } else if isSending || (composer.pending != nil && error == nil) {
+                                BlankLoadingIndicator(color: foreground)
+                            } else {
+                                homeResponse(greeting ?? (spanish ? "Hola, ¿cómo estás hoy?" : "Hey, how are you doing today?"))
+                            }
+                            status
+                        }
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity, minHeight: contentHeight, alignment: .center)
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 14)
+                    }
+                    .scrollIndicators(.hidden)
+                    .padding(.top, contentTop)
+                    .frame(height: panelHeight)
+                }
+                .frame(height: panelHeight)
+                .clipShape(MinimalHomePanelShape())
+                .accessibilityIdentifier("home-chat-panel")
+
+                Button {
+                    if requiresVerification { showAccountSignIn = true; return }
+                    if !speech.isRecording && !speech.isStarting {
+                        composerFocused = false
+                        acceptingSpeech = true
+                    }
+                    speech.toggle()
+                } label: {
+                    Group {
+                        if speech.isStarting {
+                            ProgressView().tint(MinimalHomeDesign.voiceInk)
+                        } else if speech.isRecording {
+                            RoundedRectangle(cornerRadius: 2).frame(width: 14, height: 14)
+                        } else {
+                            MinimalVoiceGlyph()
+                        }
+                    }
+                    .foregroundStyle(MinimalHomeDesign.voiceInk)
+                    .frame(width: 70, height: 70)
+                    .background(Circle().fill(MinimalHomeDesign.ink))
+                    .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .disabled(simulatorGuest || waiting || speech.isStarting)
+                .opacity(waiting ? 0.5 : 1)
+                .accessibilityLabel(speech.isRecording ? (spanish ? "Enviar audio" : "Send audio") : (spanish ? "Hablar con Blankmind" : "Speak to Blankmind"))
+                .accessibilityHint(spanish ? "Toca para hablar. Toca de nuevo para enviar. Mantén pulsado para escribir." : "Tap to speak. Tap again to send. Hold to write.")
+                .accessibilityIdentifier("home-voice")
+                .contextMenu {
+                    Button { showingHomeKeyboard = true } label: {
+                        Label(spanish ? "Escribir un mensaje" : "Write a message", systemImage: "keyboard")
+                    }
+                }
+                .padding(.top, 22)
+                Spacer(minLength: 0)
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .background(MinimalHomeDesign.base)
+            .sheet(isPresented: $showingHomeKeyboard) {
+                VStack(spacing: 20) {
+                    HStack {
+                        Text(spanish ? "Mensaje para Blankmind" : "Message Blankmind")
+                            .font(MinimalHomeDesign.font(20))
+                        Spacer()
+                        Button(spanish ? "Listo" : "Done") { showingHomeKeyboard = false }
+                            .frame(minHeight: 44)
+                    }.padding(.horizontal, 24)
+                    composerBar
+                }
+                .padding(.vertical, 20)
+                .foregroundStyle(BlankColors.charcoal)
+                .background(MinimalHomeDesign.base)
+                .presentationDetents([.height(200), .medium])
+                .presentationDragIndicator(.visible)
+                .onAppear { composerFocused = true }
+            }
+        }
+    }
+
+    private func homeResponse(_ text: String) -> some View {
+        Text(text)
+            .font(MinimalHomeDesign.font(26, relativeTo: .title3))
+            .lineSpacing(3)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .textSelection(.enabled)
+            .frame(maxWidth: 360)
+            .onTapGesture { showingHomeKeyboard = true }
+            .accessibilityAction(named: Text(spanish ? "Escribir un mensaje" : "Write a message")) { showingHomeKeyboard = true }
     }
 
     private func controlSection(_ name: String) -> HomeSection? {
@@ -757,7 +894,7 @@ struct AssistantAppView: View {
     }
 
     @ViewBuilder private var status: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: usesHomePresentation ? .center : .leading, spacing: 8) {
             if let latest {
                             if let name = latest.controlSection, let section = controlSection(name) {
                                 Button(spanish ? "Abrir" : "Open") { openControls(section) }
@@ -786,7 +923,7 @@ struct AssistantAppView: View {
             }
             if let error {
                 Text(error)
-                    .foregroundStyle(dark ? Color(red: 1, green: 0.66, blue: 0.64) : BlankColors.red)
+                    .foregroundStyle(usesHomePresentation ? foreground : (dark ? Color(red: 1, green: 0.66, blue: 0.64) : BlankColors.red))
                     .fixedSize(horizontal: false, vertical: true)
                 if let pending = composer.pending {
                     Text((spanish ? "Pendiente: " : "Pending: ") + pending.text)
@@ -814,8 +951,8 @@ struct AssistantAppView: View {
                 Text(spanish ? "Acorta el mensaje a 4.000 caracteres." : "Keep your message under 4,000 characters.")
             }
         }
-        .font(.blankInter(size: 14))
-        .frame(maxWidth: 640, alignment: .leading)
+        .font(usesHomePresentation ? MinimalHomeDesign.font(14) : .blankInter(size: 14))
+        .frame(maxWidth: 640, alignment: usesHomePresentation ? .center : .leading)
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 28)
         .padding(.bottom, 10)
@@ -841,7 +978,7 @@ struct AssistantAppView: View {
             }
         }
         .padding(.leading, 18).padding(.trailing, 16)
-        .background(RoundedRectangle(cornerRadius: 28).fill(foreground.opacity(dark ? 0.11 : 0.06)))
+        .background(RoundedRectangle(cornerRadius: 28).fill(usesHomePresentation ? MinimalHomeDesign.voiceInk.opacity(0.08) : foreground.opacity(dark ? 0.11 : 0.06)))
         .frame(maxWidth: 640)
         .padding(.horizontal, 22)
         .layoutPriority(1)
@@ -853,8 +990,9 @@ struct AssistantAppView: View {
         } else {
         TextField("", text: $composer.draft,
                       prompt: Text(spanish ? "Escribe un mensaje" : "Write a message")
-                        .foregroundColor(foreground.opacity(0.72)), axis: .vertical)
+                        .foregroundColor((usesHomePresentation ? MinimalHomeDesign.voiceInk : foreground).opacity(0.72)), axis: .vertical)
                 .font(.blankInter(size: 17))
+                .foregroundStyle(usesHomePresentation ? MinimalHomeDesign.voiceInk : foreground)
                 .lineLimit(1...(dynamicTypeSize.isAccessibilitySize ? 2 : 5))
                 .focused($composerFocused)
                 .submitLabel(.send)
@@ -878,6 +1016,7 @@ struct AssistantAppView: View {
                     .font(.system(size: 22)).frame(width: 44, height: 50)
             }
             .fixedSize(horizontal: true, vertical: false)
+            .foregroundStyle(usesHomePresentation ? MinimalHomeDesign.voiceInk : foreground)
             .disabled(requiresVerification || simulatorGuest || waiting || speech.isStarting)
             .opacity(requiresVerification || isSending ? 0.45 : 1)
             .accessibilityLabel(speech.isRecording || speech.isStarting
@@ -889,6 +1028,7 @@ struct AssistantAppView: View {
                         .frame(width: 44, height: 50)
                 }
                 .fixedSize(horizontal: true, vertical: false)
+                .foregroundStyle(usesHomePresentation ? MinimalHomeDesign.voiceInk : foreground)
                 .disabled(waiting || draftTooLong || requiresVerification || simulatorGuest)
                 .opacity(waiting || draftTooLong || requiresVerification ? 0.45 : 1)
                 .accessibilityLabel(spanish ? "Enviar mensaje" : "Send message")
@@ -906,7 +1046,7 @@ struct AssistantAppView: View {
         do {
             try await onApplyAction(actionID)
             guard owner == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
-            dismiss()
+            if usesHomePresentation { onHomeActionPrepared() } else { dismiss() }
         } catch {
             handle(error)
         }
@@ -916,7 +1056,7 @@ struct AssistantAppView: View {
         acceptingSpeech = false
         speech.stop()
         persist()
-        dismiss()
+        if !usesHomePresentation { dismiss() }
         onOpenControls(section)
     }
 
@@ -1010,6 +1150,7 @@ struct AssistantAppView: View {
             return
         }
         composerFocused = false
+        showingHomeKeyboard = false
         visibleTurnID = nil
         let requestID = UUID()
         sendRequestID = requestID
@@ -1048,6 +1189,27 @@ struct AssistantAppView: View {
     }
 
     #if DEBUG
+    private func loadHomePreview() {
+        isLoading = false
+        greeting = "Hello Alex,\nwhat's on your mind\nthis evening?"
+        let scenario = AssistantAppPreview.scenario
+        if scenario.contains("response") {
+            turns = [AssistantAppTurn(id: "home-preview", userText: "Help me put my phone down tonight.",
+                assistantText: "Let's make room for rest.\nPut your phone aside\nand take a quiet moment\nbefore bed.", status: "completed", actionId: "", actionLabel: "",
+                actionStatus: "", createdAt: "2026-10-06T18:00:00Z")]
+            visibleTurnID = "home-preview"
+        } else if scenario.contains("long") {
+            turns = [AssistantAppTurn(id: "home-long", userText: "Help me plan my evening.",
+                assistantText: String(repeating: "Give yourself a quiet moment before bed. Put your phone somewhere you won't reach for it automatically.\n\n", count: 8),
+                status: "completed", actionId: "", actionLabel: "", actionStatus: "", createdAt: "2026-10-06T18:00:00Z")]
+            visibleTurnID = "home-long"
+        } else if scenario.contains("error") {
+            greeting = nil
+            error = "No connection. Your message is saved. You can try again without sending it twice."
+            composer.pending = .init(id: "home-pending", text: "Help me put my phone down tonight.")
+        }
+    }
+
     private func loadPreview() {
         isLoading = false
         let scenario = AssistantAppPreview.scenario

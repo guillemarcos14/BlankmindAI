@@ -7,6 +7,7 @@ import UIKit
 import UserNotifications
 
 enum HomeSection: Hashable {
+    case control
     case distractions
     case schedule
     case report
@@ -353,8 +354,9 @@ struct HomeView: View {
     let onOpenOnboardingDemo: () -> Void
     let simulatorGuest: Bool
 
-    init(simulatorGuest: Bool = false, _ onOpenOnboardingDemo: @escaping () -> Void = {}) {
+    init(simulatorGuest: Bool = false, initialSection: HomeSection? = nil, _ onOpenOnboardingDemo: @escaping () -> Void = {}) {
         self.simulatorGuest = simulatorGuest
+        _activeSection = State(initialValue: initialSection)
         self.onOpenOnboardingDemo = onOpenOnboardingDemo
     }
 
@@ -381,19 +383,31 @@ struct HomeView: View {
         GeometryReader { proxy in
             let viewportWidth = proxy.size.width
             let viewportHeight = proxy.size.height
-            let layout = HomeLayoutMetrics(size: CGSize(width: viewportWidth, height: viewportHeight), safeAreaInsets: proxy.safeAreaInsets)
 
             ZStack(alignment: .topLeading) {
                 (sessionStore.isBlankActive ? BlankColors.charcoal : BlankColors.pureWhite)
                     .frame(width: viewportWidth, height: viewportHeight)
                     .ignoresSafeArea()
 
-                if activeSection == nil {
-                    minimalHome(layout: layout)
-                        .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
-                }
+                AssistantAppView(simulatorGuest: simulatorGuest, usesHomePresentation: true,
+                    isHomeVisible: activeSection == nil,
+                    onHomeActionPrepared: { confirmPendingAssistantAction() },
+                    onOpenControls: { section in if let section { openSection(section) } }) { actionId in
+                        try await prepareAssistantAction(actionId)
+                    }
+                    .frame(width: viewportWidth, height: viewportHeight)
+                    .opacity(activeSection == nil ? 1 : 0)
+                    .allowsHitTesting(activeSection == nil)
+                    .accessibilityHidden(activeSection != nil)
 
                 homeSectionScreen(viewportWidth: viewportWidth, viewportHeight: viewportHeight)
+
+                MinimalHomeNavigation(selected: selectedHomeTab,
+                    foreground: activeSection == nil ? MinimalHomeDesign.ink : BlankColors.foreground,
+                    onSelect: selectHomeTab)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, MinimalHomeDesign.navigationTop(proxy.safeAreaInsets.top))
+                    .zIndex(10)
 
                 if showingRelapseReview {
                     RelapseReviewSheet(
@@ -421,8 +435,8 @@ struct HomeView: View {
         .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink)
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
-        .statusBarHidden(activeSection == nil)
-        .persistentSystemOverlays(activeSection == nil ? .hidden : .automatic)
+        .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
         .environment(\.blankMinimalAppearance, true)
         .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.45), value: sessionStore.isBlankActive)
         .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.35), value: activeSection)
@@ -679,7 +693,8 @@ struct HomeView: View {
                 screenTimeStatus: screenTimeBlocker.authorizationStatusLabel,
                 healthStatus: healthPermissionLabel,
                 onClose: closeSection,
-                onApplyHistoryAction: applyHistoryAction
+                onApplyHistoryAction: applyHistoryAction,
+                protectionControl: AnyView(homeProtectionControl)
             )
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
             .transition(.opacity)
@@ -791,6 +806,72 @@ struct HomeView: View {
         }
     }
 
+    private var selectedHomeTab: MinimalHomeTab {
+        guard let activeSection else { return .chat }
+        return activeSection == .report ? .progress : .control
+    }
+
+    private func selectHomeTab(_ tab: MinimalHomeTab) {
+        switch tab {
+        case .control: openSection(.control)
+        case .chat: activeSection = nil
+        case .progress: openSection(.report)
+        }
+    }
+
+    // Holds belong to Control: speaking and selecting text in Chat cannot block.
+    private var homeProtectionControl: some View {
+        VStack(spacing: 12) {
+            Text(cooldownText ?? (sessionStore.hardBlankActive ? "Hard protection active"
+                 : (sessionStore.isBlankActive ? "Hold 20 seconds to unblank" : "Hold 3 seconds to blank")))
+                .font(MinimalHomeDesign.font(22, relativeTo: .title3))
+                .multilineTextAlignment(.center)
+            if let countdown = timerCountdownText {
+                Text(countdown).font(MinimalHomeDesign.font(16)).monospacedDigit()
+            }
+            if isHomePressing {
+                ProgressView(value: sessionStore.isBlankActive ? unblankHoldProgress : 0.5)
+                    .tint(BlankColors.foreground)
+            }
+        }
+        .foregroundStyle(BlankColors.foreground)
+        .frame(maxWidth: .infinity, minHeight: 120)
+        .padding(.vertical, 16)
+        .contentShape(Rectangle())
+        .gesture(LongPressGesture(minimumDuration: sessionStore.isBlankActive ? 20 : 3, maximumDistance: 22)
+            .updating($isHomePressing) { pressing, state, _ in state = pressing }
+            .onEnded { _ in
+                if sessionStore.isBlankActive {
+                    guard !sessionStore.hardBlankActive, delayedManualUnlockAt == nil else { return }
+                    scheduleDelayedManualUnlock(cooldownSeconds: 60)
+                } else { handleHomeOrb(.block) }
+            })
+        .onChange(of: isHomePressing) { pressing in
+            if !sessionStore.isBlankActive {
+                if pressing { startBlockHoldHaptics() } else { stopBlockHoldHaptics() }
+            } else if pressing && !sessionStore.hardBlankActive && delayedManualUnlockAt == nil {
+                startUnblankHoldHaptics()
+                withAnimation(.linear(duration: 20)) { unblankHoldProgress = 1 }
+            } else {
+                stopUnblankHoldHaptics()
+                unblankHoldProgress = 0
+            }
+        }
+        .onDisappear { stopBlockHoldHaptics(); stopUnblankHoldHaptics(); unblankHoldProgress = 0 }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(named: Text("Block distractions")) {
+            if !sessionStore.isBlankActive { handleHomeOrb(.block) }
+        }
+        .accessibilityAction(named: Text("Unblank")) {
+            guard sessionStore.isBlankActive, !sessionStore.hardBlankActive, delayedManualUnlockAt == nil else { return }
+            openSection(.emergency)
+        }
+        .alert("Couldn't start protection", isPresented: $showingHomeBlockError) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(message ?? "Check Screen Time permissions and selected distractions.") }
+    }
+
     private func unlockAdvancedSettings(onSuccess: @escaping () -> Void) {
         let context = LAContext()
         var error: NSError?
@@ -844,7 +925,11 @@ struct HomeView: View {
 
     private func closeSection() {
         withAnimation(.easeInOut(duration: 0.35)) {
-            activeSection = nil
+            if let section = activeSection, [.distractions, .schedule, .emergency, .settings].contains(section) {
+                activeSection = .control
+            } else {
+                activeSection = nil
+            }
         }
     }
 
@@ -1328,7 +1413,7 @@ struct HomeView: View {
         acceptingHomeSpeech = false
         homeSpeech.stop()
         chatLaunchMessage = nil
-        showingAssistantChat = true
+        activeSection = nil
     }
 
     private func sendHomeChatMessage() {
@@ -2417,6 +2502,7 @@ struct HomeSectionScreen: View {
     let healthStatus: String
     let onClose: () -> Void
     var onApplyHistoryAction: (String) -> Void = { _ in }
+    var protectionControl: AnyView? = nil
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
 
     var body: some View {
@@ -2436,7 +2522,7 @@ struct HomeSectionScreen: View {
             routeContent
                 .environment(\.blankMinimalAppearance, minimalAppearance)
                 .environment(\.blankSectionHorizontalPadding, sectionHorizontalPadding)
-                .padding(.top, section == .emergency ? 0 : 60)
+                .padding(.top, section == .emergency ? 0 : 100)
                 .frame(width: contentWidth, height: screenHeight, alignment: .top)
                 .frame(width: screenWidth, height: screenHeight, alignment: .top)
                 .offset(x: horizontalOffset)
@@ -2448,6 +2534,21 @@ struct HomeSectionScreen: View {
     @ViewBuilder
     private var routeContent: some View {
         switch section {
+        case .control:
+            SettingsScreen(
+                onClose: onClose,
+                onOpenEmergency: { onOpenSection(.emergency) },
+                onOpenAssistant: onOpenAssistant,
+                onRequestScreenTimePermission: onRequestScreenTimePermission,
+                onRequestHealthAccess: onRequestHealthAccess,
+                screenTimeStatus: screenTimeStatus,
+                healthStatus: healthStatus,
+                onApplyHistoryAction: onApplyHistoryAction,
+                isControl: true,
+                onOpenDistractions: { onOpenSection(.distractions) },
+                onOpenSchedule: { onOpenSection(.schedule) },
+                protectionControl: protectionControl
+            )
         case .distractions:
             DistractionsScreen(showingPicker: $showingPicker) {
                 onClose()
@@ -2555,6 +2656,10 @@ private struct SettingsScreen: View {
     let screenTimeStatus: String
     let healthStatus: String
     let onApplyHistoryAction: (String) -> Void
+    var isControl = false
+    var onOpenDistractions: () -> Void = {}
+    var onOpenSchedule: () -> Void = {}
+    var protectionControl: AnyView? = nil
 
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
     private var secondaryColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.70) : BlankColors.mutedInk }
@@ -2563,8 +2668,8 @@ private struct SettingsScreen: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(
-                    title: "settings",
-                    subtitle: "Manage your account and preferences.\nReview access, support and privacy.",
+                    title: isControl ? "control" : "settings",
+                    subtitle: isControl ? "Manage your protection and routines.\nAll your settings, in one place." : "Manage your account and preferences.\nReview access, support and privacy.",
                     action: onClose,
                     titleColor: textColor,
                     subtitleColor: secondaryColor
@@ -2572,6 +2677,11 @@ private struct SettingsScreen: View {
                 .padding(.bottom, 12)
 
                 settingsRow(title: "emergency", detail: "unlock access while blanked", action: onOpenEmergency)
+                if isControl {
+                    if let protectionControl { protectionControl }
+                    settingsRow(title: "distractions", detail: "choose apps and review your blocks", action: onOpenDistractions)
+                    settingsRow(title: "schedule", detail: "manage your protection routines", action: onOpenSchedule)
+                }
                 settingsRow(title: "automatic protection", detail: "choose when and how Blankmind may act", action: { selectedBMBSettings = .automaticProtection })
                 settingsRow(title: "notifications", detail: "choose which notices you receive and when", action: { selectedBMBSettings = .notifications })
                 settingsRow(title: "conversation history", detail: "review previous conversations", action: { showingHistory = true })
@@ -4045,7 +4155,11 @@ struct PostOnboardingPreviewScene: View {
 
     var body: some View {
         GeometryReader { proxy in
-            if AssistantAppPreview.scenario.hasPrefix("product-automatic") {
+            if AssistantAppPreview.scenario.hasPrefix("product-control") {
+                HomeView(simulatorGuest: true, initialSection: .control)
+            } else if AssistantAppPreview.scenario.hasPrefix("product-shell-progress") {
+                HomeView(simulatorGuest: true, initialSection: .report)
+            } else if AssistantAppPreview.scenario.hasPrefix("product-automatic") {
                 BMBSettingsView(section: .automaticProtection)
             } else if AssistantAppPreview.scenario.hasPrefix("product-notifications") {
                 BMBSettingsView(section: .notifications)

@@ -5,8 +5,23 @@
 	};
 	objectVersion = 56;
 	objects = {
+        AA1000060000000000000010 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankHomeUITests/MinimalHomeUITests.swift; sourceTree = "<group>"; };
+        AA1000060000000000000011 = {isa = PBXBuildFile; fileRef = AA1000060000000000000010; };
+        AA1000060000000000000012 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = BlankHomeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+        AA1000060000000000000013 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (AA1000060000000000000011,); runOnlyForDeploymentPostprocessing = 0; };
+        AA1000060000000000000014 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+        AA1000060000000000000015 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+        AA1000060000000000000016 = {isa = PBXNativeTarget; buildConfigurationList = AA1000060000000000000017; buildPhases = (AA1000060000000000000013, AA1000060000000000000014, AA1000060000000000000015,); buildRules = (); dependencies = (AA100006000000000000001B,); name = BlankHomeUITests; productName = BlankHomeUITests; productReference = AA1000060000000000000012; productType = "com.apple.product-type.bundle.ui-testing"; };
+        AA1000060000000000000017 = {isa = XCConfigurationList; buildConfigurations = (AA1000060000000000000018, AA1000060000000000000019,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+        AA1000060000000000000018 = {isa = XCBuildConfiguration; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = com.blanknfc.app.home-uitests; PRODUCT_NAME = "$(TARGET_NAME)"; GENERATE_INFOPLIST_FILE = YES; SWIFT_VERSION = 5.0; IPHONEOS_DEPLOYMENT_TARGET = 16.0; TARGETED_DEVICE_FAMILY = 1; TEST_TARGET_NAME = Blank; SDKROOT = iphoneos; CODE_SIGN_STYLE = Automatic; }; name = Debug; };
+        AA1000060000000000000019 = {isa = XCBuildConfiguration; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = com.blanknfc.app.home-uitests; PRODUCT_NAME = "$(TARGET_NAME)"; GENERATE_INFOPLIST_FILE = YES; SWIFT_VERSION = 5.0; IPHONEOS_DEPLOYMENT_TARGET = 16.0; TARGETED_DEVICE_FAMILY = 1; TEST_TARGET_NAME = Blank; SDKROOT = iphoneos; CODE_SIGN_STYLE = Automatic; }; name = Release; };
+        AA100006000000000000001A = {isa = PBXContainerItemProxy; containerPortal = 8A0000010000000000000070; proxyType = 1; remoteGlobalIDString = 8A0000010000000000000040; remoteInfo = Blank; };
+        AA100006000000000000001B = {isa = PBXTargetDependency; target = 8A0000010000000000000040; targetProxy = AA100006000000000000001A; };
+
 
 /* Begin PBXBuildFile section */
+        AA1000060000000000000001 /* MinimalHomeDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000060000000000000002 /* MinimalHomeDesign.swift */; };
+        AA1000060000000000000003 /* neue-montreal-regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = AA1000060000000000000004 /* neue-montreal-regular.otf */; };
 		AA0030030000000000000001 /* HomeOrbControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0030030000000000000002 /* HomeOrbControl.swift */; };
 		BA10000000000000000000032 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
 		BA10000000000000000000033 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
@@ -94,6 +109,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        AA1000060000000000000002 /* MinimalHomeDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalHomeDesign.swift; sourceTree = "<group>"; };
+        AA1000060000000000000004 /* neue-montreal-regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "neue-montreal-regular.otf"; sourceTree = "<group>"; };
 		AA0030030000000000000002 /* HomeOrbControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeOrbControl.swift; sourceTree = "<group>"; };
 		BA10000000000000000000031 /* BlankBrainMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankBrainMetrics.swift; sourceTree = "<group>"; };
 		BA10000000000000000000021 /* AssistantControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantControl.swift; sourceTree = "<group>"; };
@@ -187,6 +204,7 @@
 				8A0000050000000000000031 /* BlankShieldConfiguration */,
 				8A0000060000000000000031 /* BlankShieldAction */,
 				8A0000010000000000000032 /* Products */,
+                AA1000060000000000000010,
 			);
 			sourceTree = "<group>";
 		};
@@ -204,6 +222,7 @@
 				8A0000010000000000000016 /* BlankColors.swift */,
 				8A0000010000000000000017 /* SetupView.swift */,
 				8A0000010000000000000018 /* HomeView.swift */,
+                AA1000060000000000000002 /* MinimalHomeDesign.swift */,
 				AA0030030000000000000002 /* HomeOrbControl.swift */,
 				8A00000100000000000000F1 /* AssistantAppView.swift */,
 				8A00000100000000000000F3 /* AssistantComposerState.swift */,
@@ -228,6 +247,7 @@
 			children = (
 				8A0000010000000000000021 /* instrument_serif_regular.ttf */,
 				8A0000010000000000000022 /* inter_variable.ttf */,
+                AA1000060000000000000004 /* neue-montreal-regular.otf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -282,6 +302,7 @@
 		8A0000010000000000000032 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+                AA1000060000000000000012,
 				8A0000010000000000000010 /* Blank.app */,
 				8A0000020000000000000010 /* BlankDeviceActivityMonitor.appex */,
 				8A0000040000000000000010 /* BlankWidgetExtension.appex */,
@@ -394,6 +415,7 @@
 				LastSwiftUpdateCheck = 1520;
 				LastUpgradeCheck = 1520;
 				TargetAttributes = {
+                    AA1000060000000000000016 = {CreatedOnToolsVersion = 16.0; TestTargetID = 8A0000010000000000000040; };
 					8A0000010000000000000040 = {
 						CreatedOnToolsVersion = 15.2;
 						SystemCapabilities = {
@@ -433,6 +455,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+                AA1000060000000000000016,
 				8A0000010000000000000040 /* Blank */,
 				8A0000020000000000000040 /* BlankDeviceActivityMonitor */,
 				8A0000040000000000000040 /* BlankWidgetExtension */,
@@ -450,6 +473,7 @@
 				8A000001000000000000000D /* Assets.xcassets in Resources */,
 				8A000001000000000000000E /* instrument_serif_regular.ttf in Resources */,
 				8A000001000000000000000F /* inter_variable.ttf in Resources */,
+                AA1000060000000000000003 /* neue-montreal-regular.otf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -500,6 +524,7 @@
 				8A0000010000000000000006 /* BlankColors.swift in Sources */,
 				8A0000010000000000000007 /* SetupView.swift in Sources */,
 				8A0000010000000000000008 /* HomeView.swift in Sources */,
+                AA1000060000000000000001 /* MinimalHomeDesign.swift in Sources */,
 				AA0030030000000000000001 /* HomeOrbControl.swift in Sources */,
 				8A00000100000000000000F0 /* AssistantAppView.swift in Sources */,
 				8A00000100000000000000F2 /* AssistantComposerState.swift in Sources */,

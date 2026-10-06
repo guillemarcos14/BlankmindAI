@@ -59,6 +59,7 @@
 	<array>
 		<string>instrument_serif_regular.ttf</string>
 		<string>inter_variable.ttf</string>
+		<string>neue-montreal-regular.otf</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>

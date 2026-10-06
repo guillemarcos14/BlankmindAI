@@ -54,8 +54,21 @@ jobs:
       - name: Capture conversation states on iPhone simulator
         timeout-minutes: 10
         run: bash tools/capture_assistant_ios.sh tmp/ios-build/Build/Products/Debug-iphonesimulator/Blank.app
+      - name: Test Home navigation and long responses on iPhone
+        timeout-minutes: 8
+        run: |
+          device=$(xcrun simctl list devices booted -j | python3 -c 'import json,sys; print(next(d["udid"] for g in json.load(sys.stdin)["devices"].values() for d in g if d["state"] == "Booted"))')
+          xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank \
+            -configuration Debug -destination "platform=iOS Simulator,id=$device" \
+            -derivedDataPath tmp/ios-build -resultBundlePath tmp/home-ui-tests.xcresult \
+            -only-testing:BlankHomeUITests CODE_SIGNING_ALLOWED=NO test
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ios-conversation-visuals
           path: tmp/ios-visual/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-ui-tests
+          path: tmp/home-ui-tests.xcresult/
