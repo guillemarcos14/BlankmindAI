@@ -78,6 +78,7 @@ try {
   process.stdout.write(result.stdout || '');
   process.stderr.write(result.stderr || '');
   if (result.error) throw result.error;
+  if (result.signal) throw new Error(`Native client tests terminated by ${result.signal}`);
   process.exitCode = result.status || 0;
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });
