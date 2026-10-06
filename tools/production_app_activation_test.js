@@ -29,7 +29,7 @@ async function main() {
   assert.match(history, /if hasFreshSnapshot && error == nil && turn\.canApply/,
     "cached, failed and terminal history snapshots must not offer application");
   assert.match(apply, /guard validateOwner\(\), hasFreshSnapshot, !loading, error == nil, turn\.canApply/);
-  assert.match(apply, /let current = try await AssistantAppClient\(\)\.status\(turnId: turn\.id\)/,
+  assert.match(apply, /let \w+ = try await AssistantAppClient\(\)\.status\(turnId: turn\.id\)/,
     "a previously pending action must be rechecked before applying from history");
   assert.match(apply, /guard validateOwner\(\), requestID == id else \{ return \}/);
   assert.match(apply, /guard let current, current\.canApply, current\.actionId == turn\.actionId else/,

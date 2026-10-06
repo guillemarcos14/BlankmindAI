@@ -220,7 +220,7 @@ function visibleReply(plan, context, action) {
   return answer;
 }
 
-async function prepare(auth, row, leaseOwner, prompt, deviceContext) {
+async function prepare(auth, row, leaseOwner, prompt, deviceContext, onDraft) {
   if (deviceContext != null) {
     const context = normalizeUserContext(deviceContext);
     if (!context.brain_snapshot || !Number.isSafeInteger(context.context_revision)) throw new Error("invalid_brain_snapshot");
@@ -229,7 +229,7 @@ async function prepare(auth, row, leaseOwner, prompt, deviceContext) {
     const saved = await persistCanonicalSnapshot(auth.identity.assistant_connect_code, context, "app_turn_fresh_snapshot");
     if (!saved) throw new Error("brain_snapshot_not_persisted");
   }
-  const { plan, context, modelUnavailable } = await callBlankedAgent(prompt, auth.user.id, auth.connection);
+  const { plan, context, modelUnavailable } = await callBlankedAgent(prompt, auth.user.id, auth.connection, { onDraft });
   // Do not commit a degraded reply as completed: the existing failed-turn lease
   // lets the client retry this exact UUID and payload. A canonical withdrawal is
   // safe without a model and must still invalidate a pending instruction.
@@ -274,7 +274,7 @@ async function prepare(auth, row, leaseOwner, prompt, deviceContext) {
   return prepared.turn;
 }
 
-async function send(auth, body) {
+async function send(auth, body, onDraft) {
   const turnId = body.turn_id;
   const prompt = typeof body.text === "string" ? body.text.trim() : "";
   if (typeof turnId !== "string" || !UUID.test(turnId) || !prompt || prompt.length > 4000) {
@@ -297,7 +297,7 @@ async function send(auth, body) {
   }
   const ownedPath = `${turnPath(auth.user.id, turnId)}&lease_owner=eq.${leaseOwner}&status=eq.processing`;
   try {
-    const row = claim.turn.prepared_payload ? claim.turn : await prepare(auth, claim.turn, leaseOwner, prompt, body.context);
+    const row = claim.turn.prepared_payload ? claim.turn : await prepare(auth, claim.turn, leaseOwner, prompt, body.context, onDraft);
     const payload = row.prepared_payload;
     let action = null;
     if (payload.action) {
@@ -343,7 +343,7 @@ async function send(auth, body) {
   }
 }
 
-exports.handler = async (event) => {
+exports.handler = async (event, _context, { onDraft } = {}) => {
   const methodError = requireMethod(event, "POST");
   if (methodError) return methodError;
   let body;
@@ -365,7 +365,7 @@ exports.handler = async (event) => {
       const result = await require("./bm-audio-input").transcribe(body);
       return json(result.status, result.error ? { error: result.error } : { ok: true, text: result.text });
     }
-    if (body.action === "send") return await send(auth, body);
+    if (body.action === "send") return await send(auth, body, onDraft);
     return json(400, { error: "unsupported_action" });
   } catch (error) {
     // Diagnostic codes only: never log messages, tokens or provider payloads.

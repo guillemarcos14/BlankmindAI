@@ -30,6 +30,7 @@ private final class TransportStub: URLProtocol {
         var status = 200
         var body = "{}"
         var error: Error?
+        var contentType = "application/json"
     }
     static var respond: (URLRequest) -> Reply = { _ in Reply() }
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -41,7 +42,7 @@ private final class TransportStub: URLProtocol {
             return
         }
         let response = HTTPURLResponse(url: request.url!, statusCode: reply.status,
-            httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!
+            httpVersion: "HTTP/1.1", headerFields: ["Content-Type": reply.contentType])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Data(reply.body.utf8))
         client?.urlProtocolDidFinishLoading(self)
@@ -156,9 +157,11 @@ struct AssistantClientTests {
         TransportStub.respond = { _ in .init(error: URLError(.cancelled)) }
         do { _ = try await client.history(); fatalError("Expected cancellation") }
         catch is CancellationError { }
+        try await verifyStreamingClient(client)
         try await verifyViewRaces()
         try await verifyAutomaticRecovery()
         try await verifyProblemNotices()
+        verifyLocalActionReceipts()
         print("assistant client: refresh concurrency, identity switch, transient recovery, typed errors, 202/status, network and cancellation passed")
     }
 }
@@ -232,7 +235,11 @@ struct AssistantClientTests {
     print("problem notices: precise classification, honest fallback, persistence, polling and authentication recovery passed")
 }
 
-@MainActor final class SpeechFixture { func stop() {} }
+@MainActor final class SpeechFixture {
+    var isRecording = false
+    var isStarting = false
+    func stop() { isRecording = false; isStarting = false }
+}
 @MainActor enum AssistantDraftVault {
     static var states: [String: AssistantComposerState] = [:]
     static func load(owner: String) -> AssistantComposerState { states[owner] ?? AssistantComposerState() }
@@ -246,7 +253,72 @@ struct AssistantClientTests {
 struct ConversationTestClient {
     @MainActor func history() async throws -> AssistantAppHistoryPage { try await ViewTransport.history() }
     @MainActor func status(turnId: String) async throws -> AssistantAppTurn? { try await ViewTransport.status(turnId) }
-    @MainActor func send(text: String, turnId: String, context: [String: Any]? = nil) async throws -> AssistantAppTurn { try await ViewTransport.send(text, turnId) }
+    @MainActor func send(text: String, turnId: String, context: [String: Any]? = nil,
+                        onDraft: (@MainActor (String) -> Void)? = nil) async throws -> AssistantAppTurn {
+        onDraft?("Partial response")
+        return try await ViewTransport.send(text, turnId)
+    }
+}
+
+@MainActor private func verifyStreamingClient(_ client: AssistantAppClient) async throws {
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    let completed = #"{"ok":true,"turn":{"id":"turn-stream","user_text":"hello","assistant_text":"Hola 👋","status":"completed","action_id":"","action_label":"","action_status":"","created_at":"2026-10-06T12:00:00Z"}}"#
+    let frames = "{\"type\":\"start\",\"turn_id\":\"turn-stream\"}\n"
+        + "{\"type\":\"draft\",\"turn_id\":\"turn-stream\",\"text\":\"Hola\"}\n"
+        + "{\"type\":\"keepalive\"}\n"
+        + "{\"type\":\"draft\",\"turn_id\":\"turn-stream\",\"text\":\"Hola 👋\"}\n"
+    var drafts: [String] = []
+    TransportStub.respond = { _ in .init(body: frames + "{\"type\":\"result\",\"status\":200,\"body\":\(completed)}\n", contentType: "application/x-ndjson") }
+    let turn = try await client.send(text: "hello", turnId: "turn-stream", onDraft: { drafts.append($0) })
+    check(drafts == ["Hola", "Hola 👋"] && turn.status == "completed" && !turn.canApply, "Streaming changed final authority or lost Unicode drafts")
+    TransportStub.respond = { _ in .init(body: frames, contentType: "application/x-ndjson") }
+    do { _ = try await client.send(text: "hello", turnId: "turn-stream", onDraft: { _ in }); fatalError("Draft EOF cannot complete") }
+    catch let error as AssistantAppError { check(error.code == "invalid_response", "Truncated stream must use recovery") }
+    var sentIDs: [String] = []
+    TransportStub.respond = { request in
+        let body = try! JSONSerialization.jsonObject(with: requestBody(request)) as! [String: Any]
+        sentIDs.append(body["turn_id"] as! String)
+        if request.url!.lastPathComponent == "assistant-app-stream" { return .init(status: 404) }
+        return .init(body: completed)
+    }
+    _ = try await client.send(text: "hello", turnId: "turn-stream", onDraft: { _ in })
+    check(sentIDs == ["turn-stream", "turn-stream"], "Legacy fallback changed the durable UUID")
+    var refreshed = 0
+    AssistantAppSession.save(accessToken: "expired#A", refreshToken: "refresh-A")
+    TransportStub.respond = { request in
+        if request.url!.lastPathComponent == "app-auth" {
+            refreshed += 1
+            return .init(body: #"{"ok":true,"access_token":"fresh#A","refresh_token":"rotated-A"}"#)
+        }
+        if request.value(forHTTPHeaderField: "Authorization") == "Bearer expired#A" {
+            return .init(body: "{\"type\":\"result\",\"status\":401,\"body\":{\"error\":\"authentication_required\"}}\n", contentType: "application/x-ndjson")
+        }
+        return .init(body: frames + "{\"type\":\"result\",\"status\":200,\"body\":\(completed)}\n", contentType: "application/x-ndjson")
+    }
+    _ = try await client.send(text: "hello", turnId: "turn-stream", onDraft: { _ in })
+    check(refreshed == 1, "Stream 401 must refresh once")
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    TransportStub.respond = { _ in .init(body: frames + "{\"type\":\"result\",\"status\":200,\"body\":\(completed)}\n", contentType: "application/x-ndjson") }
+    do {
+        _ = try await client.send(text: "hello", turnId: "turn-stream", onDraft: { _ in
+            AssistantAppSession.save(accessToken: "session#B", refreshToken: "refresh-B")
+        })
+        fatalError("A switched account cannot receive the remaining stream")
+    } catch let error as AssistantAppError { check(error.code == "session_changed", "Stream account isolation failed") }
+    print("streaming client: progressive Unicode, final authority, truncated EOF, same-ID fallback, token refresh and account isolation passed")
+}
+
+private func requestBody(_ request: URLRequest) -> Data {
+    if let body = request.httpBody { return body }
+    guard let stream = request.httpBodyStream else { return Data() }
+    stream.open(); defer { stream.close() }
+    var body = Data(), buffer = [UInt8](repeating: 0, count: 4096)
+    while stream.hasBytesAvailable {
+        let count = stream.read(&buffer, maxLength: buffer.count)
+        if count <= 0 { break }
+        body.append(contentsOf: buffer.prefix(count))
+    }
+    return body
 }
 private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     .init(id: id, userText: text, assistantText: "Reply to \(text)", status: "completed", actionId: "",
@@ -327,10 +399,57 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     home.usesHomePresentation = true
     home.showingHomeKeyboard = true
     home.composer.draft = "Block from Home"
-    ViewTransport.send = { text, id in AssistantAppTurn(id: id, userText: text, assistantText: "Applying", status: "completed", actionId: "home_action", actionLabel: "Apply", actionStatus: "queued", createdAt: "2026-10-06T10:00:00Z", autoApply: true) }
+    home.homeActionHandler = {
+        AssistantActionReceiptStore.save(actionId: "app_home_action", status: "verified", detail: "native_verified", executionStarted: true)
+    }
+    ViewTransport.send = { text, id in AssistantAppTurn(id: id, userText: text, assistantText: "Applying", status: "completed", actionId: "app_home_action", actionLabel: "Apply", actionStatus: "queued", createdAt: "2026-10-06T10:00:00Z", autoApply: true) }
     await home.sendForTest()
-    check(home.appliedActions == ["home_action"] && home.homeActionPreparedCount == 1 && home.dismissCount == 0,
+    check(home.appliedActions == ["app_home_action"] && home.homeActionPreparedCount == 1 && home.dismissCount == 0,
           "Embedded Home must confirm the native action without dismissing the app root")
+    check(home.turns.last?.actionStatus == "verified" && home.turns.last?.canApply == false,
+          "The chat offered a second block after the native receipt")
+    let staleTurn = ViewTransport.send
+    ViewTransport.history = { .init(turns: [try await staleTurn("Block from Home", "home-turn")], nextBefore: nil) }
+    await home.reloadForTest()
+    check(home.turns.last?.actionStatus == "verified" && home.turns.last?.canApply == false,
+          "Stale cloud history restored the redundant block button")
+    check(home.appliedActions.count == 1, "Receipt reconciliation executed the block twice")
+    await home.applyForTest("app_home_action")
+    check(home.appliedActions.count == 1, "A tap racing the receipt update repeated native execution")
+    AssistantActionReceiptStore.clear(actionId: "app_home_action")
     check(!home.showingHomeKeyboard, "Sending text must close the Home keyboard sheet")
     print("assistant view: stale history, account switch during status and obsolete send completion passed")
+}
+
+@MainActor private func verifyLocalActionReceipts() {
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    let queued = AssistantAppTurn(id: "turn", userText: "Block for five minutes", assistantText: "Applying",
+        status: "completed", actionId: "app_receipt", actionLabel: "Block 5 minutes", actionStatus: "queued",
+        createdAt: "2026-10-06T18:00:00Z", autoApply: true)
+    check(queued.resolvingLocalReceipt.canApply, "An unexecuted action lost its setup/recovery button")
+    AssistantActionReceiptStore.save(actionId: "app_other", status: "verified", detail: "", executionStarted: true)
+    check(queued.resolvingLocalReceipt.canApply, "A different block suppressed this action")
+    for status in ["confirmed", "execution_started"] {
+        AssistantActionReceiptStore.save(actionId: queued.actionId, status: status, detail: "", executionStarted: true)
+        check(queued.resolvingLocalReceipt.canApply, "Preparation was treated as native completion")
+    }
+    for status in ["verified", "delayed", "failed", "dismissed"] {
+        AssistantActionReceiptStore.save(actionId: queued.actionId, status: status, detail: "", executionStarted: true)
+        let resolved = queued.resolvingLocalReceipt
+        check(!resolved.canApply && resolved.actionStatus == status && resolved.autoApply == false,
+              "Native outcome did not remove the duplicate action button")
+        check(resolved.id == queued.id && resolved.userText == queued.userText && resolved.assistantText == queued.assistantText,
+              "Receipt reconciliation changed conversation content")
+    }
+    AssistantActionReceiptStore.save(actionId: queued.actionId, status: "verified", detail: "", executionStarted: true)
+    AssistantAppSession.save(accessToken: "session#B", refreshToken: "refresh-B")
+    check(AssistantActionReceiptStore.load() == nil && queued.resolvingLocalReceipt.canApply, "Another account's receipt changed this turn")
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    var terminal = queued
+    terminal = AssistantAppTurn(id: terminal.id, userText: terminal.userText, assistantText: terminal.assistantText,
+        status: terminal.status, actionId: terminal.actionId, actionLabel: terminal.actionLabel, actionStatus: "superseded", createdAt: terminal.createdAt)
+    check(terminal.resolvingLocalReceipt.actionStatus == "superseded", "Receipt overrode a terminal server status")
+    AssistantActionReceiptStore.clear(actionId: queued.actionId)
+    check(AssistantActionReceiptStore.load() == nil, "Receipt cleanup failed")
+    print("action receipts: immediate CTA removal, stale history, exact action/account, setup and terminal outcomes passed")
 }

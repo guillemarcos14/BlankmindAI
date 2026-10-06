@@ -12,6 +12,8 @@ if (start < 0 || end < start) throw new Error('Assistant client source boundarie
 const test = fs.readFileSync(path.join(__dirname, 'assistant_client_test.swift'), 'utf8');
 const composerSource = fs.readFileSync(path.join(__dirname, '../ios/Blank/Blank/AssistantComposerState.swift'), 'utf8');
 const composer = composerSource.slice(composerSource.indexOf('struct AssistantComposerState:'), composerSource.indexOf('enum AssistantDraftVault'));
+const homeSource = fs.readFileSync(path.join(__dirname, '../ios/Blank/Blank/HomeView.swift'), 'utf8');
+const receipts = homeSource.slice(homeSource.indexOf('struct AssistantActionReceipt:'), homeSource.indexOf('struct AssistantActionInboxClient'));
 const viewMethodsStart = source.indexOf('    @discardableResult private func restoreOwner()');
 const viewMethodsEnd = source.indexOf('    #if DEBUG', viewMethodsStart);
 if (viewMethodsStart < 0 || viewMethodsEnd < viewMethodsStart) throw new Error('Assistant view state test boundaries changed');
@@ -51,8 +53,12 @@ const viewFixture = `
     var showingHomeKeyboard = false
     var usesHomePresentation = false
     var homeActionPreparedCount = 0
-    func onHomeActionPrepared() { homeActionPreparedCount += 1 }
+    var homeActionHandler: (() -> Void)?
+    func onHomeActionPrepared() { homeActionPreparedCount += 1; homeActionHandler?() }
     var visibleTurnID: String?
+    var streamedText = ""
+    var writingHaptics = WritingHapticsFixture()
+    var presentationIsVisible = true
     var greeting: String?
     var appliedActions: [String] = []
     var dismissCount = 0
@@ -60,17 +66,26 @@ const viewFixture = `
     func dismiss() { dismissCount += 1 }
     func reloadForTest() async { await reload() }
     func sendForTest() async { await send() }
+    func applyForTest(_ id: String) async { await applyAction(id) }
     func restoreForTest() { restoreOwner() }
     func recoverForTest() async { await recoverPendingMessage(delays: [1_000_000, 1_000_000, 1_000_000]) }
 ${viewMethods}
 ${applyMethod}
 }
 `;
+const hapticsFixture = `
+@MainActor final class WritingHapticsFixture {
+    var updates: [String] = []
+    var stops = 0
+    func update(text: String, enabled: Bool) { if enabled { updates.append(text) } }
+    func stop() { stops += 1 }
+}
+`;
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'blank-assistant-client-'));
 try {
   const file = path.join(temporary, 'AssistantClientTests.swift');
   const binary = path.join(temporary, 'assistant-client-tests');
-  fs.writeFileSync(file, `import Foundation\n${source.slice(start, end)}\n${composer}\n${viewFixture}\n${test}`);
+  fs.writeFileSync(file, `import Foundation\n${receipts}\n${source.slice(start, end)}\n${composer}\n${hapticsFixture}\n${viewFixture}\n${test}`);
   const compiled = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file, '-o', binary], { encoding: 'utf8' });
   if (compiled.error) throw new Error(`Native client tests require Swift on macOS: ${compiled.error.message}`);
   if (compiled.status !== 0) throw new Error(compiled.stderr || compiled.stdout);

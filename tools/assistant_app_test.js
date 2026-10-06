@@ -164,10 +164,11 @@ membership.supabaseFetch = async (path, options = {}) => {
 // Use the real pending-action queue with only network/storage adapters stubbed.
 delete require.cache[require.resolve("../netlify/functions/whatsapp-agent")];
 const whatsapp = require("../netlify/functions/whatsapp-agent");
-whatsapp.callBlankedAgent = async () => {
+whatsapp.callBlankedAgent = async (_prompt, _user, _connection, { onDraft } = {}) => {
   effects.planner += 1;
   faultOnce("planner");
   const context = { language: "es", memory: copy(memory), ...copy(brainContext) };
+  if (onDraft) onDraft("Texto parcial");
   if (plannerBarrier) await plannerBarrier;
   return { plan: { message_text: replyText, response_language: "es", actions: copy(actions),
     semantic_state: { ...emptyState("es"), ...copy(semanticState) }, semantic_decision: copy(semanticDecision) }, context, modelUnavailable };
@@ -480,5 +481,33 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
   } while (before);
   assert.equal(seen.length, 125);
   assert.equal(new Set(seen).size, 125);
+  // Exercise the streaming endpoint against the real auth/lease/commit path.
+  const streaming = (await import("../netlify/functions/assistant-app-stream.mjs")).default;
+  const streamingRequest = (id, token = "valid") => new Request("https://blank.test/assistant-app-stream", {
+    method: "POST", headers: { authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action: "send", app_install_id: "verified-install", turn_id: id, text: "Hola" }),
+  });
+  const streamId = crypto.randomUUID();
+  actions = []; semanticState = emptyState("es"); semanticDecision = { type: "none" };
+  let releasePlanner;
+  plannerBarrier = new Promise(resolve => { releasePlanner = resolve; });
+  const streamed = await streaming(streamingRequest(streamId));
+  const streamReader = streamed.body.getReader();
+  const frame = async () => JSON.parse(new TextDecoder().decode((await streamReader.read()).value));
+  assert.equal((await frame()).type, "start");
+  assert.equal((await frame()).text, "Texto parcial");
+  assert.equal(rows.get(streamId).status, "processing", "Draft cannot complete the durable turn");
+  releasePlanner(); plannerBarrier = null;
+  const final = await frame();
+  assert.equal(final.type, "result"); assert.equal(final.status, 200);
+  assert.equal(final.body.turn.status, "completed");
+  assert.equal(rows.get(streamId).status, "completed");
+  const beforeDuplicate = effects.planner;
+  const duplicateFrames = (await (await streaming(streamingRequest(streamId))).text()).trim().split("\n").map(JSON.parse);
+  assert.equal(duplicateFrames.at(-1).body.idempotent, true);
+  assert.equal(effects.planner, beforeDuplicate, "Streaming retry reran a completed planner");
+  const deniedFrames = (await (await streaming(streamingRequest(crypto.randomUUID(), "invalid"))).text()).trim().split("\n").map(JSON.parse);
+  assert.equal(deniedFrames.at(-1).status, 401);
+  assert.equal(deniedFrames.some(frame => frame.type === "draft"), false, "Unauthorized stream leaked a draft");
   console.log("assistant app: auth isolation, immutable retries, leases, atomic checkpoints, CAS conflicts, canonical actions, durable receipts, failure recovery and 125 tied history timestamps passed");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

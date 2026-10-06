@@ -476,11 +476,11 @@ async function agentContext(from, prompt, linkedConnection = null) {
   };
 }
 
-async function callBlankedAgent(prompt, from, linkedConnection = null) {
+async function callBlankedAgent(prompt, from, linkedConnection = null, { onDraft } = {}) {
   const context = await agentContext(from, prompt, linkedConnection);
   if (context.channel === "app") {
     const identity = await require("./_identity").identityForAuthUser(from);
-    return require("./bmb-brain").plan({ prompt, context, userId: from, identity });
+    return require("./bmb-brain").plan({ prompt, context, userId: from, identity, onDraft });
   }
   const response = await blankedAgentHandler({
     httpMethod: "POST",

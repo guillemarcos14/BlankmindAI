@@ -68,6 +68,35 @@ async function main() {
   const expired=context();expired.memory.conversation_state={bmb_state:{proposal:{...proposed,expires_at:"2020-01-01"}}};
   const expiredReply=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:proposed.fingerprint,action:action()},expired);assert.deepEqual(expiredReply.plan.actions,[]); const missing=await turn({...base(),message_kind:"acceptance",decision:"execute",accepted_proposal:null,action:action()});assert.deepEqual(missing.plan.actions,[]);assert.match(missing.plan.response_text,/haven.t applied/);assert.equal(missing.plan.bmb_state.proposal,null);
   result=await turn({...base(),message_kind:"action_request",decision:"execute",action:action()});assert.equal(result.plan.actions.length,1);
+  // Regression for the real 3-minute request: no service error, clamping or
+  // old proposal surviving to authorize a different block on the next turn.
+  for(const minutes of [0,3,241,2.5])for(const type of ["start_protection","set_daily_limit"]) {
+    const ctx=context();ctx.memory.conversation_state={bmb_state:{proposal:proposed}};
+    const limited=await turn({...base(),message_kind:"action_request",decision:"execute",action:action({minutes,type})},ctx);
+    assert.deepEqual(limited.plan.actions,[]);assert.equal(limited.context.brain_request.execute,false);
+    assert.equal(limited.plan.bmb_state.proposal,null);assert(limited.plan.bmb_state.recovery_after);
+    assert.equal(limited.plan.bmb_state.pending_request,"help");assert.match(limited.plan.response_text,/5 to 240/);
+    assert.equal(limited.context.brain_memory_effect,undefined);
+  }
+  for(const minutes of [5,240]) {
+    const supported=await turn({...base(),message_kind:"action_request",decision:"execute",action:action({minutes})});
+    assert.equal(supported.plan.actions[0].minutes,minutes);assert.equal(supported.context.brain_request.execute,true);
+  }
+  const incident="Está yendo muy bien. ¿Me podrías bloquear las distracciones durante tres minutos ahora mismo? Solo una vez.";
+  for(const repairFails of [false,true]) {
+    let attempts=0;
+    const reply="El mínimo son 5 minutos. No he cambiado nada. ¿Quieres que lo prepare con esa duración?";
+    const limited=await brain.plan({prompt:incident,context:context(),userId:"A",identity:{}},{memories:[],run:async input=>{
+      attempts++;
+      if(attempts===1)return {...base(),evidence:incident,response_language:"es",message_kind:"action_request",decision:"execute",action:action({minutes:3})};
+      assert.equal(input.tool_budget_remaining,0);assert.match(input.action_constraint,/5 through 240/);
+      if(repairFails)throw Error("bmb_timeout");
+      return {...base(),evidence:incident,response_language:"es",message_kind:"action_request",decision:"ask",response_text:reply};
+    }});
+    assert.equal(attempts,2);assert.deepEqual(limited.plan.actions,[]);assert.equal(limited.context.brain_request.execute,false);
+    assert.equal(limited.plan.response_text,repairFails
+      ? "Los bloqueos y límites admiten entre 5 y 240 minutos. No he aplicado ningún cambio. ¿Qué duración quieres dentro de ese rango?":reply);
+  }
   const stale=context();stale.brain_snapshot.generated_at="2020-01-01";
   await assert.rejects(()=>turn({...base(),message_kind:"action_request",decision:"execute",action:action()},stale),/stale_device/);
   result=await turn({...base(),message_kind:"cancellation",decision:"cancel"},ctx);assert.equal(result.plan.bmb_state.proposal,null);assert.equal(result.plan.bmb_invalidates,true);

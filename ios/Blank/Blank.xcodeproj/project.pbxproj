@@ -20,6 +20,7 @@
 
 
 /* Begin PBXBuildFile section */
+		BA10000600000000000000001 /* AssistantWritingHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000600000000000000002 /* AssistantWritingHaptics.swift */; };
         AA1000060000000000000001 /* MinimalHomeDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000060000000000000002 /* MinimalHomeDesign.swift */; };
         AA1000060000000000000003 /* neue-montreal-regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = AA1000060000000000000004 /* neue-montreal-regular.otf */; };
 		AA0030030000000000000001 /* HomeOrbControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0030030000000000000002 /* HomeOrbControl.swift */; };
@@ -109,6 +110,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		BA10000600000000000000002 /* AssistantWritingHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantWritingHaptics.swift; sourceTree = "<group>"; };
         AA1000060000000000000002 /* MinimalHomeDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalHomeDesign.swift; sourceTree = "<group>"; };
         AA1000060000000000000004 /* neue-montreal-regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "neue-montreal-regular.otf"; sourceTree = "<group>"; };
 		AA0030030000000000000002 /* HomeOrbControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeOrbControl.swift; sourceTree = "<group>"; };
@@ -225,6 +227,7 @@
                 AA1000060000000000000002 /* MinimalHomeDesign.swift */,
 				AA0030030000000000000002 /* HomeOrbControl.swift */,
 				8A00000100000000000000F1 /* AssistantAppView.swift */,
+				BA10000600000000000000002 /* AssistantWritingHaptics.swift */,
 				8A00000100000000000000F3 /* AssistantComposerState.swift */,
 				8A000001000000000000001B /* BlankDomainModels.swift */,
 				8A000001000000000000001C /* ReportView.swift */,
@@ -527,6 +530,7 @@
                 AA1000060000000000000001 /* MinimalHomeDesign.swift in Sources */,
 				AA0030030000000000000001 /* HomeOrbControl.swift in Sources */,
 				8A00000100000000000000F0 /* AssistantAppView.swift in Sources */,
+				BA10000600000000000000001 /* AssistantWritingHaptics.swift in Sources */,
 				8A00000100000000000000F2 /* AssistantComposerState.swift in Sources */,
 				8A0000010000000000000009 /* BlankDomainModels.swift in Sources */,
 				8A000001000000000000000A /* ReportView.swift in Sources */,

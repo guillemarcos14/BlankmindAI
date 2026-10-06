@@ -152,6 +152,17 @@ struct AssistantAppTurn: Codable, Identifiable {
     var canApply: Bool {
         !actionId.isEmpty && ["queued", "delivered"].contains(actionStatus)
     }
+
+    // The iPhone receipt is already durable before cloud acknowledgement.
+    // A stale queued turn must not offer to repeat an action it just applied.
+    var resolvingLocalReceipt: AssistantAppTurn {
+        guard canApply || actionStatus == "execution_started",
+              let receipt = AssistantActionReceiptStore.load(), receipt.actionId == actionId,
+              ["verified", "delayed", "failed", "dismissed"].contains(receipt.status) else { return self }
+        return AssistantAppTurn(id: id, userText: userText, assistantText: assistantText, status: status,
+            actionId: actionId, actionLabel: actionLabel, actionStatus: receipt.status, createdAt: createdAt,
+            autoApply: false, controlSection: controlSection)
+    }
 }
 
 private struct AssistantAppEnvelope: Decodable {
@@ -294,12 +305,107 @@ struct AssistantAppClient {
         return AssistantAppHistoryPage(turns: result.turns ?? [], nextBefore: result.nextBefore)
     }
 
-    func send(text: String, turnId: String, context: [String: Any]? = nil) async throws -> AssistantAppTurn {
+    func send(text: String, turnId: String, context: [String: Any]? = nil,
+              onDraft: (@MainActor (String) -> Void)? = nil) async throws -> AssistantAppTurn {
         var extra: [String: Any] = ["text": text, "turn_id": turnId]
         if let context { extra["context"] = context }
-        let result = try await request(action: "send", extra: extra)
+        let result: AssistantAppEnvelope
+        if let onDraft, let streamed = try await sendStream(extra: extra, turnId: turnId, onDraft: onDraft) {
+            result = streamed
+        } else {
+            // The new app remains usable against a backend without this route.
+            result = try await request(action: "send", extra: extra)
+        }
         guard let turn = result.turn else { throw AssistantAppError.invalidResponse }
         return turn
+    }
+
+    private func sendStream(extra: [String: Any], turnId: String,
+                            onDraft: @escaping @MainActor (String) -> Void) async throws -> AssistantAppEnvelope? {
+        let raw = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String ?? ""
+        guard let base = baseURL ?? (raw.contains("$(") ? nil : URL(string: raw)),
+              base.scheme == "https", base.host != nil else { throw AssistantAppError.notConfigured }
+        guard let access = AssistantAppSession.token("access"), let userID = AssistantAppSession.userID else {
+            throw AssistantAppError.authenticationRequired
+        }
+        var body = extra
+        body["action"] = "send"
+        body["app_install_id"] = BlankSharedState.appInstallId
+        let payload = try JSONSerialization.data(withJSONObject: body)
+        do {
+            return try await readStream(base: base, payload: payload, token: access, userID: userID,
+                                        turnId: turnId, onDraft: onDraft)
+        } catch AssistantAppError.authenticationRequired {
+            guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+            let refreshed = try await sessionRefresh.accessToken(rejected: access) {
+                try await refresh(base: base, rejectedToken: access)
+            }
+            guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+            try Task.checkCancellation()
+            return try await readStream(base: base, payload: payload, token: refreshed, userID: userID,
+                                        turnId: turnId, onDraft: onDraft)
+        }
+    }
+
+    private func readStream(base: URL, payload: Data, token: String, userID: String,
+                            turnId: String, onDraft: @escaping @MainActor (String) -> Void) async throws -> AssistantAppEnvelope? {
+        var request = URLRequest(url: base.appendingPathComponent("assistant-app-stream"))
+        request.httpMethod = "POST"
+        request.httpBody = payload
+        request.timeoutInterval = 60
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/x-ndjson", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        do {
+            let (bytes, response) = try await session.bytes(for: request)
+            guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+            guard let http = response as? HTTPURLResponse else { throw AssistantAppError.invalidResponse }
+            if [404, 405].contains(http.statusCode) { return nil }
+            if !(200..<300).contains(http.statusCode)
+                || !(http.value(forHTTPHeaderField: "Content-Type") ?? "").hasPrefix("application/x-ndjson") {
+                var data = Data()
+                for try await byte in bytes {
+                    guard data.count < 262144 else { throw AssistantAppError.invalidResponse }
+                    data.append(byte)
+                }
+                guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+                return try decode((data, http))
+            }
+            for try await line in bytes.lines {
+                try Task.checkCancellation()
+                guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+                if line.isEmpty { continue }
+                guard line.utf8.count <= 262144,
+                      let frame = try JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
+                      let type = frame["type"] as? String else { throw AssistantAppError.invalidResponse }
+                switch type {
+                case "draft":
+                    guard frame["turn_id"] as? String == turnId, let text = frame["text"] as? String,
+                          text.utf8.count <= 128000 else { throw AssistantAppError.invalidResponse }
+                    await onDraft(text)
+                case "result":
+                    guard let status = frame["status"] as? Int, let body = frame["body"] as? [String: Any],
+                          let finalHTTP = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)
+                    else { throw AssistantAppError.invalidResponse }
+                    let result = try decode((JSONSerialization.data(withJSONObject: body), finalHTTP))
+                    guard result.turn?.id == turnId else { throw AssistantAppError.invalidResponse }
+                    return result
+                case "start":
+                    guard frame["turn_id"] as? String == turnId else { throw AssistantAppError.invalidResponse }
+                case "keepalive": break
+                default: throw AssistantAppError.invalidResponse
+                }
+            }
+            // EOF after a draft is not a completed turn. Existing status/retry
+            // recovery owns the same saved message and UUID.
+            throw AssistantAppError.invalidResponse
+        } catch let error as URLError {
+            if error.code == .cancelled { throw CancellationError() }
+            if error.code == .timedOut { throw AssistantAppError.timeout }
+            if error.code == .notConnectedToInternet { throw AssistantAppError.offline }
+            throw AssistantAppError.network
+        }
     }
 
     func status(turnId: String) async throws -> AssistantAppTurn? {
@@ -553,6 +659,9 @@ struct AssistantAppView: View {
     @State private var saveTask: Task<Void, Never>?
     @State private var initialMessageHandled = false
     @State private var visibleTurnID: String?
+    @State private var streamedText = ""
+    @StateObject private var writingHaptics = AssistantWritingHaptics()
+    @State private var presentationIsVisible = false
     @State private var greeting: String? = AssistantGreetingFallback.make()
 
     var initialMessage: String? = nil
@@ -628,6 +737,11 @@ struct AssistantAppView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
                                 .accessibilityLabel("Blankmind: \(latest.assistantText)")
+                        } else if isSending && !streamedText.isEmpty {
+                            Text(streamedText)
+                                .font(.blankInter(size: 20))
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
                         } else if isSending || (composer.pending != nil && error == nil) {
                             BlankLoadingIndicator(color: foreground)
                         } else {
@@ -706,6 +820,10 @@ struct AssistantAppView: View {
             }
         }
         .task(id: recoveryTaskID) { await recoverPendingMessage() }
+        .onReceive(NotificationCenter.default.publisher(for: AssistantActionReceiptStore.didChangeNotification).receive(on: RunLoop.main)) { _ in
+            guard owner == AssistantAppSession.userID else { return }
+            turns = turns.map(\.resolvingLocalReceipt)
+        }
         .onChange(of: speech.error) { value in
             if let value {
                 error = value
@@ -727,6 +845,7 @@ struct AssistantAppView: View {
             }
         }
         .onChange(of: scenePhase) { phase in
+            if phase != .active { writingHaptics.stop() }
             BlankBrain.shared.chatIsOpen = phase == .active && isHomeVisible
             if phase == .active && !preview && !simulatorGuest { Task { restoreOwner(); await reload() } }
             else {
@@ -743,20 +862,22 @@ struct AssistantAppView: View {
             guard !preview, !simulatorGuest, restoreOwner() else { return }
             Task { await reload() }
         }
-        .onDisappear { acceptingSpeech = false; speech.stop(); saveTask?.cancel(); persist() }
+        .onDisappear { presentationIsVisible = false; writingHaptics.stop(); acceptingSpeech = false; speech.stop(); saveTask?.cancel(); persist() }
         .sheet(isPresented: $showHistory) {
             AssistantAppHistoryView(turns: turns, nextBefore: nextHistoryCursor,
                 foreground: foreground, background: background, onApplyAction: { id in Task { await applyAction(id) } })
                 .preferredColorScheme(dark ? .dark : .light)
         }
-        .onAppear { BlankBrain.shared.chatIsOpen = isHomeVisible; BlankBrain.shared.sync() }
+        .onAppear { presentationIsVisible = true; BlankBrain.shared.chatIsOpen = isHomeVisible; BlankBrain.shared.sync() }
         .onChange(of: isHomeVisible) { visible in
+            if !visible { writingHaptics.stop() }
             BlankBrain.shared.chatIsOpen = visible && scenePhase == .active
             BlankBrain.shared.sync()
             onConversationActivityChanged(visible && (waiting || speech.isRecording || speech.isStarting))
             if !visible { acceptingSpeech = false; speech.stop(); composerFocused = false; persist() }
         }
         .onChange(of: waiting || speech.isRecording || speech.isStarting) { busy in
+            if speech.isRecording || speech.isStarting { writingHaptics.stop() }
             onConversationActivityChanged(isHomeVisible && busy)
         }
         .onDisappear { BlankBrain.shared.chatIsOpen = false; BlankBrain.shared.sync() }
@@ -791,6 +912,8 @@ struct AssistantAppView: View {
                             } else if let latest {
                                 homeResponse(latest.assistantText)
                                     .accessibilityLabel("Blankmind: \(latest.assistantText)")
+                            } else if isSending && !streamedText.isEmpty {
+                                homeResponse(streamedText)
                             } else if isSending || (composer.pending != nil && error == nil) {
                                 BlankLoadingIndicator(color: foreground)
                             } else {
@@ -1042,6 +1165,11 @@ struct AssistantAppView: View {
 
     private func applyAction(_ actionID: String) async {
         guard !isApplyingAction, !actionID.isEmpty, owner == AssistantAppSession.userID else { return }
+        if let receipt = AssistantActionReceiptStore.load(), receipt.actionId == actionID,
+           ["verified", "delayed", "failed", "dismissed"].contains(receipt.status) {
+            turns = turns.map(\.resolvingLocalReceipt)
+            return
+        }
         isApplyingAction = true
         defer { isApplyingAction = false }
         acceptingSpeech = false
@@ -1052,6 +1180,7 @@ struct AssistantAppView: View {
             try await onApplyAction(actionID)
             guard owner == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
             if usesHomePresentation { onHomeActionPrepared() } else { dismiss() }
+            turns = turns.map(\.resolvingLocalReceipt)
         } catch {
             handle(error)
         }
@@ -1076,6 +1205,8 @@ struct AssistantAppView: View {
         reloadRequestID = nil
         isLoading = true
         owner = current
+        streamedText = ""
+        writingHaptics.stop()
         turns = []
         visibleTurnID = nil
         nextHistoryCursor = nil
@@ -1105,7 +1236,7 @@ struct AssistantAppView: View {
             let page = try await AssistantAppClient().history()
             guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
                   expectedRevision == conversationRevision else { return }
-            turns = page.turns
+            turns = page.turns.map(\.resolvingLocalReceipt)
             nextHistoryCursor = page.nextBefore
             requiresVerification = false
             if let pending = composer.pending {
@@ -1135,6 +1266,7 @@ struct AssistantAppView: View {
     }
 
     private func accept(_ turn: AssistantAppTurn) {
+        let turn = turn.resolvingLocalReceipt
         if let index = turns.firstIndex(where: { $0.id == turn.id }) { turns[index] = turn }
         else { turns.append(turn) }
         if turn.status == "completed" {
@@ -1195,6 +1327,8 @@ struct AssistantAppView: View {
         showingHomeKeyboard = false
         visibleTurnID = nil
         let requestID = UUID()
+        streamedText = ""
+        writingHaptics.stop()
         sendRequestID = requestID
         conversationRevision += 1
         let expectedRevision = conversationRevision
@@ -1202,16 +1336,35 @@ struct AssistantAppView: View {
         isLoading = false
         error = nil
         let expectedOwner = owner
-        defer { if sendRequestID == requestID { sendRequestID = nil } }
+        defer {
+            if sendRequestID == requestID {
+                sendRequestID = nil
+                streamedText = ""
+                writingHaptics.stop()
+            }
+        }
         do {
-            let turn = try await AssistantAppClient().send(text: pending.text, turnId: pending.id, context: await BlankBrain.shared.freshSnapshot())
+            let turn = try await AssistantAppClient().send(text: pending.text, turnId: pending.id,
+                context: await BlankBrain.shared.freshSnapshot(), onDraft: { text in
+                    guard expectedOwner == self.owner, expectedOwner == AssistantAppSession.userID,
+                          expectedRevision == self.conversationRevision, self.sendRequestID == requestID,
+                          self.composer.pending?.id == pending.id else { return }
+                    self.streamedText = text
+                    self.writingHaptics.update(text: text,
+                        enabled: self.presentationIsVisible && self.scenePhase == .active
+                            && (!self.usesHomePresentation || self.isHomeVisible)
+                            && !self.speech.isRecording && !self.speech.isStarting
+                            && !self.preview && !self.simulatorGuest)
+                })
             guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
                   expectedRevision == conversationRevision else { return }
+            writingHaptics.stop()
             accept(turn)
             requiresVerification = false
             if allowAutoApply, turn.autoApply == true, turn.canApply { await applyAction(turn.actionId) }
         } catch {
             guard expectedOwner == owner, expectedRevision == conversationRevision else { return }
+            writingHaptics.stop()
             handle(error)
             if let recovered = try? await AssistantAppClient().status(turnId: pending.id),
                expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
@@ -1328,7 +1481,7 @@ struct AssistantAppHistoryView: View {
 
     init(turns: [AssistantAppTurn], nextBefore: String?, foreground: Color, background: Color,
          onApplyAction: @escaping (String) -> Void) {
-        _turns = State(initialValue: turns)
+        _turns = State(initialValue: turns.map(\.resolvingLocalReceipt))
         _nextBefore = State(initialValue: nextBefore)
         self.foreground = foreground
         self.background = background
@@ -1423,6 +1576,10 @@ struct AssistantAppHistoryView: View {
             else { invalidateSnapshot() }
         }
         .onDisappear { invalidateSnapshot() }
+        .onReceive(NotificationCenter.default.publisher(for: AssistantActionReceiptStore.didChangeNotification).receive(on: RunLoop.main)) { _ in
+            guard validateOwner() else { return }
+            turns = turns.map(\.resolvingLocalReceipt)
+        }
         .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
             validateOwner()
         }
@@ -1461,7 +1618,7 @@ struct AssistantAppHistoryView: View {
         do {
             let page = try await AssistantAppClient().history()
             guard validateOwner(), requestID == id else { return }
-            turns = page.turns
+            turns = page.turns.map(\.resolvingLocalReceipt)
             nextBefore = page.nextBefore
             hasFreshSnapshot = true
         } catch {
@@ -1480,7 +1637,8 @@ struct AssistantAppHistoryView: View {
         do {
             // The action may have expired, been cancelled or superseded while
             // reading older messages. Revalidate the exact server ID before Home.
-            let current = try await AssistantAppClient().status(turnId: turn.id)
+            let stored = try await AssistantAppClient().status(turnId: turn.id)
+            let current = stored?.resolvingLocalReceipt
             guard validateOwner(), requestID == id else { return }
             if let current, let index = turns.firstIndex(where: { $0.id == current.id }) {
                 turns[index] = current
@@ -1511,7 +1669,7 @@ struct AssistantAppHistoryView: View {
             let page = try await AssistantAppClient().history(before: cursor)
             guard validateOwner(), requestID == id else { return }
             let ids = Set(turns.map(\.id))
-            turns.insert(contentsOf: page.turns.filter { !ids.contains($0.id) }, at: 0)
+            turns.insert(contentsOf: page.turns.filter { !ids.contains($0.id) }.map(\.resolvingLocalReceipt), at: 0)
             nextBefore = page.nextBefore
         } catch {
             guard validateOwner(), requestID == id else { return }
