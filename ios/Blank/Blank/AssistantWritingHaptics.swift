@@ -8,7 +8,7 @@ import CoreHaptics
     func stop()
 }
 
-// One low-intensity continuous waveform, rather than one impact per token.
+// One perceptible continuous waveform, rather than one impact per token.
 // The system can interrupt or disable it without affecting the conversation.
 @MainActor private final class CoreWritingHapticPlayback: AssistantWritingHapticPlayback {
     var onStopped: (() -> Void)?
@@ -16,9 +16,15 @@ import CoreHaptics
     private var player: CHHapticAdvancedPatternPlayer?
 
     init() throws {
+        // Haptics-only engine must not inherit the dictation recording session.
+        #if os(iOS)
+        engine = try CHHapticEngine(audioSession: nil)
+        #else
         engine = try CHHapticEngine()
+        #endif
         engine.playsHapticsOnly = true
-        engine.isAutoShutdownEnabled = true
+        engine.isMutedForHaptics = false
+        engine.isAutoShutdownEnabled = false
         engine.stoppedHandler = { [weak self] _ in
             Task { @MainActor in self?.onStopped?() }
         }
@@ -30,8 +36,8 @@ import CoreHaptics
     func start() throws {
         try engine.start()
         let event = CHHapticEvent(eventType: .hapticContinuous, parameters: [
-            CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.16),
-            CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.1),
+            CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.55),
+            CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3),
         ], relativeTime: 0, duration: 30)
         let pattern = try CHHapticPattern(events: [event], parameters: [])
         let player = try engine.makeAdvancedPlayer(with: pattern)

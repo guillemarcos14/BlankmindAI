@@ -165,6 +165,26 @@ struct AssistantAppTurn: Codable, Identifiable {
     }
 }
 
+enum AssistantReplyText {
+    private static let code = try! NSRegularExpression(pattern: "```[\\s\\S]*?(?:```|$)|`[^`]*(?:`|$)")
+    private static let emphasis = try! NSRegularExpression(pattern: "(?<!\\\\)\\*\\*(?=\\S|$)|(?<=\\S)(?<!\\\\)\\*\\*")
+
+    static func plain(_ text: String) -> String {
+        let source = text as NSString
+        var result = "", offset = 0
+        func clean(_ range: NSRange) -> String {
+            let part = source.substring(with: range)
+            return emphasis.stringByReplacingMatches(in: part, range: NSRange(part.startIndex..., in: part), withTemplate: "")
+        }
+        for match in code.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+            result += clean(NSRange(location: offset, length: match.range.location - offset))
+            result += source.substring(with: match.range)
+            offset = NSMaxRange(match.range)
+        }
+        return result + clean(NSRange(location: offset, length: source.length - offset))
+    }
+}
+
 private struct AssistantAppEnvelope: Decodable {
     let ok: Bool
     let turns: [AssistantAppTurn]?
@@ -731,14 +751,14 @@ struct AssistantAppView: View {
                                 .accessibilityAddTraits(.isHeader)
                         }
                         if let latest {
-                            Text(latest.assistantText)
+                            Text(AssistantReplyText.plain(latest.assistantText))
                                 .font(.blankInter(size: 20))
                                 .lineSpacing(4)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
                                 .accessibilityLabel("Blankmind: \(latest.assistantText)")
                         } else if isSending && !streamedText.isEmpty {
-                            Text(streamedText)
+                            Text(AssistantReplyText.plain(streamedText))
                                 .font(.blankInter(size: 20))
                                 .lineSpacing(4)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -998,7 +1018,7 @@ struct AssistantAppView: View {
     }
 
     private func homeResponse(_ text: String) -> some View {
-        Text(text)
+        Text(AssistantReplyText.plain(text))
             .font(MinimalHomeDesign.font(26, relativeTo: .title3))
             .lineSpacing(3)
             .multilineTextAlignment(.center)
@@ -1349,8 +1369,9 @@ struct AssistantAppView: View {
                     guard expectedOwner == self.owner, expectedOwner == AssistantAppSession.userID,
                           expectedRevision == self.conversationRevision, self.sendRequestID == requestID,
                           self.composer.pending?.id == pending.id else { return }
-                    self.streamedText = text
-                    self.writingHaptics.update(text: text,
+                    let visibleText = AssistantReplyText.plain(text)
+                    self.streamedText = visibleText
+                    self.writingHaptics.update(text: visibleText,
                         enabled: self.presentationIsVisible && self.scenePhase == .active
                             && (!self.usesHomePresentation || self.isHomeVisible)
                             && !self.speech.isRecording && !self.speech.isStarting
@@ -1524,7 +1545,7 @@ struct AssistantAppHistoryView: View {
                                 Text(turn.userText).font(.blankInter(size: 17)).textSelection(.enabled)
                                 Text("Blankmind").font(.blankInter(size: 13, weight: .semibold))
                                     .foregroundStyle(foreground.opacity(0.86)).padding(.top, 8)
-                                Text(turn.assistantText.isEmpty ? (spanish ? "Respuesta pendiente" : "Reply pending") : turn.assistantText)
+                                Text(turn.assistantText.isEmpty ? (spanish ? "Respuesta pendiente" : "Reply pending") : AssistantReplyText.plain(turn.assistantText))
                                     .font(.blankInter(size: 17)).textSelection(.enabled)
                                 if !turn.actionId.isEmpty {
                                     if hasFreshSnapshot && error == nil && turn.canApply {

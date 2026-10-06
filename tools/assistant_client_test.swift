@@ -60,6 +60,10 @@ private func check(_ condition: @autoclosure () -> Bool, _ message: String) {
 @main
 struct AssistantClientTests {
     static func main() async throws {
+        precondition(AssistantReplyText.plain("- **Protection** de **22:30 a 09:00**\n👋") == "- Protection de 22:30 a 09:00\n👋")
+        precondition(AssistantReplyText.plain("**Protec") == "Protec")
+        precondition(AssistantReplyText.plain("texto **") == "texto ")
+        precondition(AssistantReplyText.plain("2 ** 3; `**literal**`; \\**literal\\**") == "2 ** 3; `**literal**`; \\**literal\\**")
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [TransportStub.self]
         let session = URLSession(configuration: config)

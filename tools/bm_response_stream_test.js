@@ -1,5 +1,11 @@
 "use strict";
 const assert = require("node:assert/strict");
+const { plainAssistantText } = require("../netlify/functions/_assistant_reply_text");
+assert.equal(plainAssistantText("- **Protection** de **22:30 a 09:00**\n👋"), "- Protection de 22:30 a 09:00\n👋");
+assert.equal(plainAssistantText("**Protec"), "Protec");
+assert.equal(plainAssistantText("texto **"), "texto ");
+assert.equal(plainAssistantText("2 ** 3; `**literal**`; \\**literal\\**"), "2 ** 3; `**literal**`; \\**literal\\**");
+assert.equal(plainAssistantText("```**code**```\n**reply**"), "```**code**```\nreply");
 const { draftText, readModelStream } = require("../netlify/functions/bm-response-stream");
 const { schema } = require("../netlify/functions/bmb-brain");
 const enc = new TextEncoder();

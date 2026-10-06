@@ -1,4 +1,5 @@
 import assistant from "./assistant-app.js";
+import replyText from "./_assistant_reply_text.js";
 
 // Same authenticated, leased transaction as JSON. Drafts never contain native
 // actions. Only the final persisted envelope can trigger client execution.
@@ -20,7 +21,7 @@ export default async function handler(request, context) {
       };
       emit({ type: "start", turn_id: parsed.turn_id });
       const heartbeat = setInterval(() => emit({ type: "keepalive" }), 5000);
-      const transaction = assistant.handler(event, null, { onDraft: text => emit({ type: "draft", turn_id: parsed.turn_id, text }) })
+      const transaction = assistant.handler(event, null, { onDraft: text => emit({ type: "draft", turn_id: parsed.turn_id, text: replyText.plainAssistantText(text) }) })
         .then(result => emit({ type: "result", status: result.statusCode, body: JSON.parse(result.body) }))
         .catch(() => emit({ type: "result", status: 503, body: { error: "assistant_app_unavailable" } }))
         .finally(() => {

@@ -1,4 +1,5 @@
 const crypto = require("node:crypto");
+const { plainAssistantText } = require("./_assistant_reply_text");
 const { getSupabaseUser, json, parseJsonBody, requireMethod, supabaseFetch } = require("./_membership");
 const { authUserHasAppleIdentity, ensureIdentityForAuthUser, identityForAuthUser, linkAppInstall } = require("./_identity");
 const { assistantChannelUserId, findAssistantConnection, getAssistantMemory, recordAssistantChannel, recordConversationTurnState } = require("./_assistant_channel");
@@ -86,7 +87,7 @@ function actionStatus(actionId, memory = {}, savedStatus = "") {
 
 function presentTurn(row, memory = {}) {
   return {
-    id: row.id, user_text: row.user_text, assistant_text: row.assistant_text || "", status: row.status,
+    id: row.id, user_text: row.user_text, assistant_text: plainAssistantText(row.assistant_text), status: row.status,
     action_id: row.action_id || "", action_label: row.action_label || "",
     action_status: actionStatus(row.action_id, memory, row.action_status), created_at: row.created_at,
     auto_apply: row.auto_apply === true && ["queued", "delivered"].includes(actionStatus(row.action_id, memory, row.action_status)),
@@ -197,7 +198,7 @@ function actionCopy(action, spanish) {
 }
 
 function visibleReply(plan, context, action) {
-  const answer = chatText(String(plan.message_text || plan.response_text || "").trim().slice(0, 4000));
+  const answer = plainAssistantText(chatText(String(plan.message_text || plan.response_text || "").trim().slice(0, 4000)));
   if (!answer) throw new Error("assistant_empty_reply");
   const spanish = String(plan.response_language || context.language || "").startsWith("es");
   const proposedAction = Array.isArray(plan.actions) && plan.actions.length > 0;
