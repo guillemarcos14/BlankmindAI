@@ -3774,7 +3774,7 @@ struct AppAccountSignInSheet: View {
                         }
                 }
             } else {
-                accountForm
+                MinimalOnboardingPanel { accountContent }
             }
         }
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
@@ -3783,58 +3783,62 @@ struct AppAccountSignInSheet: View {
     private var accountForm: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Sign in to Blankmind")
-                        .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
-                        .tracking(-0.9)
-                        .foregroundStyle(BlankColors.foreground)
-                        .padding(.bottom, 24)
-                    AccountJustifiedCopy(text: NSAttributedString(string: "Blankmind AI's core model is trained to identify recurring behavioral patterns, detect high-risk moments, and adapt interventions in real time."))
-                        .padding(.bottom, 24)
-
-                    if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
-                        Text("This will connect Apple to your existing Blank account and preserve its chat history.")
-                            .font(.blankInter(size: 14, relativeTo: .footnote))
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.bottom, 16)
-                    }
-
-                    SignInWithAppleButton(.continue, onRequest: { request in
-                        let nonce = Self.makeNonce()
-                        rawNonce = nonce
-                        request.requestedScopes = [.email]
-                        request.nonce = Self.hashNonce(nonce)
-                    }, onCompletion: finishAppleAuthorization)
-                        .signInWithAppleButtonStyle(sessionStore.isBlankActive ? .white : .black)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                        .disabled(isWorking)
-                        .overlay {
-                            if isWorking {
-                                ProgressView().tint(BlankColors.pureWhite)
-                            }
-                        }
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.blankInter(size: 14, relativeTo: .footnote))
-                            .foregroundStyle(BlankColors.red)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.top, 16)
-                    }
-                }
+                accountContent
                 .frame(maxWidth: 400, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 24)
-                .padding(.top, showsCancel ? 0 : 132)
                 .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .background(showsCancel ? AnyView(BlankColors.canvas) : AnyView(MinimalSectionBackground()))
+        .background(BlankColors.canvas)
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
+    }
+
+    private var accountContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Sign in to Blankmind")
+                .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
+                .tracking(-0.9)
+                .foregroundStyle(showsCancel ? BlankColors.foreground : MinimalHomeDesign.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 24)
+            AccountJustifiedCopy(text: NSAttributedString(string: "Blankmind AI's core model is trained to identify recurring behavioral patterns, detect high-risk moments, and adapt interventions in real time."), foregroundColor: showsCancel ? nil : UIColor(MinimalHomeDesign.ink))
+                .padding(.bottom, 24)
+
+            if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
+                Text("This will connect Apple to your existing Blank account and preserve its chat history.")
+                    .font(.blankInter(size: 14, relativeTo: .footnote))
+                    .foregroundStyle(showsCancel ? BlankColors.foreground.opacity(0.82) : MinimalHomeDesign.ink)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 16)
+            }
+
+            SignInWithAppleButton(.continue, onRequest: { request in
+                let nonce = Self.makeNonce()
+                rawNonce = nonce
+                request.requestedScopes = [.email]
+                request.nonce = Self.hashNonce(nonce)
+            }, onCompletion: finishAppleAuthorization)
+                .signInWithAppleButtonStyle(!showsCancel || sessionStore.isBlankActive ? .white : .black)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .disabled(isWorking)
+                .overlay {
+                    if isWorking {
+                        ProgressView().tint(!showsCancel || sessionStore.isBlankActive ? MinimalHomeDesign.voiceInk : BlankColors.pureWhite)
+                    }
+                }
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.blankInter(size: 14, relativeTo: .footnote))
+                    .foregroundStyle(showsCancel ? BlankColors.red : MinimalHomeDesign.ink)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 16)
+            }
+        }
     }
 
     private func finishAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
@@ -4242,6 +4246,7 @@ struct PostOnboardingPreviewScene: View {
 struct AccountJustifiedCopy: UIViewRepresentable {
     @Environment(\.colorScheme) private var colorScheme
     let text: NSAttributedString
+    var foregroundColor: UIColor? = nil
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     func makeUIView(context: Context) -> UITextView {
@@ -4262,9 +4267,9 @@ struct AccountJustifiedCopy: UIViewRepresentable {
     }
 
     func updateUIView(_ view: UITextView, context: Context) {
-        let color = colorScheme == .dark
+        let color = foregroundColor ?? (colorScheme == .dark
             ? UIColor(red: 1, green: 254/255, blue: 245/255, alpha: 0.82)
-            : UIColor(red: 73/255, green: 84/255, blue: 78/255, alpha: 0.92)
+            : UIColor(red: 73/255, green: 84/255, blue: 78/255, alpha: 0.92))
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .natural
         paragraph.lineSpacing = 4
