@@ -3808,7 +3808,7 @@ struct AppAccountSignInSheet: View {
             if AssistantAppSession.userID != nil && !AssistantAppSession.hasAppleIdentity {
                 Text("This will connect Apple to your existing Blank account and preserve its chat history.")
                     .font(.blankInter(size: 14, relativeTo: .footnote))
-                    .foregroundStyle(showsCancel ? BlankColors.foreground.opacity(0.82) : MinimalHomeDesign.ink)
+                    .foregroundStyle(showsCancel ? AnyShapeStyle(.secondary) : AnyShapeStyle(MinimalHomeDesign.ink))
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.bottom, 16)
@@ -3827,7 +3827,7 @@ struct AppAccountSignInSheet: View {
                 .disabled(isWorking)
                 .overlay {
                     if isWorking {
-                        ProgressView().tint(!showsCancel || sessionStore.isBlankActive ? MinimalHomeDesign.voiceInk : BlankColors.pureWhite)
+                        ProgressView().tint(showsCancel ? BlankColors.pureWhite : MinimalHomeDesign.voiceInk)
                     }
                 }
             if let errorMessage {

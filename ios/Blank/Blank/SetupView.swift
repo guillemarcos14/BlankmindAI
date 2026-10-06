@@ -22,6 +22,7 @@ struct SetupView: View {
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var currentStep: OnboardingStep = .account
     @State private var showingPicker = false
@@ -57,6 +58,7 @@ struct SetupView: View {
                 functionalStep
             }
         }
+        .statusBarHidden(true)
         .familyActivityPicker(isPresented: $showingPicker, selection: $sessionStore.selection)
         #if targetEnvironment(simulator)
         .overlay(alignment: .topLeading) {
@@ -156,10 +158,12 @@ struct SetupView: View {
 
     private var deviceContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Set up Blankmind")
+            Text(dynamicTypeSize.isAccessibilitySize ? "Set up\nBlankmind" : "Set up Blankmind")
                 .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
                 .tracking(-0.9)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityLabel("Set up Blankmind")
                 .padding(.bottom, 24)
 
             AccountJustifiedCopy(text: NSAttributedString(string: "Screen Time lets Blankmind block distractions. Choose apps for one reusable protection list, and enable notifications to receive block requests from chat."), foregroundColor: UIColor(MinimalHomeDesign.ink))
@@ -189,6 +193,7 @@ struct SetupView: View {
             }
             .frame(maxWidth: .infinity)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .disabled(completionInFlight)
     }
 

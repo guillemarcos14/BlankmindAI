@@ -144,7 +144,9 @@ struct MinimalOnboardingPanel<Content: View>: View {
                         .scaledToFill()
                         .frame(width: geometry.size.width, height: panelHeight)
                         .clipped()
-                        .overlay(Color.black.opacity(0.28))
+                        // Denser onboarding copy needs contrast even when scrolled
+                        // over the brighter part of the same Home material.
+                        .overlay(Color.black.opacity(0.44))
                         .accessibilityHidden(true)
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 0) { content }
