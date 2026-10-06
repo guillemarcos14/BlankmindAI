@@ -276,6 +276,7 @@ struct ReportView: View {
                             .font(.blankInter(size: 15, weight: .regular, relativeTo: .subheadline))
                             .foregroundStyle(accentBlue)
                             .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("progress-protect")
