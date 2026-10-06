@@ -39,6 +39,16 @@ transaction and authority regressions. Native tests compile the production
 client and cover progressive Unicode, final authority, truncation, fallback,
 refresh and account isolation.
 
+Native client tests and Simulator build passed on macOS CI `37491288772`.
+The BM Harness Gate, PostgreSQL recovery and Android checks passed in
+`37491377923`. Local product harness passed 69/70 with no scope violations
+against baseline/diff `1915cad`; the existing quick production release gate
+fails for insufficient reviewed model replay/physical-device evidence
+(48 development turns passed, 0/20 physical cases). No gate was bypassed.
+Focused tests also exercise the production BMB copy-repair draft reset and
+the streaming endpoint against real authenticated claim/prepare/commit logic,
+including completed-turn deduplication and unauthorized requests.
+
 ## Integration handoff
 
 Objective: Display BM text during generation without weakening durable recovery.

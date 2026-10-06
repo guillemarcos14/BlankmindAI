@@ -46,6 +46,33 @@ async function main() {
       + sse({ type: "response.completed", response: { status: "completed" } })) });
   assert.equal(leaked, false, "Tool reads cannot become visible text");
 
+  // Use the production BMB generation and conformance repair path. Repair must
+  // replace the provisional copy, while the validated plan owns final text.
+  const brain = require("../netlify/functions/bmb-brain");
+  const modelResult = text => ({ phase: "final", response_language: "en", message_kind: "statement",
+    decision: "respond", evidence: "hello", accepted_proposal: null, pending_request: null,
+    action: null, queries: [], memory: null, cited_sources: [], response_text: text });
+  const candidates = [modelResult("Unrepaired: text"), modelResult("Corrected text.")];
+  const realFetch = global.fetch, repairedDrafts = [];
+  try {
+    global.fetch = async (_url, options) => {
+      assert.equal(JSON.parse(options.body).stream, true);
+      const candidate = candidates.shift();
+      assert(candidate, "Unexpected model pass");
+      const text = JSON.stringify(candidate);
+      return new Response(sse({ type: "response.output_text.delta", delta: text })
+        + sse({ type: "response.completed", response: { status: "completed",
+          output: [{ content: [{ type: "output_text", text }] }] } }));
+    };
+    const result = await brain.plan({ prompt: "hello", context: { language: "en", memory: { semantic_store_version: 0 } },
+      userId: "synthetic", identity: {}, onDraft: text => repairedDrafts.push(text) },
+    { memories: [], db: async () => [], recover: async () => null });
+    assert.equal(result.plan.response_text, "Corrected text.");
+    assert.deepEqual(result.plan.actions, []);
+    assert.deepEqual(repairedDrafts, ["", "Unrepaired: text", "", "Corrected text."]);
+    assert.equal(candidates.length, 0);
+  } finally { global.fetch = realFetch; }
+
   const app = require("../netlify/functions/assistant-app");
   let finish;
   app.handler = async (_event, _context, { onDraft }) => {
