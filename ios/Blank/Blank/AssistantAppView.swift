@@ -776,7 +776,7 @@ struct AssistantAppView: View {
         GeometryReader { geometry in
             let panelHeight = MinimalHomeDesign.panelHeight(geometry.size.height, bottomInset: geometry.safeAreaInsets.bottom)
             let contentTop = MinimalHomeDesign.navigationTop(geometry.safeAreaInsets.top) + 68
-            let contentHeight = max(80, panelHeight - contentTop - 28)
+            let contentHeight = max(80, panelHeight - contentTop - 88)
             VStack(spacing: 0) {
                 ZStack(alignment: .top) {
                     Image("MinimalAtmosphere")
@@ -801,7 +801,10 @@ struct AssistantAppView: View {
                             } else {
                                 homeResponse(greeting ?? (spanish ? "Hola, ¿cómo estás hoy?" : "Hey, how are you doing today?"))
                             }
-                            status
+                            if error != nil || isApplyingAction || draftTooLong || requiresVerification
+                                || latest.map({ !$0.actionId.isEmpty || $0.controlSection != nil }) == true {
+                                status
+                            }
                         }
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity, minHeight: contentHeight, alignment: .center)

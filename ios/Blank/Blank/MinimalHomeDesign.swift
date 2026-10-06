@@ -12,7 +12,7 @@ enum MinimalHomeDesign {
     }
 
     static func panelHeight(_ height: CGFloat, bottomInset: CGFloat) -> CGFloat {
-        max(180, height - max(116, bottomInset + 92))
+        max(180, height - max(116, max(height * 0.144, bottomInset + 92)))
     }
     static func navigationTop(_ safeTop: CGFloat) -> CGFloat { max(56, safeTop + 12) }
 }
