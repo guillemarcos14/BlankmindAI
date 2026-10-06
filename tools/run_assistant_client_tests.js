@@ -54,6 +54,8 @@ const viewFixture = `
     func onHomeActionPrepared() { homeActionPreparedCount += 1 }
     var visibleTurnID: String?
     var streamedText = ""
+    var writingHaptics = WritingHapticsFixture()
+    var presentationIsVisible = true
     var greeting: String?
     var appliedActions: [String] = []
     var dismissCount = 0
@@ -67,11 +69,19 @@ ${viewMethods}
 ${applyMethod}
 }
 `;
+const hapticsFixture = `
+@MainActor final class WritingHapticsFixture {
+    var updates: [String] = []
+    var stops = 0
+    func update(text: String, enabled: Bool) { if enabled { updates.append(text) } }
+    func stop() { stops += 1 }
+}
+`;
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'blank-assistant-client-'));
 try {
   const file = path.join(temporary, 'AssistantClientTests.swift');
   const binary = path.join(temporary, 'assistant-client-tests');
-  fs.writeFileSync(file, `import Foundation\n${source.slice(start, end)}\n${composer}\n${viewFixture}\n${test}`);
+  fs.writeFileSync(file, `import Foundation\n${source.slice(start, end)}\n${composer}\n${hapticsFixture}\n${viewFixture}\n${test}`);
   const compiled = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file, '-o', binary], { encoding: 'utf8' });
   if (compiled.error) throw new Error(`Native client tests require Swift on macOS: ${compiled.error.message}`);
   if (compiled.status !== 0) throw new Error(compiled.stderr || compiled.stdout);

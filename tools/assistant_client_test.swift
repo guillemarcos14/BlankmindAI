@@ -234,7 +234,11 @@ struct AssistantClientTests {
     print("problem notices: precise classification, honest fallback, persistence, polling and authentication recovery passed")
 }
 
-@MainActor final class SpeechFixture { func stop() {} }
+@MainActor final class SpeechFixture {
+    var isRecording = false
+    var isStarting = false
+    func stop() { isRecording = false; isStarting = false }
+}
 @MainActor enum AssistantDraftVault {
     static var states: [String: AssistantComposerState] = [:]
     static func load(owner: String) -> AssistantComposerState { states[owner] ?? AssistantComposerState() }

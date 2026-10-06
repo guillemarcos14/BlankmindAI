@@ -47,6 +47,8 @@ jobs:
           swiftc ios/Blank/Blank/AssistantComposerState.swift tools/assistant_composer_test.swift -o tmp/native-tests/composer
           tmp/native-tests/composer
           node tools/run_assistant_client_tests.js
+          swiftc -swift-version 5 -parse-as-library ios/Blank/Blank/AssistantWritingHaptics.swift tools/assistant_writing_haptics_test.swift -o tmp/native-tests/writing-haptics
+          tmp/native-tests/writing-haptics
           node tools/run_ios_protection_tests.js
           node tools/run_brain_native_tests.js
           node tools/run_private_stage_qa_tests.js

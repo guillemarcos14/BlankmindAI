@@ -649,6 +649,8 @@ struct AssistantAppView: View {
     @State private var initialMessageHandled = false
     @State private var visibleTurnID: String?
     @State private var streamedText = ""
+    @StateObject private var writingHaptics = AssistantWritingHaptics()
+    @State private var presentationIsVisible = false
     @State private var greeting: String? = AssistantGreetingFallback.make()
 
     var initialMessage: String? = nil
@@ -828,6 +830,7 @@ struct AssistantAppView: View {
             }
         }
         .onChange(of: scenePhase) { phase in
+            if phase != .active { writingHaptics.stop() }
             BlankBrain.shared.chatIsOpen = phase == .active && isHomeVisible
             if phase == .active && !preview && !simulatorGuest { Task { restoreOwner(); await reload() } }
             else {
@@ -844,20 +847,22 @@ struct AssistantAppView: View {
             guard !preview, !simulatorGuest, restoreOwner() else { return }
             Task { await reload() }
         }
-        .onDisappear { acceptingSpeech = false; speech.stop(); saveTask?.cancel(); persist() }
+        .onDisappear { presentationIsVisible = false; writingHaptics.stop(); acceptingSpeech = false; speech.stop(); saveTask?.cancel(); persist() }
         .sheet(isPresented: $showHistory) {
             AssistantAppHistoryView(turns: turns, nextBefore: nextHistoryCursor,
                 foreground: foreground, background: background, onApplyAction: { id in Task { await applyAction(id) } })
                 .preferredColorScheme(dark ? .dark : .light)
         }
-        .onAppear { BlankBrain.shared.chatIsOpen = isHomeVisible; BlankBrain.shared.sync() }
+        .onAppear { presentationIsVisible = true; BlankBrain.shared.chatIsOpen = isHomeVisible; BlankBrain.shared.sync() }
         .onChange(of: isHomeVisible) { visible in
+            if !visible { writingHaptics.stop() }
             BlankBrain.shared.chatIsOpen = visible && scenePhase == .active
             BlankBrain.shared.sync()
             onConversationActivityChanged(visible && (waiting || speech.isRecording || speech.isStarting))
             if !visible { acceptingSpeech = false; speech.stop(); composerFocused = false; persist() }
         }
         .onChange(of: waiting || speech.isRecording || speech.isStarting) { busy in
+            if speech.isRecording || speech.isStarting { writingHaptics.stop() }
             onConversationActivityChanged(isHomeVisible && busy)
         }
         .onDisappear { BlankBrain.shared.chatIsOpen = false; BlankBrain.shared.sync() }
@@ -1180,6 +1185,7 @@ struct AssistantAppView: View {
         isLoading = true
         owner = current
         streamedText = ""
+        writingHaptics.stop()
         turns = []
         visibleTurnID = nil
         nextHistoryCursor = nil
@@ -1300,6 +1306,7 @@ struct AssistantAppView: View {
         visibleTurnID = nil
         let requestID = UUID()
         streamedText = ""
+        writingHaptics.stop()
         sendRequestID = requestID
         conversationRevision += 1
         let expectedRevision = conversationRevision
@@ -1307,7 +1314,13 @@ struct AssistantAppView: View {
         isLoading = false
         error = nil
         let expectedOwner = owner
-        defer { if sendRequestID == requestID { sendRequestID = nil; streamedText = "" } }
+        defer {
+            if sendRequestID == requestID {
+                sendRequestID = nil
+                streamedText = ""
+                writingHaptics.stop()
+            }
+        }
         do {
             let turn = try await AssistantAppClient().send(text: pending.text, turnId: pending.id,
                 context: await BlankBrain.shared.freshSnapshot(), onDraft: { text in
@@ -1315,14 +1328,21 @@ struct AssistantAppView: View {
                           expectedRevision == self.conversationRevision, self.sendRequestID == requestID,
                           self.composer.pending?.id == pending.id else { return }
                     self.streamedText = text
+                    self.writingHaptics.update(text: text,
+                        enabled: self.presentationIsVisible && self.scenePhase == .active
+                            && (!self.usesHomePresentation || self.isHomeVisible)
+                            && !self.speech.isRecording && !self.speech.isStarting
+                            && !self.preview && !self.simulatorGuest)
                 })
             guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
                   expectedRevision == conversationRevision else { return }
+            writingHaptics.stop()
             accept(turn)
             requiresVerification = false
             if allowAutoApply, turn.autoApply == true, turn.canApply { await applyAction(turn.actionId) }
         } catch {
             guard expectedOwner == owner, expectedRevision == conversationRevision else { return }
+            writingHaptics.stop()
             handle(error)
             if let recovered = try? await AssistantAppClient().status(turnId: pending.id),
                expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
