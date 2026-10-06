@@ -1324,10 +1324,10 @@ struct AssistantAppHistoryView: View {
                         ForEach(turns) { turn in
                             VStack(alignment: .leading, spacing: 10) {
                                 Text(spanish ? "Tú" : "You").font(.blankInter(size: 13, weight: .semibold))
-                                    .foregroundStyle(foreground.opacity(0.74))
+                                    .foregroundStyle(foreground.opacity(0.86))
                                 Text(turn.userText).font(.blankInter(size: 17)).textSelection(.enabled)
                                 Text("Blankmind").font(.blankInter(size: 13, weight: .semibold))
-                                    .foregroundStyle(foreground.opacity(0.74)).padding(.top, 8)
+                                    .foregroundStyle(foreground.opacity(0.86)).padding(.top, 8)
                                 Text(turn.assistantText.isEmpty ? (spanish ? "Respuesta pendiente" : "Reply pending") : turn.assistantText)
                                     .font(.blankInter(size: 17)).textSelection(.enabled)
                                 if !turn.actionId.isEmpty {
@@ -1350,7 +1350,7 @@ struct AssistantAppHistoryView: View {
                                         Text(hasFreshSnapshot
                                              ? AssistantActionCopy.outcome(turn.actionStatus, spanish: spanish)
                                              : (spanish ? "Estado pendiente de actualizar" : "Waiting for an updated status"))
-                                            .font(.blankInter(size: 14)).foregroundStyle(foreground.opacity(0.74))
+                                            .font(.blankInter(size: 14)).foregroundStyle(foreground.opacity(0.86))
                                     }
                                 }
                             }
@@ -1368,6 +1368,7 @@ struct AssistantAppHistoryView: View {
                 }
             }
             .navigationTitle(spanish ? "Historial" : "Conversation history")
+            .minimalSheetStyle()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button(spanish ? "Listo" : "Done") { dismiss() } } }
         }

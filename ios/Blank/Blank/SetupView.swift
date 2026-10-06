@@ -17,7 +17,6 @@ private enum OnboardingStep: Int {
 }
 
 struct SetupView: View {
-    @ScaledMetric(relativeTo: .body) private var permissionLabelSize: CGFloat = 16
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var screenTimeBlocker: ScreenTimeBlocker
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
@@ -41,6 +40,9 @@ struct SetupView: View {
 
     init(_ onFinishForQA: (() -> Void)? = nil) {
         self.onFinishForQA = onFinishForQA
+        #if DEBUG && targetEnvironment(simulator)
+        _currentStep = State(initialValue: AssistantAppPreview.scenario == "product-onboarding-device" ? .device : .account)
+        #endif
     }
 
     var body: some View {
@@ -58,6 +60,7 @@ struct SetupView: View {
         .familyActivityPicker(isPresented: $showingPicker, selection: $sessionStore.selection)
         #if targetEnvironment(simulator)
         .overlay(alignment: .topLeading) {
+          GeometryReader { proxy in
             HStack(spacing: 20) {
                 Button(currentStep == .account ? "Next" : "Back") {
                     currentStep = currentStep == .account ? .device : .account
@@ -72,11 +75,19 @@ struct SetupView: View {
                     .accessibilityLabel("Preview Home")
             }
             .buttonStyle(.plain)
+            .foregroundStyle(MinimalHomeDesign.ink)
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .padding(.horizontal, 20)
-            .padding(.top, 8)
+            .padding(.top, max(proxy.safeAreaInsets.top,
+                UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+                    .flatMap(\.windows).first(where: \.isKeyWindow)?.safeAreaInsets.top ?? 0) + 8)
+          }
         }
         #endif
         .task {
+            #if DEBUG && targetEnvironment(simulator)
+            if AssistantAppPreview.scenario.hasPrefix("product-onboarding") { return }
+            #endif
             if onboardingFlowVersion != 5 {
                 savedStepRaw = OnboardingStep.account.rawValue
                 onboardingFlowVersion = 5
@@ -138,7 +149,7 @@ struct SetupView: View {
                             .accessibilityAddTraits(.updatesFrequently)
                         if deviceReady && automaticCompletionAttempted {
                             Button("Retry") { Task { await completeSetup() } }
-                                .font(.custom("ArialMT", size: 15, relativeTo: .body))
+                                .font(.blankInter(size: 17))
                                 .frame(minHeight: 44)
                         }
                     }
@@ -146,13 +157,14 @@ struct SetupView: View {
                 .frame(maxWidth: 400, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 24)
+                .padding(.top, 132)
                 .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
         }
         .foregroundStyle(BlankColors.charcoal)
         .tint(BlankColors.charcoal)
         .preferredColorScheme(.light)
-        .background(BlankColors.pureWhite.ignoresSafeArea())
+        .background(MinimalSectionBackground())
     }
 
     private var deviceContent: some View {
@@ -188,14 +200,9 @@ struct SetupView: View {
                     action: requestNotifications
                 )
             }
-            .frame(width: deviceButtonWidth)
+            .frame(maxWidth: .infinity)
         }
         .disabled(completionInFlight)
-    }
-
-    private var deviceButtonWidth: CGFloat {
-        let font = UIFontMetrics(forTextStyle: .title1).scaledFont(for: UIFont(name: "TimesNewRomanPSMT", size: 32)!)
-        return ceil(NSAttributedString(string: "Set up Blankmind", attributes: [.font: font, .kern: -0.9]).size().width)
     }
 
     private func permissionButton(
@@ -206,8 +213,7 @@ struct SetupView: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Text(title)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 if ready {
                     Image(systemName: "checkmark")
@@ -216,12 +222,13 @@ struct SetupView: View {
                         .accessibilityHidden(true)
                 }
             }
-            .font(.system(size: permissionLabelSize, weight: .regular))
+            .font(.blankOnboardingControl)
             .multilineTextAlignment(.leading)
             .foregroundStyle(BlankColors.pureWhite)
             .padding(.horizontal, 14)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .background(BlankColors.charcoal, in: RoundedRectangle(cornerRadius: 4))
+            .background(BlankColors.charcoal, in: RoundedRectangle(cornerRadius: 16))
             .contentShape(Rectangle())
             .environment(\.isEnabled, true)
         }
