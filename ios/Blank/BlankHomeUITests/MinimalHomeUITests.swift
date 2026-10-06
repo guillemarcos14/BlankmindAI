@@ -15,6 +15,10 @@ final class MinimalHomeUITests: XCTestCase {
         let app = launch()
         let tabs = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "home-tab-"))
         XCTAssertEqual(tabs.count, 3)
+        for tab in tabs.allElementsBoundByIndex {
+            XCTAssertGreaterThanOrEqual(tab.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(tab.frame.height, 44)
+        }
         XCTAssertTrue(app.buttons["home-tab-chat"].isSelected)
         XCTAssertTrue(app.buttons["home-voice"].exists)
         app.buttons["home-tab-control"].tap()

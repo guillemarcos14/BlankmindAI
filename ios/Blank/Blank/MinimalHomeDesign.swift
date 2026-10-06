@@ -46,6 +46,7 @@ struct MinimalHomeNavigation: View {
                                 .frame(width: 32, height: 1)
                                 .opacity(selected == tab ? 1 : 0)
                         }
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(foreground)
