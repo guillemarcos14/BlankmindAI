@@ -123,6 +123,7 @@ extension Font {
 
 struct BlankPrimaryButtonStyle: ButtonStyle {
     var light: Bool = false
+    @Environment(\.isEnabled) private var isEnabled
     @Environment(\.blankMinimalAppearance) private var minimalAppearance
     @Environment(\.colorScheme) private var colorScheme
 
@@ -153,6 +154,7 @@ struct BlankPrimaryButtonStyle: ButtonStyle {
             }
             .shadow(color: minimalAppearance ? .clear : BlankColors.charcoal.opacity(configuration.isPressed ? 0.02 : 0.05), radius: 5, y: 3)
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .opacity(isEnabled ? 1 : 0.42)
     }
 }
 

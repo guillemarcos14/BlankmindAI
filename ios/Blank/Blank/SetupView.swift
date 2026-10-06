@@ -60,6 +60,7 @@ struct SetupView: View {
         .familyActivityPicker(isPresented: $showingPicker, selection: $sessionStore.selection)
         #if targetEnvironment(simulator)
         .overlay(alignment: .topLeading) {
+          GeometryReader { proxy in
             HStack(spacing: 20) {
                 Button(currentStep == .account ? "Next" : "Back") {
                     currentStep = currentStep == .account ? .device : .account
@@ -74,8 +75,13 @@ struct SetupView: View {
                     .accessibilityLabel("Preview Home")
             }
             .buttonStyle(.plain)
+            .foregroundStyle(MinimalHomeDesign.ink)
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .padding(.horizontal, 20)
-            .padding(.top, 8)
+            .padding(.top, max(proxy.safeAreaInsets.top,
+                UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+                    .flatMap(\.windows).first(where: \.isKeyWindow)?.safeAreaInsets.top ?? 0) + 8)
+          }
         }
         #endif
         .task {

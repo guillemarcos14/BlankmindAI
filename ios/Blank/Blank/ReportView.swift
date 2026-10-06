@@ -25,7 +25,7 @@ struct ReportView: View {
     @AppStorage("blankRemoteWellnessLastSyncAt", store: BlankSharedState.defaults) private var remoteWellnessLastSyncAt = 0.0
 
     private var reportPrimary: Color { BlankColors.cardInk }
-    private var reportSecondary: Color { BlankColors.cardInk.opacity(0.72) }
+    private var reportSecondary: Color { BlankColors.cardInk.opacity(0.86) }
     private var accentBlue: Color { BlankColors.cardInk }
     private var recoveryGreen: Color { BlankColors.cardInk.opacity(0.84) }
     private var headerPrimary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.charcoal }
@@ -231,7 +231,10 @@ struct ReportView: View {
 
             Spacer(minLength: 18)
 
-            HStack(alignment: .lastTextBaseline, spacing: 10) {
+            let riskLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
+                : AnyLayout(HStackLayout(alignment: .lastTextBaseline, spacing: 10))
+            riskLayout {
                 Text("\(forecast.riskPercent)%")
                     .font(.blankInter(size: 34, relativeTo: .largeTitle))
                     .monospacedDigit()
@@ -242,6 +245,7 @@ struct ReportView: View {
                     Text(forecast.riskLabel.lowercased())
                         .font(.blankInter(size: 16, relativeTo: .headline))
                         .foregroundStyle(reportPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     Text(forecast.windowText.lowercased())
                         .font(.blankInter(size: 12, weight: .regular, relativeTo: .caption))
@@ -250,12 +254,15 @@ struct ReportView: View {
                 }
             }
 
-            HStack(alignment: .center, spacing: 8) {
+            let actionLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
+            actionLayout {
                 Text("based on recent patterns")
                     .font(.blankInter(size: 12, weight: .regular, relativeTo: .caption))
                     .foregroundStyle(reportSecondary)
 
-                Spacer(minLength: 8)
+                if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 8) }
 
                 if sessionStore.isBlankActive {
                     Text("protected")
@@ -266,10 +273,13 @@ struct ReportView: View {
                         scheduleForecastBlock(forecast, source: "new_look_risk_today")
                     } label: {
                         Text("protect")
-                            .font(.blankInter(size: 12, weight: .regular, relativeTo: .caption))
+                            .font(.blankInter(size: 15, weight: .regular, relativeTo: .subheadline))
                             .foregroundStyle(accentBlue)
+                            .frame(minWidth: 44, minHeight: 44)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("progress-protect")
+                    .accessibilityLabel("Protect selected distractions")
                 }
             }
             .padding(.top, 10)
@@ -277,7 +287,7 @@ struct ReportView: View {
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 132, alignment: .leading)
         .reportFlatCard()
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(
             "risk signal, \(forecast.riskPercent) percent, \(forecast.riskLabel.lowercased()), \(forecast.windowText.lowercased())."
         )

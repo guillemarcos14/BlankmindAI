@@ -62,9 +62,29 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertTrue(app.switches["Receive notifications"].waitForExistence(timeout: 5))
         app.buttons["Done"].tap()
         app.buttons["home-tab-progress"].tap()
+        let protect = app.buttons["progress-protect"]
+        XCTAssertTrue(protect.waitForExistence(timeout: 5))
+        XCTAssertGreaterThanOrEqual(protect.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(protect.frame.height, 44)
         app.scrollViews.firstMatch.swipeUp()
         XCTAssertTrue(app.buttons["home-tab-control"].isHittable)
         app.buttons["home-tab-chat"].tap()
         XCTAssertTrue(app.buttons["home-voice"].isHittable)
+    }
+
+    func testLargestTextKeepsPreferencesSaveReachable() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["BLANK_UI_SCENARIO"] = "product-automatic"
+        app.launchArguments = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        XCTAssertTrue(app.switches["Allow automatic protection"].waitForExistence(timeout: 10))
+        let save = app.buttons["Save preferences"]
+        for _ in 0..<8 {
+            if save.isHittable { break }
+            app.collectionViews.firstMatch.swipeUp()
+        }
+        XCTAssertTrue(save.isHittable)
+        XCTAssertTrue(app.buttons["Done"].isHittable)
     }
 }

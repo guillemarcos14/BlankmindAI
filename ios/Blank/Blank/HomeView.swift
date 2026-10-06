@@ -2637,7 +2637,6 @@ struct SectionHeader: View {
                 .font(.blankInter(size: 14, relativeTo: .subheadline))
                 .foregroundStyle(resolvedSubtitleColor)
                 .lineSpacing(0)
-                .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 8)
         }
@@ -3406,6 +3405,7 @@ private struct EmergencyScreen: View {
                         _ = onUnlock()
                     }
                     .font(.blankInter(size: 15, weight: .semibold, relativeTo: .subheadline))
+                    .frame(minWidth: 44, minHeight: 44)
                     .buttonStyle(.plain)
                     .foregroundStyle(secondaryColor)
                     .disabled(emergencyUnlocksRemaining <= 0)
@@ -4388,15 +4388,24 @@ private struct BMBSettingsView: View {
             .background(BlankColors.canvas)
             .foregroundStyle(BlankColors.foreground)
             .disabled(busy || !loaded)
+            .opacity(loaded ? 1 : 0)
+            .accessibilityHidden(!loaded)
             .overlay {
-                if busy && !loaded { ProgressView("Loading preferences") }
-                else if !loaded {
-                    VStack(spacing: 12) {
-                        Text(status).multilineTextAlignment(.center)
-                        Button("Try again") { Task { await load() } }
+                if !loaded {
+                    ZStack {
+                        BlankColors.canvas
+                        if busy {
+                            ProgressView("Loading preferences")
+                        } else {
+                            VStack(spacing: 12) {
+                                Text(status).multilineTextAlignment(.center)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Button("Try again") { Task { await load() } }
+                                    .frame(minWidth: 44, minHeight: 44)
+                            }
+                            .padding(24)
+                        }
                     }
-                    .padding(24)
-                    .background(BlankColors.canvas)
                 }
             }
             .navigationTitle(section.title)

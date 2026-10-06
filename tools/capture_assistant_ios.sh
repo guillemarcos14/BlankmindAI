@@ -46,9 +46,9 @@ sleep 3
 xcrun simctl io "$device_id" screenshot "$output/phone-product-home-dark.png"
 xcrun simctl ui "$device_id" appearance light
 xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true
-SIMCTL_CHILD_BLANK_UI_SCENARIO=product-menu xcrun simctl launch "$device_id" "$bundle" -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL
+SIMCTL_CHILD_BLANK_UI_SCENARIO=product-home xcrun simctl launch "$device_id" "$bundle" -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL
 sleep 3
-xcrun simctl io "$device_id" screenshot "$output/phone-product-menu-dynamic-type.png"
+xcrun simctl io "$device_id" screenshot "$output/phone-product-chat-dynamic-type.png"
 xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true
 SIMCTL_CHILD_BLANK_UI_SCENARIO=product-home-response xcrun simctl launch "$device_id" "$bundle" -AppleLanguages '(es)' -AppleLocale es_ES -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL
 sleep 3
