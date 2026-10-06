@@ -320,6 +320,7 @@ struct HomeView: View {
     @State private var showingPicker = false
     @State private var activeSection: HomeSection?
     @State private var showingAssistantChat = false
+    @State private var homeConversationBusy = false
     @State private var chatLaunchMessage: String?
     @State private var homeChatDraft = ""
     @FocusState private var homeChatFocused: Bool
@@ -392,6 +393,7 @@ struct HomeView: View {
                 AssistantAppView(simulatorGuest: simulatorGuest, usesHomePresentation: true,
                     isHomeVisible: activeSection == nil,
                     onHomeActionPrepared: { confirmPendingAssistantAction() },
+                    onConversationActivityChanged: { homeConversationBusy = $0 },
                     onOpenControls: { section in if let section { openSection(section) } }) { actionId in
                         try await prepareAssistantAction(actionId)
                     }
@@ -2156,6 +2158,7 @@ struct HomeView: View {
     private func pollPendingAssistantActionIfNeeded(force: Bool = false, now: Date = Date()) {
         guard force || now.timeIntervalSince(lastAssistantActionPollAt) >= 5 else { return }
         guard !assistantActionPollInFlight,
+              !homeConversationBusy,
               !showingAssistantChat,
               !assistantActionExecutionInFlight,
               !showingContextualAppPicker,

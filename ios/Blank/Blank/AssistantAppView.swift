@@ -566,6 +566,7 @@ struct AssistantAppView: View {
     var usesHomePresentation = false
     var isHomeVisible = true
     var onHomeActionPrepared: () -> Void = {}
+    var onConversationActivityChanged: (Bool) -> Void = { _ in }
     var onOpenControls: (HomeSection?) -> Void = { _ in }
     let onApplyAction: (String) async throws -> Void
     @State private var isApplyingAction = false
@@ -757,7 +758,11 @@ struct AssistantAppView: View {
         .onChange(of: isHomeVisible) { visible in
             BlankBrain.shared.chatIsOpen = visible && scenePhase == .active
             BlankBrain.shared.sync()
+            onConversationActivityChanged(visible && (waiting || speech.isRecording || speech.isStarting))
             if !visible { acceptingSpeech = false; speech.stop(); composerFocused = false; persist() }
+        }
+        .onChange(of: waiting || speech.isRecording || speech.isStarting) { busy in
+            onConversationActivityChanged(isHomeVisible && busy)
         }
         .onDisappear { BlankBrain.shared.chatIsOpen = false; BlankBrain.shared.sync() }
         .sheet(isPresented: $showAccountSignIn, onDismiss: { Task { restoreOwner(); await reload() } }) {
@@ -787,7 +792,7 @@ struct AssistantAppView: View {
                                 Text(spanish ? "Te escucho…" : "I'm listening…")
                                     .font(MinimalHomeDesign.font(26, relativeTo: .title3))
                                 AssistantAudioWaveform(audio: speech)
-                                    .frame(width: 160, height: 36)
+                                    .frame(maxWidth: 240, minHeight: 50)
                             } else if let latest {
                                 homeResponse(latest.assistantText)
                                     .accessibilityLabel("Blankmind: \(latest.assistantText)")
