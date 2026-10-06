@@ -13,7 +13,8 @@ const ROOT = path.resolve(__dirname, "..");
 const SITE_ID = "2ef5a74e-af70-4893-a5f6-63fb2537720d";
 const SITE_URL = "https://blank-product-staging-20260926.netlify.app";
 const SUPABASE_REF = "njqbovsmoowkhhsqmitn";
-const ENTRIES = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-channel", "blanked-agent", "waitlist-auth", "bmb-tick", "bmb-worker-background"]);
+const ENTRIES = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-app-stream", "assistant-channel", "blanked-agent", "waitlist-auth", "bmb-tick", "bmb-worker-background"]);
+function entryExtension(name) { return name === "assistant-app-stream" ? ".mjs" : ".js"; }
 const RELEASE_BRANCH = /^codex\/backend-release-[a-z0-9][a-z0-9-]*$/;
 const DEFAULT_CLI = path.resolve(ROOT, "../../tmp/netlify-cli-runtime/node_modules/netlify-cli/bin/run.js");
 
@@ -22,7 +23,7 @@ function sha256(file) { return crypto.createHash("sha256").update(fs.readFileSyn
 function inside(parent, child) { const relative = path.relative(parent, child); return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative)); }
 function assertSite(site) { if (site !== SITE_ID) fail("Only the reserved private staging site is allowed"); }
 function assertEntries(names) {
-  if (JSON.stringify([...names].sort()) !== JSON.stringify([...ENTRIES].sort())) fail("Function allowlist must contain exactly the eight BMB private staging entries");
+  if (JSON.stringify([...names].sort()) !== JSON.stringify([...ENTRIES].sort())) fail("Function allowlist must contain exactly the nine BMB private staging entries");
 }
 
 function parseArgs(argv) {
@@ -91,10 +92,13 @@ async function packageCandidate(args, state, bundler) {
   fs.mkdirSync(wrappers);
   fs.mkdirSync(publicDir);
   for (const name of ENTRIES) {
-    const entry = path.join(args.source, "netlify", "functions", `${name}.js`);
-    if (!state.tracked.has(`netlify/functions/${name}.js`) || !fs.existsSync(entry)) fail(`Missing tracked entry: ${name}`);
+    const extension = entryExtension(name);
+    const entry = path.join(args.source, "netlify", "functions", `${name}${extension}`);
+    if (!state.tracked.has(`netlify/functions/${name}${extension}`) || !fs.existsSync(entry)) fail(`Missing tracked entry: ${name}`);
     // Literal absolute require is traversed by esbuild; only handler is exposed.
-    fs.writeFileSync(path.join(wrappers, `${name}.js`), `exports.handler = require(${JSON.stringify(entry)}).handler;\n`);
+    fs.writeFileSync(path.join(wrappers, `${name}${extension}`), extension === ".mjs"
+      ? `export { default } from ${JSON.stringify(entry)};\n`
+      : `exports.handler = require(${JSON.stringify(entry)}).handler;\n`);
   }
   fs.writeFileSync(path.join(publicDir, "index.html"), "<!doctype html><meta charset=utf-8><meta name=robots content=noindex><title>Blank private staging</title><p>Blank private staging</p>\n");
   fs.writeFileSync(path.join(directory, "netlify.toml"), '[build]\npublish = "public"\nfunctions = "functions"\n[functions]\nnode_bundler = "esbuild"\n[functions."bmb-tick"]\nschedule = "*/5 * * * *"\n');
@@ -108,18 +112,23 @@ async function packageCandidate(args, state, bundler) {
   const inputs = new Map();
   const functions = bundles.map((bundle) => {
     if (bundle.routes?.length || (bundle.invocationMode === "background" && bundle.name !== "bmb-worker-background")) fail("Unexpected function invocation mode");
-    if (bundle.bundler !== "esbuild" || path.extname(bundle.path) !== ".zip") fail("Expected an esbuild ZIP artifact");
+    const streaming = bundle.name === "assistant-app-stream";
+    if (path.extname(bundle.path) !== ".zip" || (streaming
+      ? !["nft", "esbuild"].includes(bundle.bundler) || bundle.invocationMode !== "stream" || bundle.runtimeAPIVersion !== 2
+      : bundle.bundler !== "esbuild")) fail("Expected a ZIP with the correct buffered/streaming runtime");
     for (const input of bundle.inputs || []) {
       if (inside(wrappers, input)) continue;
       const relative = path.relative(args.source, input).replace(/\\/g, "/");
       if (!inside(args.source, input) || !state.tracked.has(relative)) fail("Bundle includes an untracked or external source dependency");
       inputs.set(relative, sha256(input));
     }
-    if (!(bundle.inputs || []).some((input) => path.resolve(input) === path.join(args.source, "netlify", "functions", `${bundle.name}.js`))) {
+    if (!(bundle.inputs || []).some((input) => path.resolve(input) === path.join(args.source, "netlify", "functions", `${bundle.name}${entryExtension(bundle.name)}`))) {
       fail(`Source handler was not bundled: ${bundle.name}`);
     }
     return { name: bundle.name, path: bundle.path, sha256: sha256(bundle.path), bytes: fs.statSync(bundle.path).size,
-      compilation_target: bundle.runtimeVersion, schedule: bundle.name === "bmb-tick" ? "*/5 * * * *" : null };
+      compilation_target: bundle.runtimeVersion, invocation_mode: bundle.invocationMode || "buffered",
+      runtime_api_version: bundle.runtimeAPIVersion || 1,
+      schedule: bundle.name === "bmb-tick" ? "*/5 * * * *" : null };
   }).sort((a, b) => a.name.localeCompare(b.name));
   return { directory, archives, publicDir, functions,
     inputs: [...inputs].sort(([a], [b]) => a.localeCompare(b)).map(([file, digest]) => ({ file, sha256: digest })),
@@ -219,7 +228,7 @@ async function verifyDeployment(report, token, fetcher) {
   if (deployment.site_id !== SITE_ID || deployment.state !== "ready" ) fail("Staging deploy is not ready or contains scheduled functions");
   if (deployment.function_schedules?.length !== 1 || deployment.function_schedules[0].name !== "bmb-tick" || deployment.function_schedules[0].cron !== "*/5 * * * *") fail("BMB scheduled tick missing or unexpected");
   const remote = productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
-  if (remote.some((fn) => (fn.schedule && (fn.n || fn.name) !== "bmb-tick") || (fn.d || fn.sha) !== report.functions.find((item) => item.name === (fn.n || fn.name))?.sha256)) fail("Remote function digests differ from the eight packaged ZIPs");
+  if (remote.some((fn) => (fn.schedule && (fn.n || fn.name) !== "bmb-tick") || (fn.d || fn.sha) !== report.functions.find((item) => item.name === (fn.n || fn.name))?.sha256)) fail("Remote function digests differ from the nine packaged ZIPs");
   await requirePrivateSite(fetcher);
   const finalSite = await apiGet(`/sites/${SITE_ID}`, token, fetcher);
   if (finalSite.id !== SITE_ID || finalSite.published_deploy?.id !== report.deploy_id) fail("The active staging deploy changed during verification");
