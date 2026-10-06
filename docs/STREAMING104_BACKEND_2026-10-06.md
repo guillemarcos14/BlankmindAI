@@ -15,3 +15,7 @@ Reference: https://docs.netlify.com/build/functions/api/#streaming-responses
 The first private deployment exposed a CLI metadata issue: reinspection of ready ZIPs dropped invocationMode and returned502. The packager now supplies its fresh manifest at .netlify/functions/manifest.json and retains the Netlify API2/stream metadata during upload. Regression verifies this path and rejects --skip-functions-cache. Real ZIP hashes remain checked.
 
 CLI metadata resolution still discarded the manifest on remote upload. The final publisher uses the Netlify deployment API directly with the frozen ZIP hashes, functions_config.build_data and explicit runtime/invocation_mode query per artifact. It retains the fixed private site, preflight, exact-source guards, early deploy receipt, no automatic redeploy and post-deploy digest/privacy checks. Regression verifies the actual stream upload query.
+
+## Published verification
+
+Private QA source2662dd2, deploy6ac533d3f33fad4cc396bf50, nine remote ZIP hashes match and protection/database isolation verified. Remote checks8/8, synthetic cleanup6/6. A real model turn emitted61 distinct drafts: first at5208ms, final at6601ms. Completed JSON replay identical; duration3min and300min produce no action,5min remains compatible, changed payload409. This is one synthetic cloud timing sample, not phone latency statistics or haptic measurement. Harness70/70 with baseline eb89b44 and no scope violations. Build104 already contains the native consumer and haptic controller, so no reinstall or new build is required.
