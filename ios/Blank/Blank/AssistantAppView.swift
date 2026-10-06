@@ -183,6 +183,7 @@ enum AssistantAppError: LocalizedError {
     case sessionChanged
     case server(status: Int, code: String)
     case network
+    case offline
     case timeout
     case invalidResponse
     case notConfigured
@@ -194,6 +195,7 @@ enum AssistantAppError: LocalizedError {
         case .sessionChanged: return "session_changed"
         case let .server(_, code): return code
         case .network: return "network_unavailable"
+        case .offline: return "offline"
         case .timeout: return "request_timed_out"
         case .invalidResponse: return "invalid_response"
         case .notConfigured: return "not_configured"
@@ -210,7 +212,7 @@ enum AssistantAppError: LocalizedError {
 
     var isRetryable: Bool {
         switch self {
-        case .network, .timeout, .invalidResponse: return true
+        case .network, .offline, .timeout, .invalidResponse: return true
         case let .server(status, code):
             return status >= 500 || status == 429
                 || ["conversation_in_progress", "turn_in_progress_or_failed"].contains(code)
@@ -218,42 +220,33 @@ enum AssistantAppError: LocalizedError {
         }
     }
 
-    var errorDescription: String? {
-        let spanish = Locale.current.languageCode == "es"
+    var problem: AssistantPendingProblem {
         switch self {
-        case .authenticationRequired, .sessionChanged:
-            return spanish ? "Inicia sesión con Apple para continuar. Tu mensaje sigue guardado." : "Sign in with Apple to continue. Your message is still saved."
-        case .server(_, "apple_identity_required"):
-            return spanish ? "Inicia sesión con Apple para continuar con Blankmind." : "Sign in with Apple to continue using Blankmind."
-        case .installationNotVerified:
-            return spanish ? "Vuelve a iniciar sesión con Apple para vincular este iPhone." : "Sign in with Apple again to link this iPhone."
-        case .network:
-            return spanish ? "No hay conexión. Tu mensaje está guardado; reintenta cuando vuelvas a tener internet." : "You are offline. Your message is saved; retry when you have a connection."
-        case .timeout:
-            return spanish ? "La respuesta está tardando. Reintenta para recuperar el mismo mensaje." : "The reply is taking longer. Retry to recover the same message."
-        case .invalidResponse:
-            return spanish ? "No se pudo leer la respuesta. Reintenta para recuperarla." : "The reply could not be read. Retry to recover it."
-        case .notConfigured:
-            return spanish ? "Blankmind no está disponible en esta versión de la app." : "Blankmind is unavailable in this version of the app."
+        case .authenticationRequired, .sessionChanged: return .sessionExpired
+        case .installationNotVerified: return .installation
+        case .offline: return .offline
+        case .network: return .connection
+        case .timeout: return .timeout
+        case .invalidResponse: return .invalidResponse
+        case .notConfigured: return .notConfigured
         case let .server(status, code):
-            if code == "conversation_in_progress" || code == "turn_in_progress_or_failed" {
-                return spanish ? "Blankmind está terminando tu mensaje anterior. Reintenta en unos segundos." : "Blankmind is finishing your previous message. Retry in a few seconds."
+            switch code {
+            case "apple_identity_required": return .sessionExpired
+            case "conversation_in_progress": return .processing
+            case "turn_in_progress_or_failed": return .unknown
+            case "turn_payload_conflict": return .payloadConflict
+            case "invalid_turn": return .invalidTurn
+            case "action_unavailable": return .actionUnavailable
+            default:
+                if status == 429 { return .rateLimited }
+                if status >= 500 { return .serviceUnavailable }
+                return .unknown
             }
-            if code == "turn_payload_conflict" {
-                return spanish ? "Este mensaje ya se envió con otro texto. Conservamos tu borrador." : "This message was already sent with different text. Your draft is saved."
-            }
-            if code == "invalid_turn" {
-                return spanish ? "Escribe un mensaje de hasta 4.000 caracteres." : "Write a message of up to 4,000 characters."
-            }
-            if code == "action_unavailable" {
-                return spanish ? "Esta acción ya no está disponible. Pide un bloqueo nuevo." : "This action is no longer available. Request a new block."
-            }
-            if status == 429 {
-                return spanish ? "Espera unos segundos antes de volver a intentarlo." : "Wait a few seconds before trying again."
-            }
-            return spanish ? "Blankmind no está disponible ahora. Tu mensaje sigue guardado." : "Blankmind is unavailable right now. Your message is still saved."
         }
     }
+
+    var errorDescription: String? { problem.message(spanish: Locale.current.languageCode == "es") }
+
 }
 
 actor AssistantAppSessionRefresh {
@@ -396,6 +389,7 @@ struct AssistantAppClient {
         } catch let error as URLError {
             if error.code == .cancelled { throw CancellationError() }
             if error.code == .timedOut { throw AssistantAppError.timeout }
+            if error.code == .notConnectedToInternet { throw AssistantAppError.offline }
             throw AssistantAppError.network
         }
     }
@@ -933,6 +927,7 @@ struct AssistantAppView: View {
             }
             if let error {
                 Text(error)
+                    .accessibilityIdentifier("assistant-problem-notice")
                     .foregroundStyle(usesHomePresentation ? foreground : (dark ? Color(red: 1, green: 0.66, blue: 0.64) : BlankColors.red))
                     .fixedSize(horizontal: false, vertical: true)
                 if let pending = composer.pending {
@@ -1088,6 +1083,7 @@ struct AssistantAppView: View {
         error = nil
         requiresVerification = false
         canRetry = true
+        if let problem = composer.pending?.problem { showPendingProblem(problem) }
         return true
     }
 
@@ -1122,14 +1118,13 @@ struct AssistantAppView: View {
                     accept(recovered)
                     error = nil
                 } else if recovered == nil || recovered?.status == "failed" {
-                    error = spanish ? "Tu mensaje está guardado. Reintenta para recuperar la respuesta." : "Your message is saved. Retry to recover the reply."
-                    canRetry = true
+                    let known = pending.problem.flatMap { $0 == .processing || $0.requiresSignIn ? nil : $0 }
+                    showPendingProblem(known ?? (recovered == nil ? .missingReply : .failedReply))
                 } else if recovered?.status == "processing" {
                     // Checking again resends the same durable identity. A crashed
                     // worker can be reclaimed by the server after its lease ends.
-                    error = spanish ? "La respuesta sigue pendiente. Comprueba de nuevo para recuperarla." : "The reply is still pending. Check again to recover it."
-                    canRetry = true
-                }
+                    showPendingProblem(.processing)
+                } else { showPendingProblem(.unknown) }
             } else { error = nil }
         } catch {
             guard expectedOwner == owner, expectedRevision == conversationRevision else { return }
@@ -1227,10 +1222,20 @@ struct AssistantAppView: View {
 
     private func handle(_ failure: Error) {
         if failure is CancellationError { return }
-        error = failure.localizedDescription
         let typed = failure as? AssistantAppError
+        showPendingProblem(typed?.problem ?? .unknown)
         requiresVerification = typed?.requiresAccountSignIn == true
         canRetry = typed?.isRetryable ?? true
+    }
+
+    private func showPendingProblem(_ problem: AssistantPendingProblem) {
+        error = problem.message(spanish: spanish)
+        requiresVerification = problem.requiresSignIn
+        canRetry = problem.canRetry
+        if composer.pending != nil {
+            composer.pending?.problem = problem
+            persist()
+        }
     }
 
     #if DEBUG
