@@ -9,12 +9,14 @@ const assert=require('node:assert/strict');const staging=require('./bmb_staging'
  const bundler={zipFunctions:async(wrappers,target)=>{fs.mkdirSync(target);return staging.ENTRIES.map(name=>{
    const streaming=name==='assistant-app-stream',extension=streaming?'.mjs':'.js';
    const wrapper=path.join(wrappers,name+extension),entry=path.join(fixture,'netlify/functions',name+extension);
-   if(streaming){assert.match(fs.readFileSync(wrapper,'utf8'),/^export \{ default \} from/);assert(!fs.readFileSync(wrapper,'utf8').includes('exports.handler'));}
+   if(streaming){assert.match(fs.readFileSync(wrapper,'utf8'),/export \{ default \} from/);assert(!fs.readFileSync(wrapper,'utf8').includes('exports.handler'));}
    const archive=path.join(target,name+'.zip');fs.writeFileSync(archive,'synthetic');
    return{name,path:archive,bundler:streaming?'nft':'esbuild',invocationMode:streaming?(buffered?'buffered':'stream'):undefined,runtimeAPIVersion:streaming?2:1,inputs:[wrapper,entry]};
- });}};
+ }).map((bundle,index,list)=>{if(index===list.length-1)fs.writeFileSync(path.join(target,'manifest.json'),JSON.stringify({functions:list,timestamp:Date.now()}));return bundle;});}};
  const packaged=await staging.packageCandidate({source:fixture},{tracked},bundler);
  assert.equal(packaged.functions.find(x=>x.name==='assistant-app-stream').invocation_mode,'stream');
+ assert(fs.existsSync(path.join(packaged.directory,'.netlify/functions/manifest.json')));
+ assert(!staging.deployCommand({cli:'synthetic',site:staging.SITE_ID},packaged).includes('--skip-functions-cache'));
  buffered=true;await assert.rejects(staging.packageCandidate({source:fixture},{tracked},bundler),/correct buffered\/streaming runtime/);
  const before={URL:process.env.URL,KEY:process.env.SUPABASE_SERVICE_ROLE_KEY,COOKIE:process.env.BMB_PRIVATE_STAGE_COOKIE,fetch:global.fetch};
  try{process.env.URL=staging.SITE_URL;process.env.SUPABASE_SERVICE_ROLE_KEY='synthetic';process.env.BMB_PRIVATE_STAGE_COOKIE='synthetic-cookie';let count=0;

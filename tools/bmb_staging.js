@@ -97,7 +97,7 @@ async function packageCandidate(args, state, bundler) {
     if (!state.tracked.has(`netlify/functions/${name}${extension}`) || !fs.existsSync(entry)) fail(`Missing tracked entry: ${name}`);
     // Literal absolute require is traversed by esbuild; only handler is exposed.
     fs.writeFileSync(path.join(wrappers, `${name}${extension}`), extension === ".mjs"
-      ? `export { default } from ${JSON.stringify(entry)};\n`
+      ? `/*! Blank NDJSON endpoint requires invocationMode=stream. */\nexport { default } from ${JSON.stringify(entry)};\n`
       : `exports.handler = require(${JSON.stringify(entry)}).handler;\n`);
   }
   fs.writeFileSync(path.join(publicDir, "index.html"), "<!doctype html><meta charset=utf-8><meta name=robots content=noindex><title>Blank private staging</title><p>Blank private staging</p>\n");
@@ -109,6 +109,11 @@ async function packageCandidate(args, state, bundler) {
   const archiveFiles = fs.readdirSync(archives);
   if (archiveFiles.some((file) => !file.endsWith(".zip") && file !== "manifest.json")) fail("Unexpected file in staging function archives");
   assertEntries(archiveFiles.filter((file) => file.endsWith(".zip")).map((file) => file.replace(/\.zip$/, "")));
+  // CLI reinspection of ready-made ZIPs loses invocationMode and runtime API2.
+  // Supply the fresh bundler manifest at the CLI's standard metadata path.
+  const metadataDirectory = path.join(directory, ".netlify", "functions");
+  fs.mkdirSync(metadataDirectory, { recursive: true });
+  fs.copyFileSync(path.join(archives, "manifest.json"), path.join(metadataDirectory, "manifest.json"));
   const inputs = new Map();
   const functions = bundles.map((bundle) => {
     if (bundle.routes?.length || (bundle.invocationMode === "background" && bundle.name !== "bmb-worker-background")) fail("Unexpected function invocation mode");
@@ -185,7 +190,7 @@ async function requirePrivateSite(fetcher = fetch) {
 function deployCommand(args, packaged) {
   assertSite(args.site);
   return [args.cli, "deploy", "--site", SITE_ID, "--prod", "--no-build",
-    "--dir", packaged.publicDir, "--functions", packaged.archives, "--skip-functions-cache", "--json"];
+    "--dir", packaged.publicDir, "--functions", packaged.archives, "--json"];
 }
 
 function productionFunctions(payload) {

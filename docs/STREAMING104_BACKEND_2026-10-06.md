@@ -11,3 +11,5 @@ Remote smoke uses a synthetic account, observes multiple real model drafts befor
 Deployment and smoke receipts: tmp/cloud-stage/package-*.json and tmp/streaming/cloud.json. GET before deployment:404, tmp/streaming/before.json.
 
 Reference: https://docs.netlify.com/build/functions/api/#streaming-responses
+
+The first private deployment exposed a CLI metadata issue: reinspection of ready ZIPs dropped invocationMode and returned502. The packager now supplies its fresh manifest at .netlify/functions/manifest.json and retains the Netlify API2/stream metadata during upload. Regression verifies this path and rejects --skip-functions-cache. Real ZIP hashes remain checked.
