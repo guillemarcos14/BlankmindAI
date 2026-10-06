@@ -339,6 +339,7 @@ struct HomeView: View {
     @State private var isHoldingToUnblank = false
     @State private var isActiveNavExpanded = false
     @GestureState private var isHomePressing = false
+    @GestureState private var edgeDrag: CGFloat = 0
     // Larger lettering with a tighter optical gap; keep the existing row footprint.
     @ScaledMetric(relativeTo: .title) private var homeMenuRowHeight: CGFloat = 34
     @State private var showingHomeBlockError = false
@@ -388,6 +389,7 @@ struct HomeView: View {
             ZStack(alignment: .topLeading) {
                 (sessionStore.isBlankActive ? BlankColors.charcoal : BlankColors.pureWhite)
                     .frame(width: viewportWidth, height: viewportHeight)
+                    .offset(x: reduceMotion ? 0 : (activeSection == nil ? edgeDrag * 0.18 : (selectedHomeTab == .control ? viewportWidth : -viewportWidth)))
                     .ignoresSafeArea()
 
                 AssistantAppView(simulatorGuest: simulatorGuest, usesHomePresentation: true,
@@ -432,6 +434,8 @@ struct HomeView: View {
                 }
             }
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
+            .clipped()
+            .simultaneousGesture(homeEdgeNavigation(width: viewportWidth))
         }
         .ignoresSafeArea(.container)
         .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink)
@@ -699,7 +703,9 @@ struct HomeView: View {
                 protectionControl: AnyView(homeProtectionControl)
             )
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
-            .transition(.opacity)
+            .offset(x: reduceMotion ? 0 : edgeDrag * 0.18)
+            .id(activeSection)
+            .transition(reduceMotion ? .opacity : .move(edge: activeSection == .report ? .trailing : .leading).combined(with: .opacity))
             .zIndex(5)
         }
     }
@@ -814,11 +820,29 @@ struct HomeView: View {
     }
 
     private func selectHomeTab(_ tab: MinimalHomeTab) {
-        switch tab {
-        case .control: openSection(.control)
-        case .chat: activeSection = nil
-        case .progress: openSection(.report)
+        withAnimation(.easeInOut(duration: reduceMotion ? 0.12 : 0.38)) {
+            switch tab {
+            case .control: openSection(.control)
+            case .chat: activeSection = nil
+            case .progress: openSection(.report)
+            }
         }
+    }
+
+    private func homeEdgeNavigation(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 18, coordinateSpace: .local)
+            .updating($edgeDrag) { value, drag, _ in
+                guard !showingRelapseReview,
+                      let _ = selectedHomeTab.edgeDestination(startX: value.startLocation.x, width: width,
+                          horizontal: value.translation.width, vertical: value.translation.height) else { return }
+                drag = value.translation.width
+            }
+            .onEnded { value in
+                guard !showingRelapseReview, abs(value.translation.width) >= 45,
+                      let destination = selectedHomeTab.edgeDestination(startX: value.startLocation.x, width: width,
+                          horizontal: value.translation.width, vertical: value.translation.height) else { return }
+                selectHomeTab(destination)
+            }
     }
 
     // Holds belong to Control: speaking and selecting text in Chat cannot block.

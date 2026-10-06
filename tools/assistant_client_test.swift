@@ -148,7 +148,7 @@ struct AssistantClientTests {
         TransportStub.respond = { _ in .init(body: "not JSON") }
         do { _ = try await client.history(); fatalError("Expected malformed response error") }
         catch let error as AssistantAppError { check(error.code == "invalid_response" && error.isRetryable, "Malformed reply recovery") }
-        for (urlCode, expected) in [(URLError.notConnectedToInternet, "network_unavailable"), (.timedOut, "request_timed_out")] {
+        for (urlCode, expected) in [(URLError.notConnectedToInternet, "offline"), (.cannotConnectToHost, "network_unavailable"), (.timedOut, "request_timed_out")] {
             TransportStub.respond = { _ in .init(error: URLError(urlCode)) }
             do { _ = try await client.history(); fatalError("Expected network error") }
             catch let error as AssistantAppError { check(error.code == expected && error.isRetryable, "Network recovery") }
@@ -157,8 +157,79 @@ struct AssistantClientTests {
         do { _ = try await client.history(); fatalError("Expected cancellation") }
         catch is CancellationError { }
         try await verifyViewRaces()
+        try await verifyAutomaticRecovery()
+        try await verifyProblemNotices()
         print("assistant client: refresh concurrency, identity switch, transient recovery, typed errors, 202/status, network and cancellation passed")
     }
+}
+
+@MainActor private func verifyAutomaticRecovery() async throws {
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    let view = ConversationFixture()
+    let pending = AssistantComposerState.Pending(id: "durable-recovery", text: "Protect for three minutes")
+    view.composer.pending = pending
+    var sends = 0
+    ViewTransport.history = { .init(turns: [], nextBefore: nil) }
+    ViewTransport.status = { _ in nil }
+    ViewTransport.send = { text, id in
+        sends += 1
+        check(id == pending.id && text == pending.text, "Automatic retry changed the durable payload")
+        return makeTurn(id: id, text: text)
+    }
+    await view.recoverForTest()
+    check(sends == 1 && view.composer.pending == nil, "Recovery must complete without a manual tap")
+
+    view.composer.pending = pending
+    ViewTransport.send = { _, _ in sends += 1; throw AssistantAppError.network }
+    sends = 0
+    await view.recoverForTest()
+    while view.isSending { await Task.yield() }
+    check(sends == 3 && view.composer.pending?.id == pending.id && view.composer.pending?.text == pending.text
+        && view.composer.pending?.problem == .connection && view.canRetry, "Offline retry must be bounded and keep the message and known cause")
+    view.isHomeVisible = false
+    await view.recoverForTest()
+    check(sends == 3, "Hidden chat must not auto-send")
+    view.isHomeVisible = true
+    ViewTransport.status = { _ in throw AssistantAppError.authenticationRequired }
+    await view.recoverForTest()
+    check(sends == 3 && view.requiresVerification, "Authentication requires sign-in, never automatic resending")
+
+    view.requiresVerification = false
+    let failed = AssistantAppTurn(id: pending.id, userText: pending.text, assistantText: "", status: "failed",
+        actionId: "", actionLabel: "", actionStatus: "", createdAt: "2026-10-06T10:00:00Z")
+    ViewTransport.history = { .init(turns: [failed], nextBefore: nil) }
+    ViewTransport.status = { _ in makeTurn(id: pending.id, text: pending.text) }
+    await view.reloadForTest()
+    check(view.composer.pending == nil && view.error == nil, "Stale failed history must not hide a completed status")
+    print("automatic recovery: same payload, bounded offline attempts, visibility/auth guards and stale history passed")
+}
+
+@MainActor private func verifyProblemNotices() async throws {
+    check(AssistantAppError.offline.problem == .offline, "Confirmed offline must be distinct from connection failure")
+    check(AssistantAppError.network.problem == .connection, "A server connection failure does not prove offline")
+    check(AssistantAppError.server(status: 503, code: "internal_detail").problem == .serviceUnavailable, "503 service notice")
+    check(AssistantAppError.server(status: 429, code: "internal_detail").problem == .rateLimited, "429 wait notice")
+    check(AssistantAppError.server(status: 409, code: "turn_in_progress_or_failed").problem == .unknown, "Ambiguous server code must not claim processing")
+    check(AssistantAppError.server(status: 400, code: "private_detail").problem == .unknown, "Unknown cause fallback")
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    let view = ConversationFixture()
+    view.composer.pending = .init(id: "notice-turn", text: "A saved message", problem: .timeout)
+    ViewTransport.history = { .init(turns: [], nextBefore: nil) }
+    ViewTransport.status = { _ in nil }
+    await view.reloadForTest()
+    check(view.error == AssistantPendingProblem.timeout.message(spanish: false), "Polling erased the identified timeout")
+    view.composer.pending?.problem = nil
+    await view.reloadForTest()
+    check(view.composer.pending?.problem == .missingReply, "Missing reply is not proof of network failure")
+    view.composer.pending?.problem = .sessionExpired
+    await view.reloadForTest()
+    check(!view.requiresVerification && view.canRetry, "Successful authenticated reload must release expired-session notice")
+    ViewTransport.status = { _ in throw NSError(domain: "SECRET", code: 99, userInfo: [NSLocalizedDescriptionKey: "PRIVATE TRACE"]) }
+    await view.reloadForTest()
+    check(view.error == AssistantPendingProblem.unknown.message(spanish: false), "Unknown errors must never expose raw details")
+    let restored = AssistantDraftVault.load(owner: "A")
+    check(restored.pending?.problem == .unknown, "Problem must persist with the pending message")
+    print("problem notices: precise classification, honest fallback, persistence, polling and authentication recovery passed")
 }
 
 @MainActor final class SpeechFixture { func stop() {} }

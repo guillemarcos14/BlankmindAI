@@ -3,6 +3,14 @@ import Foundation
 @main struct AssistantComposerTests {
     static func main() throws {
         var state = AssistantComposerState()
+        let legacy = try JSONDecoder().decode(AssistantComposerState.self, from: Data(#"{"draft":"","pending":{"id":"legacy","text":"saved"}}"#.utf8))
+        precondition(legacy.pending?.problem == nil, "Old saved drafts must still decode")
+        for problem in AssistantPendingProblem.allCases {
+            let saved = AssistantComposerState(draft: "", pending: .init(id: "saved", text: "hello", problem: problem))
+            let loaded = try JSONDecoder().decode(AssistantComposerState.self, from: JSONEncoder().encode(saved))
+            precondition(loaded == saved, "Problem notice must survive app restart")
+            precondition(!problem.message(spanish: true).isEmpty && !problem.message(spanish: false).isEmpty)
+        }
         precondition(state.begin() == nil)
         state.draft = "  Protege mis distracciones 45 minutos.  "
         let original = state.begin()!

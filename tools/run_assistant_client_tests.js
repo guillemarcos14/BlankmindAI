@@ -24,6 +24,9 @@ const viewFixture = `
 }
 
 @MainActor final class ConversationFixture {
+    enum ScenePhase { case active, background }
+    var scenePhase = ScenePhase.active
+    var isHomeVisible = true
     var owner = "A"
     var preview = false
     var simulatorGuest = false
@@ -58,6 +61,7 @@ const viewFixture = `
     func reloadForTest() async { await reload() }
     func sendForTest() async { await send() }
     func restoreForTest() { restoreOwner() }
+    func recoverForTest() async { await recoverPendingMessage(delays: [1_000_000, 1_000_000, 1_000_000]) }
 ${viewMethods}
 ${applyMethod}
 }
@@ -74,6 +78,7 @@ try {
   process.stdout.write(result.stdout || '');
   process.stderr.write(result.stderr || '');
   if (result.error) throw result.error;
+  if (result.signal) throw new Error(`Native client tests terminated by ${result.signal}`);
   process.exitCode = result.status || 0;
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });
