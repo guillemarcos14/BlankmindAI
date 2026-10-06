@@ -13,7 +13,7 @@ const test = fs.readFileSync(path.join(__dirname, 'assistant_client_test.swift')
 const composerSource = fs.readFileSync(path.join(__dirname, '../ios/Blank/Blank/AssistantComposerState.swift'), 'utf8');
 const composer = composerSource.slice(composerSource.indexOf('struct AssistantComposerState:'), composerSource.indexOf('enum AssistantDraftVault'));
 const viewMethodsStart = source.indexOf('    @discardableResult private func restoreOwner()');
-const viewMethodsEnd = source.indexOf('    #if DEBUG\n    private func loadPreview()', viewMethodsStart);
+const viewMethodsEnd = source.indexOf('    #if DEBUG', viewMethodsStart);
 if (viewMethodsStart < 0 || viewMethodsEnd < viewMethodsStart) throw new Error('Assistant view state test boundaries changed');
 const viewMethods = source.slice(viewMethodsStart, viewMethodsEnd).replaceAll('AssistantAppClient()', 'ConversationTestClient()');
 const applyMethod = source.slice(source.indexOf('    private func applyAction('), source.indexOf('    private func openControls('));
@@ -45,6 +45,10 @@ const viewFixture = `
     var canRetry = true
     var isApplyingAction = false
     var showHistory = false
+    var showingHomeKeyboard = false
+    var usesHomePresentation = false
+    var homeActionPreparedCount = 0
+    func onHomeActionPrepared() { homeActionPreparedCount += 1 }
     var visibleTurnID: String?
     var greeting: String?
     var appliedActions: [String] = []

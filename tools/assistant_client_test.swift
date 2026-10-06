@@ -251,5 +251,15 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     ViewTransport.status = { _ in executable }
     await view.sendForTest()
     check(view.appliedActions.count == 1, "Lost-response recovery executed an old action")
+    let home = ConversationFixture()
+    home.owner = "C"
+    home.usesHomePresentation = true
+    home.showingHomeKeyboard = true
+    home.composer.draft = "Block from Home"
+    ViewTransport.send = { text, id in AssistantAppTurn(id: id, userText: text, assistantText: "Applying", status: "completed", actionId: "home_action", actionLabel: "Apply", actionStatus: "queued", createdAt: "2026-10-06T10:00:00Z", autoApply: true) }
+    await home.sendForTest()
+    check(home.appliedActions == ["home_action"] && home.homeActionPreparedCount == 1 && home.dismissCount == 0,
+          "Embedded Home must confirm the native action without dismissing the app root")
+    check(!home.showingHomeKeyboard, "Sending text must close the Home keyboard sheet")
     print("assistant view: stale history, account switch during status and obsolete send completion passed")
 }
