@@ -1118,7 +1118,9 @@ struct AssistantAppView: View {
                     accept(recovered)
                     error = nil
                 } else if recovered == nil || recovered?.status == "failed" {
-                    let known = pending.problem.flatMap { $0 == .processing || $0.requiresSignIn ? nil : $0 }
+                    let known = pending.problem.flatMap {
+                        [.processing, .missingReply, .failedReply, .unknown].contains($0) || $0.requiresSignIn ? nil : $0
+                    }
                     showPendingProblem(known ?? (recovered == nil ? .missingReply : .failedReply))
                 } else if recovered?.status == "processing" {
                     // Checking again resends the same durable identity. A crashed

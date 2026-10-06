@@ -184,7 +184,8 @@ struct AssistantClientTests {
     sends = 0
     await view.recoverForTest()
     while view.isSending { await Task.yield() }
-    check(sends == 3 && view.composer.pending == pending && view.canRetry, "Offline retry must be bounded and keep the message")
+    check(sends == 3 && view.composer.pending?.id == pending.id && view.composer.pending?.text == pending.text
+        && view.composer.pending?.problem == .connection && view.canRetry, "Offline retry must be bounded and keep the message and known cause")
     view.isHomeVisible = false
     await view.recoverForTest()
     check(sends == 3, "Hidden chat must not auto-send")
