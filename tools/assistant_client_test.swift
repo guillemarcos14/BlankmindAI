@@ -161,6 +161,7 @@ struct AssistantClientTests {
         try await verifyViewRaces()
         try await verifyAutomaticRecovery()
         try await verifyProblemNotices()
+        verifyLocalActionReceipts()
         print("assistant client: refresh concurrency, identity switch, transient recovery, typed errors, 202/status, network and cancellation passed")
     }
 }
@@ -398,10 +399,55 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     home.usesHomePresentation = true
     home.showingHomeKeyboard = true
     home.composer.draft = "Block from Home"
-    ViewTransport.send = { text, id in AssistantAppTurn(id: id, userText: text, assistantText: "Applying", status: "completed", actionId: "home_action", actionLabel: "Apply", actionStatus: "queued", createdAt: "2026-10-06T10:00:00Z", autoApply: true) }
+    home.homeActionHandler = {
+        AssistantActionReceiptStore.save(actionId: "app_home_action", status: "verified", detail: "native_verified", executionStarted: true)
+    }
+    ViewTransport.send = { text, id in AssistantAppTurn(id: id, userText: text, assistantText: "Applying", status: "completed", actionId: "app_home_action", actionLabel: "Apply", actionStatus: "queued", createdAt: "2026-10-06T10:00:00Z", autoApply: true) }
     await home.sendForTest()
-    check(home.appliedActions == ["home_action"] && home.homeActionPreparedCount == 1 && home.dismissCount == 0,
+    check(home.appliedActions == ["app_home_action"] && home.homeActionPreparedCount == 1 && home.dismissCount == 0,
           "Embedded Home must confirm the native action without dismissing the app root")
+    check(home.turns.last?.actionStatus == "verified" && home.turns.last?.canApply == false,
+          "The chat offered a second block after the native receipt")
+    let staleTurn = ViewTransport.send
+    ViewTransport.history = { .init(turns: [try await staleTurn("Block from Home", "home-turn")], nextBefore: nil) }
+    await home.reloadForTest()
+    check(home.turns.last?.actionStatus == "verified" && home.turns.last?.canApply == false,
+          "Stale cloud history restored the redundant block button")
+    check(home.appliedActions.count == 1, "Receipt reconciliation executed the block twice")
+    AssistantActionReceiptStore.clear(actionId: "app_home_action")
     check(!home.showingHomeKeyboard, "Sending text must close the Home keyboard sheet")
     print("assistant view: stale history, account switch during status and obsolete send completion passed")
+}
+
+@MainActor private func verifyLocalActionReceipts() {
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    let queued = AssistantAppTurn(id: "turn", userText: "Block for five minutes", assistantText: "Applying",
+        status: "completed", actionId: "app_receipt", actionLabel: "Block 5 minutes", actionStatus: "queued",
+        createdAt: "2026-10-06T18:00:00Z", autoApply: true)
+    check(queued.resolvingLocalReceipt.canApply, "An unexecuted action lost its setup/recovery button")
+    AssistantActionReceiptStore.save(actionId: "app_other", status: "verified", detail: "", executionStarted: true)
+    check(queued.resolvingLocalReceipt.canApply, "A different block suppressed this action")
+    for status in ["confirmed", "execution_started"] {
+        AssistantActionReceiptStore.save(actionId: queued.actionId, status: status, detail: "", executionStarted: true)
+        check(queued.resolvingLocalReceipt.canApply, "Preparation was treated as native completion")
+    }
+    for status in ["verified", "delayed", "failed", "dismissed"] {
+        AssistantActionReceiptStore.save(actionId: queued.actionId, status: status, detail: "", executionStarted: true)
+        let resolved = queued.resolvingLocalReceipt
+        check(!resolved.canApply && resolved.actionStatus == status && resolved.autoApply == false,
+              "Native outcome did not remove the duplicate action button")
+        check(resolved.id == queued.id && resolved.userText == queued.userText && resolved.assistantText == queued.assistantText,
+              "Receipt reconciliation changed conversation content")
+    }
+    AssistantActionReceiptStore.save(actionId: queued.actionId, status: "verified", detail: "", executionStarted: true)
+    AssistantAppSession.save(accessToken: "session#B", refreshToken: "refresh-B")
+    check(AssistantActionReceiptStore.load() == nil && queued.resolvingLocalReceipt.canApply, "Another account's receipt changed this turn")
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    var terminal = queued
+    terminal = AssistantAppTurn(id: terminal.id, userText: terminal.userText, assistantText: terminal.assistantText,
+        status: terminal.status, actionId: terminal.actionId, actionLabel: terminal.actionLabel, actionStatus: "superseded", createdAt: terminal.createdAt)
+    check(terminal.resolvingLocalReceipt.actionStatus == "superseded", "Receipt overrode a terminal server status")
+    AssistantActionReceiptStore.clear(actionId: queued.actionId)
+    check(AssistantActionReceiptStore.load() == nil, "Receipt cleanup failed")
+    print("action receipts: immediate CTA removal, stale history, exact action/account, setup and terminal outcomes passed")
 }

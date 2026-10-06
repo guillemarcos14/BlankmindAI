@@ -152,6 +152,17 @@ struct AssistantAppTurn: Codable, Identifiable {
     var canApply: Bool {
         !actionId.isEmpty && ["queued", "delivered"].contains(actionStatus)
     }
+
+    // The iPhone receipt is already durable before cloud acknowledgement.
+    // A stale queued turn must not offer to repeat an action it just applied.
+    var resolvingLocalReceipt: AssistantAppTurn {
+        guard canApply || actionStatus == "execution_started",
+              let receipt = AssistantActionReceiptStore.load(), receipt.actionId == actionId,
+              ["verified", "delayed", "failed", "dismissed"].contains(receipt.status) else { return self }
+        return AssistantAppTurn(id: id, userText: userText, assistantText: assistantText, status: status,
+            actionId: actionId, actionLabel: actionLabel, actionStatus: receipt.status, createdAt: createdAt,
+            autoApply: false, controlSection: controlSection)
+    }
 }
 
 private struct AssistantAppEnvelope: Decodable {
@@ -809,6 +820,10 @@ struct AssistantAppView: View {
             }
         }
         .task(id: recoveryTaskID) { await recoverPendingMessage() }
+        .onReceive(NotificationCenter.default.publisher(for: AssistantActionReceiptStore.didChangeNotification).receive(on: RunLoop.main)) { _ in
+            guard owner == AssistantAppSession.userID else { return }
+            turns = turns.map(\.resolvingLocalReceipt)
+        }
         .onChange(of: speech.error) { value in
             if let value {
                 error = value
@@ -1160,6 +1175,7 @@ struct AssistantAppView: View {
             try await onApplyAction(actionID)
             guard owner == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
             if usesHomePresentation { onHomeActionPrepared() } else { dismiss() }
+            turns = turns.map(\.resolvingLocalReceipt)
         } catch {
             handle(error)
         }
@@ -1215,7 +1231,7 @@ struct AssistantAppView: View {
             let page = try await AssistantAppClient().history()
             guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
                   expectedRevision == conversationRevision else { return }
-            turns = page.turns
+            turns = page.turns.map(\.resolvingLocalReceipt)
             nextHistoryCursor = page.nextBefore
             requiresVerification = false
             if let pending = composer.pending {
@@ -1245,6 +1261,7 @@ struct AssistantAppView: View {
     }
 
     private func accept(_ turn: AssistantAppTurn) {
+        let turn = turn.resolvingLocalReceipt
         if let index = turns.firstIndex(where: { $0.id == turn.id }) { turns[index] = turn }
         else { turns.append(turn) }
         if turn.status == "completed" {
@@ -1459,7 +1476,7 @@ struct AssistantAppHistoryView: View {
 
     init(turns: [AssistantAppTurn], nextBefore: String?, foreground: Color, background: Color,
          onApplyAction: @escaping (String) -> Void) {
-        _turns = State(initialValue: turns)
+        _turns = State(initialValue: turns.map(\.resolvingLocalReceipt))
         _nextBefore = State(initialValue: nextBefore)
         self.foreground = foreground
         self.background = background
@@ -1554,6 +1571,10 @@ struct AssistantAppHistoryView: View {
             else { invalidateSnapshot() }
         }
         .onDisappear { invalidateSnapshot() }
+        .onReceive(NotificationCenter.default.publisher(for: AssistantActionReceiptStore.didChangeNotification).receive(on: RunLoop.main)) { _ in
+            guard validateOwner() else { return }
+            turns = turns.map(\.resolvingLocalReceipt)
+        }
         .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
             validateOwner()
         }
@@ -1592,7 +1613,7 @@ struct AssistantAppHistoryView: View {
         do {
             let page = try await AssistantAppClient().history()
             guard validateOwner(), requestID == id else { return }
-            turns = page.turns
+            turns = page.turns.map(\.resolvingLocalReceipt)
             nextBefore = page.nextBefore
             hasFreshSnapshot = true
         } catch {
@@ -1642,7 +1663,7 @@ struct AssistantAppHistoryView: View {
             let page = try await AssistantAppClient().history(before: cursor)
             guard validateOwner(), requestID == id else { return }
             let ids = Set(turns.map(\.id))
-            turns.insert(contentsOf: page.turns.filter { !ids.contains($0.id) }, at: 0)
+            turns.insert(contentsOf: page.turns.filter { !ids.contains($0.id) }.map(\.resolvingLocalReceipt), at: 0)
             nextBefore = page.nextBefore
         } catch {
             guard validateOwner(), requestID == id else { return }

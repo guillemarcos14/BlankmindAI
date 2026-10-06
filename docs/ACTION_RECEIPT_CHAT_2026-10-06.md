@@ -1,0 +1,7 @@
+# Remove the repeated block button after native execution
+
+The app already automatically applies a fresh, explicitly authorized chat action. The embedded Home starts native execution after validating the exact inbox action. The chat previously retained the original `queued`/`delivered` turn until cloud polling, so it could display “Block 5 minutes” after protection was already active. The reported QA turn has `auto_apply=true` and no persisted cloud action status yet; this must not be treated as evidence of physical failure or success.
+
+The existing durable iPhone action receipt now immediately reconciles the chat and history. Only the exact action and current account can replace a nonterminal cloud status. A verified/applied action shows its outcome, with no duplicate button. Preparing an action alone does not count as completion. Unexecuted actions retain their setup/recovery button. Server terminal states remain authoritative, and the action's message, UUID and parameters stay unchanged. Receipt changes notify visible views, and stale history/status responses are reconciled against the same local receipt.
+
+Native regression tests compile the production receipt store and transport/view methods. Coverage includes successful Home execution, no repeated execution, stale history after application, account and action isolation, pending setup, failed/delayed/cancelled outcomes, and terminal server states. This change requires a new iOS build; it does not modify the published backend or fabricate a native receipt.

@@ -102,6 +102,7 @@ struct AssistantActionReceipt: Equatable {
 }
 
 enum AssistantActionReceiptStore {
+    static let didChangeNotification = Notification.Name("BlankAssistantActionReceiptDidChange")
     private static let ownerKey = "blankBMBReceiptOwner"
     private static let actionIdKey = "blankAssistantReceiptActionId"
     private static let statusKey = "blankAssistantReceiptStatus"
@@ -112,7 +113,10 @@ enum AssistantActionReceiptStore {
     static func load(defaults: UserDefaults = BlankSharedState.defaults) -> AssistantActionReceipt? {
         guard let actionId = defaults.string(forKey: actionIdKey), !actionId.isEmpty,
               let status = defaults.string(forKey: statusKey), !status.isEmpty else { return nil }
-        if actionId.hasPrefix("bmb_"), defaults.string(forKey:ownerKey) != AssistantAppSession.userID { return nil }
+        if actionId.hasPrefix("bmb_") || actionId.hasPrefix("app_") {
+            guard let owner = AssistantAppSession.userID,
+                  defaults.string(forKey: ownerKey) == owner else { return nil }
+        }
         let evidence = defaults.dictionary(forKey: evidenceKey) ?? [:]
         return AssistantActionReceipt(
             actionId: actionId,
@@ -146,7 +150,7 @@ enum AssistantActionReceiptStore {
         defaults: UserDefaults = BlankSharedState.defaults
     ) {
         defaults.set(actionId, forKey: actionIdKey)
-        if actionId.hasPrefix("bmb_") { defaults.set(AssistantAppSession.userID,forKey:ownerKey) }
+        if actionId.hasPrefix("bmb_") || actionId.hasPrefix("app_") { defaults.set(AssistantAppSession.userID,forKey:ownerKey) }
         defaults.set(status, forKey: statusKey)
         defaults.set(detail, forKey: detailKey)
         defaults.set(executionStarted, forKey: executionStartedKey)
@@ -161,6 +165,7 @@ enum AssistantActionReceiptStore {
         if let requestedDurationMinutes { evidence["requested_duration_minutes"] = requestedDurationMinutes }
         if let startDelaySeconds { evidence["start_delay_seconds"] = startDelaySeconds }
         defaults.set(evidence, forKey: evidenceKey)
+        NotificationCenter.default.post(name: didChangeNotification, object: nil)
     }
 
     static func clear(actionId: String, defaults: UserDefaults = BlankSharedState.defaults) {

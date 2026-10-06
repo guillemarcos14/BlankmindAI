@@ -12,6 +12,8 @@ if (start < 0 || end < start) throw new Error('Assistant client source boundarie
 const test = fs.readFileSync(path.join(__dirname, 'assistant_client_test.swift'), 'utf8');
 const composerSource = fs.readFileSync(path.join(__dirname, '../ios/Blank/Blank/AssistantComposerState.swift'), 'utf8');
 const composer = composerSource.slice(composerSource.indexOf('struct AssistantComposerState:'), composerSource.indexOf('enum AssistantDraftVault'));
+const homeSource = fs.readFileSync(path.join(__dirname, '../ios/Blank/Blank/HomeView.swift'), 'utf8');
+const receipts = homeSource.slice(homeSource.indexOf('struct AssistantActionReceipt:'), homeSource.indexOf('struct AssistantActionInboxClient'));
 const viewMethodsStart = source.indexOf('    @discardableResult private func restoreOwner()');
 const viewMethodsEnd = source.indexOf('    #if DEBUG', viewMethodsStart);
 if (viewMethodsStart < 0 || viewMethodsEnd < viewMethodsStart) throw new Error('Assistant view state test boundaries changed');
@@ -51,7 +53,8 @@ const viewFixture = `
     var showingHomeKeyboard = false
     var usesHomePresentation = false
     var homeActionPreparedCount = 0
-    func onHomeActionPrepared() { homeActionPreparedCount += 1 }
+    var homeActionHandler: (() -> Void)?
+    func onHomeActionPrepared() { homeActionPreparedCount += 1; homeActionHandler?() }
     var visibleTurnID: String?
     var streamedText = ""
     var writingHaptics = WritingHapticsFixture()
@@ -81,7 +84,7 @@ const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'blank-assistant-client-
 try {
   const file = path.join(temporary, 'AssistantClientTests.swift');
   const binary = path.join(temporary, 'assistant-client-tests');
-  fs.writeFileSync(file, `import Foundation\n${source.slice(start, end)}\n${composer}\n${hapticsFixture}\n${viewFixture}\n${test}`);
+  fs.writeFileSync(file, `import Foundation\n${receipts}\n${source.slice(start, end)}\n${composer}\n${hapticsFixture}\n${viewFixture}\n${test}`);
   const compiled = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file, '-o', binary], { encoding: 'utf8' });
   if (compiled.error) throw new Error(`Native client tests require Swift on macOS: ${compiled.error.message}`);
   if (compiled.status !== 0) throw new Error(compiled.stderr || compiled.stdout);
