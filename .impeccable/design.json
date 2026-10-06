@@ -1,215 +1,160 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-06T10:01:39.034Z",
+  "generatedAt": "2026-10-06T12:04:21.697Z",
   "title": "Design System: Blankmind",
   "extensions": {
     "colorMeta": {
-      "paper": {
-        "role": "neutral",
-        "displayName": "Paper",
-        "tonalRamp": [
-          "oklch(15% 0.004 106)",
-          "oklch(27% 0.004 106)",
-          "oklch(39% 0.004 106)",
-          "oklch(51% 0.004 106)",
-          "oklch(63% 0.004 106)",
-          "oklch(75% 0.004 106)",
-          "oklch(87% 0.004 106)",
-          "oklch(95% 0.004 106)"
-        ]
-      },
-      "charcoal": {
+      "ivory": {
         "role": "primary",
-        "displayName": "Charcoal",
-        "tonalRamp": [
-          "oklch(15% 0 0)",
-          "oklch(27% 0 0)",
-          "oklch(39% 0 0)",
-          "oklch(51% 0 0)",
-          "oklch(63% 0 0)",
-          "oklch(75% 0 0)",
-          "oklch(87% 0 0)",
-          "oklch(95% 0 0)"
-        ]
+        "displayName": "Ivory"
       },
-      "lichen-gray": {
+      "cool-ground": {
         "role": "neutral",
-        "displayName": "Lichen Gray",
-        "tonalRamp": [
-          "oklch(15% 0.008 112)",
-          "oklch(27% 0.008 112)",
-          "oklch(39% 0.008 112)",
-          "oklch(51% 0.008 112)",
-          "oklch(63% 0.008 112)",
-          "oklch(75% 0.008 112)",
-          "oklch(87% 0.008 112)",
-          "oklch(95% 0.008 112)"
-        ]
+        "displayName": "Cool Ground"
       },
-      "stone-gray": {
+      "green-gray-ink": {
+        "role": "primary",
+        "displayName": "Green-gray Ink"
+      },
+      "protected-ground": {
         "role": "neutral",
-        "displayName": "Stone Gray",
-        "tonalRamp": [
-          "oklch(15% 0.008 113)",
-          "oklch(27% 0.008 113)",
-          "oklch(39% 0.008 113)",
-          "oklch(51% 0.008 113)",
-          "oklch(63% 0.008 113)",
-          "oklch(75% 0.008 113)",
-          "oklch(87% 0.008 113)",
-          "oklch(95% 0.008 113)"
-        ]
+        "displayName": "Protected Ground"
+      },
+      "idle-card": {
+        "role": "neutral",
+        "displayName": "Idle Card"
+      },
+      "protected-card": {
+        "role": "neutral",
+        "displayName": "Protected Card"
       },
       "alert-red": {
         "role": "semantic",
-        "displayName": "Alert Red",
-        "tonalRamp": [
-          "oklch(15% 0.194 27)",
-          "oklch(27% 0.194 27)",
-          "oklch(39% 0.194 27)",
-          "oklch(51% 0.194 27)",
-          "oklch(63% 0.194 27)",
-          "oklch(75% 0.194 27)",
-          "oklch(87% 0.194 27)",
-          "oklch(95% 0.194 27)"
-        ]
+        "displayName": "Alert Red"
       },
-      "home-ink": {
+      "lichen-gray": {
         "role": "neutral",
-        "displayName": "Home Ink",
-        "tonalRamp": [
-          "oklch(15% 0.015 106)",
-          "oklch(27% 0.015 106)",
-          "oklch(39% 0.015 106)",
-          "oklch(51% 0.015 106)",
-          "oklch(63% 0.015 106)",
-          "oklch(75% 0.015 106)",
-          "oklch(87% 0.015 106)",
-          "oklch(95% 0.015 106)"
-        ]
+        "displayName": "Lichen Gray"
       },
-      "home-base": {
+      "stone-gray": {
         "role": "neutral",
-        "displayName": "Home Base",
-        "tonalRamp": [
-          "oklch(15% 0.011 217)",
-          "oklch(27% 0.011 217)",
-          "oklch(39% 0.011 217)",
-          "oklch(51% 0.011 217)",
-          "oklch(63% 0.011 217)",
-          "oklch(75% 0.011 217)",
-          "oklch(87% 0.011 217)",
-          "oklch(95% 0.011 217)"
-        ]
-      },
-      "home-voice-ink": {
-        "role": "neutral",
-        "displayName": "Home Voice Ink",
-        "tonalRamp": [
-          "oklch(15% 0.014 149)",
-          "oklch(27% 0.014 149)",
-          "oklch(39% 0.014 149)",
-          "oklch(51% 0.014 149)",
-          "oklch(63% 0.014 149)",
-          "oklch(75% 0.014 149)",
-          "oklch(87% 0.014 149)",
-          "oklch(95% 0.014 149)"
-        ]
+        "displayName": "Stone Gray"
       }
     },
     "typographyMeta": {
+      "response": {
+        "displayName": "Centered response",
+        "purpose": "Scales with native .title3; three-point added line spacing."
+      },
       "section-title": {
-        "displayName": "Interior title",
-        "purpose": "Preserved serif section headings; native title scaling."
+        "displayName": "Section title",
+        "purpose": "Native .title scaling and recorded tracking; natural-height wrap."
       },
       "body": {
-        "displayName": "Body",
-        "purpose": "Existing Helvetica Neue body text; native body scaling."
+        "displayName": "Body and fields",
+        "purpose": "Native .body scaling; authored app content and permission labels."
       },
-      "chat-input": {
-        "displayName": "BMB input",
-        "purpose": "Existing chat text input; native body scaling."
+      "action": {
+        "displayName": "Primary action",
+        "purpose": "Native .headline scaling; grows vertically."
       },
-      "button-label": {
-        "displayName": "Button label",
-        "purpose": "Minimal primary button labels; native headline scaling."
+      "secondary": {
+        "displayName": "Secondary copy",
+        "purpose": "Native .subheadline for section explanations."
       },
-      "home-response": {
-        "displayName": "Home response",
-        "purpose": "Bundled NeueMontreal-Regular; native 26-point custom font relative to .title3, centered; lineSpacing(3)."
+      "caption": {
+        "displayName": "Metric caption",
+        "purpose": "Native caption roles; actual composited text contrast matters."
       },
-      "home-status": {
-        "displayName": "Home status",
-        "purpose": "Bundled NeueMontreal-Regular; default status text uses native body scaling."
+      "sheet-title": {
+        "displayName": "Keyboard sheet title",
+        "purpose": "Native body-relative custom title."
       },
-      "home-recovery": {
-        "displayName": "Home recovery",
-        "purpose": "Recovery button and action outcome text; native body scaling."
-      },
-      "home-action": {
-        "displayName": "Home action",
-        "purpose": "Control links, canonical apply actions and countdown; native body scaling."
-      },
-      "home-input": {
-        "displayName": "Home input",
-        "purpose": "Home keyboard-sheet input, native body scaling; standalone BMB font unchanged."
-      },
-      "home-sheet-title": {
-        "displayName": "Home keyboard title",
-        "purpose": "Native body scaling for the keyboard-sheet title."
-      },
-      "control-protection": {
-        "displayName": "Control protection",
-        "purpose": "Control-only protection hold prompt; native .title3 scaling."
+      "protection": {
+        "displayName": "Control protection prompt",
+        "purpose": "Native .title3 scaling; hold policy unchanged."
       }
     },
     "shadows": [],
     "motion": [
       {
-        "name": "home-section-transition",
-        "value": "SwiftUI.easeInOut(duration: 0.35); Reduce Motion: 0.12",
-        "purpose": "Existing active-section transition; imperative openSection/closeSection helpers retain 0.35 seconds."
+        "name": "protection-state",
+        "value": "SwiftUI easeInOut, 0.45s",
+        "purpose": "Root protection appearance transition; 0.12s with Reduce Motion."
       },
       {
-        "name": "primary-pressed-scale",
-        "value": "0.985",
-        "purpose": "Existing minimal primary button pressed scale."
+        "name": "section-transition",
+        "value": "SwiftUI easeInOut, 0.35s",
+        "purpose": "Main section and relapse review transitions; 0.12s with Reduce Motion."
       }
     ],
-    "breakpoints": [],
-    "provenance": {
+    "native": {
       "platform": "ios",
-      "sourceCommit": "b6f3c65",
-      "sourcePaths": [
-        "PRODUCT.md",
-        "docs/MINIMAL_HOME_2026-10-06.md",
+      "sourceFiles": [
         "ios/Blank/Blank/MinimalHomeDesign.swift",
-        "ios/Blank/Blank/HomeView.swift",
-        "ios/Blank/Blank/AssistantAppView.swift",
         "ios/Blank/Blank/BlankColors.swift",
-        "ios/Blank/Blank/Assets.xcassets/MinimalAtmosphere.imageset/atmosphere.png"
+        "ios/Blank/Blank/HomeView.swift",
+        "ios/Blank/Blank/SetupView.swift",
+        "ios/Blank/Blank/ReportView.swift",
+        "ios/Blank/Blank/AssistantAppView.swift"
       ],
-      "reference": "C:/Users/Guillem/Desktop/b07ac7231f97ea8e3e7b33f2fb1d4704.jpg — center phone only",
-      "materialAndFontSource": "C:/Users/Guillem/Desktop/Blanked/blankmind-web — pre-existing atmosphere pixels unchanged; PNG metadata records provenance; bundled NeueMontreal-Regular",
-      "scope": "Home and main navigation; existing interior tokens/components preserved. No backend, wearable integration, deployment or TestFlight.",
-      "legacyHome": "docs/HOME_ORB_2026-10-03.md records the superseded orb; it is not current Home guidance.",
-      "previewUnits": "CSS pixels stand in for native base points; native Dynamic Type is authoritative. Custom font must be installed for accurate portable typography.",
-      "tonalRampStatus": "Synthesized panel swatch ramps; not app tokens or new palette permissions.",
-      "validation": "Native build, production-method conversation recovery and both HomeUITests passed in CI run 37444032673 on b6f3c65. Fresh reviewer disposition ship for all 14 native captures in .impeccable/review; report tmp/minimal-home-finish-review.md. Overall CI run failed on final simulator cleanup timeout after all PNGs. Capture timeout now 15 minutes/job 30 minutes with metadata before shutdown; no green rerun claimed. Local API/audio-input contract tests pass; harness 68/69 with no scope violations, pre-existing production release gate lacks replay/physical-device 0/20 evidence. Physical microphone and Screen Time remain outside review."
-    },
-    "homeLayout": {
-      "scope": "Approved Home and main navigation only",
-      "panelHeight": "max(180, H - max(116, max(0.144 * H, safeBottom + 92))) pt",
-      "navigationTop": "max(56, safeTop + 12) pt",
-      "glyphSizePoints": 17,
-      "navigationContentShape": "44 by 44 pt Rectangle",
-      "selectedUnderline": "32 by 1 pt",
-      "contentTop": "navigationTop + 68 pt",
-      "contentHeight": "max(80, panelHeight - contentTop - 88) pt",
-      "responseLineSpacingPoints": 3,
-      "responseVerticalPaddingPoints": 14,
-      "material": "Image(\"MinimalAtmosphere\").resizable().scaledToFill(), clipped to the lower-rounded panel; Color.black.opacity(0.28)",
-      "interaction": "Chat initial; Control/Chat/Progress order; fixed nav and voice outside scroll. Response tap or voice context menu opens native keyboard sheet. Recording stops on leaving Chat. Control retains 3-second block, 20-second unlock and 60-second cooldown."
+      "authority": "User-authorized extension of approved Home 0d919a9 to interiors and onboarding; supersedes previous interior appearance preservation.",
+      "appearance": {
+        "driver": "sessionStore.isBlankActive",
+        "inactive": {
+          "canvas": "{colors.cool-ground}",
+          "foreground": "{colors.green-gray-ink}",
+          "card": "{colors.idle-card}"
+        },
+        "active": {
+          "canvas": "{colors.protected-ground}",
+          "foreground": "{colors.ivory}",
+          "card": "{colors.protected-card}"
+        },
+        "exceptions": [
+          "Onboarding forces inactive/light appearance.",
+          "Home atmosphere, ivory response/navigation and exposed cool lower ground remain approved-reference colors."
+        ]
+      },
+      "geometry": {
+        "minimumTouchTarget": "44×44pt",
+        "minimumPrimaryHeight": "52pt",
+        "maximumPrimaryWidth": "342pt",
+        "interiorHeaderHeight": "132pt",
+        "homeGlyphSize": "17pt",
+        "selectedUnderline": "32×1pt",
+        "homeResponseAddedLineSpacing": "3pt",
+        "homePanelHeight": "max(180, H - max(116, max(H × 0.144, safeBottom + 92)))",
+        "homeNavigationTop": "max(56, safeTop + 12)"
+      },
+      "material": {
+        "asset": "MinimalAtmosphere",
+        "shade": "black at 0.28 opacity",
+        "application": "Native scaled-to-fill image; Home panel and interior header only. Solid tonal ground supports reading and editing."
+      },
+      "accessibility": {
+        "textScaling": "NeueMontreal-Regular via Font.custom(size:relativeTo:); frontmatter pixels represent native base points.",
+        "reflow": "Explanations wrap; Progress/risk/action rows stack at accessibility sizes; routine days use target-sized grid; composer actions stack below field.",
+        "states": "Progress/history small secondary text uses state foreground at 0.86 alpha; primary disabled opacity 0.42; waiting voice opacity 0.5.",
+        "recovery": "Unloaded preference form is hidden visually and from accessibility; loading/retry replaces it. Native action/selected traits remain reachable."
+      },
+      "platformExceptions": [
+        "Approved custom three-glyph navigation and Home composition.",
+        "Authored app font is Neue Montreal, with native Dynamic Type scaling.",
+        "Native navigation chrome, SF Symbols, dates, switches, steppers, disclosures, Family Controls, destructive confirmations and Sign in with Apple keep platform style and behavior."
+      ],
+      "policies": [
+        "Control/Chat/Progress only; Settings and detail destinations in Control; Back returns to Control.",
+        "Chat remains mounted; recording stops when leaving Chat.",
+        "Authenticated conversation, drafts, retries and canonical confirmation remain authoritative.",
+        "Hold 3s to block, hold 20s to unlock, cooldown 60s, hard protection and recovery conditions preserved."
+      ],
+      "evidence": {
+        "uniformityVerdict": "ship for seven scored material fixes in e1497c5; 40 valid native Simulator captures and five passing XCTest cases, including Emergency confirmation44x44pt/cancel",
+        "previewLimit": "HTML/CSS entries are portable visual excerpts with browser-only focus rings; no native behavior or Dynamic Type certification.",
+        "physicalLimit": "Simulator evidence does not certify microphone, Screen Time or hardware performance.",
+        "release": "Xcode confirms App upload complete / Blankmind1.9(102) uploaded, TestFlight Internal Only, exact e1497c5 archive. Apple processing/tester access, physical QA and release gate remain pending."
+      }
     }
   },
   "components": [
@@ -225,15 +170,15 @@
       "name": "Centered Home response",
       "kind": "custom",
       "refersTo": "home-response",
-      "description": "Portable type excerpt of native 26-point Neue Montreal response. Background is only a preview contrast canvas; actual atmosphere is visible in native captures. Font must be installed; native text scales with .title3.",
+      "description": "Native centered response with 26-point Neue Montreal relative to .title3, three-point extra line spacing and max width 360. Green-gray preview canvas is not the actual atmospheric image; font installation and native evidence govern fidelity.",
       "html": "<div class=\"ds-response-canvas\"><p class=\"ds-home-response\">Hey, how are you doing today?</p></div>",
-      "css": ".ds-response-canvas { padding:28px; background:#49544E; color:#FFFEF5; } .ds-home-response { max-width:360px; margin:0 auto; text-align:center; font:400 26px 'Neue Montreal',sans-serif; }"
+      "css": ".ds-response-canvas { padding:28px; background:#49544E; color:#FFFEF5; } .ds-home-response { max-width:360px; margin:0 auto; line-height:normal; text-align:center; font:400 26px 'Neue Montreal',sans-serif; }"
     },
     {
       "name": "Home voice circle",
       "kind": "button",
       "refersTo": "home-voice",
-      "description": "Fixed native 70-point circle below the panel, with five capsule waveform bars. Toggle recording/send and hold for native Write a message; browser preview implements only visual states and a preview-only focus ring.",
+      "description": "Native 70-point fixed voice circle, five capsule bars, starting/recording/send and hold-to-write actions. Waiting dims to 0.5; this preview shows visuals and browser-only focus, not audio behavior.",
       "html": "<div class=\"ds-home-ground\"><button class=\"ds-home-voice\" aria-label=\"Speak to Blankmind\"><svg width=\"16\" height=\"19\" viewBox=\"0 0 15.6 19\" aria-hidden=\"true\"><g fill=\"currentColor\"><rect x=\"0\" y=\"6\" width=\"1.2\" height=\"7\" rx=\"0.6\"/><rect x=\"3.6\" y=\"3\" width=\"1.2\" height=\"13\" rx=\"0.6\"/><rect x=\"7.2\" y=\"0\" width=\"1.2\" height=\"19\" rx=\"0.6\"/><rect x=\"10.8\" y=\"4\" width=\"1.2\" height=\"11\" rx=\"0.6\"/><rect x=\"14.4\" y=\"6.5\" width=\"1.2\" height=\"6\" rx=\"0.6\"/></g></svg></button></div>",
       "css": ".ds-home-ground { display:flex; justify-content:center; padding:22px; background:#D5DBDC; } .ds-home-voice { display:grid; place-items:center; width:70px; height:70px; padding:0; border:0; border-radius:50%; background:#FFFEF5; color:#49544E; cursor:pointer; } .ds-home-voice:hover,.ds-home-voice:active { background:#FFFEF5; } .ds-home-voice:disabled { opacity:0.5; } .ds-home-voice:focus-visible { outline:2px solid #49544E; outline-offset:3px; }"
     },
@@ -241,68 +186,90 @@
       "name": "Home keyboard composer",
       "kind": "input",
       "refersTo": "home-composer",
-      "description": "Native Home keyboard-sheet excerpt; Neue Montreal replaces only this Home input face. Microphone/send controls, multiline behavior and accessibility remain native. Browser focus ring is preview-only.",
+      "description": "Shared Neue Montreal keyboard composer, green-gray field and Home fill at 0.08 opacity. Native multiline, actions, labels and eligibility remain in SwiftUI; browser focus ring is preview-only.",
       "html": "<div class=\"ds-home-composer-canvas\"><div class=\"ds-home-composer\"><textarea class=\"ds-home-input\" rows=\"1\" aria-label=\"Message Blankmind\" placeholder=\"Write a message\"></textarea></div></div>",
       "css": ".ds-home-composer-canvas { padding:22px; background:#D5DBDC; } .ds-home-composer { max-width:640px; padding-left:18px; padding-right:16px; border-radius:28px; background:rgba(73,84,78,0.08); } .ds-home-input { width:100%; padding:14px 0; border:0; background:transparent; resize:none; color:#49544E; font:400 17px 'Neue Montreal',sans-serif; } .ds-home-input::placeholder { color:rgba(73,84,78,0.72); } .ds-home-input:hover { background:transparent; } .ds-home-input:focus-visible { outline:2px solid #49544E; outline-offset:2px; }"
     },
     {
-      "name": "Black card",
+      "name": "Primary action — idle",
+      "kind": "button",
+      "refersTo": "primary-idle",
+      "description": "Actual minimal primary style: state foreground at 0.94 alpha, pressed at 0.72, 0.985 scale, disabled opacity 0.42, minimum height 52 and max width 342. Light variant uses alpha 1/0.78. Browser focus ring is preview-only.",
+      "html": "<div class=\"ds-idle-canvas\"><button class=\"ds-primary-idle\">Continue</button></div>",
+      "css": ".ds-idle-canvas { padding:16px; background:#D5DBDC; } .ds-primary-idle { box-sizing:border-box; width:100%; max-width:342px; min-height:52px; padding:14px 0; border:0; border-radius:16px; background:rgba(73,84,78,0.94); color:#D5DBDC; font:500 16px 'Neue Montreal',sans-serif; cursor:pointer; } .ds-primary-idle:hover { background:rgba(73,84,78,0.94); } .ds-primary-idle:active { background:rgba(73,84,78,0.72); transform:scale(0.985); } .ds-primary-idle:disabled { opacity:0.42; cursor:default; } .ds-primary-idle:focus-visible { outline:2px solid #49544E; outline-offset:3px; }"
+    },
+    {
+      "name": "Primary action — protected",
+      "kind": "button",
+      "refersTo": "primary-protected",
+      "description": "Actual minimal primary style: state foreground at 0.94 alpha, pressed at 0.72, 0.985 scale, disabled opacity 0.42, minimum height 52 and max width 342. Light variant uses alpha 1/0.78. Browser focus ring is preview-only.",
+      "html": "<div class=\"ds-protected-canvas\"><button class=\"ds-primary-protected\">Continue</button></div>",
+      "css": ".ds-protected-canvas { padding:16px; background:#26312C; } .ds-primary-protected { box-sizing:border-box; width:100%; max-width:342px; min-height:52px; padding:14px 0; border:0; border-radius:16px; background:rgba(255,254,245,0.94); color:#26312C; font:500 16px 'Neue Montreal',sans-serif; cursor:pointer; } .ds-primary-protected:hover { background:rgba(255,254,245,0.94); } .ds-primary-protected:active { background:rgba(255,254,245,0.72); transform:scale(0.985); } .ds-primary-protected:disabled { opacity:0.42; cursor:default; } .ds-primary-protected:focus-visible { outline:2px solid #FFFEF5; outline-offset:3px; }"
+    },
+    {
+      "name": "Tonal card — idle",
       "kind": "card",
-      "refersTo": "black-card",
-      "description": "Existing interior card treatment; minimum native height 64 points, no Home geometry implied.",
-      "html": "<div class=\"ds-black-card\">Notifications</div>",
-      "css": ".ds-black-card { min-height:32px; padding:16px; border-radius:4px; background:#292929; color:#FFFFFC; font:400 16px 'Helvetica Neue',sans-serif; }"
+      "refersTo": "tonal-card-idle",
+      "description": "State-aware shared tonal card, formerly blankBlackCard: min height 64, inset 16, radius 16, no shadow. Native Progress uses the same fill with its own content and heights.",
+      "html": "<div class=\"ds-idle-card-canvas\"><div class=\"ds-idle-card\">Notifications</div></div>",
+      "css": ".ds-idle-card-canvas { padding:16px; background:#D5DBDC; } .ds-idle-card { box-sizing:border-box; min-height:64px; padding:16px; border-radius:16px; background:rgba(255,254,245,0.64); color:#49544E; font:400 17px 'Neue Montreal',sans-serif; }"
     },
     {
-      "name": "Minimal primary button — light surface",
+      "name": "Tonal card — protected",
+      "kind": "card",
+      "refersTo": "tonal-card-protected",
+      "description": "State-aware shared tonal card, formerly blankBlackCard: min height 64, inset 16, radius 16, no shadow. Native Progress uses the same fill with its own content and heights.",
+      "html": "<div class=\"ds-protected-card-canvas\"><div class=\"ds-protected-card\">Notifications</div></div>",
+      "css": ".ds-protected-card-canvas { padding:16px; background:#26312C; } .ds-protected-card { box-sizing:border-box; min-height:64px; padding:16px; border-radius:16px; background:rgba(73,84,78,0.50); color:#FFFEF5; font:400 17px 'Neue Montreal',sans-serif; }"
+    },
+    {
+      "name": "Onboarding permission",
       "kind": "button",
-      "refersTo": "primary-light",
-      "description": "Existing minimal primary button in light color scheme; default/pressed alpha and scale copied from BlankPrimaryButtonStyle. Browser focus ring is preview-only.",
-      "html": "<button class=\"ds-primary-light\">Continue</button>",
-      "css": ".ds-primary-light { width:100%; max-width:342px; height:52px; padding:0; border:0; border-radius:0; background:rgba(41,41,41,0.94); color:#FFFFFC; font:500 16px 'Helvetica Neue',sans-serif; cursor:pointer; } .ds-primary-light:hover { background:rgba(41,41,41,0.94); } .ds-primary-light:active { background:rgba(41,41,41,0.72); transform:scale(0.985); } .ds-primary-light:focus-visible { outline:2px solid #292929; outline-offset:3px; }"
-    },
-    {
-      "name": "Minimal primary button — dark surface",
-      "kind": "button",
-      "refersTo": "primary-dark",
-      "description": "Existing minimal primary button in dark color scheme. Browser focus ring is preview-only.",
-      "html": "<div class=\"ds-dark-canvas\"><button class=\"ds-primary-dark\">Continue</button></div>",
-      "css": ".ds-dark-canvas { padding:16px; background:#292929; } .ds-primary-dark { width:100%; max-width:342px; height:52px; padding:0; border:0; border-radius:0; background:rgba(255,255,252,0.94); color:#292929; font:500 16px 'Helvetica Neue',sans-serif; cursor:pointer; } .ds-primary-dark:hover { background:rgba(255,255,252,0.94); } .ds-primary-dark:active { background:rgba(255,255,252,0.72); transform:scale(0.985); } .ds-primary-dark:focus-visible { outline:2px solid #FFFFFC; outline-offset:3px; }"
-    },
-    {
-      "name": "BMB composer field",
-      "kind": "input",
-      "refersTo": "chat-composer",
-      "description": "Visual excerpt of the preserved light BMB composer; native microphone/send controls, multiline behavior and accessibility layout remain in source. Browser focus ring is preview-only.",
-      "html": "<div class=\"ds-composer\"><textarea class=\"ds-chat-field\" rows=\"1\" aria-label=\"Message Blankmind\" placeholder=\"Write a message\"></textarea></div>",
-      "css": ".ds-composer { max-width:640px; padding-left:18px; padding-right:16px; border-radius:28px; background:rgba(41,41,41,0.06); } .ds-chat-field { width:100%; padding:14px 0; border:0; background:transparent; resize:none; color:#292929; font:400 17px 'Helvetica Neue',sans-serif; } .ds-chat-field::placeholder { color:rgba(41,41,41,0.72); } .ds-chat-field:hover { background:transparent; } .ds-chat-field:focus-visible { outline:2px solid #292929; outline-offset:2px; }"
+      "refersTo": "permission",
+      "description": "Native permission row, Neue Montreal 17-point body, natural wrap, 44-point minimum height, padding 12 by 14. Pressed opacity is 0.85; native completion disables repeated action and exposes a completion check/value.",
+      "html": "<button class=\"ds-permission\">Allow Screen Time</button>",
+      "css": ".ds-permission { box-sizing:border-box; width:100%; min-height:44px; padding:12px 14px; border:0; border-radius:16px; text-align:left; background:#49544E; color:#FFFEF5; font:400 17px 'Neue Montreal',sans-serif; cursor:pointer; } .ds-permission:hover { background:#49544E; } .ds-permission:active { opacity:0.85; } .ds-permission:disabled { cursor:default; } .ds-permission:focus-visible { outline:2px solid #49544E; outline-offset:3px; }"
     }
   ],
   "narrative": {
     "northStar": "Silencio visual",
-    "overview": "Home presents one centered conversation inside an atmospheric panel, with quiet icon navigation above and a fixed circular voice control below. The approved center-phone reference governs Home geometry; the local Minimal Web supplies only the actual atmospheric material and Neue Montreal face. Existing interiors, section hierarchy and BMB controls remain authoritative.",
+    "overview": "Blankmind uses the approved conversational Home as the material and type authority for the native app. Its real atmospheric image, ivory, cool ground, green-gray ink and bundled Neue Montreal extend across Control, Progress, detail screens, account, history, emergency and onboarding. Reading and editing use solid tonal surfaces with natural alignment; conversation and emergency content may remain centered.\n\nGuillem's explicit uniformity request of 2026-10-06 supersedes the former Home-only palette and Times/Helvetica interior rules. It preserves Home geometry, navigation, conversation, data, permissions and protection policies. [PRODUCT.md](PRODUCT.md) and [Uniformity](docs/UNIFORM_APP_2026-10-06.md) govern that extension; [Minimal App Home](docs/MINIMAL_HOME_2026-10-06.md) records the approved Home reference and its earlier evidence.",
     "keyCharacteristics": [
-      "Atmospheric conversational Home with centered response and fixed circular voice input.",
-      "Three custom-glyph destinations: Control, Chat and Progress.",
-      "Preserved paper-and-charcoal interiors and native accessibility."
+      "Actual atmospheric material with tonal reading and editing surfaces.",
+      "Scalable Neue Montreal throughout authored app content.",
+      "Exactly three main destinations: Control, Chat and Progress.",
+      "Native controls, accessible targets and protection-state appearance."
     ],
     "rules": [
       {
-        "name": "The Scoped Home Palette Rule",
-        "body": "Home-specific colors apply to the new Home shell; preserve the shared Paper/Charcoal primitives and supporting semantics elsewhere.",
+        "name": "The Protection Appearance Rule",
+        "body": "Root appearance follows protection state, not device appearance: inactive uses Cool Ground with Green-gray Ink; active uses Protected Ground with Ivory. Onboarding uses the inactive appearance; Home's atmospheric conversation and exposed lower ground retain their approved colors.",
         "section": "colors"
+      },
+      {
+        "name": "The Readable Growth Rule",
+        "body": "Let titles and explanatory text wrap at their natural height. At accessibility sizes, Progress metric and risk/action rows stack; routine day controls use a target-sized grid, and long content scrolls. The composer places actions below the field at accessibility sizes.",
+        "section": "typography"
+      },
+      {
+        "name": "The Native Target Rule",
+        "body": "Every tappable control requires at least 44-by-44 points of reachable hit area. Preserve VoiceOver labels, selected traits and explicit actions; grouping a metric must not hide its protect action.",
+        "section": "layout"
       }
     ],
     "dos": [
-      "**Do** keep the custom glyph order, selected underline, lower-rounded panel, centered response and fixed voice circle scoped to Home.",
-      "**Do** preserve interior structures, conversation/protection policies, Dynamic Type, VoiceOver and Reduce Motion.",
-      "**Do** use Home tokens for Home and shared Paper/Charcoal primitives for existing interiors, widgets and shields."
+      "**Do** extend the shared palette, scalable Neue Montreal and tonal surfaces throughout authored app screens and onboarding.",
+      "**Do** preserve approved Home geometry, glyph order, underline, centered response and fixed voice circle.",
+      "**Do** keep native controls, wrapping, 44-point targets, VoiceOver and Reduce Motion.",
+      "**Do** preserve conversation, data, permissions, canonical actions and protection policies.",
+      "**Do** verify error, loading, unavailable and protection states against native rendered evidence."
     ],
     "donts": [
-      "**Don't** restore the superseded lower-right orb or swipe menu as current Home guidance.",
-      "**Don't** transfer web composition or Home-specific geometry to existing interior screens.",
-      "**Don't** replace supporting grays, semantic errors or native Apple button styling.",
-      "**Don't** claim Simulator review proves physical microphone or Screen Time behavior."
+      "**Don't** restore the superseded Times/Helvetica interior rule, charcoal cards, lower-right orb or swipe menu.",
+      "**Don't** copy web composition or apply Home's centered conversation layout to forms and data.",
+      "**Don't** let cards, accessibility grouping or recovery overlays obscure text, configuration or actions.",
+      "**Don't** treat device dark appearance as the source of protection state.",
+      "**Don't** claim Simulator captures certify physical microphone, Screen Time, TestFlight upload or release readiness."
     ]
   }
 }
