@@ -1368,6 +1368,7 @@ struct AssistantAppHistoryView: View {
                 }
             }
             .navigationTitle(spanish ? "Historial" : "Conversation history")
+            .minimalSheetStyle()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button(spanish ? "Listo" : "Done") { dismiss() } } }
         }

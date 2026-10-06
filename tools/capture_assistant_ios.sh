@@ -22,12 +22,23 @@ scenarios='action active active-empty active-error error empty signin history pr
 if [ "${3:-all}" = home ]; then
   scenarios='product-home product-home-active product-home-response product-home-error product-home-long product-control product-control-active product-shell-progress'
 fi
+if [ "${3:-all}" = uniform ]; then
+  scenarios='product-home product-home-active product-home-error product-home-long product-control product-control-active product-shell-progress product-progress-active product-distractions product-distractions-active product-schedule product-schedule-active product-emergency product-emergency-active product-automatic product-automatic-active product-automatic-error product-notifications product-notifications-active product-account product-onboarding-account product-onboarding-device history'
+fi
 for scenario in $scenarios; do
   xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true
   SIMCTL_CHILD_BLANK_UI_SCENARIO="$scenario" xcrun simctl launch "$device_id" "$bundle" -AppleLanguages '(es)' -AppleLocale es_ES
   sleep 3
   xcrun simctl io "$device_id" screenshot "$output/phone-$scenario.png"
 done
+if [ "${3:-all}" = uniform ]; then
+  for scenario in product-control product-shell-progress product-schedule product-automatic product-notifications product-onboarding-device; do
+    xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true
+    SIMCTL_CHILD_BLANK_UI_SCENARIO="$scenario" xcrun simctl launch "$device_id" "$bundle" -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL
+    sleep 3
+    xcrun simctl io "$device_id" screenshot "$output/phone-$scenario-dynamic-type.png"
+  done
+fi
 xcrun simctl ui "$device_id" appearance dark
 xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true
 SIMCTL_CHILD_BLANK_UI_SCENARIO=product-home xcrun simctl launch "$device_id" "$bundle"
@@ -62,6 +73,14 @@ xcrun simctl terminate "$compact" "$bundle"
 SIMCTL_CHILD_BLANK_UI_SCENARIO=product-home-error xcrun simctl launch "$compact" "$bundle" -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL
 sleep 8
 xcrun simctl io "$compact" screenshot "$output/phone-compact-dynamic-error.png"
+if [ "${3:-all}" = uniform ]; then
+  for scenario in product-control product-schedule product-notifications product-onboarding-account; do
+    xcrun simctl terminate "$compact" "$bundle" 2>/dev/null || true
+    SIMCTL_CHILD_BLANK_UI_SCENARIO="$scenario" xcrun simctl launch "$compact" "$bundle" -AppleLanguages '(en)' -AppleLocale en_US
+    sleep 5
+    xcrun simctl io "$compact" screenshot "$output/phone-compact-$scenario.png"
+  done
+fi
 xcrun simctl list devices -j > "$output/simulator.json"
 printf '%s\n' 'Synthetic Debug fixtures; production SwiftUI; no native blocking validation.' > "$output/README.txt"
 xcrun simctl shutdown "$compact"

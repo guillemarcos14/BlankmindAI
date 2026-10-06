@@ -116,3 +116,47 @@ struct MinimalHomePanelShape: Shape {
                           cornerRadii: CGSize(width: 56, height: 56)).cgPath)
     }
 }
+
+// Every destination retains the same atmospheric navigation and quiet lower
+// ground. Reading/editing surfaces use solid tonal ink rather than imagery
+// behind small text. Only the conversational response is centered.
+struct MinimalSectionBackground: View {
+    var headerHeight: CGFloat = 132
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .top) {
+                MinimalHomeDesign.base
+                BlankColors.canvas
+                    .frame(height: max(0, proxy.size.height - 28))
+                    .clipShape(MinimalHomePanelShape())
+                Image("MinimalAtmosphere")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: proxy.size.width, height: headerHeight)
+                    .clipped()
+                    .overlay(Color.black.opacity(0.28))
+                    .clipShape(MinimalHomePanelShape())
+                    .accessibilityHidden(true)
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+}
+
+struct MinimalSheetStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.blankBody)
+            .foregroundStyle(BlankColors.foreground)
+            .tint(BlankColors.foreground)
+            .scrollContentBackground(.hidden)
+            .background(BlankColors.canvas)
+            .toolbarBackground(BlankColors.canvas, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+    }
+}
+
+extension View {
+    func minimalSheetStyle() -> some View { modifier(MinimalSheetStyle()) }
+}

@@ -26,22 +26,26 @@ enum BlankColors {
     static let porcelain = pureWhite
     static let lichenGray = Color(red: 201 / 255.0, green: 202 / 255.0, blue: 196 / 255.0)
     static let stoneGray = Color(red: 142 / 255.0, green: 143 / 255.0, blue: 138 / 255.0)
-    static let deepOliveCharcoal = Color(red: 41 / 255.0, green: 41 / 255.0, blue: 41 / 255.0)
+    static let deepOliveCharcoal = MinimalHomeDesign.voiceInk
     static let charcoal = deepOliveCharcoal
     static let paleSteelBlue = lichenGray
     static let seafoam = stoneGray
     static let powderGray = porcelain
-    static let pureWhite = Color(red: 1, green: 1, blue: 252 / 255.0)
+    static let pureWhite = MinimalHomeDesign.ink
 
     // The root scheme follows protection, never the device appearance.
     static let canvas = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
-        ? UIColor(red: 41/255, green: 41/255, blue: 41/255, alpha: 1)
-        : UIColor(red: 1, green: 1, blue: 252/255, alpha: 1) })
+        ? UIColor(red: 38/255, green: 49/255, blue: 44/255, alpha: 1)
+        : UIColor(red: 213/255, green: 219/255, blue: 220/255, alpha: 1) })
     static let foreground = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
-        ? UIColor(red: 1, green: 1, blue: 252/255, alpha: 1)
-        : UIColor(red: 41/255, green: 41/255, blue: 41/255, alpha: 1) })
-    static let cardSurface = foreground
-    static let cardInk = canvas
+        ? UIColor(red: 1, green: 254/255, blue: 245/255, alpha: 1)
+        : UIColor(red: 73/255, green: 84/255, blue: 78/255, alpha: 1) })
+    static let cardSurface = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
+        ? UIColor(red: 73/255, green: 84/255, blue: 78/255, alpha: 0.50)
+        : UIColor(red: 1, green: 254/255, blue: 245/255, alpha: 0.64) })
+    static let cardInk = foreground
+    static let primarySurface = foreground
+    static let primaryInk = canvas
 
     // Semantic alert color: retained for error/destructive states because the brand palette has no alert equivalent.
     static let red = Color(red: 0.827, green: 0.184, blue: 0.184)
@@ -64,13 +68,13 @@ enum BlankColors {
     static let premiumBlue = charcoal
     static let controlSurface = pureWhite.opacity(0.16)
     static let activeControlSurface = pureWhite.opacity(0.09)
-    static let minimalBackground = pureWhite
+    static let minimalBackground = canvas
     static let minimalInk = charcoal
     static let minimalSecondary = secondaryText
     static let minimalFaded = charcoal.opacity(0.42)
-    static let minimalCardSurface = porcelain
+    static let minimalCardSurface = cardSurface
     static let darkCardSurface = pureWhite.opacity(0.10)
-    static let newLookDarkBackground = charcoal
+    static let newLookDarkBackground = canvas
     static let newLookDarkSecondary = pureWhite.opacity(0.55)
     static let homeLightBackground = pureWhite
     static let homeLightInk = charcoal
@@ -93,7 +97,7 @@ enum BlankColors {
 
 extension Font {
     static func blankInter(size: CGFloat, weight: Weight = .regular, relativeTo textStyle: TextStyle = .body) -> Font {
-        .custom("HelveticaNeue", size: size, relativeTo: textStyle).weight(weight)
+        MinimalHomeDesign.font(size, relativeTo: textStyle).weight(weight)
     }
 
     static func blankEditorial(size: CGFloat, relativeTo textStyle: TextStyle = .largeTitle) -> Font {
@@ -101,7 +105,7 @@ extension Font {
     }
 
     static func blankOnboardingEditorial(size: CGFloat, relativeTo textStyle: TextStyle = .largeTitle) -> Font {
-        .custom("TimesNewRomanPSMT", size: size, relativeTo: textStyle)
+        MinimalHomeDesign.font(size, relativeTo: textStyle)
     }
 
     static func blankSectionEditorial(size: CGFloat = 32, relativeTo textStyle: TextStyle = .title) -> Font {
@@ -109,11 +113,11 @@ extension Font {
     }
 
     static var blankOnboardingControl: Font {
-        .system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16), weight: .regular)
+        MinimalHomeDesign.font(17)
     }
 
     static var blankBody: Font {
-        .blankInter(size: 16)
+        .blankInter(size: 17)
     }
 }
 
@@ -123,18 +127,19 @@ struct BlankPrimaryButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
 
     func makeBody(configuration: Configuration) -> some View {
-        let minimalTextColor = BlankColors.cardInk
-        let minimalSurfaceColor = BlankColors.cardSurface
+        let minimalTextColor = BlankColors.primaryInk
+        let minimalSurfaceColor = BlankColors.primarySurface
 
         configuration.label
             .font(.blankInter(size: 16, weight: .medium, relativeTo: .headline))
             .frame(maxWidth: 342)
-            .frame(height: minimalAppearance ? 52 : 50)
+            .padding(.vertical, 14)
+            .frame(minHeight: 52)
             .foregroundStyle(minimalAppearance ? minimalTextColor : (light ? BlankColors.ink : BlankColors.pureWhite))
             .background {
                 ZStack {
                     if minimalAppearance {
-                        Rectangle()
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .fill(light ? minimalSurfaceColor.opacity(configuration.isPressed ? 0.78 : 1) : minimalSurfaceColor.opacity(configuration.isPressed ? 0.72 : 0.94))
                     } else {
                         Capsule().fill(.ultraThinMaterial)
@@ -271,7 +276,7 @@ extension View {
             .foregroundStyle(BlankColors.cardInk)
             .padding(16)
             .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(BlankColors.cardSurface))
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(BlankColors.cardSurface))
     }
 
     func blankGlassCard(cornerRadius: CGFloat = 22, tintOpacity: Double = 0.34) -> some View {
@@ -297,15 +302,13 @@ struct TopSheetHeader: View {
                 .foregroundStyle(titleColor)
                 .tracking(minimalAppearance ? -0.6 : 0)
                 .multilineTextAlignment(minimalAppearance ? .leading : .center)
-                .lineLimit(1)
-                .minimumScaleFactor(0.86)
+                .fixedSize(horizontal: false, vertical: true)
 
             Text(subtitle)
                 .font(.blankInter(size: 14, relativeTo: .subheadline))
                 .foregroundStyle(subtitleColor)
                 .multilineTextAlignment(minimalAppearance ? .leading : .center)
                 .lineSpacing(minimalAppearance ? 0 : 2)
-                .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: 330)
         }
@@ -320,13 +323,14 @@ struct TopSheetPrimaryButtonLabel: View {
     var body: some View {
         Text(title)
             .font(.blankInter(size: 16, weight: .medium, relativeTo: .headline))
-            .foregroundStyle(minimalAppearance ? BlankColors.minimalInk : BlankColors.ink)
+            .foregroundStyle(BlankColors.foreground)
             .padding(.horizontal, 26)
-            .frame(height: minimalAppearance ? 52 : 46)
+            .padding(.vertical, 14)
+            .frame(minHeight: 52)
             .background {
                 ZStack {
                     if minimalAppearance {
-                        Rectangle().fill(BlankColors.minimalInk.opacity(0.08))
+                        RoundedRectangle(cornerRadius: 16).fill(BlankColors.foreground.opacity(0.08))
                     } else {
                         Capsule().fill(.ultraThinMaterial)
                         Capsule().fill(BlankColors.pureWhite.opacity(0.34))

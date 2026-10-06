@@ -48,4 +48,23 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(voice.frame.width, 44)
         XCTAssertGreaterThanOrEqual(voice.frame.height, 44)
     }
+
+    func testControlFormsKeepNativeEditingAndDismissal() {
+        let app = launch()
+        app.buttons["home-tab-control"].tap()
+        app.buttons["automatic protection"].tap()
+        XCTAssertTrue(app.switches["Allow automatic protection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.datePickers.firstMatch.exists)
+        app.buttons["Done"].tap()
+        let notices = app.buttons["notifications"]
+        if !notices.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        notices.tap()
+        XCTAssertTrue(app.switches["Receive notifications"].waitForExistence(timeout: 5))
+        app.buttons["Done"].tap()
+        app.buttons["home-tab-progress"].tap()
+        app.scrollViews.firstMatch.swipeUp()
+        XCTAssertTrue(app.buttons["home-tab-control"].isHittable)
+        app.buttons["home-tab-chat"].tap()
+        XCTAssertTrue(app.buttons["home-voice"].isHittable)
+    }
 }

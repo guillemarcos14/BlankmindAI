@@ -405,7 +405,7 @@ struct HomeView: View {
                 homeSectionScreen(viewportWidth: viewportWidth, viewportHeight: viewportHeight)
 
                 MinimalHomeNavigation(selected: selectedHomeTab,
-                    foreground: activeSection == nil ? MinimalHomeDesign.ink : BlankColors.foreground,
+                    foreground: MinimalHomeDesign.ink,
                     onSelect: selectHomeTab)
                     .frame(maxWidth: .infinity)
                     .padding(.top, MinimalHomeDesign.navigationTop(proxy.safeAreaInsets.top))
@@ -2521,18 +2521,13 @@ struct HomeSectionScreen: View {
         let minimalAppearance = true
 
         ZStack(alignment: .topLeading) {
-            if minimalAppearance {
-                (sessionStore.isBlankActive ? BlankColors.newLookDarkBackground : BlankColors.minimalBackground)
-                    .ignoresSafeArea()
-            } else {
-                AppBackground(isActive: true)
-                    .ignoresSafeArea()
-            }
+            MinimalSectionBackground()
 
             routeContent
                 .environment(\.blankMinimalAppearance, minimalAppearance)
                 .environment(\.blankSectionHorizontalPadding, sectionHorizontalPadding)
-                .padding(.top, section == .emergency ? 0 : 100)
+                .padding(.top, 132)
+                .padding(.bottom, 40)
                 .frame(width: contentWidth, height: screenHeight, alignment: .top)
                 .frame(width: screenWidth, height: screenHeight, alignment: .top)
                 .offset(x: horizontalOffset)
@@ -2606,8 +2601,8 @@ struct SectionBackHeader: View {
 
             Spacer()
         }
-        .padding(.top, 16)
-        .padding(.bottom, 22)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
     }
 }
 
@@ -2644,7 +2639,7 @@ struct SectionHeader: View {
                 .lineSpacing(0)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 24)
+                .padding(.top, 8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -2684,7 +2679,7 @@ private struct SettingsScreen: View {
                     titleColor: textColor,
                     subtitleColor: secondaryColor
                 )
-                .padding(.bottom, 12)
+                .padding(.bottom, 20)
 
                 settingsRow(title: "emergency", detail: "unlock access while blanked", action: onOpenEmergency)
                 if isControl {
@@ -2748,11 +2743,13 @@ private struct SettingsScreen: View {
                     .font(.system(size: 12, weight: .regular))
                     .accessibilityHidden(true)
             }
-            .foregroundStyle(color ?? (secondary ? BlankColors.charcoal : BlankColors.pureWhite))
-            .padding(16)
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 4).fill(secondary ? BlankColors.lichenGray : BlankColors.charcoal))
-            .contentShape(RoundedRectangle(cornerRadius: 4))
+            .foregroundStyle(color ?? (secondary ? textColor.opacity(0.78) : textColor))
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(textColor.opacity(0.16)).frame(height: 1)
+            }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
@@ -2821,7 +2818,7 @@ private struct ScheduleEditorContent: View {
                 )
 
                 Text("manual exits pause only the current habit window.")
-                    .font(.footnote)
+                    .font(.blankInter(size: 14, relativeTo: .footnote))
                     .foregroundStyle(secondaryColor)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 300)
@@ -2937,7 +2934,7 @@ private struct ScheduleEditorContent: View {
     private func habitMetric(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(.caption2)
+                .font(.blankInter(size: 12, relativeTo: .caption2))
                 .foregroundStyle(secondaryColor)
             Text(value)
                 .font(.blankInter(size: 15, weight: .semibold, relativeTo: .subheadline))
@@ -2962,7 +2959,7 @@ private struct VacationModeCard: View {
                         .font(.blankInter(size: 16, weight: .semibold, relativeTo: .headline))
                         .foregroundStyle(textColor)
                     Text(statusText)
-                        .font(.caption)
+                        .font(.blankInter(size: 13, relativeTo: .caption))
                         .foregroundStyle(secondaryColor)
                 }
                 Spacer()
@@ -2970,7 +2967,7 @@ private struct VacationModeCard: View {
                     Button("off") {
                         sessionStore.disableVacationMode()
                     }
-                    .font(.caption.weight(.semibold))
+                    .font(.blankInter(size: 13, weight: .semibold, relativeTo: .caption))
                     .foregroundStyle(textColor)
                     .buttonStyle(.plain)
                 }
@@ -3000,10 +2997,10 @@ private struct VacationModeCard: View {
             sessionStore.enableVacationMode(hours: hours)
         } label: {
             Text(title)
-                .font(.caption.weight(.semibold))
+                .font(.blankInter(size: 13, weight: .semibold, relativeTo: .caption))
                 .foregroundStyle(textColor)
                 .frame(maxWidth: .infinity)
-                .frame(height: 38)
+                .frame(minHeight: 44)
                 .blankGlassCard(cornerRadius: 14, tintOpacity: 0.20)
         }
         .buttonStyle(.plain)
@@ -3043,7 +3040,7 @@ private struct HabitWindowCard: View {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(secondaryColor)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
             }
@@ -3094,7 +3091,7 @@ private struct HabitWindowCard: View {
     private func routineMetric(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(.caption2)
+                .font(.blankInter(size: 12, relativeTo: .caption2))
                 .foregroundStyle(secondaryColor)
             Text(value)
                 .font(.blankInter(size: 13, weight: .semibold, relativeTo: .caption))
@@ -3104,7 +3101,8 @@ private struct HabitWindowCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
-        .frame(height: 48)
+        .padding(.vertical, 10)
+        .frame(minHeight: 48)
         .background {
             RoundedRectangle(cornerRadius: 15, style: .continuous)
                 .fill(textColor.opacity(0.075))
@@ -3147,20 +3145,20 @@ private struct HabitDaysPicker: View {
                     .foregroundStyle(secondaryColor)
                 Spacer()
                 Text(summary)
-                    .font(.caption.weight(.semibold))
+                    .font(.blankInter(size: 13, weight: .semibold, relativeTo: .caption))
                     .foregroundStyle(textColor.opacity(0.86))
             }
 
-            HStack(spacing: 7) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 8)], spacing: 8) {
                 ForEach(days, id: \.id) { day in
                     Button {
                         toggle(day.id)
                     } label: {
                         Text(day.label)
-                            .font(.caption.weight(.semibold))
+                            .font(.blankInter(size: 13, weight: .semibold, relativeTo: .caption))
                             .foregroundStyle(isSelected(day.id) ? BlankColors.ink : textColor)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 34)
+                            .frame(minHeight: 44)
                             .background {
                                 Capsule()
                                     .fill(isSelected(day.id) ? BlankColors.pureWhite.opacity(0.82) : BlankColors.pureWhite.opacity(0.12))
@@ -3191,10 +3189,10 @@ private struct HabitDaysPicker: View {
             selectedWeekdays = weekdays
         } label: {
             Text(title)
-                .font(.caption2.weight(.semibold))
+                .font(.blankInter(size: 12, weight: .semibold, relativeTo: .caption2))
                 .foregroundStyle(textColor)
                 .frame(maxWidth: .infinity)
-                .frame(height: 30)
+                .frame(minHeight: 44)
                 .background {
                     Capsule().fill(BlankColors.pureWhite.opacity(Set(selectedWeekdays) == Set(weekdays) ? 0.20 : 0.10))
                 }
@@ -3375,8 +3373,8 @@ private struct EmergencyScreen: View {
 
                 Text(isConfirming ? "spend emergency?" : "emergency")
                     .font(.blankInter(
-                        size: minimalAppearance ? 40 : 34,
-                        weight: minimalAppearance ? .bold : .medium,
+                        size: 32,
+                        weight: .regular,
                         relativeTo: .largeTitle
                     ))
                     .tracking(minimalAppearance ? -0.6 : 0)
@@ -3422,13 +3420,14 @@ private struct EmergencyScreen: View {
             .frame(maxWidth: 300)
 
            }
-           .padding(.vertical, 120)
+           .padding(.top, 76)
+           .padding(.bottom, 24)
            .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .center)
           }
           .overlay(alignment: .topLeading) {
             if minimalAppearance {
                 SectionBackHeader(action: onClose)
-                    .padding(.top, 60)
+                    .padding(.top, 0)
             }
           }
         }
@@ -3561,7 +3560,7 @@ private struct TechnicalSheetDescription: View {
 
     var body: some View {
         Text(text)
-            .font(emphasized ? .footnote.weight(.medium) : .body)
+            .font(.blankInter(size: emphasized ? 14 : 17, weight: emphasized ? .medium : .regular))
             .multilineTextAlignment(.center)
             .foregroundStyle(.secondary)
             .lineSpacing(2)
@@ -3629,19 +3628,19 @@ private struct DistractionsScreen: View {
                     } else {
                                 if !sessionStore.selection.applicationTokens.isEmpty {
                                     ForEach(Array(sessionStore.selection.applicationTokens), id: \.self) { token in
-                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .light : .dark) }
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .dark : .light) }
                                     }
                                 }
                                 if !sessionStore.selection.categoryTokens.isEmpty {
                                     distractionGroupHeading("Categories")
                                     ForEach(Array(sessionStore.selection.categoryTokens), id: \.self) { token in
-                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .light : .dark) }
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .dark : .light) }
                                     }
                                 }
                                 if !sessionStore.selection.webDomainTokens.isEmpty {
                                     distractionGroupHeading("Websites")
                                     ForEach(Array(sessionStore.selection.webDomainTokens), id: \.self) { token in
-                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .light : .dark) }
+                                        distractionRow { Label(token).labelStyle(.titleAndIcon).colorScheme(sessionStore.isBlankActive ? .dark : .light) }
                                     }
                                 }
                     }
@@ -3776,7 +3775,8 @@ struct AppAccountSignInSheet: View {
                         request.nonce = Self.hashNonce(nonce)
                     }, onCompletion: finishAppleAuthorization)
                         .signInWithAppleButtonStyle(sessionStore.isBlankActive ? .white : .black)
-                        .frame(width: accountTitleWidth, height: 44)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                         .disabled(isWorking)
                         .overlay {
@@ -3796,16 +3796,12 @@ struct AppAccountSignInSheet: View {
                 .frame(maxWidth: 400, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 24)
+                .padding(.top, showsCancel ? 0 : 132)
                 .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .center)
             }
         }
-        .background(BlankColors.canvas)
+        .background(showsCancel ? AnyView(BlankColors.canvas) : AnyView(MinimalSectionBackground()))
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
-    }
-
-    private var accountTitleWidth: CGFloat {
-        let font = UIFontMetrics(forTextStyle: .title1).scaledFont(for: UIFont(name: "TimesNewRomanPSMT", size: 32)!)
-        return ceil(NSAttributedString(string: "Sign in to Blankmind", attributes: [.font: font, .kern: -0.9]).size().width)
     }
 
     private func finishAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
@@ -3958,6 +3954,8 @@ private struct AccountSettingsSheet: View {
                 }
             }
             .navigationTitle("Account")
+            .navigationBarTitleDisplayMode(.inline)
+            .minimalSheetStyle()
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
             .confirmationDialog("Delete your Blank account and cloud data?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
                 Button("Continue to Apple verification", role: .destructive) { isVerifyingDeletion = true }
@@ -4144,7 +4142,7 @@ private struct HomePreviewScene: View {
 @MainActor
 struct PostOnboardingPreviewScene: View {
     static var enabled: Bool {
-        ["product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-automatic", "product-automatic-active", "product-notifications", "product-notifications-active"]
+        ["product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-automatic", "product-automatic-active", "product-automatic-error", "product-notifications", "product-notifications-active", "product-schedule", "product-schedule-active", "product-account", "product-onboarding-account", "product-onboarding-device"]
             .contains(AssistantAppPreview.scenario)
     }
 
@@ -4159,13 +4157,18 @@ struct PostOnboardingPreviewScene: View {
         case "product-settings", "product-settings-active": return .settings
         case "product-distractions", "product-distractions-active": return .distractions
         case "product-emergency", "product-emergency-active": return .emergency
+        case "product-schedule", "product-schedule-active": return .schedule
         default: return nil
         }
     }
 
     var body: some View {
         GeometryReader { proxy in
-            if AssistantAppPreview.scenario.hasPrefix("product-control") {
+            if AssistantAppPreview.scenario.hasPrefix("product-onboarding") {
+                SetupView()
+            } else if AssistantAppPreview.scenario == "product-account" {
+                AccountSettingsSheet()
+            } else if AssistantAppPreview.scenario.hasPrefix("product-control") {
                 HomeView(simulatorGuest: true, initialSection: .control)
             } else if AssistantAppPreview.scenario.hasPrefix("product-shell-progress") {
                 HomeView(simulatorGuest: true, initialSection: .report)
@@ -4227,12 +4230,12 @@ struct AccountJustifiedCopy: UIViewRepresentable {
 
     func updateUIView(_ view: UITextView, context: Context) {
         let color = colorScheme == .dark
-            ? UIColor(red: 1, green: 1, blue: 252/255, alpha: 0.72)
-            : UIColor(red: 41/255, green: 41/255, blue: 41/255, alpha: 0.72)
+            ? UIColor(red: 1, green: 254/255, blue: 245/255, alpha: 0.82)
+            : UIColor(red: 73/255, green: 84/255, blue: 78/255, alpha: 0.92)
         let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .justified
+        paragraph.alignment = .natural
         paragraph.lineSpacing = 4
-        let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "ArialMT", size: 14)!)
+        let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "NeueMontreal-Regular", size: 17)!)
         let styled = NSMutableAttributedString(attributedString: text)
         styled.addAttributes([.font: font, .foregroundColor: color, .paragraphStyle: paragraph], range: NSRange(location: 0, length: styled.length))
         text.enumerateAttribute(.link, in: NSRange(location: 0, length: text.length)) { link, range, _ in
@@ -4304,18 +4307,18 @@ private struct BMBSettingsView: View {
                 if section == .automaticProtection {
                   Section("Permission") {
                     Toggle("Allow automatic protection", isOn:$active)
-                    Text("Blankmind may make only the changes you allow, within your limits. iOS may delay delivery. Existing blocks keep their release rules.").font(.footnote)
+                    Text("Blankmind may make only the changes you allow, within your limits. iOS may delay delivery. Existing blocks keep their release rules.").font(.blankInter(size: 14, relativeTo: .footnote))
                   }
                   Section("Allowed changes") {
                     ForEach([("start_protection","Block selected distractions"),("set_daily_limit","Set daily limit"),("enable_adult_filter","Enable adult filter")], id: \.0) { type,label in
                         Toggle(label,isOn:Binding(get:{ allowedTypes.contains(type) },set:{ if $0 { allowedTypes.insert(type) } else { allowedTypes.remove(type) } }))
                     }
-                    Text("Daily limits and the adult filter stay on until you change them. Revoking permission stops future automatic changes.").font(.footnote)
+                    Text("Daily limits and the adult filter stay on until you change them. Revoking permission stops future automatic changes.").font(.blankInter(size: 14, relativeTo: .footnote))
                   }
                   Section("When and for how long") {
                     DatePicker("Allowed from",selection:clock($actionStart),displayedComponents:.hourAndMinute)
                     DatePicker("Allowed until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
-                    Text("Set the same start and end time to allow any hour.").font(.footnote)
+                    Text("Set the same start and end time to allow any hour.").font(.blankInter(size: 14, relativeTo: .footnote))
                     Stepper("Maximum block: \(maxMinutes) min",value:$maxMinutes,in:5...240,step:5)
                   }
                   Section {
@@ -4330,7 +4333,7 @@ private struct BMBSettingsView: View {
                 if section == .notifications {
                   Section("Permission") {
                     Toggle("Receive notifications",isOn:$enabled)
-                    Text("Notifications do not give Blankmind permission to block. All notices follow your allowed hours. No routine start or end alerts.").font(.footnote)
+                    Text("Notifications do not give Blankmind permission to block. All notices follow your allowed hours. No routine start or end alerts.").font(.blankInter(size: 14, relativeTo: .footnote))
                   }
                   Section("What to receive") {
                     Toggle("Helpful suggestions",isOn:$opportunities)
@@ -4350,9 +4353,9 @@ private struct BMBSettingsView: View {
                 }
                 if section == .automaticProtection {
                   Section("Control") {
-                    Text("Pausing stops automatic changes and notifications for 24 hours. Existing blocks remain in place.").font(.footnote)
+                    Text("Pausing stops automatic changes and notifications for 24 hours. Existing blocks remain in place.").font(.blankInter(size: 14, relativeTo: .footnote))
                     if let pause = pausedUntil, let date = AssistantInboxAction.parseDate(pause), date > Date() {
-                        Text("Paused until \(date.formatted(date: .abbreviated, time: .shortened))").font(.footnote)
+                        Text("Paused until \(date.formatted(date: .abbreviated, time: .shortened))").font(.blankInter(size: 14, relativeTo: .footnote))
                         Button("Resume Blankmind") { pausedUntil=nil; Task { await save() } }
                     } else {
                         Button("Pause Blankmind for 24 hours") { pausedUntil=ISO8601DateFormatter().string(from:Date().addingTimeInterval(86400)); Task { await save() } }
@@ -4362,7 +4365,7 @@ private struct BMBSettingsView: View {
                 }
                 Section {
                     Button("Save preferences") { Task { await save() } }
-                    if !status.isEmpty { Text(status).font(.footnote) }
+                    if !status.isEmpty { Text(status).font(.blankInter(size: 14, relativeTo: .footnote)) }
                 }
                 if section == .automaticProtection && !events.isEmpty {
                     Section("Recent activity") {
@@ -4370,7 +4373,7 @@ private struct BMBSettingsView: View {
                             let event=events[index]
                             VStack(alignment:.leading) {
                                 Text((event["outcome"] as? [String:Any])?["message_text"] as? String ?? (event["kind"] as? String ?? "BMB"))
-                                Text(event["created_at"] as? String ?? "").font(.caption)
+                                Text(event["created_at"] as? String ?? "").font(.blankInter(size: 13, relativeTo: .caption))
                                 HStack {
                                     Button("Helpful") { Task { await feedback(event,"helpful") } }
                                     Button("Wrong time") { Task { await feedback(event,"wrong_time") } }
@@ -4397,6 +4400,7 @@ private struct BMBSettingsView: View {
                 }
             }
             .navigationTitle(section.title)
+            .minimalSheetStyle()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { Button("Done") { dismiss() } }
             .task { await load() }
@@ -4414,8 +4418,12 @@ private struct BMBSettingsView: View {
     private func load() async {
         busy=true; defer { busy=false }
         #if DEBUG && targetEnvironment(simulator)
-        if AssistantAppPreview.scenario.hasPrefix("product-automatic") || AssistantAppPreview.scenario.hasPrefix("product-notifications") {
+        if PostOnboardingPreviewScene.enabled {
             // Isolated visual fixtures; no account requests or writes.
+            if AssistantAppPreview.scenario.hasSuffix("-error") {
+                loaded=false; status="Could not load preferences. Try again."
+                return
+            }
             loaded=true
             return
         }
@@ -4449,7 +4457,7 @@ private struct BMBSettingsView: View {
     private func save() async {
         guard loaded, !busy else { return }
         #if DEBUG && targetEnvironment(simulator)
-        if AssistantAppPreview.scenario.hasPrefix("product-automatic") || AssistantAppPreview.scenario.hasPrefix("product-notifications") { return }
+        if PostOnboardingPreviewScene.enabled { return }
         #endif
         busy=true; defer { busy=false }
         let settings: [String:Any] = ["timezone":TimeZone.current.identifier,"paused_until":pausedUntil as Any? ?? NSNull(),
