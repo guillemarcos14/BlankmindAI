@@ -131,7 +131,30 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   if(result.cited_sources?.some(id=>!input.coverage.some(s=>s.source_id===id)&&!sources.some(s=>s.source_id===id||s.rows?.some(r=>r.id===id))))throw Error("bmb_unknown_citation");
   let text=(result.response_text||"").trim();
   if((!text&&result.decision!=="silent")||/:(?!\d{2}\b)/.test(text))throw Error("bmb_invalid_prose");
-  let action=result.action?normalizeAction(result.action):null,execute=false,acceptanceRecovery=false;
+  let action=null,execute=false,acceptanceRecovery=false,durationLimited=false;
+  try { action=result.action?normalizeAction(result.action):null; }
+  catch(error) {
+    // A supported service receiving an unsupported duration is still a valid
+    // conversation. Never clamp it or retain an older proposal for acceptance.
+    if(proactive||error.message!=="bmb_missing_duration")throw error;
+    durationLimited=true;
+    const spanish=result.response_language==="es";
+    let reply=spanish
+      ? "Los bloqueos y límites admiten entre 5 y 240 minutos. No he aplicado ningún cambio. ¿Qué duración quieres dentro de ese rango?"
+      : "Blocks and daily limits support 5 to 240 minutes. I haven't applied any change. What duration would you like within that range?";
+    try {
+      const repaired=await run({...input,tool_budget_remaining:0,previous_generated_result:result,
+        action_constraint:"The requested duration is unsupported. Blocks and daily limits support integer minutes from 5 through 240. Explain the limit briefly and ask for a supported duration. Do not silently change the duration, execute, propose, read sources or claim success. Return final, decision=ask, action=null, memory=null, accepted_proposal=null, with exact current-message evidence."});
+      if(repaired.phase==="final"&&repaired.decision==="ask"&&repaired.action===null&&repaired.memory===null
+        &&repaired.accepted_proposal===null&&repaired.response_language===result.response_language
+        &&repaired.evidence?.trim()&&prompt.includes(repaired.evidence)
+        &&repaired.response_text?.trim()&&!/:(?!\d{2}\b)/.test(repaired.response_text))reply=repaired.response_text.trim();
+    } catch(_) { /* A known product limit must remain explainable if copy generation fails. */ }
+    result={...result,decision:"ask",action:null,memory:null,accepted_proposal:null,pending_request:prompt};
+    result.response_text=reply;
+  }
+  if(durationLimited)delete context.brain_memory_effect;
+  text=result.response_text.trim();
   if(result.decision==="execute"&&!action)throw Error("bmb_missing_action");
   if(result.decision==="execute"&&action&&!proactive) {
     execute=result.message_kind==="action_request";
@@ -162,8 +185,8 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   }
   const cancelled=result.decision==="cancel";
   const bmbState={pending_request:cancelled||execute?null:result.pending_request,
-    recovery_after:cancelled||execute?new Date().toISOString():prior.recovery_after||null,
-    proposal:cancelled||execute||acceptanceRecovery?null:result.decision==="propose"&&action?proposal(action):prior.proposal||null};
+    recovery_after:cancelled||execute||durationLimited?new Date().toISOString():prior.recovery_after||null,
+    proposal:cancelled||execute||acceptanceRecovery||durationLimited?null:result.decision==="propose"&&action?proposal(action):prior.proposal||null};
   context.language=result.response_language;context.brain_request={execute,route:execute?"control":"conversation"};
   return {plan:{intent:"general",response_text:text,message_text:text,response_language:result.response_language,
     actions:execute?[action]:[],semantic_state:emptyState(result.response_language),bmb_state:bmbState,
