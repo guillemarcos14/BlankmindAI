@@ -19,6 +19,15 @@ enum MinimalHomeDesign {
 
 enum MinimalHomeTab: CaseIterable, Hashable {
     case control, chat, progress
+    // Navigate one neighbour only, from an inward drag starting at a screen edge.
+    func edgeDestination(startX: CGFloat, width: CGFloat, horizontal: CGFloat, vertical: CGFloat) -> MinimalHomeTab? {
+        guard width > 0, abs(horizontal) > abs(vertical) * 1.5 else { return nil }
+        let tabs = Self.allCases
+        guard let index = tabs.firstIndex(of: self) else { return nil }
+        if startX <= 28, horizontal > 0, index > 0 { return tabs[index - 1] }
+        if startX >= width - 28, horizontal < 0, index < tabs.count - 1 { return tabs[index + 1] }
+        return nil
+    }
     var label: String {
         switch self {
         case .control: return "Control"

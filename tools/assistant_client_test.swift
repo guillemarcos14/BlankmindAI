@@ -157,8 +157,49 @@ struct AssistantClientTests {
         do { _ = try await client.history(); fatalError("Expected cancellation") }
         catch is CancellationError { }
         try await verifyViewRaces()
+        try await verifyAutomaticRecovery()
         print("assistant client: refresh concurrency, identity switch, transient recovery, typed errors, 202/status, network and cancellation passed")
     }
+}
+
+@MainActor private func verifyAutomaticRecovery() async throws {
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    let view = ConversationFixture()
+    let pending = AssistantComposerState.Pending(id: "durable-recovery", text: "Protect for three minutes")
+    view.composer.pending = pending
+    var sends = 0
+    ViewTransport.history = { .init(turns: [], nextBefore: nil) }
+    ViewTransport.status = { _ in nil }
+    ViewTransport.send = { text, id in
+        sends += 1
+        check(id == pending.id && text == pending.text, "Automatic retry changed the durable payload")
+        return makeTurn(id: id, text: text)
+    }
+    await view.recoverForTest()
+    check(sends == 1 && view.composer.pending == nil, "Recovery must complete without a manual tap")
+
+    view.composer.pending = pending
+    ViewTransport.send = { _, _ in sends += 1; throw AssistantAppError.network }
+    sends = 0
+    await view.recoverForTest()
+    while view.isSending { await Task.yield() }
+    check(sends == 3 && view.composer.pending == pending && view.canRetry, "Offline retry must be bounded and keep the message")
+    view.isHomeVisible = false
+    await view.recoverForTest()
+    check(sends == 3, "Hidden chat must not auto-send")
+    view.isHomeVisible = true
+    ViewTransport.status = { _ in throw AssistantAppError.authenticationRequired }
+    await view.recoverForTest()
+    check(sends == 3 && view.requiresVerification, "Authentication requires sign-in, never automatic resending")
+
+    view.requiresVerification = false
+    let failed = AssistantAppTurn(id: pending.id, userText: pending.text, assistantText: "", status: "failed",
+        actionId: "", actionLabel: "", actionStatus: "", createdAt: "2026-10-06T10:00:00Z")
+    ViewTransport.history = { .init(turns: [failed], nextBefore: nil) }
+    ViewTransport.status = { _ in makeTurn(id: pending.id, text: pending.text) }
+    await view.reloadForTest()
+    check(view.composer.pending == nil && view.error == nil, "Stale failed history must not hide a completed status")
+    print("automatic recovery: same payload, bounded offline attempts, visibility/auth guards and stale history passed")
 }
 
 @MainActor final class SpeechFixture { func stop() {} }

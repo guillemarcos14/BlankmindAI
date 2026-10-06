@@ -711,6 +711,7 @@ struct AssistantAppView: View {
                 Task { await send(audioText: transcript) }
             }
         }
+        .task(id: recoveryTaskID) { await recoverPendingMessage() }
         .onChange(of: speech.error) { value in
             if let value {
                 error = value
@@ -1113,13 +1114,19 @@ struct AssistantAppView: View {
             requiresVerification = false
             if let pending = composer.pending {
                 let recovered: AssistantAppTurn?
-                if let stored = turns.first(where: { $0.id == pending.id }) { recovered = stored }
+                if let stored = turns.first(where: { $0.id == pending.id && $0.status == "completed" }) { recovered = stored }
                 else { recovered = try await AssistantAppClient().status(turnId: pending.id) }
                 guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
                       expectedRevision == conversationRevision else { return }
                 if let recovered, recovered.status == "completed" {
                     accept(recovered)
                     error = nil
+                    if isHomeVisible, recovered.autoApply == true, recovered.canApply {
+                        Task { @MainActor in
+                            guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID else { return }
+                            await applyAction(recovered.actionId)
+                        }
+                    }
                 } else if recovered == nil || recovered?.status == "failed" {
                     error = spanish ? "Tu mensaje está guardado. Reintenta para recuperar la respuesta." : "Your message is saved. Retry to recover the reply."
                     canRetry = true
@@ -1144,6 +1151,41 @@ struct AssistantAppView: View {
             composer.complete(turn.id)
         }
         persist()
+    }
+
+    private var recoveryTaskID: String {
+        guard !preview, !simulatorGuest, isHomeVisible, scenePhase == .active,
+              !owner.isEmpty, let pending = composer.pending else { return "" }
+        return owner + ":" + pending.id
+    }
+
+    // Bounded recovery of the durable turn, including after reopening the app.
+    // Keep its original ID and payload: the server's lease prevents duplicate work.
+    @MainActor private func recoverPendingMessage(delays: [UInt64] = [2_000_000_000, 8_000_000_000, 90_000_000_000]) async {
+        let identity = recoveryTaskID
+        guard !identity.isEmpty else { return }
+        for delay in delays {
+            do { try await Task.sleep(nanoseconds: delay) }
+            catch { return }
+            guard !Task.isCancelled, recoveryTaskID == identity,
+                  owner == AssistantAppSession.userID else { return }
+            while isSending {
+                do { try await Task.sleep(nanoseconds: 1_000_000_000) }
+                catch { return }
+                guard recoveryTaskID == identity else { return }
+            }
+            await reload()
+            guard !Task.isCancelled, recoveryTaskID == identity,
+                  !requiresVerification, canRetry else { return }
+            if composer.pending != nil {
+                // Sending outlives this polling task when accept clears pending.
+                let retry = Task { @MainActor in
+                    guard recoveryTaskID == identity else { return }
+                    await send()
+                }
+                await retry.value
+            }
+        }
     }
 
     private func send(audioText: String? = nil) async {
@@ -1185,6 +1227,7 @@ struct AssistantAppView: View {
                expectedRevision == conversationRevision, recovered.status == "completed" {
                 accept(recovered)
                 self.error = nil
+                if recovered.autoApply == true, recovered.canApply { await applyAction(recovered.actionId) }
             }
         }
     }

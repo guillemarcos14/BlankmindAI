@@ -49,6 +49,27 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(voice.frame.height, 44)
     }
 
+    func testEdgeSwipesNavigateNeighboursAndIgnoreCentreAndVerticalDrags() {
+        let app = launch()
+        func drag(_ x: CGFloat, _ y: CGFloat, _ endX: CGFloat, _ endY: CGFloat) {
+            app.coordinate(withNormalizedOffset: CGVector(dx: x, dy: y))
+                .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: endX, dy: endY)))
+        }
+        drag(0.02, 0.5, 0.65, 0.5)
+        XCTAssertTrue(app.buttons["automatic protection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["home-tab-control"].isSelected)
+        drag(0.98, 0.5, 0.35, 0.5)
+        XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
+        drag(0.98, 0.5, 0.35, 0.5)
+        XCTAssertTrue(app.staticTexts["Progress"].waitForExistence(timeout: 5))
+        drag(0.02, 0.5, 0.65, 0.5)
+        XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
+        drag(0.5, 0.5, 0.85, 0.5)
+        XCTAssertTrue(app.buttons["home-tab-chat"].isSelected)
+        drag(0.02, 0.7, 0.02, 0.3)
+        XCTAssertTrue(app.buttons["home-tab-chat"].isSelected)
+    }
+
     func testControlFormsKeepNativeEditingAndDismissal() {
         let app = launch()
         app.buttons["home-tab-control"].tap()
