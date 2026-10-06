@@ -13,3 +13,5 @@ Deployment and smoke receipts: tmp/cloud-stage/package-*.json and tmp/streaming/
 Reference: https://docs.netlify.com/build/functions/api/#streaming-responses
 
 The first private deployment exposed a CLI metadata issue: reinspection of ready ZIPs dropped invocationMode and returned502. The packager now supplies its fresh manifest at .netlify/functions/manifest.json and retains the Netlify API2/stream metadata during upload. Regression verifies this path and rejects --skip-functions-cache. Real ZIP hashes remain checked.
+
+CLI metadata resolution still discarded the manifest on remote upload. The final publisher uses the Netlify deployment API directly with the frozen ZIP hashes, functions_config.build_data and explicit runtime/invocation_mode query per artifact. It retains the fixed private site, preflight, exact-source guards, early deploy receipt, no automatic redeploy and post-deploy digest/privacy checks. Regression verifies the actual stream upload query.

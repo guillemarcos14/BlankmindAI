@@ -97,7 +97,7 @@ async function packageCandidate(args, state, bundler) {
     if (!state.tracked.has(`netlify/functions/${name}${extension}`) || !fs.existsSync(entry)) fail(`Missing tracked entry: ${name}`);
     // Literal absolute require is traversed by esbuild; only handler is exposed.
     fs.writeFileSync(path.join(wrappers, `${name}${extension}`), extension === ".mjs"
-      ? `/*! Blank NDJSON endpoint requires invocationMode=stream. */\nexport { default } from ${JSON.stringify(entry)};\n`
+      ? `/*! Blank NDJSON endpoint v2 requires explicit invocation_mode=stream upload. */\nexport { default } from ${JSON.stringify(entry)};\n`
       : `exports.handler = require(${JSON.stringify(entry)}).handler;\n`);
   }
   fs.writeFileSync(path.join(publicDir, "index.html"), "<!doctype html><meta charset=utf-8><meta name=robots content=noindex><title>Blank private staging</title><p>Blank private staging</p>\n");
@@ -191,6 +191,46 @@ function deployCommand(args, packaged) {
   assertSite(args.site);
   return [args.cli, "deploy", "--site", SITE_ID, "--prod", "--no-build",
     "--dir", packaged.publicDir, "--functions", packaged.archives, "--json"];
+}
+
+async function publishPackage(packaged, token, onCreated, fetcher = fetch) {
+  const manifest = JSON.parse(fs.readFileSync(path.join(packaged.directory, ".netlify/functions/manifest.json"), "utf8"));
+  assertEntries(manifest.functions.map(fn => fn.name));
+  const streaming = manifest.functions.find(fn => fn.name === "assistant-app-stream");
+  if (streaming.invocationMode !== "stream" || streaming.buildData?.runtimeAPIVersion !== 2) fail("Streaming upload metadata missing");
+  const call = async (route, method, body, binary = false) => {
+    const response = await fetcher(`https://api.netlify.com/api/v1${route}`, { method,
+      headers: { authorization: `Bearer ${token}`, "content-type": binary ? "application/zip" : "application/json" },
+      ...(body === undefined ? {} : { body: binary ? body : JSON.stringify(body) }), signal: AbortSignal.timeout(60_000) });
+    if (!response.ok) fail(`Private staging API ${method} failed (${response.status})`);
+    return response.json();
+  };
+  const files = { "index.html": crypto.createHash("sha1").update(fs.readFileSync(path.join(packaged.publicDir, "index.html"))).digest("hex") };
+  const functions = Object.fromEntries(packaged.functions.map(fn => [fn.name, fn.sha256]));
+  const config = Object.fromEntries(manifest.functions.map(fn => [fn.name, { build_data: fn.buildData, priority: fn.priority }]));
+  let deployment = await call(`/sites/${SITE_ID}/deploys`, "POST", { draft: false, files, functions,
+    functions_config: config, function_schedules: [{ name: "bmb-tick", cron: "*/5 * * * *" }] });
+  if (deployment.site_id !== SITE_ID || !/^[a-f0-9]{24}$/.test(deployment.id)) fail("Private deploy identity invalid");
+  onCreated(deployment.id);
+  for (const hash of deployment.required || []) {
+    if (hash !== files["index.html"]) fail("Unexpected required static artifact");
+    await call(`/deploys/${deployment.id}/files/index.html`, "PUT", fs.readFileSync(path.join(packaged.publicDir, "index.html")), true);
+  }
+  for (const hash of deployment.required_functions || []) {
+    const artifact = packaged.functions.find(fn => fn.sha256 === hash);
+    if (!artifact) fail("Unexpected required function artifact");
+    const metadata = manifest.functions.find(fn => fn.name === artifact.name);
+    const query = new URLSearchParams({ runtime: metadata.runtimeVersion });
+    if (metadata.invocationMode) query.set("invocation_mode", metadata.invocationMode);
+    await call(`/deploys/${deployment.id}/functions/${artifact.name}?${query}`, "PUT", fs.readFileSync(artifact.path), true);
+  }
+  for (let attempt = 0; attempt < 60; attempt++) {
+    deployment = await apiGet(`/deploys/${deployment.id}`, token, fetcher);
+    if (deployment.state === "ready") return { site_id: SITE_ID, deploy_id: deployment.id };
+    if (["error", "failed"].includes(deployment.state)) fail("Private deploy failed");
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  fail("Private deploy readiness timed out; verify existing report before retry");
 }
 
 function productionFunctions(payload) {
@@ -303,11 +343,7 @@ async function main(args, dependencies = {}) {
     if (packaged.functions.some((fn) => sha256(fn.path) !== fn.sha256)) fail("Function artifact changed after packaging");
     report.status = "deploy_requested";
     save();
-    const output = execute(process.execPath, deployCommand(args, packaged), packaged.directory, {
-      env: { ...process.env, NETLIFY_AUTH_TOKEN: token },
-    });
-    let deployed;
-    try { deployed = JSON.parse(output); } catch (_) { fail("CLI did not return a valid deploy receipt"); }
+    const deployed = await publishPackage(packaged, token, id => { report.deploy_id = id; save(); }, fetcher);
     if (deployed.site_id !== SITE_ID || !/^[a-f0-9]{24}$/.test(deployed.deploy_id || "")) fail("CLI returned an unexpected staging deploy identity");
     report.deploy_id = deployed.deploy_id;
     report.status = "deployed_unverified";
@@ -334,4 +370,4 @@ if (require.main === module) {
   })().catch((error) => { console.error(`backend_staging: ${error.message}`); process.exitCode = 1; });
 }
 module.exports = { SITE_ID, SITE_URL, SUPABASE_REF, ENTRIES, parseArgs, assertSite, assertEntries, requireDeployable,
-  validateEnvironment, requirePrivateSite, deployCommand, packageCandidate, productionFunctions, verifyReport, main };
+  validateEnvironment, requirePrivateSite, deployCommand, publishPackage, packageCandidate, productionFunctions, verifyReport, main };
