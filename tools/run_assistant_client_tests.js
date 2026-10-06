@@ -66,6 +66,7 @@ const viewFixture = `
     func dismiss() { dismissCount += 1 }
     func reloadForTest() async { await reload() }
     func sendForTest() async { await send() }
+    func applyForTest(_ id: String) async { await applyAction(id) }
     func restoreForTest() { restoreOwner() }
     func recoverForTest() async { await recoverPendingMessage(delays: [1_000_000, 1_000_000, 1_000_000]) }
 ${viewMethods}

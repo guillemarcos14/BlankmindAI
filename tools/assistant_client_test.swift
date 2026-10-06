@@ -414,6 +414,8 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     check(home.turns.last?.actionStatus == "verified" && home.turns.last?.canApply == false,
           "Stale cloud history restored the redundant block button")
     check(home.appliedActions.count == 1, "Receipt reconciliation executed the block twice")
+    await home.applyForTest("app_home_action")
+    check(home.appliedActions.count == 1, "A tap racing the receipt update repeated native execution")
     AssistantActionReceiptStore.clear(actionId: "app_home_action")
     check(!home.showingHomeKeyboard, "Sending text must close the Home keyboard sheet")
     print("assistant view: stale history, account switch during status and obsolete send completion passed")

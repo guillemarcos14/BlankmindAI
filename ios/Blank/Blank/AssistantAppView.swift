@@ -1165,6 +1165,11 @@ struct AssistantAppView: View {
 
     private func applyAction(_ actionID: String) async {
         guard !isApplyingAction, !actionID.isEmpty, owner == AssistantAppSession.userID else { return }
+        if let receipt = AssistantActionReceiptStore.load(), receipt.actionId == actionID,
+           ["verified", "delayed", "failed", "dismissed"].contains(receipt.status) {
+            turns = turns.map(\.resolvingLocalReceipt)
+            return
+        }
         isApplyingAction = true
         defer { isApplyingAction = false }
         acceptingSpeech = false
@@ -1632,7 +1637,8 @@ struct AssistantAppHistoryView: View {
         do {
             // The action may have expired, been cancelled or superseded while
             // reading older messages. Revalidate the exact server ID before Home.
-            let current = try await AssistantAppClient().status(turnId: turn.id)
+            let stored = try await AssistantAppClient().status(turnId: turn.id)
+            let current = stored?.resolvingLocalReceipt
             guard validateOwner(), requestID == id else { return }
             if let current, let index = turns.firstIndex(where: { $0.id == current.id }) {
                 turns[index] = current
