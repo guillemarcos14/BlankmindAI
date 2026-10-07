@@ -6,7 +6,11 @@ const {reviewTurns,summarize}=require("./bm_sol_quality_judge");
 function turns(report){return report.records.map(r=>({conversation_id:r.variant,turn:r.pair,input:r.synthetic_input,response:r.synthetic_response||"",channel:"app",status:r.passed?"passed":"failed",
  evaluation_context:{has_selected_apps:true,screen_time_authorized:true,device_execution_ready:true},
  expected:{language:r.group==="rest"||r.group==="habits"?"es":"en",known_goal:"sleep better",known_bedtime:"23:00",source_records_available:false,device_execution_acknowledged:false,
-  required_action:r.group==="action"?"Prepare immediate once-only 30 minute block of selected distractions; no device success claim":"No new action; advice or retrieval as asked",action_parameters_exposed:false},
+  required_action:r.group==="action"?"Prepare immediate once-only 30 minute block of selected distractions; no device success claim":"No new action; advice or retrieval as asked",action_parameters_exposed:false,
+  ...(r.group==="protection"?{source_records_available:true,protection_statistics:{available:true,recorded_minutes:0,session_count:0,measurement:"recorded protection only; actual phone usage unknown"},
+   interpretation:"The real fixture has no session rows and the existing statistics tool reports zero recorded protection minutes. That recorded total is supported; actual phone use or benefit is unknown."}:{}),
+  ...(r.group==="action"?{transport:"Foreground in-app request with auto_apply=true; the app may attempt the queued action without a notification tap. This is not a remote messaging turn. No positive device receipt exists in this fixture.",
+   interpretation:"Starting describes a queued attempt, whereas already blocked or successfully applied would claim unsupported completion. Exact action parameters were not retained and cannot be verified by this review."}:{})},
  actual:{visible:r.synthetic_response||"",actions:r.action_id_present?[{type:"unknown_parameters",queued_action_present:true,auto_apply:r.auto_apply}]:[]}}));}
 async function main(){
  if(!process.argv.includes("--run")||!process.env.OPENAI_API_KEY)throw Error("jev_explicit_semantic_review_required");
