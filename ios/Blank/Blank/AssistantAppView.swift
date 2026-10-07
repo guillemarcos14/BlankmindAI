@@ -376,7 +376,7 @@ struct AssistantAppClient {
             guard let http = response as? HTTPURLResponse else { throw AssistantAppError.invalidResponse }
             guard http.statusCode == 200 else {
                 if http.statusCode == 401 { throw AssistantAppError.authenticationRequired }
-                throw AssistantAppError.server(http.statusCode, "voice_unavailable")
+                throw AssistantAppError.server(status: http.statusCode, code: "voice_unavailable")
             }
             guard (http.value(forHTTPHeaderField: "Content-Type") ?? "").hasPrefix("application/x-ndjson"),
                   http.value(forHTTPHeaderField: "X-Voice-Format") == "pcm-s16le-24000-mono" else {
@@ -389,7 +389,7 @@ struct AssistantAppClient {
                 guard !line.isEmpty, line.utf8.count <= 12000,
                       let frame = try JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
                       let type = frame["type"] as? String else { throw AssistantAppError.invalidResponse }
-                if type == "error" { throw AssistantAppError.server(503, "voice_unavailable") }
+                if type == "error" { throw AssistantAppError.server(status: 503, code: "voice_unavailable") }
                 guard frame["turn_id"] as? String == turnId else { throw AssistantAppError.invalidResponse }
                 if type == "end" {
                     guard total > 0 else { throw AssistantAppError.invalidResponse }

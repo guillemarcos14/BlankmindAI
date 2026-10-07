@@ -3,7 +3,7 @@ import Foundation
 enum AssistantPendingProblem { case rateLimited, unknown }
 enum AssistantAppError: Error {
     case invalidResponse
-    case server(Int, String)
+    case server(status: Int, code: String)
     var problem: AssistantPendingProblem { if case .server(429, _) = self { return .rateLimited }; return .unknown }
 }
 enum AssistantAppSession { static var userID: String? = "A" }
@@ -47,7 +47,7 @@ struct AssistantAppClient {
         try await Task.sleep(nanoseconds: 5_000_000)
         precondition(driver.chunks == 1 && playback.error == nil, "Account switch rejects old audio silently")
         AssistantAppSession.userID = "A"
-        let failing = AssistantVoicePlayback(driver: driver, stream: { _, _, _ in throw AssistantAppError.server(429, "limit") })
+        let failing = AssistantVoicePlayback(driver: driver, stream: { _, _, _ in throw AssistantAppError.server(status: 429, code: "limit") })
         failing.play(turnID: turn, owner: "A")
         try await Task.sleep(nanoseconds: 5_000_000)
         precondition(!failing.isBusy && failing.error?.contains("limit") == true)
