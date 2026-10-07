@@ -34,7 +34,7 @@ El olvido existente corta toda personalizacion historica automatica: redacta val
 
 Tests: `node tools/bmb_longitudinal_test.js`, contratos BMB/reactivo/streaming/recovery y SQL real con los tests de memoria, app y autonomia. CI PostgreSQL incorpora migracion y pruebas nuevas; iOS CI compila los cambios de notificacion, navegacion y presentacion. El harness tiene baseline previa y validacion de scope.
 
-Publicar requiere la conversacion de integracion backend descrita en `AGENTS.md`: aplicar migracion y desplegar funciones coordinadamente, despues distribuir una build iOS. Esta rama no modifica Netlify/Supabase productivos ni TestFlight. Antes de declarar funcionamiento en usuarios reales hay que comprobar ingestion real, ritmo diario, consulta por notificacion y respuesta en iPhone. La evaluacion con proveedor real acredita los casos sinteticos descritos abajo; la utilidad sobre usuarios reales sigue pendiente.
+Guillem autorizo explicitamente asumir la integracion en esta tarea. Migracion028 aplicada y nueve funciones publicadas en el QA privado, runtime27ebbd0/deploy6ac61d0da76193140af4ef1d; build1.9(106) archivada y firmada en FF368 con todos los commits nativos pendientes. Detalle y evidencia en `BM_LONGITUDINAL_RELEASE_2026-10-07.md`. Distribucion TestFlight106 y comprobacion de notificacion/respuesta en iPhone pendientes. Antes de declarar utilidad en usuarios reales hay que comprobar ingestion real y ritmo diario; las pruebas cloud utilizan cuentas sinteticas. Produccion no se ha modificado.
 
 ### Evidencia de desarrollo
 
