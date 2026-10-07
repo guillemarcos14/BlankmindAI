@@ -13,8 +13,8 @@ const ROOT = path.resolve(__dirname, "..");
 const SITE_ID = "2ef5a74e-af70-4893-a5f6-63fb2537720d";
 const SITE_URL = "https://blank-product-staging-20260926.netlify.app";
 const SUPABASE_REF = "njqbovsmoowkhhsqmitn";
-const ENTRIES = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-app-stream", "assistant-channel", "blanked-agent", "waitlist-auth", "bmb-tick", "bmb-worker-background"]);
-function entryExtension(name) { return name === "assistant-app-stream" ? ".mjs" : ".js"; }
+const ENTRIES = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-app-stream", "assistant-app-voice", "assistant-channel", "blanked-agent", "waitlist-auth", "bmb-tick", "bmb-worker-background"]);
+function entryExtension(name) { return ["assistant-app-stream", "assistant-app-voice"].includes(name) ? ".mjs" : ".js"; }
 const RELEASE_BRANCH = /^codex\/backend-release-[a-z0-9][a-z0-9-]*$/;
 const DEFAULT_CLI = path.resolve(ROOT, "../../tmp/netlify-cli-runtime/node_modules/netlify-cli/bin/run.js");
 
@@ -23,7 +23,7 @@ function sha256(file) { return crypto.createHash("sha256").update(fs.readFileSyn
 function inside(parent, child) { const relative = path.relative(parent, child); return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative)); }
 function assertSite(site) { if (site !== SITE_ID) fail("Only the reserved private staging site is allowed"); }
 function assertEntries(names) {
-  if (JSON.stringify([...names].sort()) !== JSON.stringify([...ENTRIES].sort())) fail("Function allowlist must contain exactly the nine BMB private staging entries");
+  if (JSON.stringify([...names].sort()) !== JSON.stringify([...ENTRIES].sort())) fail("Function allowlist must contain exactly the ten BMB private staging entries");
 }
 
 function parseArgs(argv) {
@@ -117,7 +117,7 @@ async function packageCandidate(args, state, bundler) {
   const inputs = new Map();
   const functions = bundles.map((bundle) => {
     if (bundle.routes?.length || (bundle.invocationMode === "background" && bundle.name !== "bmb-worker-background")) fail("Unexpected function invocation mode");
-    const streaming = bundle.name === "assistant-app-stream";
+    const streaming = ["assistant-app-stream", "assistant-app-voice"].includes(bundle.name);
     if (path.extname(bundle.path) !== ".zip" || (streaming
       ? !["nft", "esbuild"].includes(bundle.bundler) || bundle.invocationMode !== "stream" || bundle.runtimeAPIVersion !== 2
       : bundle.bundler !== "esbuild")) fail("Expected a ZIP with the correct buffered/streaming runtime");
@@ -196,8 +196,10 @@ function deployCommand(args, packaged) {
 async function publishPackage(packaged, token, onCreated, fetcher = fetch) {
   const manifest = JSON.parse(fs.readFileSync(path.join(packaged.directory, ".netlify/functions/manifest.json"), "utf8"));
   assertEntries(manifest.functions.map(fn => fn.name));
-  const streaming = manifest.functions.find(fn => fn.name === "assistant-app-stream");
-  if (streaming.invocationMode !== "stream" || streaming.buildData?.runtimeAPIVersion !== 2) fail("Streaming upload metadata missing");
+  for (const name of ["assistant-app-stream", "assistant-app-voice"]) {
+    const streaming = manifest.functions.find(fn => fn.name === name);
+    if (streaming?.invocationMode !== "stream" || streaming.buildData?.runtimeAPIVersion !== 2) fail("Streaming upload metadata missing");
+  }
   const call = async (route, method, body, binary = false) => {
     const response = await fetcher(`https://api.netlify.com/api/v1${route}`, { method,
       headers: { authorization: `Bearer ${token}`, "content-type": binary ? "application/zip" : "application/json" },

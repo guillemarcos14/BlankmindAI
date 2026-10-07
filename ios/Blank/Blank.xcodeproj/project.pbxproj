@@ -20,6 +20,7 @@
 
 
 /* Begin PBXBuildFile section */
+		BA10000700000000000000001 /* AssistantVoicePlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000700000000000000002 /* AssistantVoicePlayback.swift */; };
 		8B0710010000000000000001 /* SleepAccessPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0710010000000000000002 /* SleepAccessPolicy.swift */; };
 		BA10000600000000000000001 /* AssistantWritingHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000600000000000000002 /* AssistantWritingHaptics.swift */; };
         AA1000060000000000000001 /* MinimalHomeDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000060000000000000002 /* MinimalHomeDesign.swift */; };
@@ -111,6 +112,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		BA10000700000000000000002 /* AssistantVoicePlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantVoicePlayback.swift; sourceTree = "<group>"; };
 		8B0710010000000000000002 /* SleepAccessPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepAccessPolicy.swift; sourceTree = "<group>"; };
 		BA10000600000000000000002 /* AssistantWritingHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantWritingHaptics.swift; sourceTree = "<group>"; };
         AA1000060000000000000002 /* MinimalHomeDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalHomeDesign.swift; sourceTree = "<group>"; };
@@ -230,6 +232,7 @@
 				AA0030030000000000000002 /* HomeOrbControl.swift */,
 				8A00000100000000000000F1 /* AssistantAppView.swift */,
 				BA10000600000000000000002 /* AssistantWritingHaptics.swift */,
+				BA10000700000000000000002 /* AssistantVoicePlayback.swift */,
 				8A00000100000000000000F3 /* AssistantComposerState.swift */,
 				8A000001000000000000001B /* BlankDomainModels.swift */,
 				8A000001000000000000001C /* ReportView.swift */,
@@ -534,6 +537,7 @@
 				AA0030030000000000000001 /* HomeOrbControl.swift in Sources */,
 				8A00000100000000000000F0 /* AssistantAppView.swift in Sources */,
 				BA10000600000000000000001 /* AssistantWritingHaptics.swift in Sources */,
+				BA10000700000000000000001 /* AssistantVoicePlayback.swift in Sources */,
 				8A00000100000000000000F2 /* AssistantComposerState.swift in Sources */,
 				8A0000010000000000000009 /* BlankDomainModels.swift in Sources */,
 				8A000001000000000000000A /* ReportView.swift in Sources */,

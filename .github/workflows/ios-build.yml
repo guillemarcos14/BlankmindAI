@@ -52,6 +52,8 @@ jobs:
           node tools/run_assistant_client_tests.js
           swiftc -swift-version 5 -parse-as-library ios/Blank/Blank/AssistantWritingHaptics.swift tools/assistant_writing_haptics_test.swift -o tmp/native-tests/writing-haptics
           tmp/native-tests/writing-haptics
+          swiftc -swift-version 5 -parse-as-library ios/Blank/Blank/AssistantVoicePlayback.swift tools/assistant_voice_playback_test.swift -o tmp/native-tests/voice-playback
+          tmp/native-tests/voice-playback
           node tools/run_ios_protection_tests.js
           node tools/run_brain_native_tests.js
           node tools/run_private_stage_qa_tests.js

@@ -380,5 +380,6 @@ exports.handler = async (event, _context, { onDraft } = {}) => {
 };
 
 exports.authenticatedIdentity = authenticatedIdentity;
+exports.readTurn = readTurn;
 exports.actionStatus = actionStatus;
 exports.visibleReply = visibleReply;
