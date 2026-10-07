@@ -70,7 +70,7 @@ async function main(){
  let sent=true;
  assert.equal((await L.greetingContext("account-A",async path=>{assert(path.includes("auth_user_id=eq.account-A"));return path.startsWith("bmb_events?")?[{facts:{followup_id:f.id},outcome:{transport:{sent}}}]:[f];},eventID)).id,f.id);
  sent=false;assert.equal(await L.greetingContext("account-A",async path=>path.startsWith("bmb_events?")?[{facts:{followup_id:f.id},outcome:{transport:{sent}}}]:[f],eventID),null);
- assert.equal(opportunities([1,2].map(id=>({id,ended_reason:"manual",ended_at:new Date().toISOString()})),[]).length,0,"Obsolete two-exit heuristic survived");
+ assert.equal(opportunities([]).length,0,"Opportunity without verified evidence");
  // A daily followup uses the normal reservation/budget path, with no autonomous action.
  let ledger=[],notices=0,modelCalls=0;
  const context={notification_authorized:true,memory:{},has_selected_apps:true,screen_time_authorized:true};
@@ -81,7 +81,7 @@ async function main(){
    if(path.startsWith("bmb_daily_reviews?"))return [];
    if(path.startsWith("bmb_accounts?"))return [a];
    if(path.startsWith("bmb_events?"))return ledger;
-   if(path.startsWith("bmb_sessions?")||path.startsWith("bmb_device_signals?"))return [];
+   if(path.startsWith("bmb_device_signals?"))return [];
    if(path==="rpc/bmb_claim_assessment")return true;
    if(path==="rpc/bmb_claim_event"){ledger.push({...p.p_event,id:eventID,created_at:new Date().toISOString(),grant_version:a.version,outcome:{message_text:p.p_event.message_text}});return {claimed:true,id:eventID};}
    if(path==="rpc/bmb_merge_outcome"){Object.assign(ledger[0].outcome,p.p_patch);return null;}

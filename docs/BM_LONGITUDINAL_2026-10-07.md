@@ -22,7 +22,7 @@ La pregunta pasa por los permisos, horarios, estado de chat y presupuesto BMB ex
 
 Al tocar la notificacion iOS abre Chat y consulta la pregunta asociada al evento, filtrando por cuenta, vigencia y transporte. Se muestra sin crear un turno ficticio, borrar historial, enviar mensajes automaticamente ni reemplazar un borrador/audio/peticion pendiente. Un fallo de conexion conserva el ID para reintentar; cambiar de cuenta invalida la respuesta anterior. La respuesta del usuario vuelve al mismo cerebro y se vincula atomicamente al seguimiento.
 
-Se elimina la heuristica aislada de dos salidas tempranas: las sesiones pasan a la revision contextual. Se mantienen los recibos nativos y señales de umbral, que siguen aportando hechos utiles. No se eliminan endpoints legacy usados por canales externos.
+Se elimina la heuristica aislada de dos salidas tempranas y su lectura redundante de sesiones en cada tick: las sesiones pasan a la revision diaria contextual. Se mantienen los recibos nativos y señales de umbral, que siguen aportando hechos utiles. No se eliminan endpoints legacy usados por canales externos.
 
 ## Persistencia y privacidad
 
@@ -38,10 +38,11 @@ Publicar requiere la conversacion de integracion backend descrita en `AGENTS.md`
 
 ### Evidencia de desarrollo
 
-- Harness local: 71/71 y scope sin infracciones en la segunda pasada; primera pasada70/71 por gate de release/replay. Sin relajar condiciones.
+- Harness final: 71/71, cero reparaciones y scope sin infracciones frente a baseline1578554; informe ph_1791365905003_81d2a39d. Primera pasada70/71 por gate de release/replay; sin relajar condiciones.
 - SQL real: migracion028 y cuatro suites de base de datos correctas en PostgreSQL embebido (PGlite0.5.8 con pgcrypto real); Docker no disponible. CI tambien ejecuta PostgreSQL15.
-- Proveedor real gpt-5.6-luna:5/5 casos, seis llamadas/32.280tokens, datos sinteticos, cero mutaciones cloud/push/acciones. Comprueba cuatro noches mas tarde/hipotesis alternativas, datos escasos, respuesta con multiples observaciones, desvio de tema e hipotesis ajenas. Evaluaciones previas detectaron unidades ambiguas y falta de alternativas; corregidos antes del resultado final. Informe tmp/bmb/longitudinal-live-eval.json.
-- iOS CI en curso; el primer intento compilo las pruebas y detecto un unwrap en el fixture HTTP nuevo: corregido usando el lector existente de httpBody/httpBodyStream. No es evidencia de distribucion ni de Screen Time fisico.
+- Proveedor real gpt-5.6-luna:5/5 casos, siete llamadas/38.851tokens, datos sinteticos, cero mutaciones cloud/push/acciones. Comprueba cuatro noches mas tarde/hipotesis alternativas, datos escasos, respuesta con multiples observaciones, desvio de tema e hipotesis ajenas. Evaluaciones previas detectaron unidades ambiguas y falta de alternativas; corregidos antes del resultado final. Informe tmp/bmb/longitudinal-live-eval.json.
+- CI backend37601735737, fuente25e049a: PostgreSQL15, harness y compilacion/tests Android correctos. CI iOS37601185418: pruebas nativas, build Simulator sin firma y suite Home correctos; capturas en curso. El arbol iOS es identico en70cabb9 y25e049a. El primer intento detecto un unwrap en el fixture HTTP nuevo: corregido usando el lector existente de httpBody/httpBodyStream. No es evidencia de distribucion ni de Screen Time fisico.
+- Extracciones secundarias invalidas admiten una reparacion acotada del mismo modelo. Tests verifican que no pueda cambiar acciones, intencion ni autoridad de memoria; evita convertir una unidad erronea en una nueva orden.
 
 ### Iteracion de planes
 

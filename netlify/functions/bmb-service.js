@@ -52,7 +52,7 @@ async function receipt(userId,actionId,status,evidence) {
   await mergeOutcome(userId,actionId.slice(4),{status,device_evidence:evidence,received_at:new Date().toISOString()});
 }
 const mergeOutcome=(userId,id,patch,db=supabaseFetch)=>db("rpc/bmb_merge_outcome",{method:"POST",body:JSON.stringify({p_user:userId,p_id:id,p_patch:patch})});
-function opportunities(sessions,events,now=Date.now()) {
+function opportunities(events,now=Date.now()) {
   const candidates=[];
   for(const e of events.filter(e=>e.kind==="action"&&["verified","delayed","failed"].includes(e.outcome?.status)))candidates.push({
     kind:e.outcome.status==="failed"?"failure":"intervention",priority:e.outcome.status==="failed"?90:70,
@@ -68,7 +68,6 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
   const context=await getContext({},identity.assistant_connect_code);
   context.memory=memory;context.language=memory.language||"en";
   await longitudinal.dailyReview(a,identity,context,brain,db);
-  const sessions=await db(`bmb_sessions?auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&ended_at=gte.${encodeURIComponent(new Date(Date.now()-7*86400000).toISOString())}&select=*&limit=2000`,{method:"GET"});
   const events=await db(`bmb_events?auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&created_at=gte.${encodeURIComponent(new Date(Date.now()-7*86400000).toISOString())}&select=*&order=created_at.desc`,{method:"GET"});
   // Resume a reservation after worker interruption using the same action ID and
   // expiry. APNs acceptance is transport evidence only, never device execution.
@@ -101,7 +100,7 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
     &&Date.parse(e.expires_at)>Date.now()&&(e.outcome.notification_attempts||0)<3
     &&(!e.outcome.next_retry_at||Date.parse(e.outcome.next_retry_at)<=Date.now()));
   if(retry)return deliverNotice(retry);
-  const candidates=opportunities(sessions,events);
+  const candidates=opportunities(events);
   candidates.push(...await longitudinal.reviewOpportunities(a.auth_user_id,a.settings.timezone,db));
   for(const f of await longitudinal.followups(a.auth_user_id,db))candidates.push({kind:"opportunity",priority:45,
     event_key:`followup:${f.id}`,meaning_key:`followup:${f.id}`,expires_at:new Date(Date.parse(f.created_at)+7*86400000).toISOString(),
