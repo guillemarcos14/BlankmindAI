@@ -166,11 +166,13 @@ struct SetupView: View {
 
     private var deviceContent: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text(copy("Preparemos tu descanso", "Let's prepare your rest"))
+            Text(copy("Preparemos tu descanso", "Let's get ready"))
                 .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
                 .tracking(-0.9).fixedSize(horizontal: false, vertical: true)
-            Text(copy("Necesito dos conexiones para acompañarte: Screen Time para protegerte de las distracciones y Salud para entender tu sueño junto a tu actividad y señales físicas.", "I need two connections to support you: Screen Time to protect you from distractions, and Health to understand your sleep alongside activity and physical signals."))
-                .font(.blankBody).fixedSize(horizontal: false, vertical: true)
+            if !needsSleepRecovery {
+                Text(copy("Necesito dos conexiones para acompañarte: Screen Time para protegerte de las distracciones y Salud para entender tu sueño junto a tu actividad y señales físicas.", "I need two connections to support you: Screen Time to protect you from distractions, and Health to understand your sleep alongside activity and physical signals."))
+                    .font(.blankBody).fixedSize(horizontal: false, vertical: true)
+            }
             VStack(spacing: 12) {
                 permissionButton(title: copy("Permitir Screen Time", "Allow Screen Time"),
                     ready: screenTimeBlocker.authorizationStatus == .approved, action: authorizeScreenTime)
@@ -182,7 +184,7 @@ struct SetupView: View {
                 Text(copy("Comprobando los registros disponibles…", "Checking available records…"))
                     .font(.blankBody).accessibilityAddTraits(.updatesFrequently)
             } else if healthKitStore.sleepAccess == .noData {
-                Text(copy("Todavía no encontramos registros de sueño. Necesitamos que Salud tenga datos disponibles y permita compartirlos con Blankmind. Si empiezas ahora, duerme con tu Apple Watch y vuelve cuando los registros aparezcan en Salud.", "We haven't found sleep records yet. Health needs available data and permission to share it with Blankmind. If you're starting now, sleep with your Apple Watch and return when records appear in Health."))
+                Text(copy("Aún no puedo leer registros de sueño. Revisa el acceso y el seguimiento. Si empiezas hoy, duerme con tu reloj y vuelve cuando aparezcan registros en Salud.", "I can't read sleep records yet. Check access and sleep tracking. If you're starting today, wear your watch overnight and return when records appear in Health."))
                     .font(.blankBody).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("onboarding-sleep-empty")
                 recoveryButtons
@@ -243,6 +245,13 @@ struct SetupView: View {
         .accessibilityLabel(title)
         .accessibilityValue(ready ? "Completed" : "Not completed")
     }
+    private var needsSleepRecovery: Bool {
+        switch healthKitStore.sleepAccess {
+        case .noData, .failed: return true
+        default: return false
+        }
+    }
+
     private var canAutomaticallyComplete: Bool {
         currentStep == .device && deviceReady
             && scenePhase == .active
