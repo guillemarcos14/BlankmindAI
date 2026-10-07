@@ -29,10 +29,10 @@ if [ "${3:-all}" = home ]; then
   scenarios='product-home product-home-active product-home-response product-home-error product-home-long product-control product-control-active product-shell-progress'
 fi
 if [ "${3:-all}" = uniform ]; then
-  scenarios='product-home product-home-active product-home-error product-home-long product-control product-control-active product-shell-progress product-progress-active product-distractions product-distractions-active product-schedule product-schedule-active product-emergency product-emergency-active product-emergency-confirm-active product-automatic product-automatic-active product-automatic-error product-notifications product-notifications-active product-account product-onboarding-account product-onboarding-device history'
+  scenarios='product-home product-home-active product-home-error product-home-long product-control product-control-active product-shell-progress product-progress-active product-distractions product-distractions-active product-schedule product-schedule-active product-emergency product-emergency-active product-emergency-confirm-active product-automatic product-automatic-active product-automatic-error product-notifications product-notifications-active product-account product-home-first-use product-home-first-use-notifications product-onboarding-account product-onboarding-device product-onboarding-device-empty product-onboarding-device-error history'
 fi
 if [ "${3:-all}" = onboarding ]; then
-  scenarios='product-home product-onboarding-account product-onboarding-device'
+  scenarios='product-home-first-use product-home-first-use-notifications product-onboarding-account product-onboarding-device product-onboarding-device-empty product-onboarding-device-error'
 fi
 for scenario in $scenarios; do
   xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true
