@@ -60,8 +60,64 @@ physical device block, independent human quality or production readiness.
 
 Targets are first-text median and known complete estimated cost at most 80% of
 baseline, no worse first-text/final p95, no worse errors/quality/authority. Any
-failed/unknown gate keeps the experimental feature off. Results will be recorded
-without selecting favorable cases or replacing provider failures.
+failed/unknown gate keeps the experimental feature off. All failures are retained.
+
+## Completed result: keep disabled
+
+120 turns per variant, 60 per language, 108 pairs successful in both variants.
+Latency percentiles below use successful turns; errors and their full request
+usage remain counted separately. This is a small repeated-template experiment,
+not a production distribution or statistical proof about all Decisions designs.
+
+| Metric | Integrated baseline | Decisions |
+| --- | ---: | ---: |
+| First text p50 | 3016.77 ms | 3371.96 ms (+11.8%) |
+| First text p95 | 17733.91 ms | 17646.65 ms (-0.5%) |
+| Durable final p50 | 4400.72 ms | 5058.30 ms (+14.9%) |
+| Durable final p95 | 18880.24 ms | 18954.92 ms (+0.4%) |
+| Successful / failed turns | 110 / 10 | 109 / 11 |
+| Generative requests, including repairs | 193 | 195 |
+| Additional Decisions requests | 0 | 119 (113 completed) |
+| Median DB calls | 15 | 15 |
+| Estimated application cost, 120 turns | $0.12025844 | at least $0.14078910 (+17.1%) |
+
+Six Decisions requests timed out without usage. Candidate total cost is unknown;
+the known subtotal already exceeds baseline. Cache writes and failed turns are
+included. Reviewer overhead, standalone classifier trials and access probe are
+outside application cost. Known dedicated Decisions spend across classifier,
+pilot and main trials plus probe is $0.10803140; this is not an invoice.
+
+On the 108 mutually successful pairs, first-text median ratio is 1.1161 (+11.6%).
+Neither median speed nor cost target passes. The slight first-text p95 improvement
+does not compensate for worse median/final latency, extra calls and more errors.
+All observed failed app turns returned HTTP 503; existing planner/observation
+repair cases dominate. These are measured failures, not replaced samples.
+
+Revised source selection on the previously exposed 200-case holdout: ES precision
+47.83%, recall 61.11%; EN precision 47.37%, recall 50%. Exact source-set match
+88%/89% is dominated by negative cases and does not establish retrieval accuracy.
+The initial all-abstaining trial and subsequent 100-case adjustment are preserved.
+
+Second-model reply review: acceptable/excellent 90% baseline versus 85.83%
+Decisions, hard flags 1 versus 4. This is advisory model judgement, not human
+validation. The original review omitted verified forgetting tombstones and falsely
+flagged two baseline acknowledgements; the 20 affected records (8 distinct review
+inputs) were reviewed again with that receipt. Both reviews are preserved. All
+20 complete-block turns have verified queued start_protection / 30 minutes / once;
+all 20 forgetting turns have durable tombstones. No physical block is certified.
+Known goal and bedtime were seeded; sleep/protection histories were empty, so this
+experiment does not certify retrieval over nonempty personal histories.
+
+All five QA cleanup checks passed. All seven frozen runtime hashes were identical
+at the end; the baseline checkout advanced only by a TestFlight documentation file.
+After measurement, usage validation was tightened to reject malformed output-token
+metadata; valid provider behavior is unchanged, measured candidate stays 753553b.
+
+Machine evidence: [all trials and reviews](BM_DECISIONS_EVIDENCE_2026-10-07.json).
+PR: [draft 25](https://github.com/guillemarcos14/BlankmindAI/pull/25).
+Default-off prototype retained for review; no server flags, deployment, migration,
+production or TestFlight change. Decisions is fast for typed answers, but this
+prefetch integration did not reliably replace the planner's retrieval rounds.
 
 ## Official sources checked 2026-10-07
 

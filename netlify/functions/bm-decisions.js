@@ -18,8 +18,9 @@ function validate(body,payload){
   if(a.type==="refusal")answers[a.name]=null;
   else if(a.type==="predicate"&&typeof a.probability==="number"&&Number.isFinite(a.probability)&&a.probability>=0&&a.probability<=1)answers[a.name]=a.probability;
   else throw Error("decisions_invalid_probability");}
- if(!Number.isSafeInteger(body.usage?.input_tokens)||body.usage.input_tokens<0)throw Error("decisions_invalid_usage");
- return {answers,usage:{input_tokens:body.usage.input_tokens,output_tokens:body.usage.output_tokens||0},model:MODEL};
+ const outputTokens=body.usage?.output_tokens??0;
+ if(!Number.isSafeInteger(body.usage?.input_tokens)||body.usage.input_tokens<0||!Number.isSafeInteger(outputTokens)||outputTokens<0)throw Error("decisions_invalid_usage");
+ return {answers,usage:{input_tokens:body.usage.input_tokens,output_tokens:outputTokens},model:MODEL};
 }
 function selected(result){if(!result||result.answers.unsafe==null||result.answers.unsafe>=.1)return [];
  return Object.keys(sources).filter(s=>result.answers[s]!=null&&result.answers[s]>=.95).slice(0,3);}

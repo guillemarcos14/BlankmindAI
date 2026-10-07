@@ -4,6 +4,7 @@ async function main(){
  const id="11111111-1111-4111-8111-111111111111",run="22222222-2222-4222-8222-222222222222",payload=d.request("Do I have recorded sleep?");
  const body={model:d.MODEL,answers:payload.questions.map(q=>({name:q.name,type:"predicate",probability:q.name==="observations"?1:0})),usage:{input_tokens:500,output_tokens:0}};
  const result=d.validate(body,payload);assert.deepEqual(d.selected(result),["observations"]);
+ for(const output_tokens of ["private-input",-1,NaN,1.5])assert.throws(()=>d.validate({...body,usage:{...body.usage,output_tokens}},payload),/decisions_invalid_usage/);
  assert.deepEqual(d.selected({...result,answers:{...result.answers,unsafe:.1}}),[]);
  assert.throws(()=>d.validate({...body,answers:[...body.answers,body.answers[0]]},payload));
  assert.throws(()=>d.validate({...body,answers:body.answers.map((a,i)=>i? a:{...a,probability:NaN})},payload));
