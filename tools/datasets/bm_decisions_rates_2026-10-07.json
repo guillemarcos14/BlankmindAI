@@ -1,0 +1,13 @@
+{
+  "model": "gpt-5.6-luna",
+  "input": 0.2,
+  "cached": 0.02,
+  "cache_write": 0.25,
+  "output": 1.2,
+  "decisions_model": "gpt-6-luna",
+  "decisions_input": 0.1,
+  "unit": "USD per million tokens; standard Responses / dedicated Decisions endpoint",
+  "verified": "2026-10-07",
+  "source": "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+  "decisions_source": "https://developers.openai.com/api/docs/guides/decisions"
+}

@@ -88,11 +88,12 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
 }
 async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run=input=>generate(input,{onDraft}),db=supabaseFetch,memories=null,recover=require("./bmb-proposal").recover}={}) {
   // Policy and followups are independent of the memory cutoff; history is not.
-  const [saved,policyRows,openFollowups,jevResult]=await timing.span("brain_context",()=>Promise.all([
+  const [saved,policyRows,openFollowups,jevResult,decisionsResult]=await timing.span("brain_context",()=>Promise.all([
     memories||readMemories(userId),
     db(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=settings,version`,{method:"GET"}),
     longitudinal.followups(userId,db),
     proactive?null:require("./bm-jev").startPrefetch(userId),
+    proactive?null:require("./bm-decisions").start(userId,prompt),
   ]));
   const cutoff=saved.filter(m=>m.value==null).map(m=>m.source_at).filter(Boolean).sort().at(-1);
   // Tombstones cut off ALL automatic historical personalization; current explicit history queries can opt in via the model read tool only after user evidence.
@@ -103,6 +104,8 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   const prior=context.memory?.conversation_state?.bmb_state||{};
   const latest=await readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
   const sources=[latest,...(proactive?.daily_review?.sources||[])];
+  sources.push(...await require("./bm-decisions").prefetch(decisionsResult,{userId,identity,cutoff,
+    timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",existing:sources,db}));
   sources.push(...await require("./bm-jev").prefetch(jevResult,{userId,identity,cutoff,
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",existing:sources,db}));
   const input={current_message:prompt,mode:proactive?"proactive":"reactive",proactive,now:new Date().toISOString(),
