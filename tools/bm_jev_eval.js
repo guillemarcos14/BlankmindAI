@@ -78,7 +78,7 @@ async function main() {
   if (!process.env.TYPESAFE_API_KEY) throw Error("jev_key_required");
   const records=[],start=performance.now();let reserved=0;
   const report={provider_real:true,model:jev.taxonomy.model,taxonomy:jev.taxonomy.version,independent_human_review:false,
-    dataset_sha256:crypto.createHash("sha256").update(fs.readFileSync(path.join(__dirname,"datasets/bm_jev_v1.json"))).digest("hex"), records,
+    dataset_sha256:crypto.createHash("sha256").update(fs.readFileSync(path.join(__dirname,"datasets/bm_jev_v1.json"),"utf8").replace(/\r\n/g,"\n")).digest("hex"), records,
     completed:false,gates_passed:false,physical_device_tested:false};
   for(const c of cases) {
     if (reserved+.001>1) throw Error("jev_budget_exhausted"); reserved+=.001;

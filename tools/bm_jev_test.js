@@ -46,7 +46,7 @@ async function main() {
   assert.equal(drafts[0].jev[0].status,"completed");assert.equal(timing.currentTurn(),null);
   const corpus=require("./datasets/bm_jev_v1.json"),manifest=require("./datasets/bm_jev_v1.manifest.json");
   assert.equal(corpus.cases.length,300);assert.equal(new Set(corpus.cases.map(c=>c.id)).size,300);assert.equal(new Set(corpus.cases.map(c=>c.current_message)).size,300);
-  assert.equal(crypto.createHash("sha256").update(fs.readFileSync("tools/datasets/bm_jev_v1.json")).digest("hex"),manifest.sha256);
+  assert.equal(crypto.createHash("sha256").update(fs.readFileSync("tools/datasets/bm_jev_v1.json","utf8").replace(/\r\n/g,"\n")).digest("hex"),manifest.sha256);
   for(const c of corpus.cases){assert.equal(c.independent_human_review,false);assert(c.expected.topics.every(t=>Object.keys(jev.taxonomy.topics).includes(t)));assert(corpus.cases.filter(x=>x.pair_id===c.pair_id).every(x=>x.split===c.split));}
   const perfect=Object.fromEntries(corpus.cases.map(c=>[c.id,{...c.expected,abstained:c.expected.abstain}]));
   assert.equal(evaluation.score(corpus.cases,perfect).precision,1);
