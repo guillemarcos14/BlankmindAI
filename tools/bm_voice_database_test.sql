@@ -22,6 +22,14 @@ begin
   end loop;
   select * into r from reserve_assistant_voice('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','aaaaaaaa-aaaa-4aaa-8aaa-000000000001',gen_random_uuid());
   if r.reserved or r.reason <> 'rate_limited' then raise exception 'hourly budget bypassed'; end if;
+  delete from assistant_app_turns where id='aaaaaaaa-aaaa-4aaa-8aaa-000000000001';
+  if (select count(*) from assistant_voice_requests where auth_user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and turn_id is null) <> 20 then
+    raise exception 'turn deletion reset personal budget';
+  end if;
+  insert into assistant_app_turns(id,auth_user_id,user_text,assistant_text,status,completed_at) values
+    ('aaaaaaaa-aaaa-4aaa-8aaa-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','test','reply','completed',now());
+  select * into r from reserve_assistant_voice('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','aaaaaaaa-aaaa-4aaa-8aaa-000000000001',gen_random_uuid());
+  if r.reserved or r.reason <> 'rate_limited' then raise exception 'turn deletion bypassed hourly budget'; end if;
   update assistant_voice_requests set created_at=now()-interval '2 hours';
   insert into assistant_voice_requests select gen_random_uuid(),'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid,
     'aaaaaaaa-aaaa-4aaa-8aaa-000000000001'::uuid,now()-interval '2 hours' from generate_series(1,80);
