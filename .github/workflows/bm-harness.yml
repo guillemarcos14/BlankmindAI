@@ -61,6 +61,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/027_bmb_autonomy.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/028_bmb_longitudinal.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/031_assistant_voice.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/032_assistant_voice_global_budget.sql
           psql -v ON_ERROR_STOP=1 -f tools/bm_voice_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/bmb_longitudinal_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/assistant_app_database_test.sql

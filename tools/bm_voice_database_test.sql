@@ -27,14 +27,16 @@ begin
     'aaaaaaaa-aaaa-4aaa-8aaa-000000000001'::uuid,now()-interval '2 hours' from generate_series(1,80);
   select * into r from reserve_assistant_voice('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','aaaaaaaa-aaaa-4aaa-8aaa-000000000001',gen_random_uuid());
   if r.reserved then raise exception 'daily user budget bypassed'; end if;
-  insert into assistant_voice_requests select gen_random_uuid(),'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid,
-    'aaaaaaaa-aaaa-4aaa-8aaa-000000000001'::uuid,now()-interval '2 hours' from generate_series(1,900);
+  insert into assistant_voice_global_usage(hour,requests) values(date_trunc('hour',now()-interval '2 hours'),1000)
+    on conflict(hour) do update set requests=1000;
   select * into r from reserve_assistant_voice('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','bbbbbbbb-bbbb-4bbb-8bbb-000000000001',gen_random_uuid());
   if r.reserved then raise exception 'global budget bypassed'; end if;
   delete from auth.users where id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   if exists(select 1 from assistant_voice_requests where auth_user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
     raise exception 'account deletion left usage records';
   end if;
+  select * into r from reserve_assistant_voice('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','bbbbbbbb-bbbb-4bbb-8bbb-000000000001',gen_random_uuid());
+  if r.reserved then raise exception 'account deletion reset global budget'; end if;
 end;
 $$;
 rollback;
