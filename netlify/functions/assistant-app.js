@@ -9,6 +9,7 @@ const { normalizeUserContext } = require("./bm-context");
 const { persistCanonicalSnapshot } = require("./_bm_user_context");
 const { commitMemory } = require("./bm-brain");
 const { chatText, hasValidatedCopy } = require("./bm-conversation-copy");
+const timing = require("./bm-turn-timing");
 
 const TABLE = "assistant_app_turns";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -227,10 +228,10 @@ async function prepare(auth, row, leaseOwner, prompt, deviceContext, onDraft) {
     if (!context.brain_snapshot || !Number.isSafeInteger(context.context_revision)) throw new Error("invalid_brain_snapshot");
     // Bind IDs to the authenticated installation, never to client-supplied IDs.
     context.anonymous_user_id = auth.identity.anonymous_user_id || `app:${auth.user.id}`;
-    const saved = await persistCanonicalSnapshot(auth.identity.assistant_connect_code, context, "app_turn_fresh_snapshot");
+    const saved = await timing.span("snapshot", () => persistCanonicalSnapshot(auth.identity.assistant_connect_code, context, "app_turn_fresh_snapshot", { identity: auth.identity }));
     if (!saved) throw new Error("brain_snapshot_not_persisted");
   }
-  const { plan, context, modelUnavailable } = await callBlankedAgent(prompt, auth.user.id, auth.connection, { onDraft });
+  const { plan, context, modelUnavailable } = await callBlankedAgent(prompt, auth.user.id, auth.connection, { onDraft, identity: auth.identity });
   // Do not commit a degraded reply as completed: the existing failed-turn lease
   // lets the client retry this exact UUID and payload. A canonical withdrawal is
   // safe without a model and must still invalidate a pending instruction.
@@ -282,10 +283,10 @@ async function send(auth, body, onDraft) {
     return json(400, { error: "invalid_turn" });
   }
   const leaseOwner = crypto.randomUUID();
-  const result = await supabaseFetch("rpc/claim_assistant_app_turn", {
+  const result = await timing.span("claim", () => supabaseFetch("rpc/claim_assistant_app_turn", {
     method: "POST", body: JSON.stringify({ p_auth_user_id: auth.user.id, p_turn_id: turnId,
       p_user_text: prompt, p_lease_owner: leaseOwner }),
-  });
+  }));
   const claim = Array.isArray(result) ? result[0] : result;
   if (!claim?.claimed) {
     if (claim?.status === "completed") {
@@ -298,11 +299,11 @@ async function send(auth, body, onDraft) {
   }
   const ownedPath = `${turnPath(auth.user.id, turnId)}&lease_owner=eq.${leaseOwner}&status=eq.processing`;
   try {
-    const row = claim.turn.prepared_payload ? claim.turn : await prepare(auth, claim.turn, leaseOwner, prompt, body.context, onDraft);
+    const row = claim.turn.prepared_payload ? claim.turn : await timing.span("prepare", () => prepare(auth, claim.turn, leaseOwner, prompt, body.context, onDraft));
     const payload = row.prepared_payload;
     let action = null;
     if (payload.action) {
-      const queued = await queuePendingAssistantAction({ ...auth.connection, authUserId: auth.user.id, turnLeaseOwner: leaseOwner }, {}, prompt, "app", payload.action);
+      const queued = await timing.span("queue", () => queuePendingAssistantAction({ ...auth.connection, authUserId: auth.user.id, turnLeaseOwner: leaseOwner }, {}, prompt, "app", payload.action));
       if (!queued?.action) throw new Error("assistant_queue_unavailable");
       action = queued.action;
     } else if (payload.invalidates) {
@@ -318,7 +319,7 @@ async function send(auth, body, onDraft) {
         method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ action_status: action.status }),
       });
     }
-    const rows = await supabaseFetch(ownedPath, {
+    const rows = await timing.span("commit", () => supabaseFetch(ownedPath, {
       method: "PATCH", headers: { prefer: "return=representation" },
       body: JSON.stringify({ assistant_text: payload.assistant_text, action_id: action?.id || null,
         action_label: payload.action_label,
@@ -327,9 +328,9 @@ async function send(auth, body, onDraft) {
         ...(payload.control_section ? { control_section: payload.control_section } : {}),
         status: "completed", completed_at: new Date().toISOString(), lease_expires_at: null,
         prepared_payload: null }),
-    });
+    }));
     if (!rows[0]) throw new Error("assistant_lease_lost");
-    return json(200, { ok: true, turn: await presentWithMemory(auth, rows[0]) });
+    return json(200, { ok: true, turn: await timing.span("presentation", () => presentWithMemory(auth, rows[0])) });
   } catch (error) {
     // A lost commit response must recover the saved reply, not repeat its action.
     const recovered = await readTurn(auth.user.id, turnId).catch(() => null);
@@ -344,7 +345,7 @@ async function send(auth, body, onDraft) {
   }
 }
 
-exports.handler = async (event, _context, { onDraft } = {}) => {
+async function handle(event, _context, { onDraft } = {}) {
   const methodError = requireMethod(event, "POST");
   if (methodError) return methodError;
   let body;
@@ -352,7 +353,7 @@ exports.handler = async (event, _context, { onDraft } = {}) => {
   catch (_) { return json(400, { error: "invalid_json" }); }
   if (!body || typeof body !== "object" || Array.isArray(body)) return json(400, { error: "invalid_json" });
   try {
-    const auth = await authenticatedIdentity(event, body, body.action);
+    const auth = await timing.span("authentication", () => authenticatedIdentity(event, body, body.action));
     if (auth.error) return json(auth.status, { error: auth.error });
     if (body.action === "activate") return await activate(auth);
     if (body.action === "greeting") {
@@ -363,7 +364,7 @@ exports.handler = async (event, _context, { onDraft } = {}) => {
     if (body.action === "history") return await history(auth, body);
     if (body.action === "status") return await status(auth, body);
     if (body.action === "transcribe") {
-      const result = await require("./bm-audio-input").transcribe(body);
+      const result = await timing.span("transcription", () => require("./bm-audio-input").transcribe(body));
       return json(result.status, result.error ? { error: result.error } : { ok: true, text: result.text });
     }
     if (body.action === "send") return await send(auth, body, onDraft);
@@ -377,6 +378,16 @@ exports.handler = async (event, _context, { onDraft } = {}) => {
     }));
     return json(503, { error: "assistant_app_unavailable", retry_after: 3 });
   }
+}
+
+exports.handler = async (event, context, options = {}) => {
+  let body;
+  try { body = parseJsonBody(event); } catch (_) { /* Original handler owns errors. */ }
+  if (!["send", "transcribe"].includes(body?.action)) return handle(event, context, options);
+  return timing.run({ turnId: body.turn_id, action: body.action }, () => handle(event, context, {
+    ...options,
+    onDraft: options.onDraft ? text => { timing.firstText(plainAssistantText(text)); options.onDraft(text); } : undefined,
+  }));
 };
 
 exports.authenticatedIdentity = authenticatedIdentity;

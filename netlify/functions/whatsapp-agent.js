@@ -421,7 +421,7 @@ function memoryFactsFromText(text, savedMemory = {}) {
   return facts;
 }
 
-async function agentContext(from, prompt, linkedConnection = null) {
+async function agentContext(from, prompt, linkedConnection = null, { identity } = {}) {
   const channel = linkedConnection?.channel === "app" ? "app" : "whatsapp";
   let savedMemory = {};
   try {
@@ -447,6 +447,7 @@ async function agentContext(from, prompt, linkedConnection = null) {
   const userContext = await enrichAssistantContext(
     storedUserContext,
     linkedConnection?.connectCode || savedMemory.assistant_connect_code,
+    channel === "app" ? { identity, includeLegacySources: false } : {},
   );
     if (Object.keys(newFacts).length || savedMemory.language !== language) {
       try {
@@ -476,10 +477,11 @@ async function agentContext(from, prompt, linkedConnection = null) {
   };
 }
 
-async function callBlankedAgent(prompt, from, linkedConnection = null, { onDraft } = {}) {
-  const context = await agentContext(from, prompt, linkedConnection);
+async function callBlankedAgent(prompt, from, linkedConnection = null, { onDraft, identity: verifiedIdentity } = {}) {
+  const sameIdentity = verifiedIdentity?.auth_user_id === from && verifiedIdentity?.assistant_connect_code === linkedConnection?.connectCode ? verifiedIdentity : null;
+  const context = await require("./bm-turn-timing").span("context", () => agentContext(from, prompt, linkedConnection, { identity: sameIdentity }));
   if (context.channel === "app") {
-    const identity = await require("./_identity").identityForAuthUser(from);
+    const identity = sameIdentity || await require("./_identity").identityForAuthUser(from);
     return require("./bmb-brain").plan({ prompt, context, userId: from, identity, onDraft });
   }
   const response = await blankedAgentHandler({

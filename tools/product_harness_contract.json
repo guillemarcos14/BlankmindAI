@@ -64,6 +64,7 @@
     "repair_commands": [],
     "commands": [
       { "name": "bm_response_stream", "run": "node tools/bm_response_stream_test.js" },
+      { "name": "bm_latency", "run": "node tools/bm_latency_test.js" },
       { "name": "bmb_longitudinal", "run": "node tools/bmb_longitudinal_test.js" },
       { "name": "bmb_greeting", "run": "node tools/bmb_greeting_test.js" },
       { "name": "bmb_vision", "run": "node tools/bmb_test.js" },

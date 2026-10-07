@@ -8,6 +8,7 @@ const {KEYS,readMemories}=require("./bm-brain");
 const {SOURCE_NAMES,sanitize,inventory,readSource}=require("./bmb-sources");
 const {freshness,midnight,dayOffset}=require("./bm-brain-data");
 const longitudinal=require("./bmb-longitudinal");
+const timing=require("./bm-turn-timing");
 const object=p=>({type:"object",additionalProperties:false,required:Object.keys(p),properties:p});
 const str={type:"string"}, num={type:"integer"}, nil=p=>({anyOf:[p,{type:"null"}]});
 const ACTIONS=[...require("./bm-pending-action").PENDING_ASSISTANT_ACTION_TYPES].filter(t=>t!=="apply_ai_plan");
@@ -21,8 +22,11 @@ const schema=object({phase:{type:"string",enum:["read","final"]},response_langua
   decision:{type:"string",enum:["respond","ask","propose","execute","cancel","silent"]},evidence:str,
   accepted_proposal:nil(str),pending_request:nil(str),action:nil(actionSchema),queries:{type:"array",items:querySchema,maxItems:3},
   memory:nil(object({operation:{type:"string",enum:["set","forget","forget_all"]},key:nil({type:"string",enum:KEYS}),value:nil(str),evidence:str})),
+  // All decision/action/memory authority precedes the provisional text. The
+  // secondary tracking fields can follow it; they still validate before commit.
+  response_text:str,
   observations:{type:"array",items:longitudinal.observationSchema,maxItems:12},followup_resolution:longitudinal.followupSchema,longitudinal_review:longitudinal.reviewSchema,
-  cited_sources:{type:"array",items:str,maxItems:12},response_text:str});
+  cited_sources:{type:"array",items:str,maxItems:12}});
 const INSTRUCTIONS=`For longitudinal tracking, extract multiple explicit current-user observations into observations; otherwise return []. Never turn a usual routine into daily measurements; set measurement=routine_statement for habits, declared only for an actual occurrence. Preserve bedtime (going to bed), sleep_onset (falling asleep), wake_time, duration and perceived restfulness as different metrics. Only extract numeric observations with explicit digits you can verify in evidence; use HH:MM or numeric hours for clock values. Numeric observations MUST have value_text=null. Clock 23:00 is value_number=1380, unit=local_minute. Duration uses minutes. Scores use unit=score_0_10 and require an explicit 0–10 scale. Caffeine/alcohol use servings. All qualitative observations use value_number=null, unit=text and value_text copied literally from the user's message; use life_context for qualitative stress/rest descriptions without a numeric scale. Do not infer stress, health, less need for sleep, causality or a benefit from phone protection. Use measured_at only when the user explicitly establishes the date; null means statement date, not an invented historic night. Keep temporary context as observations rather than replacing stable memory. No third-party facts. Never extract observations from a question or hypothetical. Followup_resolution may answer/dismiss only the supplied open followup that the CURRENT reply actually addresses; a new topic or silence does not answer it. Evidence must be literal current-message text.
 Saving, correcting or forgetting personal memory uses decision=respond and action=null. A memory operation is committed internally with the turn; decision=execute is reserved for a native device action. Never invent a device action to fulfil a memory request.
 For proactive daily_review, return a longitudinal_review even when silent, with concise summary, uncertainty, alternative hypotheses, evidence row IDs, missing_information and optionally one useful discriminating question. Read the supplied daily_review.sources and existing followups/reviews before asking. Distinguish absent, partial, stale and conflicting sources. Aggregate wearable scores are not exact sleep onset times. Compare personal days and context, never diagnose. No fictitious evidence or supported hypothesis without evidence. In this assessment decision must be silent; action and memory null, observations empty. Only ask a question if it can change a plan or resolve a meaningful uncertainty; do not ask known, pending or rejected questions. Prefer fewer, better questions. A followup candidate may notify/ask or be silent, NEVER execute; its stored question is the conversation handoff.
@@ -75,24 +79,28 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     onDraft(""); // Discard a prior read, repair or restored-offer draft.
     model=options=>require("./bm-response-stream").readModelStream({...options,onDraft});
   }
-  const {body}=await model({request:{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
+  const {body}=await timing.span("model",()=>model({request:{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
     input:[{role:"system",content:INSTRUCTIONS},{role:"user",content:JSON.stringify(input)}],
-    text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema}}},timeoutMs:18000,errorPrefix:"bmb"});
+    text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema}}},timeoutMs:18000,errorPrefix:"bmb"}));
+  timing.usage(body.usage);
   if(body.status==="incomplete")throw Error("bmb_model_incomplete");
   return JSON.parse(body.output_text||(body.output||[]).flatMap(o=>o.content||[]).filter(o=>o.type==="output_text").map(o=>o.text).join(""));
 }
 async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run=input=>generate(input,{onDraft}),db=supabaseFetch,memories=null,recover=require("./bmb-proposal").recover}={}) {
-  const saved=memories||await readMemories(userId);
+  // Policy and followups are independent of the memory cutoff; history is not.
+  const [saved,policyRows,openFollowups]=await timing.span("brain_context",()=>Promise.all([
+    memories||readMemories(userId),
+    db(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=settings,version`,{method:"GET"}),
+    longitudinal.followups(userId,db),
+  ]));
   const cutoff=saved.filter(m=>m.value==null).map(m=>m.source_at).filter(Boolean).sort().at(-1);
   // Tombstones cut off ALL automatic historical personalization; current explicit history queries can opt in via the model read tool only after user evidence.
   const safeContext={snapshot:context.brain_snapshot?{...context.brain_snapshot,sessions:undefined,retained_session_count:context.brain_snapshot.sessions?.length}:null,configuration:context.schedule,is_blank_active:context.is_blank_active,
     has_selected_apps:context.has_selected_apps,screen_time_authorized:context.screen_time_authorized,
     daily_limit_enabled:context.daily_limit_enabled,daily_limit_minutes:context.daily_limit_minutes,
     last_device_outcome:context.memory?.last_assistant_action_outcome};
-  const policyRows=await db(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=settings,version`,{method:"GET"});
   const prior=context.memory?.conversation_state?.bmb_state||{};
   const latest=await readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
-  const openFollowups=await longitudinal.followups(userId,db);
   const sources=[latest,...(proactive?.daily_review?.sources||[])];
   const input={current_message:prompt,mode:proactive?"proactive":"reactive",proactive,now:new Date().toISOString(),
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",previous_language:context.language||"en",
@@ -106,10 +114,11 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     result=await run(input);
     if(result.phase!=="read")break;
     if(!result.queries?.length||pass===3)throw Error("bmb_read_budget_exhausted");
-    for(const q of result.queries) {
+    const readResults=await timing.span("source_reads",()=>Promise.all(result.queries.map(q=>{
       const historical=q.source==="history"&&q.history_evidence?.trim()&&prompt.includes(q.history_evidence)&&result.message_kind==="question";
-      sources.push(await readSource(userId,identity,{...q,timezone:q.timezone||input.timezone},historical?null:cutoff,db));
-    }
+      return readSource(userId,identity,{...q,timezone:q.timezone||input.timezone},historical?null:cutoff,db);
+    })));
+    sources.push(...readResults);
   }
   if(!proactive&&result?.phase==="final"&&result.message_kind==="acceptance"&&!prior.proposal) {
     const recovered=await recover({history:latest.rows,timezone:input.timezone,actionSchema,after:prior.recovery_after},
@@ -137,7 +146,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   if(!result||result.phase!=="final")throw Error("bmb_invalid_phase");
   if(!proactive && (!result.evidence?.trim()||!prompt.includes(result.evidence)))throw Error("bmb_ungrounded_intent");
   if(!["en","es"].includes(result.response_language))throw Error("bmb_invalid_language");
-  if(result.cited_sources?.some(id=>!input.coverage.some(s=>s.source_id===id)&&!sources.some(s=>s.source_id===id||s.rows?.some(r=>r.id===id))))throw Error("bmb_unknown_citation");
+  if(result.cited_sources?.some(id=>!input.coverage.some(s=>s.source_id===id)&&!input.memories.some(m=>m.id===id)&&!sources.some(s=>s.source_id===id||s.rows?.some(r=>r.id===id))))throw Error("bmb_unknown_citation");
   let text=(result.response_text||"").trim();
   if((!text&&result.decision!=="silent")||/:(?!\d{2}\b)/.test(text))throw Error("bmb_invalid_prose");
   let action=null,execute=false,acceptanceRecovery=false,durationLimited=false;
