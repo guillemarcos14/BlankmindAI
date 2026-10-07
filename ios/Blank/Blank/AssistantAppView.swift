@@ -1393,7 +1393,7 @@ struct AssistantAppView: View {
     }
 
     @ViewBuilder private var voiceControls: some View {
-        if let latest, !simulatorGuest, !speech.isRecording, !speech.isStarting {
+        if let latest, (!simulatorGuest || preview), !speech.isRecording, !speech.isStarting {
             VStack(spacing: 2) {
                 HStack(spacing: 12) {
                     Button {
