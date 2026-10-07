@@ -22,6 +22,8 @@ exports.handler=async event=>{
   let body;try{body=JSON.parse(event.body);}catch(_){return {statusCode:403};}
   if(event.httpMethod!=="POST"||supplied.length!==expected.length||!crypto.timingSafeEqual(Buffer.from(supplied),Buffer.from(expected))||body.expires<Date.now()||body.expires>Date.now()+6*60000)return {statusCode:403};
   const deadline=Date.now()+12*60000;
+  try { await require("./bm-jev").drain(); }
+  catch (_) { console.error(JSON.stringify({event:"jev_shadow_worker_failed",code:"dependency_error"})); }
   while(Date.now()<deadline){
     const result=await supabaseFetch("rpc/bmb_claim_due_account",{method:"POST",body:"{}"});
     const account=Array.isArray(result)?result[0]:result;
