@@ -363,6 +363,14 @@ struct AssistantAppClient {
 
     private func readVoice(base: URL, payload: Data, token: String, userID: String, turnId: String,
                            onAudio: @escaping @MainActor (Data) async throws -> Void) async throws {
+        let started = ProcessInfo.processInfo.systemUptime
+        var firstAudio: Int?
+        var receivedBytes = 0
+        var completed = false
+        defer {
+            print("bm_voice_client_timing", ["elapsed_ms": Int((ProcessInfo.processInfo.systemUptime - started) * 1000),
+                "first_audio_ms": firstAudio ?? -1, "audio_bytes": receivedBytes, "completed": completed ? 1 : 0])
+        }
         var request = URLRequest(url: base.appendingPathComponent("assistant-app-voice"))
         request.httpMethod = "POST"; request.httpBody = payload
         request.timeoutInterval = 120
@@ -393,12 +401,15 @@ struct AssistantAppClient {
                 guard frame["turn_id"] as? String == turnId else { throw AssistantAppError.invalidResponse }
                 if type == "end" {
                     guard total > 0 else { throw AssistantAppError.invalidResponse }
+                    completed = true
                     return
                 }
                 guard type == "audio", let encoded = frame["pcm"] as? String,
                       let pcm = Data(base64Encoded: encoded), !pcm.isEmpty,
                       pcm.count <= 8192, pcm.count % 2 == 0 else { throw AssistantAppError.invalidResponse }
                 total += pcm.count
+                receivedBytes = total
+                if firstAudio == nil { firstAudio = Int((ProcessInfo.processInfo.systemUptime - started) * 1000) }
                 guard total <= 12000000 else { throw AssistantAppError.invalidResponse }
                 try await onAudio(pcm)
             }
@@ -1003,7 +1014,16 @@ struct AssistantAppView: View {
                 foreground: foreground, background: background, onApplyAction: { id in Task { await applyAction(id) } })
                 .preferredColorScheme(dark ? .dark : .light)
         }
-        .onAppear { presentationIsVisible = true; BlankBrain.shared.chatIsOpen = isHomeVisible; BlankBrain.shared.sync() }
+        .onAppear {
+            presentationIsVisible = true
+            let key = "blankVoiceReplies." + owner
+            voiceRepliesEnabled = BlankSharedState.defaults.object(forKey: key) as? Bool ?? true
+            BlankBrain.shared.chatIsOpen = isHomeVisible; BlankBrain.shared.sync()
+        }
+        .onChange(of: voiceRepliesEnabled) { enabled in
+            guard !owner.isEmpty, owner == AssistantAppSession.userID else { return }
+            BlankSharedState.defaults.set(enabled, forKey: "blankVoiceReplies." + owner)
+        }
         .onChange(of: owner) { _ in notificationOfferDismissed = false }
         .onChange(of: isHomeVisible) { visible in
             if !visible { writingHaptics.stop() }
@@ -1093,7 +1113,7 @@ struct AssistantAppView: View {
                     ) {
                         VStack(spacing: 22) {
                             if speech.isRecording || speech.isStarting {
-                                Text(spanish ? "Te escucho…" : "I'm listening…")
+                                Text(speech.isRecording ? "I'm listening…" : (speech.hasAudio ? "Transcribing…" : "Preparing microphone…"))
                                     .font(MinimalHomeDesign.font(26, relativeTo: .title3))
                                 AssistantAudioWaveform(audio: speech)
                                     .frame(maxWidth: 240, minHeight: 50)
@@ -1443,6 +1463,7 @@ struct AssistantAppView: View {
         reloadRequestID = nil
         isLoading = true
         owner = current
+        voiceRepliesEnabled = BlankSharedState.defaults.object(forKey: "blankVoiceReplies." + current) as? Bool ?? true
         streamedText = ""
         writingHaptics.stop()
         turns = []

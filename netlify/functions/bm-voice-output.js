@@ -25,10 +25,19 @@ async function voice(request, deps = {}) {
     return failure(400, "invalid_voice_request");
   }
   const abort = new AbortController();
+  const started = performance.now();
+  let firstAudio = null, audioBytes = 0, characters = 0, metered = false, cleaned = false;
   const disconnect = () => abort.abort();
   request.signal.addEventListener("abort", disconnect, { once: true });
   let timer;
-  const cleanup = () => { clearTimeout(timer); request.signal.removeEventListener("abort", disconnect); };
+  const cleanup = () => {
+    clearTimeout(timer); request.signal.removeEventListener("abort", disconnect);
+    if (!cleaned && metered) console.log("bm_voice_output_timing", JSON.stringify({
+      elapsed_ms: Math.round(performance.now() - started), first_audio_ms: firstAudio,
+      audio_bytes: audioBytes, characters,
+    }));
+    cleaned = true;
+  };
   try {
     const auth = await (deps.authenticate || assistant.authenticatedIdentity)(
       { headers: Object.fromEntries(request.headers) }, body);
@@ -47,9 +56,11 @@ async function voice(request, deps = {}) {
       p_turn_id: body.turn_id, p_request_id: body.request_id }))?.[0];
     if (!reservation?.reserved) {
       cleanup();
-      return failure(reservation?.reason === "duplicate" ? 409 : 429,
-        reservation?.reason === "duplicate" ? "voice_request_used" : "voice_rate_limited");
+      return failure(reservation?.reason === "duplicate" || reservation?.reason === "unavailable" ? 409 : 429,
+        reservation?.reason === "duplicate" ? "voice_request_used"
+          : reservation?.reason === "unavailable" ? "voice_text_unavailable" : "voice_rate_limited");
     }
+    metered = true; characters = text.length;
     // A deleted/changed turn must not be spoken after the quota reservation.
     const current = await readTurn(auth.user.id, body.turn_id);
     if (!current || current.status !== "completed" || current.assistant_text !== row.assistant_text) {
@@ -86,6 +97,8 @@ async function voice(request, deps = {}) {
           }
           const count = Math.min(8192, pending.length - pending.length % 2);
           if (count) {
+            firstAudio ??= Math.round(performance.now() - started);
+            audioBytes += count;
             controller.enqueue(frame({ type: "audio", turn_id: body.turn_id,
               pcm: Buffer.from(pending.subarray(0, count)).toString("base64") }));
             pending = pending.subarray(count);
