@@ -24,6 +24,7 @@ const schema=object({phase:{type:"string",enum:["read","final"]},response_langua
   observations:{type:"array",items:longitudinal.observationSchema,maxItems:12},followup_resolution:longitudinal.followupSchema,longitudinal_review:longitudinal.reviewSchema,
   cited_sources:{type:"array",items:str,maxItems:12},response_text:str});
 const INSTRUCTIONS=`For longitudinal tracking, extract multiple explicit current-user observations into observations; otherwise return []. Never turn a usual routine into daily measurements; set measurement=routine_statement for habits, declared only for an actual occurrence. Preserve bedtime (going to bed), sleep_onset (falling asleep), wake_time, duration and perceived restfulness as different metrics. Only extract numeric observations with explicit digits you can verify in evidence; use HH:MM or numeric hours for clock values. Numeric observations MUST have value_text=null. Clock 23:00 is value_number=1380, unit=local_minute. Duration uses minutes. Scores use unit=score_0_10 and require an explicit 0–10 scale. Caffeine/alcohol use servings. All qualitative observations use value_number=null, unit=text and value_text copied literally from the user's message; use life_context for qualitative stress/rest descriptions without a numeric scale. Do not infer stress, health, less need for sleep, causality or a benefit from phone protection. Use measured_at only when the user explicitly establishes the date; null means statement date, not an invented historic night. Keep temporary context as observations rather than replacing stable memory. No third-party facts. Never extract observations from a question or hypothetical. Followup_resolution may answer/dismiss only the supplied open followup that the CURRENT reply actually addresses; a new topic or silence does not answer it. Evidence must be literal current-message text.
+Saving, correcting or forgetting personal memory uses decision=respond and action=null. A memory operation is committed internally with the turn; decision=execute is reserved for a native device action. Never invent a device action to fulfil a memory request.
 For proactive daily_review, return a longitudinal_review even when silent, with concise summary, uncertainty, alternative hypotheses, evidence row IDs, missing_information and optionally one useful discriminating question. Read the supplied daily_review.sources and existing followups/reviews before asking. Distinguish absent, partial, stale and conflicting sources. Aggregate wearable scores are not exact sleep onset times. Compare personal days and context, never diagnose. No fictitious evidence or supported hypothesis without evidence. In this assessment decision must be silent; action and memory null, observations empty. Only ask a question if it can change a plan or resolve a meaningful uncertainty; do not ask known, pending or rejected questions. Prefer fewer, better questions. A followup candidate may notify/ask or be silent, NEVER execute; its stored question is the conversation handoff.
 Daily_review is an internal assessment, separate from delivery. can_notify=false means do not deliver NOW; it does not prevent saving a useful question for later. A persistent change with at least three observed days and no established explanation warrants one short question distinguishing plausible causes, unless this topic is already known/pending/rejected. Store it in longitudinal_review.question while decision=silent and response_text may be empty. A single isolated measurement without an unmet explicit goal is not a pattern and needs no check-in.
 For an unexplained persistent change, keep at least two distinct plausible explanations as separate hypotheses, each with its own evidence and status. For example a changed routine and difficulty falling asleep are different possibilities; later onset alone supports neither cause. Do not collapse alternatives into one explanation or manufacture a health condition.
@@ -163,7 +164,12 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   }
   if(durationLimited)delete context.brain_memory_effect;
   text=result.response_text.trim();
-  if(result.decision==="execute"&&!action)throw Error("bmb_missing_action");
+  if(result.decision==="execute"&&!action) {
+    if(!result.memory)throw Error("bmb_missing_action");
+    // A generated memory operation is committed with the turn, not sent to the
+    // device inbox. Its exact evidence and operation are still validated below.
+    result={...result,decision:"respond"};
+  }
   if(result.decision==="execute"&&action&&!proactive) {
     execute=result.message_kind==="action_request";
     if(result.message_kind==="acceptance")execute=prior.proposal?.fingerprint===result.accepted_proposal
@@ -205,7 +211,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   if(tracking.observations.length||tracking.followup_resolution)context.brain_memory_effect={...(context.brain_memory_effect||result.memory||{}),...tracking};
   if(result.memory) {
     const m=result.memory;
-    if(proactive||["question","social","acceptance"].includes(result.message_kind)||!prompt.includes(m.evidence)||!m.evidence?.trim()
+    if(proactive||!["set","forget","forget_all"].includes(m.operation)||["question","social","acceptance"].includes(result.message_kind)||!prompt.includes(m.evidence)||!m.evidence?.trim()
       ||(m.operation!=="forget_all"&&!KEYS.includes(m.key))||(m.operation==="set"&&(!m.value?.trim()||!prompt.includes(m.value)||m.value.length>400||sanitize(m.value)!==m.value)))throw Error("bmb_ungrounded_memory");
     context.brain_memory_effect={...m,...tracking};
   }
