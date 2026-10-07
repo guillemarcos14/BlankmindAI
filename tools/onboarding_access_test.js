@@ -19,3 +19,30 @@ assert.equal(onboardingReady(legacy, {}, "app", now), false, "Legacy still requi
 assert.equal(onboardingReady(legacy, { assistant_device_push: { token: "fixture" } }, "app", now), true);
 assert.equal(onboardingReady(legacy, { assistant_device_push: { token: "fixture" } }, "sms", now), true);
 console.log("Onboarding access: versioned app gate, freshness, denial and legacy channel contract passed");
+
+// Exercise the real authenticated endpoint, with only database/identity edges mocked.
+const membership = require("../netlify/functions/_membership");
+const channel = require("../netlify/functions/_assistant_channel");
+const identity = require("../netlify/functions/_identity");
+const record = { auth_user_id: "owner", app_install_id: "fixture-install", assistant_connect_code: "ABCDEFGH23" };
+let currentContext = { ...context, sleep_data_checked_at: new Date().toISOString() };
+membership.getSupabaseUser = async () => ({ id: "owner", app_metadata: { provider: "apple", providers: ["apple"] } });
+identity.identityForAuthUser = async () => record;
+identity.identityForAppInstall = async id => id === record.app_install_id ? record : null;
+channel.findAssistantConnection = async () => ({ channel: "app", channelUser: "owner" });
+channel.getAssistantUserContext = async () => currentContext;
+channel.getAssistantMemory = async () => ({});
+channel.recordAssistantMemory = async () => { throw new Error("App onboarding must not fabricate a message or push token"); };
+const { handler } = require("../netlify/functions/assistant-channel");
+const request = install => handler({ httpMethod: "POST", headers: { authorization: "Bearer fixture" },
+  body: JSON.stringify({ action: "complete_onboarding", channel: "app", preferred_channel: "app",
+    connect_code: record.assistant_connect_code, app_install_id: install }) });
+(async () => {
+  const ready = await request(record.app_install_id);
+  assert.equal(ready.statusCode, 200);
+  assert.equal(JSON.parse(ready.body).ready, true);
+  currentContext.sleep_data_available = false;
+  assert.equal(JSON.parse((await request(record.app_install_id)).body).ready, false);
+  assert.equal((await request("another-install")).statusCode, 403);
+  console.log("Authenticated onboarding endpoint: verified install, usable sleep and absent push passed");
+})().catch(error => { console.error(error); process.exitCode = 1; });
