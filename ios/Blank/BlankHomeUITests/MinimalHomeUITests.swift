@@ -42,7 +42,12 @@ final class MinimalHomeUITests: XCTestCase {
         let app = launch("product-home-long")
         let voice = app.buttons["home-voice"]
         let original = voice.frame
-        app.scrollViews.firstMatch.swipeUp()
+        let reply = app.scrollViews["home-reply-scroll"]
+        XCTAssertTrue(reply.exists)
+        for _ in 0..<10 { reply.swipeUp() }
+        let response = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "End of your evening plan.")).firstMatch
+        XCTAssertTrue(response.exists)
+        XCTAssertLessThanOrEqual(response.frame.maxY, app.otherElements["home-chat-panel"].frame.maxY + 2)
         XCTAssertEqual(voice.frame, original)
         XCTAssertTrue(app.buttons["home-tab-control"].isHittable)
         XCTAssertGreaterThanOrEqual(voice.frame.width, 44)

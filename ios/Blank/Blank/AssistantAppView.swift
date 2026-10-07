@@ -165,6 +165,32 @@ struct AssistantAppTurn: Codable, Identifiable {
     }
 }
 
+struct HomeReplyFollowState {
+    private(set) var followsEnd = true
+    private(set) var dragging = false
+    private var bottom: Double = 0
+    mutating func beginDrag() { dragging = true; followsEnd = false }
+    mutating func endDrag(viewport: Double) {
+        dragging = false
+        followsEnd = bottom <= viewport + 24
+    }
+    mutating func updateBottom(_ value: Double, viewport: Double) {
+        bottom = value
+        if !dragging && value <= viewport + 24 { followsEnd = true }
+    }
+    mutating func reset() { self = Self() }
+}
+
+enum HomeReplyLayout {
+    static func usesLeadingAlignment(_ text: String) -> Bool {
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        let list = lines.contains { line in
+            line.range(of: #"^\s*(?:[-*•]\s|\d+[.)]\s)"#, options: .regularExpression) != nil
+        }
+        return list || text.count > 120 || lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.count > 4
+    }
+}
+
 enum AssistantReplyText {
     private static let code = try! NSRegularExpression(pattern: "```[\\s\\S]*?(?:```|$)|`[^`]*(?:`|$)")
     private static let emphasis = try! NSRegularExpression(pattern: "(?<!\\\\)\\*\\*(?=\\S|$)|(?<=\\S)(?<!\\\\)\\*\\*")
@@ -912,7 +938,8 @@ struct AssistantAppView: View {
         GeometryReader { geometry in
             let panelHeight = MinimalHomeDesign.panelHeight(geometry.size.height, bottomInset: geometry.safeAreaInsets.bottom)
             let contentTop = MinimalHomeDesign.navigationTop(geometry.safeAreaInsets.top) + 68
-            let contentHeight = max(80, panelHeight - contentTop - 88)
+            let viewportHeight = max(80, panelHeight - contentTop)
+            let contentHeight = max(0, viewportHeight - 28)
             VStack(spacing: 0) {
                 ZStack(alignment: .top) {
                     Image("MinimalAtmosphere")
@@ -922,7 +949,11 @@ struct AssistantAppView: View {
                         .clipped()
                     // Retain the web's actual material, with enough shade for readable ivory text.
                     Color.black.opacity(0.28)
-                    ScrollView {
+                    HomeReplyScrollView(
+                        revision: latest?.assistantText ?? streamedText,
+                        identity: owner + (composer.pending?.id ?? latest?.id ?? "greeting"),
+                        viewportHeight: viewportHeight
+                    ) {
                         VStack(spacing: 22) {
                             if speech.isRecording || speech.isStarting {
                                 Text(spanish ? "Te escucho…" : "I'm listening…")
@@ -949,9 +980,8 @@ struct AssistantAppView: View {
                         .padding(.horizontal, 28)
                         .padding(.vertical, 14)
                     }
-                    .scrollIndicators(.hidden)
+                    .frame(height: viewportHeight)
                     .padding(.top, contentTop)
-                    .frame(height: panelHeight)
                 }
                 .frame(height: panelHeight)
                 .clipShape(MinimalHomePanelShape())
@@ -1018,13 +1048,15 @@ struct AssistantAppView: View {
     }
 
     private func homeResponse(_ text: String) -> some View {
-        Text(AssistantReplyText.plain(text))
+        let plain = AssistantReplyText.plain(text)
+        let leading = HomeReplyLayout.usesLeadingAlignment(plain)
+        return Text(plain)
             .font(MinimalHomeDesign.font(26, relativeTo: .title3))
             .lineSpacing(3)
-            .multilineTextAlignment(.center)
+            .multilineTextAlignment(leading ? .leading : .center)
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
-            .frame(maxWidth: 360)
+            .frame(maxWidth: 360, alignment: leading ? .leading : .center)
             .onTapGesture { showingHomeKeyboard = true }
             .accessibilityAction(named: Text(spanish ? "Escribir un mensaje" : "Write a message")) { showingHomeKeyboard = true }
     }
@@ -1426,7 +1458,7 @@ struct AssistantAppView: View {
             visibleTurnID = "home-preview"
         } else if scenario.contains("long") {
             turns = [AssistantAppTurn(id: "home-long", userText: "Help me plan my evening.",
-                assistantText: String(repeating: "Give yourself a quiet moment before bed. Put your phone somewhere you won't reach for it automatically.\n\n", count: 8),
+                assistantText: String(repeating: "Give yourself a quiet moment before bed. Put your phone somewhere you won't reach for it automatically.\n\n", count: 8) + "End of your evening plan.",
                 status: "completed", actionId: "", actionLabel: "", actionStatus: "", createdAt: "2026-10-06T18:00:00Z")]
             visibleTurnID = "home-long"
         } else if scenario.contains("error") {
@@ -1461,6 +1493,61 @@ struct AssistantAppView: View {
         }
     }
     #endif
+}
+
+private struct HomeReplyBottomKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
+// The viewport excludes navigation and voice controls. Content keeps its natural
+// height, including Dynamic Type, and only this area scrolls.
+private struct HomeReplyScrollView<Content: View>: View {
+    let revision: String
+    let identity: String
+    let viewportHeight: CGFloat
+    @ViewBuilder let content: () -> Content
+    @State private var follow = HomeReplyFollowState()
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: 0).id("reply-top")
+                    content()
+                    Color.clear.frame(height: 1).id("reply-end")
+                        .background(GeometryReader { geometry in
+                            Color.clear.preference(key: HomeReplyBottomKey.self,
+                                value: geometry.frame(in: .named("home-reply-scroll")).maxY)
+                        })
+                }
+            }
+            .coordinateSpace(name: "home-reply-scroll")
+            .scrollIndicators(.visible)
+            .accessibilityIdentifier("home-reply-scroll")
+            .simultaneousGesture(DragGesture(minimumDistance: 8)
+                .onChanged { _ in follow.beginDrag() }
+                .onEnded { _ in
+                    follow.endDrag(viewport: Double(viewportHeight))
+                })
+            .onPreferenceChange(HomeReplyBottomKey.self) { value in
+                // Also resume after the user's scroll decelerates to the end.
+                follow.updateBottom(Double(value), viewport: Double(viewportHeight))
+            }
+            .onChange(of: identity) { _ in
+                follow.reset()
+                proxy.scrollTo("reply-top", anchor: .top)
+            }
+            .onChange(of: revision) { _ in
+                guard follow.followsEnd, !follow.dragging else { return }
+                // Wait for the new text to be laid out; no animation per token.
+                DispatchQueue.main.async {
+                    guard follow.followsEnd, !follow.dragging else { return }
+                    proxy.scrollTo("reply-end", anchor: .bottom)
+                }
+            }
+        }
+    }
 }
 
 enum AssistantActionCopy {
