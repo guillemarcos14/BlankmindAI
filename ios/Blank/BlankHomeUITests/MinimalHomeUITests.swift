@@ -58,8 +58,10 @@ final class MinimalHomeUITests: XCTestCase {
         let app = launch("product-home-response")
         let mute = app.buttons["voice-replies-toggle"]
         XCTAssertTrue(mute.waitForExistence(timeout: 5))
-        XCTAssertGreaterThanOrEqual(mute.frame.width, 44)
-        XCTAssertGreaterThanOrEqual(mute.frame.height, 44)
+        // Accessibility frame subtraction can round an exact 44pt to
+        // 43.99999999999994. Allow only numerical noise, not a smaller target.
+        XCTAssertGreaterThanOrEqual(mute.frame.width + 0.000001, 44)
+        XCTAssertGreaterThanOrEqual(mute.frame.height + 0.000001, 44)
         XCTAssertTrue(app.staticTexts["AI-generated voice"].exists)
         XCTAssertTrue(app.buttons["reply-voice"].exists)
         let original = mute.label
