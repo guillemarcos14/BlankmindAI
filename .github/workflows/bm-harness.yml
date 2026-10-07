@@ -59,6 +59,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/026_blankmind_brain_memory.sql
           psql -v ON_ERROR_STOP=1 -f tools/bmb_database_setup.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/027_bmb_autonomy.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/028_bmb_longitudinal.sql
+          psql -v ON_ERROR_STOP=1 -f tools/bmb_longitudinal_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/assistant_app_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/bm_brain_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/bmb_database_test.sql

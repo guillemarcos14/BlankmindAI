@@ -163,6 +163,7 @@ struct AssistantClientTests {
         catch is CancellationError { }
         try await verifyStreamingClient(client)
         try await verifyViewRaces()
+        try await verifyFollowupHandoff(client)
         try await verifyAutomaticRecovery()
         try await verifyProblemNotices()
         check(!HomeReplyLayout.usesLeadingAlignment("Hello Alex,\nwhat's on your mind\nthis evening?"), "Short greeting stays centred")
@@ -261,6 +262,7 @@ struct AssistantClientTests {
 @MainActor final class SpeechFixture {
     var isRecording = false
     var isStarting = false
+    var hasAudio = false
     func stop() { isRecording = false; isStarting = false }
 }
 @MainActor enum AssistantDraftVault {
@@ -272,8 +274,10 @@ struct AssistantClientTests {
     static var history: () async throws -> AssistantAppHistoryPage = { .init(turns: [], nextBefore: nil) }
     static var status: (String) async throws -> AssistantAppTurn? = { _ in nil }
     static var send: (String, String) async throws -> AssistantAppTurn = { text, id in makeTurn(id: id, text: text) }
+    static var followup: (String) async throws -> String? = { _ in nil }
 }
 struct ConversationTestClient {
+    @MainActor func followup(eventID: String) async throws -> String? { try await ViewTransport.followup(eventID) }
     @MainActor func history() async throws -> AssistantAppHistoryPage { try await ViewTransport.history() }
     @MainActor func status(turnId: String) async throws -> AssistantAppTurn? { try await ViewTransport.status(turnId) }
     @MainActor func send(text: String, turnId: String, context: [String: Any]? = nil,
@@ -281,6 +285,56 @@ struct ConversationTestClient {
         onDraft?("Partial response")
         return try await ViewTransport.send(text, turnId)
     }
+}
+
+@MainActor private func verifyFollowupHandoff(_ client: AssistantAppClient) async throws {
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    let eventID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    TransportStub.respond = { request in
+        let body = try! JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
+        check(body["action"] as? String == "bmb_followup" && body["event_id"] as? String == eventID, "Followup used a generic greeting or wrong event")
+        return .init(body: #"{"ok":true,"text":"Has your routine changed?"}"#)
+    }
+    let text = try await client.followup(eventID: eventID)
+    check(text == "Has your routine changed?", "Contextual question lost in transport")
+    let view = ConversationFixture()
+    view.owner = "A"
+    view.greeting = "Initial greeting"
+    var calls = 0
+    ViewTransport.followup = { _ in calls += 1; return "Has your routine changed?" }
+    BlankSharedState.defaults.set(eventID, forKey: AssistantRemoteNotification.tappedEventIDKey)
+    view.composer.draft = "Unsent text"
+    await view.followupForTest()
+    check(calls == 0 && view.composer.draft == "Unsent text", "Notification overwrote draft")
+    view.composer.draft = ""
+    view.speech.hasAudio = true
+    await view.followupForTest()
+    check(calls == 0, "Notification replaced a recorded voice note")
+    view.speech.hasAudio = false
+    view.composer.pending = .init(id: "pending", text: "Saved message")
+    await view.followupForTest()
+    check(calls == 0 && view.composer.pending?.id == "pending", "Notification replaced a durable pending turn")
+    view.composer.pending = nil
+    ViewTransport.followup = { _ in throw AssistantAppError.network }
+    await view.followupForTest()
+    check(BlankSharedState.defaults.string(forKey: AssistantRemoteNotification.tappedEventIDKey) == eventID, "Offline handoff discarded retry ID")
+    ViewTransport.followup = { _ in return "Has your routine changed?" }
+    await view.followupForTest()
+    check(view.greeting == "Has your routine changed?" && view.visibleTurnID == nil && view.turns.isEmpty && view.appliedActions.isEmpty,
+          "Showing question fabricated a turn or executed an action")
+    check(BlankSharedState.defaults.string(forKey: AssistantRemoteNotification.tappedEventIDKey) == nil, "Displayed handoff replayed")
+    BlankSharedState.defaults.set(eventID, forKey: AssistantRemoteNotification.tappedEventIDKey)
+    ViewTransport.followup = { _ in
+        AssistantAppSession.save(accessToken: "session#B", refreshToken: "refresh-B")
+        return "Private question for A"
+    }
+    await view.followupForTest()
+    check(view.greeting != "Private question for A", "Account switch exposed old question")
+    view.restoreForTest()
+    check(view.greeting != "Has your routine changed?", "Question survived account reset")
+    BlankSharedState.defaults.removeObject(forKey: AssistantRemoteNotification.tappedEventIDKey)
+    ViewTransport.followup = { _ in nil }
+    print("followup handoff: signed transport, draft/audio/pending preservation, offline retry, no synthetic turn/action and account isolation passed")
 }
 
 @MainActor private func verifyStreamingClient(_ client: AssistantAppClient) async throws {

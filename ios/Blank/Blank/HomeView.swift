@@ -468,6 +468,9 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .blankAssistantApplyNowRequested)) { _ in
             pollPendingAssistantActionIfNeeded(force: true)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .blankAssistantFollowupRequested).receive(on: RunLoop.main)) { _ in
+            activeSection = nil
+        }
         .onChange(of: assistantConnectCode) { _ in
             clearPendingAssistantIdentityState()
             Task { await activateAppChannel() }

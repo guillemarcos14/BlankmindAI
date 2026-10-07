@@ -16,7 +16,10 @@ async function main(){
   const db=async(path,options={})=>{
     const p=options.body?JSON.parse(options.body):{};
     if(path.startsWith("bmb_sessions?"))return sessions;
-    if(path.startsWith("bmb_device_signals?")||path.startsWith("assistant_app_turns?"))return [];
+    if(path.startsWith("bmb_followups?"))return [];
+    if(path==="rpc/bmb_claim_daily_review")return {claimed:false};
+    if(path.startsWith("assistant_app_turns?"))return [];
+    if(path.startsWith("bmb_device_signals?"))return [{id:"signal-A",occurred_at:now(),threshold_minutes:30}];
     if(path.startsWith("bmb_accounts?"))return [a];
     if(path.startsWith("bmb_events?")) {
       const q=new URL("https://db/"+path).searchParams;
