@@ -3821,6 +3821,13 @@ private final class OnboardingAppleAuthorization: NSObject, ObservableObject,
     }
 }
 
+private struct OnboardingTitleWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 struct AppAccountSignInSheet: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.dismiss) private var dismiss
@@ -3828,6 +3835,7 @@ struct AppAccountSignInSheet: View {
     @State private var isWorking = false
     @State private var errorMessage: String?
     @State private var appleRequestInFlight = false
+    @State private var onboardingTitleWidth: CGFloat?
     @StateObject private var appleAuthorization = OnboardingAppleAuthorization()
 
     let showsCancel: Bool
@@ -3879,6 +3887,11 @@ struct AppAccountSignInSheet: View {
                 .tracking(-0.9)
                 .foregroundStyle(showsCancel ? BlankColors.foreground : MinimalHomeDesign.ink)
                 .fixedSize(horizontal: false, vertical: true)
+                .background {
+                    GeometryReader { title in
+                        Color.clear.preference(key: OnboardingTitleWidthKey.self, value: title.size.width)
+                    }
+                }
                 .padding(.bottom, 24)
             AccountJustifiedCopy(text: NSAttributedString(string: "Blankmind AI's core model is trained to identify recurring behavioral patterns, detect high-risk moments, and adapt interventions in real time."), foregroundColor: showsCancel ? nil : UIColor(MinimalHomeDesign.ink))
                 .padding(.bottom, 24)
@@ -3905,6 +3918,7 @@ struct AppAccountSignInSheet: View {
                     }
                 }
                 .buttonStyle(OnboardingButtonStyle())
+                .frame(width: onboardingTitleWidth, alignment: .leading)
                 .disabled(isWorking || appleRequestInFlight)
                 .accessibilityLabel("Continue with Apple")
             } else {
@@ -3933,6 +3947,9 @@ struct AppAccountSignInSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 16)
             }
+        }
+        .onPreferenceChange(OnboardingTitleWidthKey.self) { width in
+            if !showsCancel, width > 0 { onboardingTitleWidth = width }
         }
     }
 
