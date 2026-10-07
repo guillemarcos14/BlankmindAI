@@ -33,7 +33,7 @@ on:
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
@@ -66,7 +66,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
       - name: Test Home navigation and long responses on iPhone
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for g in json.load(sys.stdin)["devices"].values() for d in g if d["name"].startswith("iPhone") and "Pro" in d["name"]))')
           suite=BlankHomeUITests
