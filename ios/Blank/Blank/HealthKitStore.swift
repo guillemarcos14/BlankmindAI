@@ -25,6 +25,12 @@ final class HealthKitStore: ObservableObject {
     @Published private(set) var state: HealthKitConnectionState
     @Published private(set) var summaries: [HealthDaySummary] = []
 
+    @Published private(set) var sleepAccess: SleepAccessStatus = .unchecked
+    @Published private(set) var sleepCheckInFlight = false
+    @Published private(set) var sleepNightCount = 0
+    @Published private(set) var watchNightCount = 0
+    private var sleepRequestID: UUID?
+
     private let healthStore = HKHealthStore()
     private let defaults: UserDefaults
     private let requestedKey = "blankHealthKitRequested"
@@ -33,12 +39,17 @@ final class HealthKitStore: ObservableObject {
         self.defaults = defaults
         if !HKHealthStore.isHealthDataAvailable() {
             state = .unavailable
-        } else if defaults.bool(forKey: requestedKey) {
-            state = .connected
         } else {
             state = .notRequested
         }
     }
+
+    #if DEBUG && targetEnvironment(simulator)
+    func setPreviewSleepAccess(_ status: SleepAccessStatus) {
+        sleepAccess = status
+        state = status.hasData ? .connected : .notRequested
+    }
+    #endif
 
     func requestAccess() {
         guard HKHealthStore.isHealthDataAvailable() else {
@@ -57,39 +68,68 @@ final class HealthKitStore: ObservableObject {
                 guard let self else { return }
                 self.defaults.set(true, forKey: self.requestedKey)
                 if success {
-                    self.state = .connected
+                    self.verifySleepAccess()
                     self.refresh()
                 } else {
-                    self.state = .failed(error?.localizedDescription ?? "Health access was not granted.")
+                    self.state = .failed(error?.localizedDescription ?? "Could not request Health access.")
                 }
-                Task {
-                    if success {
-                        await BlankFunnelAnalytics.track(
-                            "permission_granted",
-                            properties: ["source": "apple_health", "permission": "health"],
-                            defaults: self.defaults
-                        )
-                        await BlankFunnelAnalytics.track(
-                            "wearable_connected",
-                            properties: ["provider": "apple_health"],
-                            defaults: self.defaults
-                        )
-                    }
-                    await BlankFunnelAnalytics.track(
-                        "health_permission_result",
-                        properties: [
-                            "granted": success,
-                            "state": success ? "connected" : "failed",
-                            "error": error?.localizedDescription ?? ""
-                        ],
-                        defaults: self.defaults
-                    )
-                }
+                // Completing the sheet does not prove any read permission.
+                if !success { self.sleepAccess = .failed(error?.localizedDescription ?? "Could not check Apple Health.") }
             }
         }
     }
 
+    func verifySleepAccess() {
+        guard HKHealthStore.isHealthDataAvailable() else {
+            sleepAccess = .failed("Apple Health is unavailable on this device.")
+            return
+        }
+        guard defaults.bool(forKey: requestedKey), !sleepCheckInFlight,
+              let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return }
+        sleepCheckInFlight = true
+        if !sleepAccess.hasData { sleepAccess = .checking }
+        let requestID = UUID()
+        sleepRequestID = requestID
+        let now = Date()
+        let predicate = HKQuery.predicateForSamples(withStart: now.addingTimeInterval(-28 * 86400), end: now)
+        let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { [weak self] _, samples, error in
+            let observations = (samples as? [HKCategorySample] ?? []).map { sample in
+                SleepAccessObservation(start: sample.startDate, end: sample.endDate,
+                    source: sample.sourceRevision.source.bundleIdentifier,
+                    isAppleWatch: sample.device?.model?.lowercased().contains("watch") == true
+                        || sample.sourceRevision.productType?.hasPrefix("Watch") == true,
+                    isAsleep: Self.isAsleepValue(sample.value),
+                    manuallyEntered: sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
+            }
+            let usable = SleepAccessPolicy.usable(observations, now: now)
+            let calendar = Calendar.current
+            let nights = Set(usable.map { calendar.startOfDay(for: $0.end) }).count
+            let watchNights = Set(usable.filter(\.isAppleWatch).map { calendar.startOfDay(for: $0.end) }).count
+            DispatchQueue.main.async {
+                guard let self, self.sleepRequestID == requestID else { return }
+                self.sleepCheckInFlight = false
+                self.sleepNightCount = nights
+                self.watchNightCount = watchNights
+                if let error {
+                    self.sleepAccess = .failed(error.localizedDescription)
+                } else {
+                    self.sleepAccess = usable.isEmpty ? .noData : .available
+                }
+                self.state = self.sleepAccess.hasData ? .connected : .notRequested
+            }
+        }
+        healthStore.execute(query)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
+            guard let self, self.sleepRequestID == requestID, self.sleepCheckInFlight else { return }
+            self.healthStore.stop(query)
+            self.sleepRequestID = nil
+            self.sleepCheckInFlight = false
+            self.sleepAccess = .failed("Apple Health did not respond. Try again.")
+        }
+    }
+
     func refresh(days: Int = 14) {
+        verifySleepAccess()
         guard HKHealthStore.isHealthDataAvailable() else {
             state = .unavailable
             return
@@ -274,7 +314,7 @@ final class HealthKitStore: ObservableObject {
                 )
             }
             self.summaries = loadedSummaries.filter(\.hasSignals)
-            self.state = .connected
+            if self.sleepAccess.hasData { self.state = .connected }
         }
     }
 

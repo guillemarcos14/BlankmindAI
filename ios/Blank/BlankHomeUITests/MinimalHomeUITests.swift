@@ -1,11 +1,11 @@
 import XCTest
 
 final class MinimalHomeUITests: XCTestCase {
-    private func launch(_ scenario: String = "product-home") -> XCUIApplication {
+    private func launch(_ scenario: String = "product-home", language: String = "en") -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["BLANK_UI_SCENARIO"] = scenario
-        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["-AppleLanguages", "(\(language))", "-AppleLocale", language == "es" ? "es_ES" : "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["home-tab-chat"].waitForExistence(timeout: 10))
         return app
@@ -131,6 +131,40 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertFalse(confirm.exists)
     }
 
+    func testEmptySleepKeepsRecoveryInPreparation() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["BLANK_UI_SCENARIO"] = "product-onboarding-device-empty"
+        app.launchArguments = ["-AppleLanguages", "(es)", "-AppleLocale", "es_ES"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["onboarding-sleep-empty"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["home-tab-chat"].exists)
+        XCTAssertFalse(app.buttons["Choose apps"].exists)
+        XCTAssertFalse(app.buttons["Enable notifications"].exists)
+        for title in ["Review access", "Set up sleep tracking", "Check again"] {
+            let button = app.buttons[title]
+            for _ in 0..<6 { if button.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+            XCTAssertTrue(button.isHittable, title)
+        }
+    }
+
+    func testFirstConversationOffersAppSelection() {
+        let app = launch("product-home-first-use", language: "es")
+        XCTAssertTrue(app.buttons["first-use-choose-apps"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons["first-use-choose-apps"].label, "Choose apps")
+        XCTAssertFalse(app.buttons["first-use-notifications"].exists)
+        XCTAssertTrue(app.buttons["home-voice"].isHittable)
+    }
+
+    func testFirstConversationNotificationsCanBeDeferred() {
+        let app = launch("product-home-first-use-notifications", language: "es")
+        XCTAssertTrue(app.buttons["first-use-notifications"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["first-use-choose-apps"].exists)
+        app.buttons["Not now"].tap()
+        XCTAssertFalse(app.buttons["first-use-notifications"].exists)
+        XCTAssertTrue(app.buttons["home-voice"].isHittable)
+    }
+
     func testLargestTextKeepsOnboardingActionsReachable() {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -146,7 +180,7 @@ final class MinimalHomeUITests: XCTestCase {
         }
         XCTAssertTrue(apple.isHittable)
         app.buttons["Preview device setup"].tap()
-        for title in ["Allow Screen Time", "Choose apps", "Enable notifications"] {
+        for title in ["Allow Screen Time", "Connect Apple Health"] {
             let action = app.buttons[title]
             XCTAssertTrue(action.waitForExistence(timeout: 5))
             for _ in 0..<8 {

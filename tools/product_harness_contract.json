@@ -129,6 +129,7 @@
       { "name": "bm_sol_quality_judge", "run": "node tools/bm_sol_quality_judge_test.js" },
       { "name": "bm_semantic_store", "run": "node tools/bm_semantic_store_test.js" },
       { "name": "bm_channel_contract", "run": "node tools/bm_channel_contract_test.js" },
+      { "name": "onboarding_access", "run": "node tools/onboarding_access_test.js" },
       { "name": "bm_global_context", "run": "node tools/bm_global_context_test.js" },
       { "name": "bm_sms_pending_action", "run": "node tools/bm_sms_pending_action_test.js" },
       { "name": "bm_thursday_reliability", "run": "node tools/bm_thursday_reliability_test.js" },

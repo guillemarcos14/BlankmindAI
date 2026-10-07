@@ -20,6 +20,7 @@
 
 
 /* Begin PBXBuildFile section */
+		8B0710010000000000000001 /* SleepAccessPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0710010000000000000002 /* SleepAccessPolicy.swift */; };
 		BA10000600000000000000001 /* AssistantWritingHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000600000000000000002 /* AssistantWritingHaptics.swift */; };
         AA1000060000000000000001 /* MinimalHomeDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000060000000000000002 /* MinimalHomeDesign.swift */; };
         AA1000060000000000000003 /* neue-montreal-regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = AA1000060000000000000004 /* neue-montreal-regular.otf */; };
@@ -110,6 +111,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8B0710010000000000000002 /* SleepAccessPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepAccessPolicy.swift; sourceTree = "<group>"; };
 		BA10000600000000000000002 /* AssistantWritingHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantWritingHaptics.swift; sourceTree = "<group>"; };
         AA1000060000000000000002 /* MinimalHomeDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalHomeDesign.swift; sourceTree = "<group>"; };
         AA1000060000000000000004 /* neue-montreal-regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "neue-montreal-regular.otf"; sourceTree = "<group>"; };
@@ -233,6 +235,7 @@
 				8A000001000000000000001C /* ReportView.swift */,
 				8A0000010000000000000027 /* StoreKitPurchaseStore.swift */,
 				8A0000010000000000000029 /* HealthKitStore.swift */,
+				8B0710010000000000000002 /* SleepAccessPolicy.swift */,
 				8A000001000000000000002B /* BAIProactiveSignalEngine.swift */,
 				8A0000010000000000000025 /* BlankSharedState.swift */,
 				8A000001000000000000001E /* DeviceActivityTimerScheduler.swift */,
@@ -536,6 +539,7 @@
 				8A000001000000000000000A /* ReportView.swift in Sources */,
 				8A0000010000000000000028 /* StoreKitPurchaseStore.swift in Sources */,
 				8A000001000000000000002A /* HealthKitStore.swift in Sources */,
+				8B0710010000000000000001 /* SleepAccessPolicy.swift in Sources */,
 				8A000001000000000000002C /* BAIProactiveSignalEngine.swift in Sources */,
 				8A000001000000000000000C /* DeviceActivityTimerScheduler.swift in Sources */,
 				8A0000010000000000000026 /* BlankSharedState.swift in Sources */,
