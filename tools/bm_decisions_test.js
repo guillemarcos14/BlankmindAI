@@ -24,7 +24,7 @@ async function main(){
  assert.deepEqual(await d.prefetch(result,{...input,existing:[{source:"observations"}]}),[]);
  assert.deepEqual(await d.prefetch({...result,answers:{...result.answers,unsafe:1}},input),[]);
  const meter=require("./bm_decisions_meter"),u={input_tokens:100,output_tokens:10,input_tokens_details:{cached_tokens:20,cache_write_tokens:10}};
- assert.equal(meter.estimate({endpoint:"responses",usage:meter.usage(u),service_tier:"default"},{input:.2,cached:.02,output:1.2}),.0000289);
+ assert(Math.abs(meter.estimate({endpoint:"responses",usage:meter.usage(u),service_tier:"default"},{input:.2,cached:.02,output:1.2})-.0000289)<1e-12);
  assert.equal(meter.estimate({endpoint:"responses"},{input:.2}),null);
  const event='data: '+JSON.stringify({type:"response.completed",response:{model:"gpt-5.6-luna",service_tier:"default",usage:u}})+'\r\n\r\n',bytes=new TextEncoder().encode(event),record={};
  const response=await meter.meterResponse(new Response(new ReadableStream({start(c){for(const b of bytes)c.enqueue(Uint8Array.of(b));c.close();}}),{headers:{"content-type":"text/event-stream"}}),record);
