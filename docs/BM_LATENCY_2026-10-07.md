@@ -60,9 +60,48 @@ latency. Twenty physical turns require an available signed build and iPhone.
 
 ## Validation and release
 
-Initial harness: 72/73 checks pass, no scope violations. The production release
-evidence gate remains pending; it is not bypassed. Native macOS build/tests and
-the two 100-turn real-provider evaluations are in progress.
+Two real-provider/QA evaluations completed, 100 turns each, with all synthetic
+accounts cleaned. Final-source profiling also passed 10/10 directed cases.
+
+| Metric | Baseline | Candidate |
+| --- | ---: | ---: |
+| First text median, all successful turns | 3330 ms | 2700 ms |
+| First text p95, all successful turns | 17143 ms | 15040 ms |
+| First text median, simple conversation | 3192 ms | 2458 ms |
+| First text p90, simple conversation | 4268 ms | 3341 ms |
+| Final response median | 4136 ms | 3581 ms |
+| Failed test turns | 11/100 | 2/100 |
+| Median database operations per turn | 23 | 15 |
+| Mean provider tokens per successful turn | 6138 | 5961 |
+
+First text improved 18.93% overall and 22.98% for simple conversations; final
+median improved 13.41%. Proposed 2s/30%/25% targets remain **unmet**. Correcting
+valid memory citations reduced failures; this is directed functional evaluation,
+not an independent human review of every generated response. Raw tokens are not
+a billing-cost estimate and do not account for caching or retry pricing.
+
+Evidence: `BM_LATENCY_EVIDENCE_2026-10-07.json` and
+`BM_LATENCY_PROFILE_2026-10-07.json`. The 100-turn comparison measured the initial
+optimization candidate; final profiling covers the extra identity-match guard.
+There is no cross-account cache in either candidate.
+
+Native CI 37620146205 passed client/timing/recovery tests, Simulator build and
+the complete Home UI suite. Screenshot capture is separate. Backend CI
+37620145979 passed contract/runtime, PostgreSQL recovery and Android checks.
+The initial local harness was run before a clean commit (72/73, scope clear);
+final clean-source harness is recorded separately at closure. Physical release
+evidence remains 0/20; no production gate is bypassed.
+
+## Physical measurement protocol
+
+Use a signed private-QA build with the new client timing and the matching backend.
+Collect `bm_client_timing` console events for five prompts (hello, brief advice,
+personal goal, measured sleep, explicit 30-minute action), each on Wi-Fi and
+mobile data, both first interaction and a following interaction: 20 total turns.
+Record network and first/following conditions alongside the anonymous timing
+rows manually. Verify real native receipts for action cases, interruptions and
+same-UUID recovery; never substitute Simulator measurements. Compare the same
+conditions and report failures alongside latency percentiles.
 
 Deployment is separate: integrate this commit into a `codex/backend-release-*`
 candidate, run the same scoped harness and private endpoint smoke before release.
@@ -77,5 +116,5 @@ Surfaces: app backend transport/context/BMB schema, iOS transport instrumentatio
 regression tests, harness contract and benchmark/report tools.
 Supabase migrations: none.
 Environment variables: none new.
-Pending: complete provider comparison and native CI; private cloud transport and
-20 physical cases before asserting end-to-end iPhone targets.
+Pending: private cloud transport after integration and 20 physical cases before
+asserting end-to-end iPhone targets. No deployment or TestFlight in this branch.

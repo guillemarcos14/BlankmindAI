@@ -43,6 +43,9 @@ async function main() {
     return originalFetch(url,options);
   };
   const app=require(path.join(source,"netlify/functions/assistant-app.js"));
+  const sourceHashes=Object.fromEntries(["assistant-app.js","whatsapp-agent.js","bmb-brain.js","_assistant_channel.js","_bm_user_context.js","bm-response-stream.js","bm-turn-timing.js"].flatMap(name=>{
+    const file=path.join(source,"netlify/functions",name);return fs.existsSync(file)?[[name,crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex")]]:[];
+  }));
   const records=[],cleanup=[],runId=crypto.randomUUID(),install="latency-"+runId;
   let user,connect,token;
   const service={apikey:c.serviceKey,authorization:"Bearer "+c.serviceKey};
@@ -78,7 +81,7 @@ async function main() {
       const [group,text]=CASES[index%CASES.length],turn=crypto.randomUUID();
       active={index,group,turn_id:turn,start:performance.now(),first_text_ms:null,database_calls:0,model_calls:0};
       const originalInfo=console.info;
-      console.info=line=>{try{const m=JSON.parse(line);if(m.event==="bm_stream_timing")active.total_tokens=(active.total_tokens||0)+(m.usage?.total_tokens||0);}catch(_){};};
+      console.info=line=>{try{const m=JSON.parse(line);if(m.event==="bm_stream_timing")active.total_tokens=(active.total_tokens||0)+(m.usage?.total_tokens||0);if(m.event==="bm_turn_timing")active.stages=m.stages;}catch(_){};};
       let response;
       try {response=await invoke({action:"send",turn_id:turn,text,context:context()});}
       catch(_) {response={statusCode:503,body:"{}"};}
@@ -104,7 +107,7 @@ async function main() {
       ["blankmind_identity_links","auth_user_id=eq."+user],
     ])try{await request(`/rest/v1/${table}?${filter}`,undefined,service,"DELETE");cleanup.push({table,passed:true});}catch(_){cleanup.push({table,passed:false});}
     if(user)try{await request("/auth/v1/admin/users/"+user,undefined,service,"DELETE");cleanup.push({table:"auth.users",passed:true});}catch(_){cleanup.push({table:"auth.users",passed:false});}
-    fs.mkdirSync("tmp/latency",{recursive:true});fs.writeFileSync(`tmp/latency/${label}.json`,JSON.stringify({label,source,provider_real:true,database_real:true,
+    fs.mkdirSync("tmp/latency",{recursive:true});fs.writeFileSync(`tmp/latency/${label}.json`,JSON.stringify({label,source,sourceHashes,provider_real:true,database_real:true,
       physical_device_tested:false,netlify_transport_tested:false,native_actions_executed:0,complete:records.length===count,cleanup,records,summary:summary(records)},null,2));
   }
   console.log(JSON.stringify({label,summary:summary(records),cleanup}));

@@ -1,0 +1,648 @@
+{
+  "schema_version": 1,
+  "source_hashes": {
+    "assistant-app.js": "d691b46c2cd49884976048a58a5dc06930bf8a696a99fe91f8215799661a2ef4",
+    "whatsapp-agent.js": "116590487f80251b73d3f42b54625d9b230db208cc8ff2c1430c19db6916f954",
+    "bmb-brain.js": "de3befeb82f75dd9c5a6264bf1939366677aa69c7200e969f47e1a680db263c8",
+    "_assistant_channel.js": "a6cb7b6915cddb115063c0d4a01a0c7f66facc47742a9afd9ec8df7d4b8abb64",
+    "_bm_user_context.js": "71bbc14e43c0ac26a6d7bbf2818adaebaf4d40026825b88a92442cc5a8f0dbd5",
+    "bm-response-stream.js": "c33d63531c1b48f017562d41110ce2a14756ff811dddc770bcdd28a7c16442d3",
+    "bm-turn-timing.js": "6e8497acb37bf140f71aae1ab52c491f0fd523bdeb9e965cb6d25beaf4376f7f"
+  },
+  "provider_real": true,
+  "database_real": true,
+  "physical_device_tested": false,
+  "netlify_transport_tested": false,
+  "summary": {
+    "all": {
+      "samples": 10,
+      "passed": 10,
+      "errors": 0,
+      "first_text_ms": {
+        "p50": 2757.0161000000007,
+        "p90": 3307.0697,
+        "p95": 13656.2664
+      },
+      "final_ms": {
+        "p50": 3404.7485000000015,
+        "p95": 14530.3436
+      },
+      "database_calls": 15,
+      "model_calls": 1,
+      "mean_tokens": 6475
+    },
+    "simple": {
+      "samples": 5,
+      "passed": 5,
+      "errors": 0,
+      "first_text_ms": {
+        "p50": 2889.8731000000002,
+        "p90": 3307.0697,
+        "p95": 3307.0697
+      },
+      "final_ms": {
+        "p50": 5329.456700000001,
+        "p95": 8302.539700000001
+      },
+      "database_calls": 15,
+      "model_calls": 1,
+      "mean_tokens": 5980
+    },
+    "personal": {
+      "samples": 3,
+      "passed": 3,
+      "errors": 0,
+      "first_text_ms": {
+        "p50": 2975.731399999997,
+        "p90": 13656.2664,
+        "p95": 13656.2664
+      },
+      "final_ms": {
+        "p50": 3571.873200000002,
+        "p95": 14530.3436
+      },
+      "database_calls": 15,
+      "model_calls": 1,
+      "mean_tokens": 8818
+    },
+    "action": {
+      "samples": 2,
+      "passed": 2,
+      "errors": 0,
+      "first_text_ms": {
+        "p50": 2586.272600000004,
+        "p90": 2757.0161000000007,
+        "p95": 2757.0161000000007
+      },
+      "final_ms": {
+        "p50": 3189.5409,
+        "p95": 3404.7485000000015
+      },
+      "database_calls": 15,
+      "model_calls": 1,
+      "mean_tokens": 4199
+    }
+  },
+  "cleanup": [
+    {
+      "table": "digital_wellness_feature_payloads",
+      "passed": true
+    },
+    {
+      "table": "digital_wellness_feature_payloads",
+      "passed": true
+    },
+    {
+      "table": "assistant_semantic_conversations",
+      "passed": true
+    },
+    {
+      "table": "blankmind_identity_links",
+      "passed": true
+    },
+    {
+      "table": "auth.users",
+      "passed": true
+    }
+  ],
+  "records": [
+    {
+      "index": 0,
+      "group": "simple",
+      "status": 200,
+      "passed": true,
+      "first_text_ms": 2889.8731000000002,
+      "elapsed_ms": 5329.456700000001,
+      "database_calls": 15,
+      "model_calls": 1,
+      "total_tokens": 4136,
+      "stages": {
+        "database": {
+          "calls": 15,
+          "total_ms": 1170.38
+        },
+        "authentication": {
+          "calls": 1,
+          "total_ms": 139.71
+        },
+        "claim": {
+          "calls": 1,
+          "total_ms": 79.09
+        },
+        "snapshot": {
+          "calls": 1,
+          "total_ms": 70.62
+        },
+        "context": {
+          "calls": 1,
+          "total_ms": 171.84
+        },
+        "brain_context": {
+          "calls": 1,
+          "total_ms": 146.06
+        },
+        "model": {
+          "calls": 1,
+          "total_ms": 4337.71
+        },
+        "prepare": {
+          "calls": 1,
+          "total_ms": 4960.47
+        },
+        "commit": {
+          "calls": 1,
+          "total_ms": 50.6
+        },
+        "presentation": {
+          "calls": 1,
+          "total_ms": 98.16
+        }
+      }
+    },
+    {
+      "index": 1,
+      "group": "simple",
+      "status": 200,
+      "passed": true,
+      "first_text_ms": 2267.180800000001,
+      "elapsed_ms": 2941.2840000000006,
+      "database_calls": 15,
+      "model_calls": 1,
+      "total_tokens": 4193,
+      "stages": {
+        "database": {
+          "calls": 15,
+          "total_ms": 883.37
+        },
+        "authentication": {
+          "calls": 1,
+          "total_ms": 98.16
+        },
+        "claim": {
+          "calls": 1,
+          "total_ms": 54
+        },
+        "snapshot": {
+          "calls": 1,
+          "total_ms": 53.6
+        },
+        "context": {
+          "calls": 1,
+          "total_ms": 160.22
+        },
+        "brain_context": {
+          "calls": 1,
+          "total_ms": 111.03
+        },
+        "model": {
+          "calls": 1,
+          "total_ms": 2260.09
+        },
+        "prepare": {
+          "calls": 1,
+          "total_ms": 2687.4
+        },
+        "commit": {
+          "calls": 1,
+          "total_ms": 51.06
+        },
+        "presentation": {
+          "calls": 1,
+          "total_ms": 50.27
+        }
+      }
+    },
+    {
+      "index": 2,
+      "group": "simple",
+      "status": 200,
+      "passed": true,
+      "first_text_ms": 2236.4568,
+      "elapsed_ms": 2802.9797,
+      "database_calls": 15,
+      "model_calls": 1,
+      "total_tokens": 4130,
+      "stages": {
+        "database": {
+          "calls": 15,
+          "total_ms": 845.52
+        },
+        "authentication": {
+          "calls": 1,
+          "total_ms": 104.9
+        },
+        "claim": {
+          "calls": 1,
+          "total_ms": 54.48
+        },
+        "snapshot": {
+          "calls": 1,
+          "total_ms": 50.36
+        },
+        "context": {
+          "calls": 1,
+          "total_ms": 161.79
+        },
+        "brain_context": {
+          "calls": 1,
+          "total_ms": 62.13
+        },
+        "model": {
+          "calls": 1,
+          "total_ms": 2113.43
+        },
+        "prepare": {
+          "calls": 1,
+          "total_ms": 2501.29
+        },
+        "commit": {
+          "calls": 1,
+          "total_ms": 83.17
+        },
+        "presentation": {
+          "calls": 1,
+          "total_ms": 58.83
+        }
+      }
+    },
+    {
+      "index": 3,
+      "group": "simple",
+      "status": 200,
+      "passed": true,
+      "first_text_ms": 3307.0697,
+      "elapsed_ms": 8302.539700000001,
+      "database_calls": 16,
+      "model_calls": 2,
+      "total_tokens": 8821,
+      "stages": {
+        "database": {
+          "calls": 16,
+          "total_ms": 1602.76
+        },
+        "authentication": {
+          "calls": 1,
+          "total_ms": 99.15
+        },
+        "claim": {
+          "calls": 1,
+          "total_ms": 54.48
+        },
+        "snapshot": {
+          "calls": 1,
+          "total_ms": 54.29
+        },
+        "context": {
+          "calls": 1,
+          "total_ms": 161.35
+        },
+        "brain_context": {
+          "calls": 1,
+          "total_ms": 61.69
+        },
+        "model": {
+          "calls": 2,
+          "total_ms": 6917.51
+        },
+        "prepare": {
+          "calls": 1,
+          "total_ms": 7384.89
+        },
+        "commit": {
+          "calls": 1,
+          "total_ms": 55.39
+        },
+        "presentation": {
+          "calls": 1,
+          "total_ms": 708.35
+        }
+      }
+    },
+    {
+      "index": 4,
+      "group": "simple",
+      "status": 200,
+      "passed": true,
+      "first_text_ms": 3235.2950999999994,
+      "elapsed_ms": 7635.434300000001,
+      "database_calls": 15,
+      "model_calls": 2,
+      "total_tokens": 8620,
+      "stages": {
+        "database": {
+          "calls": 15,
+          "total_ms": 1400
+        },
+        "authentication": {
+          "calls": 1,
+          "total_ms": 94.55
+        },
+        "claim": {
+          "calls": 1,
+          "total_ms": 51.24
+        },
+        "snapshot": {
+          "calls": 1,
+          "total_ms": 52.79
+        },
+        "context": {
+          "calls": 1,
+          "total_ms": 588.89
+        },
+        "brain_context": {
+          "calls": 1,
+          "total_ms": 100.85
+        },
+        "model": {
+          "calls": 2,
+          "total_ms": 6421
+        },
+        "prepare": {
+          "calls": 1,
+          "total_ms": 7304.25
+        },
+        "commit": {
+          "calls": 1,
+          "total_ms": 51.56
+        },
+        "presentation": {
+          "calls": 1,
+          "total_ms": 133.49
+        }
+      }
+    },
+    {
+      "index": 5,
+      "group": "personal",
+      "status": 200,
+      "passed": true,
+      "first_text_ms": 2452.0697000000036,
+      "elapsed_ms": 3007.7706999999973,
+      "database_calls": 15,
+      "model_calls": 1,
+      "total_tokens": 4176,
+      "stages": {
+        "database": {
+          "calls": 15,
+          "total_ms": 898.11
+        },
+        "authentication": {
+          "calls": 1,
+          "total_ms": 101.8
+        },
+        "claim": {
+          "calls": 1,
+          "total_ms": 47.8
+        },
+        "snapshot": {
+          "calls": 1,
+          "total_ms": 48.22
+        },
+        "context": {
+          "calls": 1,
+          "total_ms": 158.23
+        },
+        "brain_context": {
+          "calls": 1,
+          "total_ms": 151.09
+        },
+        "model": {
+          "calls": 1,
+          "total_ms": 2290.9
+        },
+        "prepare": {
+          "calls": 1,
+          "total_ms": 2754.2
+        },
+        "commit": {
+          "calls": 1,
+          "total_ms": 48.71
+        },
+        "presentation": {
+          "calls": 1,
+          "total_ms": 54.92
+        }
+      }
+    },
+    {
+      "index": 6,
+      "group": "personal",
+      "status": 200,
+      "passed": true,
+      "first_text_ms": 2975.731399999997,
+      "elapsed_ms": 3571.873200000002,
+      "database_calls": 15,
+      "model_calls": 1,
+      "total_tokens": 4250,
+      "stages": {
+        "database": {
+          "calls": 15,
+          "total_ms": 751.21
+        },
+        "authentication": {
+          "calls": 1,
+          "total_ms": 99.1
+        },
+        "claim": {
+          "calls": 1,
+          "total_ms": 50.03
+        },
+        "snapshot": {
+          "calls": 1,
+          "total_ms": 50.68
+        },
+        "context": {
+          "calls": 1,
+          "total_ms": 148.52
+        },
+        "brain_context": {
+          "calls": 1,
+          "total_ms": 58.1
+        },
+        "model": {
+          "calls": 1,
+          "total_ms": 2959.54
+        },
+        "prepare": {
+          "calls": 1,
+          "total_ms": 3315.81
+        },
+        "commit": {
+          "calls": 1,
+          "total_ms": 50.44
+        },
+        "presentation": {
+          "calls": 1,
+          "total_ms": 56.07
+        }
+      }
+    },
+    {
+      "index": 7,
+      "group": "personal",
+      "status": 200,
+      "passed": true,
+      "first_text_ms": 13656.2664,
+      "elapsed_ms": 14530.3436,
+      "database_calls": 24,
+      "model_calls": 4,
+      "total_tokens": 18027,
+      "stages": {
+        "database": {
+          "calls": 24,
+          "total_ms": 1330.46
+        },
+        "authentication": {
+          "calls": 1,
+          "total_ms": 113.98
+        },
+        "claim": {
+          "calls": 1,
+          "total_ms": 53.6
+        },
+        "snapshot": {
+          "calls": 1,
+          "total_ms": 49.21
+        },
+        "context": {
+          "calls": 1,
+          "total_ms": 171.32
+        },
+        "brain_context": {
+          "calls": 1,
+          "total_ms": 56.85
+        },
+        "model": {
+          "calls": 4,
+          "total_ms": 13672.27
+        },
+        "source_reads": {
+          "calls": 3,
+          "total_ms": 204.01
+        },
+        "prepare": {
+          "calls": 1,
+          "total_ms": 14256.82
+        },
+        "commit": {
+          "calls": 1,
+          "total_ms": 50.56
+        },
+        "presentation": {
+          "calls": 1,
+          "total_ms": 55.11
+        }
+      }
+    },
+    {
+      "index": 8,
+      "group": "action",
+      "status": 200,
+      "passed": true,
+      "first_text_ms": 2757.0161000000007,
+      "elapsed_ms": 3404.7485000000015,
+      "database_calls": 18,
+      "model_calls": 1,
+      "total_tokens": 4244,
+      "stages": {
+        "database": {
+          "calls": 18,
+          "total_ms": 1059.19
+        },
+        "authentication": {
+          "calls": 1,
+          "total_ms": 113.58
+        },
+        "claim": {
+          "calls": 1,
+          "total_ms": 49.44
+        },
+        "snapshot": {
+          "calls": 1,
+          "total_ms": 49.44
+        },
+        "context": {
+          "calls": 1,
+          "total_ms": 146.24
+        },
+        "brain_context": {
+          "calls": 1,
+          "total_ms": 91.74
+        },
+        "model": {
+          "calls": 1,
+          "total_ms": 2595.06
+        },
+        "prepare": {
+          "calls": 1,
+          "total_ms": 2988.85
+        },
+        "queue": {
+          "calls": 1,
+          "total_ms": 114.37
+        },
+        "commit": {
+          "calls": 1,
+          "total_ms": 77.87
+        },
+        "presentation": {
+          "calls": 1,
+          "total_ms": 60.35
+        }
+      }
+    },
+    {
+      "index": 9,
+      "group": "action",
+      "status": 200,
+      "passed": true,
+      "first_text_ms": 2586.272600000004,
+      "elapsed_ms": 3189.5409,
+      "database_calls": 15,
+      "model_calls": 1,
+      "total_tokens": 4153,
+      "stages": {
+        "database": {
+          "calls": 15,
+          "total_ms": 800.33
+        },
+        "authentication": {
+          "calls": 1,
+          "total_ms": 109.67
+        },
+        "claim": {
+          "calls": 1,
+          "total_ms": 75.55
+        },
+        "snapshot": {
+          "calls": 1,
+          "total_ms": 48.4
+        },
+        "context": {
+          "calls": 1,
+          "total_ms": 154.64
+        },
+        "brain_context": {
+          "calls": 1,
+          "total_ms": 58.4
+        },
+        "model": {
+          "calls": 1,
+          "total_ms": 2539.18
+        },
+        "prepare": {
+          "calls": 1,
+          "total_ms": 2899.46
+        },
+        "commit": {
+          "calls": 1,
+          "total_ms": 49.93
+        },
+        "presentation": {
+          "calls": 1,
+          "total_ms": 54.5
+        }
+      }
+    }
+  ]
+}
