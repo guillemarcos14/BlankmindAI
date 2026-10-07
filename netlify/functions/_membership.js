@@ -128,6 +128,10 @@ function requireEnv(name) {
 }
 
 async function supabaseFetch(path, options = {}) {
+  return require("./bm-turn-timing").span("database", () => supabaseRequest(path, options));
+}
+
+async function supabaseRequest(path, options = {}) {
   const url = requireEnv("SUPABASE_URL").replace(/\/$/, "");
   const key = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
   const response = await fetch(`${url}/rest/v1/${path}`, {

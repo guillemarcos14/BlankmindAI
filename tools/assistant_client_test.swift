@@ -69,6 +69,19 @@ struct AssistantClientTests {
         let session = URLSession(configuration: config)
         let client = AssistantAppClient(session: session, baseURL: URL(string: "https://blank.test/api")!,
             sessionRefresh: AssistantAppSessionRefresh())
+        var clock = 10.0
+        let timing = AssistantLatencyTiming(turnID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", clock: { clock })
+        clock = 10.1; timing.prepared(); timing.using("stream")
+        clock = 10.2; timing.visible(" "); timing.visible("")
+        clock = 10.5; timing.visible("Hello")
+        clock = 10.6; timing.visible("Hello again")
+        var samples: [AssistantLatencySample] = []
+        timing.finish(outcome: "completed") { samples.append($0) }
+        timing.finish(outcome: "failed") { samples.append($0) }
+        check(samples.count == 1 && samples[0].route == "stream", "One sample per turn")
+        check(abs(samples[0].preparationMilliseconds - 100) < 0.01, "Preparation uses monotonic duration")
+        check(abs(samples[0].firstTextMilliseconds! - 500) < 0.01, "Only first nonempty text counts")
+        check(abs(samples[0].totalMilliseconds - 600) < 0.01, "Final duration includes preparation")
         AssistantAppSession.save(accessToken: "expired#A", refreshToken: "refresh-A")
 
         // Overlapping history reads share one rotating refresh token.
@@ -281,7 +294,8 @@ struct ConversationTestClient {
     @MainActor func history() async throws -> AssistantAppHistoryPage { try await ViewTransport.history() }
     @MainActor func status(turnId: String) async throws -> AssistantAppTurn? { try await ViewTransport.status(turnId) }
     @MainActor func send(text: String, turnId: String, context: [String: Any]? = nil,
-                        onDraft: (@MainActor (String) -> Void)? = nil) async throws -> AssistantAppTurn {
+                        onDraft: (@MainActor (String) -> Void)? = nil,
+                        timing: AssistantLatencyTiming? = nil) async throws -> AssistantAppTurn {
         onDraft?("Partial response")
         return try await ViewTransport.send(text, turnId)
     }

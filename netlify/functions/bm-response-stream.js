@@ -1,7 +1,8 @@
 "use strict";
 
-// Only the last, user-facing JSON field is previewed. Read/tool phases and all
-// authority fields remain private. An unfinished escape or surrogate is held.
+// Preview only response_text after its complete authority prefix. Secondary
+// tracking may follow the text, but cannot affect execution before final commit.
+// Read phases stay private; incomplete escapes/surrogates are held.
 function draftText(json) {
   const match = /"response_text"\s*:\s*"/.exec(json);
   if (!match) return null;
