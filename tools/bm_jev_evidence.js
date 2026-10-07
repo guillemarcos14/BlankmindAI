@@ -24,11 +24,11 @@ function main(){
   total_cost_target_met:null,quality_gate_met:false,independent_human_review:false,physical_iphone_cases:0,activation_enabled:false,gates_passed:false};
  const report={schema_version:1,generated_at:new Date().toISOString(),provenance:"Actual provider calls and private QA database; authored synthetic inputs only",dataset_sha256:heldout.dataset_sha256,
   evaluation:{heldout_reused:true,fresh_independent_holdout:false,initial,tuning_revised:tuning,heldout_revised:heldout},annotation_review:{artifact_sha256:annotation.sha256,...annotation.value},planner_comparison:{artifact_sha256:planner.sha256,...planner.value},
-  workflow_benchmark:{artifact_sha256:bench.sha256,...b,summary,total_cost_verified:false,limitations:[...b.limitations,"This run predates per-request usage counters; its generative aggregate is a lower-bound estimate and the upper billed amount is unknown","Measured candidate 6578fb8; subsequent changes only sampled worker selection and metadata allowlisting; no new successful release gate is implied"]},
+  workflow_benchmark:{artifact_sha256:bench.sha256,...b,summary,total_cost_verified:false,limitations:[...b.limitations,"Original 257 pairs predate per-request usage counters; their generative aggregate is a lower-bound estimate and the upper billed amount is unknown","Measured candidate 6578fb8; subsequent runtime corrections include sampled worker selection, metadata allowlisting and canonical UUID casing (benchmark UUIDs were lowercase); no new successful release gate is implied"]},
   quality_review:{artifact_sha256:quality.sha256,...quality.value},shadow_qa:{artifact_sha256:shadow.sha256,...shadow.value},
   vendor_spend:{known_jev_usd:jevKnown,unknown_jev_upper_usd:jevUnknown,max_jev_usd:jevKnown+jevUnknown,authorized_limit_usd:1,limit_met:jevKnown+jevUnknown<=1,
    note:"Includes initial rejected responses, revised tuning/heldout, 300-turn variant and shadow; evaluator OpenAI calls are test overhead, outside application turn cost"},gates:measured};
- fs.mkdirSync("docs/evidence",{recursive:true});fs.writeFileSync("docs/evidence/bm_jev_2026-10-07.json",JSON.stringify(report,null,2)+"\n");
+ fs.writeFileSync("docs/BM_JEV_EVIDENCE_2026-10-07.json",JSON.stringify(report,null,2)+"\n");
  console.log(JSON.stringify({samples:summary.optimized.samples+summary.jev.samples,summary,spend:report.vendor_spend,gates:measured}));
 }
 if(require.main===module)try{main();}catch(e){console.error(/^jev_[a-z0-9_]+$/.test(e.message)?e.message:"jev_evidence_export_failed");process.exitCode=1;}

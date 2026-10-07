@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-07T15:51:58.892Z",
+  "private_qa_only": true,
+  "migrations_applied": [
+    "029",
+    "030"
+  ],
+  "trial": {
+    "source_commit": "32c83d25a01c4dcaf1d9731c08aa881969829a07",
+    "deploy_id": "6ac65edb9b795f719ffd3fc2",
+    "remote_function_hashes_verified": true,
+    "functions": [
+      {
+        "name": "account-data",
+        "sha256": "f4ae14555545ca721765653925ace36f5f4a8b48c4817e9666efb26813a1a33a",
+        "bytes": 348595
+      },
+      {
+        "name": "app-auth",
+        "sha256": "1f7d078abb670eca7840909af06a953e565caa8371421adfe5c6e19c594b228f",
+        "bytes": 303451
+      },
+      {
+        "name": "assistant-app",
+        "sha256": "d96da83333890832dd08d1766d768270135a892980dee5630503d0e796b7c18c",
+        "bytes": 558493
+      },
+      {
+        "name": "assistant-app-stream",
+        "sha256": "96a1464c57fddec462e7db08ac2e8aefffb69b53f038746d344c04b293b32725",
+        "bytes": 618275
+      },
+      {
+        "name": "assistant-channel",
+        "sha256": "2b818117795848e2d513003eee52646a31880eba7dd86644b7286fa95ca9b62f",
+        "bytes": 402025
+      },
+      {
+        "name": "blanked-agent",
+        "sha256": "d37d9bec3af4eb4a35c1b75c48b7b89acd8bf23e06990a401a7c1741923af2cd",
+        "bytes": 444159
+      },
+      {
+        "name": "bmb-tick",
+        "sha256": "68f33d9383ade5e23a7c3efdef448c7bac432829b46b2c8dc037c006179a7b36",
+        "bytes": 393364
+      },
+      {
+        "name": "bmb-worker-background",
+        "sha256": "86053d09dbc354eec65ab6c35d67249f21ea56f6732d5167e528119065a7bdb8",
+        "bytes": 393330
+      },
+      {
+        "name": "waitlist-auth",
+        "sha256": "a8bfce7c74c0ec24ae41c700c41d52c5e62b45f8d62a464875108f33328678fe",
+        "bytes": 303025
+      }
+    ],
+    "cloud": {
+      "generated_at": "2026-10-07T15:06:48.681Z",
+      "passed": true,
+      "checks": [
+        {
+          "name": "fresh_snapshot_prepares_exact_30_minute_action",
+          "passed": true
+        },
+        {
+          "name": "immutable_replay_preserves_reply_and_one_outbox_event",
+          "passed": true
+        },
+        {
+          "name": "same_uuid_changed_message_rejected",
+          "passed": true
+        },
+        {
+          "name": "other_account_cannot_read_turn_or_history",
+          "passed": true
+        },
+        {
+          "name": "authenticated_client_cannot_read_advisory_metadata",
+          "passed": true
+        },
+        {
+          "name": "incomplete_request_asks_without_new_action",
+          "passed": true
+        },
+        {
+          "name": "forget_commits_without_native_action",
+          "passed": true
+        }
+      ],
+      "cleanup": [
+        {
+          "table": "assistant_semantic_conversations",
+          "passed": true
+        },
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "blankmind_identity_links",
+          "passed": true
+        },
+        {
+          "table": "auth.users",
+          "passed": true
+        },
+        {
+          "table": "assistant_semantic_conversations",
+          "passed": true
+        },
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "blankmind_identity_links",
+          "passed": true
+        },
+        {
+          "table": "auth.users",
+          "passed": true
+        }
+      ],
+      "native_execution_tested": false
+    },
+    "stream": {
+      "generated_at": "2026-10-07T14:54:47.421Z",
+      "passed": true,
+      "checks": [
+        {
+          "name": "stream_timings",
+          "passed": true
+        },
+        {
+          "name": "real_model_drafts_arrive_before_completed_result",
+          "passed": true
+        },
+        {
+          "name": "stream_completed_turn_replays_identically_via_json",
+          "passed": true
+        },
+        {
+          "name": "three_minutes_returns_completed_reply_without_action",
+          "passed": true
+        },
+        {
+          "name": "same_uuid_replays_identical_completed_reply",
+          "passed": true
+        },
+        {
+          "name": "same_uuid_changed_text_rejected",
+          "passed": true
+        },
+        {
+          "name": "supported_five_minutes_retains_action",
+          "passed": true
+        },
+        {
+          "name": "excessive_duration_returns_reply_without_action",
+          "passed": true
+        }
+      ],
+      "cleanup": [
+        {
+          "name": "synthetic_account",
+          "passed": true
+        },
+        {
+          "name": "synthetic_identity",
+          "passed": true
+        },
+        {
+          "name": "synthetic_semantic_state",
+          "passed": true
+        },
+        {
+          "name": "synthetic_features",
+          "passed": true
+        },
+        {
+          "name": "synthetic_features",
+          "passed": true
+        },
+        {
+          "name": "synthetic_features",
+          "passed": true
+        }
+      ],
+      "native_execution_tested": false
+    },
+    "infrastructure": {
+      "generated_at": "2026-10-07T14:54:54.788Z",
+      "passed": true,
+      "checks": [
+        {
+          "name": "unauthenticated_request_rejected",
+          "passed": true
+        },
+        {
+          "name": "two_synthetic_accounts_seeded_without_delivery",
+          "passed": true
+        },
+        {
+          "name": "installation_and_account_isolation",
+          "passed": true
+        },
+        {
+          "name": "clients_cannot_read_or_execute_service_tables",
+          "passed": true
+        }
+      ],
+      "cleanup": [
+        {
+          "name": "auth_user_and_turns",
+          "passed": true
+        },
+        {
+          "name": "identity_and_snapshot",
+          "passed": true
+        },
+        {
+          "name": "semantic_state",
+          "passed": true
+        },
+        {
+          "name": "synthetic_events",
+          "passed": true
+        },
+        {
+          "name": "synthetic_events",
+          "passed": true
+        },
+        {
+          "name": "synthetic_events",
+          "passed": true
+        },
+        {
+          "name": "auth_user_and_turns",
+          "passed": true
+        },
+        {
+          "name": "identity_and_snapshot",
+          "passed": true
+        },
+        {
+          "name": "semantic_state",
+          "passed": true
+        },
+        {
+          "name": "synthetic_events",
+          "passed": true
+        },
+        {
+          "name": "synthetic_events",
+          "passed": true
+        },
+        {
+          "name": "synthetic_events",
+          "passed": true
+        }
+      ],
+      "native_execution_tested": false
+    }
+  },
+  "latest_environment": {
+    "generated_at": "2026-10-07T15:10:04.571Z",
+    "site_id": "2ef5a74e-af70-4893-a5f6-63fb2537720d",
+    "private": true,
+    "deploy_id": "6ac65fd9c14a5012fd23f829",
+    "functions": [
+      {
+        "name": "account-data",
+        "schedule": null,
+        "invocation_mode": "buffered"
+      },
+      {
+        "name": "app-auth",
+        "schedule": null,
+        "invocation_mode": "buffered"
+      },
+      {
+        "name": "assistant-app",
+        "schedule": null,
+        "invocation_mode": "buffered"
+      },
+      {
+        "name": "assistant-app-stream",
+        "schedule": null,
+        "invocation_mode": "stream"
+      },
+      {
+        "name": "assistant-app-voice",
+        "schedule": null,
+        "invocation_mode": "stream"
+      },
+      {
+        "name": "assistant-channel",
+        "schedule": null,
+        "invocation_mode": "buffered"
+      },
+      {
+        "name": "blanked-agent",
+        "schedule": null,
+        "invocation_mode": "buffered"
+      },
+      {
+        "name": "bmb-tick",
+        "schedule": "*/5 * * * *",
+        "invocation_mode": "buffered"
+      },
+      {
+        "name": "bmb-worker-background",
+        "schedule": null,
+        "invocation_mode": "background"
+      },
+      {
+        "name": "waitlist-auth",
+        "schedule": null,
+        "invocation_mode": "buffered"
+      }
+    ],
+    "jev_secret": [
+      {
+        "key": "TYPESAFE_API_KEY",
+        "is_secret": true,
+        "scopes": [
+          "functions"
+        ]
+      }
+    ],
+    "jev_flags": []
+  },
+  "latest_source_commit": "7aa3873c7261b47423281fa83e8a93ed547a77b8",
+  "limitations": [
+    "Current Voice deployment includes integration 32c83d2 and adds a tenth function; no older package was redeployed over it",
+    "New PR23 canonical UUID casing correction is not deployed; all Jev flags remain off",
+    "Cloud checks do not prove physical native execution or scheduled Jev dispatch"
+  ],
+  "production_modified": false,
+  "testflight_uploaded": false
+}
