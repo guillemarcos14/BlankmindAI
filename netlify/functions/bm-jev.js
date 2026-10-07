@@ -138,7 +138,7 @@ async function drain({ db = supabaseFetch, classifyTurn = classify, config = con
   let processed = 0;
   // Scheduled existing background worker recovers work from durable completed
   // turns, including a crash before dispatch; no text is copied into a queue.
-  const rows = await db("rpc/bm_jev_pending", { method: "POST", body: JSON.stringify({ p_users: config.users, p_since: config.since }) });
+  const rows = await db("rpc/bm_jev_pending_sampled", { method: "POST", body: JSON.stringify({ p_users: config.users, p_since: config.since, p_percent: Math.floor(config.fraction) }) });
   for (const row of rows || []) if (eligible(row.auth_user_id, row.id, config)) {
     await classifyTurn({ userId: row.auth_user_id, turnId: row.id }); processed++;
   }
