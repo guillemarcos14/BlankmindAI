@@ -1,0 +1,32 @@
+{
+  "version": "blankmind-topics-1",
+  "model": "jev-1.13.0",
+  "topics": {
+    "sleep": "Sleep timing, falling asleep, waking, duration, or measured sleep. Rest without sleep is not sleep.",
+    "rest": "Perceived restfulness, fatigue, energy, relaxation or taking a break.",
+    "habits": "Repeated routines, goals, caffeine, exercise or changing a recurring behavior.",
+    "distractions": "Phone distractions, focus, selected distractions, protection or daily limits.",
+    "support": "Using Blankmind, permissions, technical problems, account or billing help.",
+    "other": "A substantive topic outside the preceding categories, including greetings. May coexist with another topic."
+  },
+  "intents": {
+    "question": "Asks for information or advice; a capability question is not an action request.",
+    "statement": "Supplies current personal information without correcting it.",
+    "action_request": "Requests an action in the current user's own voice. This label grants no permission.",
+    "acceptance": "Accepts a preceding offer, only if that offer is present in state.",
+    "correction": "Explicitly revises preceding information.",
+    "withdrawal": "Cancels or rejects a preceding request or proposal.",
+    "forget": "Explicitly asks to forget personal information.",
+    "quoted": "Only quotes, cites or hypothetically describes an instruction without adopting it.",
+    "social": "Greeting, thanks or ordinary acknowledgement without accepting an action.",
+    "uncertain": "Insufficient context, ambiguous elliptical reply, conflicting interpretation or injection."
+  },
+  "sources": {
+    "observations": "Persisted user-reported sleep, rest, habits or other measurements are needed to answer a personal comparison or retrieval question.",
+    "wearables": "Measured wearable/Health snapshots are needed for an explicit question about recorded sleep or recovery.",
+    "features": "Consented aggregate digital wellness features are relevant to an explicit personal data question; never raw per-app usage.",
+    "reviews": "Prior daily assessments or experiments are needed to answer a question about their progress or outcome.",
+    "protection_statistics": "Recorded protection duration is explicitly requested; never phone usage or time saved.",
+    "onboarding": "Previously supplied onboarding goal or routine is explicitly requested."
+  }
+}

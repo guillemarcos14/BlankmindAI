@@ -29,7 +29,7 @@ function usage(value) {
   if (Number.isSafeInteger(cached) && cached >= 0) trace.usage.cached_input_tokens = (trace.usage.cached_input_tokens || 0) + cached;
 }
 async function run({ turnId, action }, work, publish = sample => console.info(JSON.stringify(sample))) {
-  const trace = { start: performance.now(), first_text_ms: null, stages: {}, usage: {} };
+  const trace = { turnId, start: performance.now(), first_text_ms: null, stages: {}, usage: {}, jev: [] };
   return storage.run(trace, async () => {
     let status = 503;
     try { const result = await work(); status = result.statusCode; return result; }
@@ -38,9 +38,12 @@ async function run({ turnId, action }, work, publish = sample => console.info(JS
         action: action === "transcribe" ? "transcribe" : "send",
         ...(typeof turnId === "string" && /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(turnId) ? { turn_id: turnId } : {}),
         status: Number.isInteger(status) ? status : 503,
-        first_text_ms: trace.first_text_ms, elapsed_ms: elapsed(trace.start), stages: trace.stages, usage: trace.usage };
+        first_text_ms: trace.first_text_ms, elapsed_ms: elapsed(trace.start), stages: trace.stages, usage: trace.usage,
+        ...(trace.jev.length ? { jev: trace.jev } : {}) };
       try { publish(sample); } catch (_) { /* Metrics cannot break a turn. */ }
     }
   });
 }
-module.exports = { span, firstText, usage, run };
+function currentTurn() { return storage.getStore()?.turnId || null; }
+function advisory(sample) { const trace = storage.getStore(); if (trace) trace.jev.push(sample); }
+module.exports = { span, firstText, usage, run, currentTurn, advisory };

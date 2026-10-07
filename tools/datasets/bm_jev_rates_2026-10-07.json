@@ -1,0 +1,12 @@
+{
+  "model": "gpt-5.6-luna",
+  "input": 0.20,
+  "cached": 0.02,
+  "output": 1.20,
+  "unit": "USD per million text tokens, standard tier",
+  "verified": "2026-10-07",
+  "source": "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+  "jev_input": 0.042,
+  "jev_output": 0,
+  "jev_source": "https://docs.typesafe.ai/models"
+}

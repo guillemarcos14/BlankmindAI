@@ -4,4 +4,4 @@ create role anon nologin;
 create role authenticated nologin;
 create role service_role nologin;
 create schema auth;
-create table auth.users (id uuid primary key);
+create table auth.users (id uuid primary key, raw_app_meta_data jsonb not null default '{}');
