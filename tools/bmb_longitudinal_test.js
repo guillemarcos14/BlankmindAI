@@ -40,6 +40,16 @@ async function main(){
  const result=await brain.plan({prompt,context:{memory:{},brain_snapshot:{generated_at:new Date().toISOString(),timezone:"Europe/Madrid"}},userId:"A",identity:{}},
    {db,memories:[],run:async input=>{assert.equal(input.open_followups[0].id,f.id);return {...base(),evidence:"me dormí",observations:[observation],followup_resolution:resolution};}});
  assert.equal(result.context.brain_memory_effect.observations.length,1);assert.equal(result.context.brain_memory_effect.followup_resolution.id,f.id);
+ let repairs=0;
+ const repaired=await brain.plan({prompt,context:{memory:{}},userId:"A",identity:{}},{db,memories:[],run:async()=>{
+   repairs++;return {...base(),evidence:"me dormí",observations:[{...observation,unit:repairs===1?"minutes":"local_minute"}]};
+ }});
+ assert.equal(repairs,2);assert.equal(repaired.context.brain_memory_effect.observations[0].unit,"local_minute");assert.equal(repaired.plan.actions.length,0);
+ repairs=0;
+ await assert.rejects(()=>brain.plan({prompt,context:{memory:{}},userId:"A",identity:{}},{db,memories:[],run:async()=>{
+   repairs++;return {...base(),evidence:"me dormí",decision:repairs===1?"respond":"execute",action:repairs===1?null:{type:"start_protection",minutes:30},
+     observations:[{...observation,unit:"minutes"}]};
+ }}),/repair_changed_authority/);
  // Daily review is separate from sending; evidence is owner-scoped and failures release a bounded lease.
  let finished=0,failed=0,reviewCalls=0;
  const report={summary:"A later sleep onset warrants checking the current routine.",confidence:.7,hypotheses:[{explanation:"Routine change",status:"possible",evidence_ids:["row-A"]}],missing_information:["Work schedule"],question:"Has your work routine changed?",question_metric:"sleep_onset",evidence_ids:["row-A"]};

@@ -185,7 +185,23 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     }
     if(execute&&!freshness(context.brain_snapshot))throw Error("bmb_stale_device_state");
   }
-  const tracking=longitudinal.validateEffects(result,prompt,proactive,openFollowups);
+  let tracking;
+  try {tracking=longitudinal.validateEffects(result,prompt,proactive,openFollowups);}
+  catch(error) {
+    if(proactive)throw error;
+    // A secondary extraction error gets one bounded repair, without replanning
+    // or changing the already validated action/intent/forget authority.
+    const original=result;
+    const repaired=await run({...input,tool_budget_remaining:0,previous_generated_result:original,
+      conformance_error:"Repair observations and followup_resolution only. Use the supplied units, literal current-message evidence, numeric digits and valid dates. Omit observations you cannot ground. You may adjust response_text to avoid claiming an omitted fact was saved. Keep phase=final, message_kind, decision, response_language, evidence, action, accepted_proposal, pending_request and memory EXACTLY unchanged. No reads."});
+    if(repaired?.phase!=="final"||repaired.message_kind!==original.message_kind||repaired.decision!==original.decision
+      ||repaired.response_language!==original.response_language||repaired.evidence!==original.evidence
+      ||repaired.accepted_proposal!==original.accepted_proposal||repaired.pending_request!==original.pending_request
+      ||actionIdentity(repaired.action||{})!==actionIdentity(original.action||{})||actionIdentity(repaired.memory||{})!==actionIdentity(original.memory||{})
+      ||!repaired.response_text?.trim()||/:(?!\d{2}\b)/.test(repaired.response_text))throw Error("bmb_tracking_repair_changed_authority");
+    tracking=longitudinal.validateEffects(repaired,prompt,proactive,openFollowups);
+    result=repaired;text=result.response_text.trim();
+  }
   if(tracking.observations.length||tracking.followup_resolution)context.brain_memory_effect={...(context.brain_memory_effect||result.memory||{}),...tracking};
   if(result.memory) {
     const m=result.memory;
