@@ -19,6 +19,8 @@ const viewMethodsEnd = source.indexOf('    #if DEBUG', viewMethodsStart);
 if (viewMethodsStart < 0 || viewMethodsEnd < viewMethodsStart) throw new Error('Assistant view state test boundaries changed');
 const viewMethods = source.slice(viewMethodsStart, viewMethodsEnd).replaceAll('AssistantAppClient()', 'ConversationTestClient()');
 const applyMethod = source.slice(source.indexOf('    private func applyAction('), source.indexOf('    private func openControls('));
+const appSource = fs.readFileSync(path.join(__dirname, '../ios/Blank/Blank/BlankApp.swift'), 'utf8');
+const notificationNames = appSource.slice(appSource.indexOf('enum AssistantRemoteNotification'), appSource.indexOf('// Only private QA archives'));
 const viewFixture = `
 @MainActor final class BlankBrain {
     static let shared = BlankBrain()
@@ -40,6 +42,7 @@ const viewFixture = `
     var sendRequestID: UUID?
     var reloadRequestID: UUID?
     var isSending: Bool { sendRequestID != nil }
+    var waiting: Bool { isSending || composer.pending != nil || isApplyingAction }
     var isLoading = true
     var composerFocused = false
     var turns: [AssistantAppTurn] = []
@@ -69,6 +72,7 @@ const viewFixture = `
     func applyForTest(_ id: String) async { await applyAction(id) }
     func restoreForTest() { restoreOwner() }
     func recoverForTest() async { await recoverPendingMessage(delays: [1_000_000, 1_000_000, 1_000_000]) }
+    func followupForTest() async { await showRequestedFollowup() }
 ${viewMethods}
 ${applyMethod}
 }
@@ -85,7 +89,7 @@ const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'blank-assistant-client-
 try {
   const file = path.join(temporary, 'AssistantClientTests.swift');
   const binary = path.join(temporary, 'assistant-client-tests');
-  fs.writeFileSync(file, `import Foundation\n${receipts}\n${source.slice(start, end)}\n${composer}\n${hapticsFixture}\n${viewFixture}\n${test}`);
+  fs.writeFileSync(file, `import Foundation\n${notificationNames}\n${receipts}\n${source.slice(start, end)}\n${composer}\n${hapticsFixture}\n${viewFixture}\n${test}`);
   const compiled = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file, '-o', binary], { encoding: 'utf8' });
   if (compiled.error) throw new Error(`Native client tests require Swift on macOS: ${compiled.error.message}`);
   if (compiled.status !== 0) throw new Error(compiled.stderr || compiled.stdout);

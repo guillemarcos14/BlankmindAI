@@ -346,6 +346,11 @@ struct AssistantAppClient {
         return text
     }
 
+    func followup(eventID: String) async throws -> String? {
+        let result = try await request(action: "bmb_followup", extra: ["event_id": eventID])
+        return result.text
+    }
+
     func history(before: String? = nil) async throws -> AssistantAppHistoryPage {
         let result = try await request(action: "history", extra: before.map { ["before": $0] } ?? [:])
         return AssistantAppHistoryPage(turns: result.turns ?? [], nextBefore: result.nextBefore)
@@ -908,6 +913,9 @@ struct AssistantAppView: View {
             guard !preview, !simulatorGuest, restoreOwner() else { return }
             Task { await reload() }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .blankAssistantFollowupRequested).receive(on: RunLoop.main)) { _ in
+            Task { await showRequestedFollowup() }
+        }
         .onDisappear { presentationIsVisible = false; writingHaptics.stop(); acceptingSpeech = false; speech.stop(); saveTask?.cancel(); persist() }
         .sheet(isPresented: $showHistory) {
             AssistantAppHistoryView(turns: turns, nextBefore: nextHistoryCursor,
@@ -921,6 +929,7 @@ struct AssistantAppView: View {
             BlankBrain.shared.sync()
             onConversationActivityChanged(visible && (waiting || speech.isRecording || speech.isStarting))
             if !visible { acceptingSpeech = false; speech.stop(); composerFocused = false; persist() }
+            else { Task { await showRequestedFollowup() } }
         }
         .onChange(of: waiting || speech.isRecording || speech.isStarting) { busy in
             if speech.isRecording || speech.isStarting { writingHaptics.stop() }
@@ -1261,6 +1270,7 @@ struct AssistantAppView: View {
         writingHaptics.stop()
         turns = []
         visibleTurnID = nil
+        greeting = AssistantGreetingFallback.make()
         nextHistoryCursor = nil
         composer = AssistantDraftVault.load(owner: current)
         error = nil
@@ -1311,10 +1321,32 @@ struct AssistantAppView: View {
                     showPendingProblem(.processing)
                 } else { showPendingProblem(.unknown) }
             } else { error = nil }
+            await showRequestedFollowup()
         } catch {
             guard expectedOwner == owner, expectedRevision == conversationRevision else { return }
             handle(error)
         }
+    }
+
+    @MainActor private func showRequestedFollowup() async {
+        guard !preview, !simulatorGuest, isHomeVisible, scenePhase == .active,
+              !waiting, !speech.isRecording, !speech.isStarting, !speech.hasAudio,
+              composer.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let eventID = BlankSharedState.defaults.string(forKey: AssistantRemoteNotification.tappedEventIDKey) else { return }
+        let expectedOwner = owner
+        let expectedRevision = conversationRevision
+        do {
+            let question = try await AssistantAppClient().followup(eventID: eventID)
+            guard owner == expectedOwner, owner == AssistantAppSession.userID,
+                  expectedRevision == conversationRevision, !waiting, isHomeVisible,
+                  composer.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  BlankSharedState.defaults.string(forKey: AssistantRemoteNotification.tappedEventIDKey) == eventID else { return }
+            BlankSharedState.defaults.removeObject(forKey: AssistantRemoteNotification.tappedEventIDKey)
+            if let question, !question.isEmpty {
+                visibleTurnID = nil
+                greeting = question
+            }
+        } catch { /* Keep the event for retry after connectivity returns. */ }
     }
 
     private func accept(_ turn: AssistantAppTurn) {

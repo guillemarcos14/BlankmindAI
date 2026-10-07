@@ -1,12 +1,18 @@
 "use strict";
 const {supabaseFetch,json}=require("./_membership");
 const {settings,actionGate,fingerprint,notificationGate,budgetGate,notificationExpiry}=require("./bmb-policy");
+const longitudinal=require("./bmb-longitudinal");
 const {normalizeBrainSnapshot}=require("./bm-brain-data");
 async function account(userId) {
   const rows=await supabaseFetch(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=*`,{method:"GET"});
   return rows[0]||{auth_user_id:userId,version:0,settings:settings()};
 }
 async function api(auth,body) {
+  if(body.action==="bmb_followup") {
+    if(typeof body.event_id!=="string"||!/^[-\da-f]{36}$/i.test(body.event_id))return json(400,{error:"invalid_event_id"});
+    const followup=await longitudinal.greetingContext(auth.user.id,supabaseFetch,body.event_id);
+    return json(200,{ok:true,text:followup?.question||null});
+  }
   if(body.action==="bmb_settings")return json(200,{ok:true,account:await account(auth.user.id)});
   if(body.action==="bmb_activity")return json(200,{ok:true,events:await supabaseFetch(`bmb_events?auth_user_id=eq.${encodeURIComponent(auth.user.id)}&select=id,kind,outcome,feedback,created_at&order=created_at.desc&limit=10`,{method:"GET"})});
   if(body.action==="bmb_sync_signals") {
@@ -46,12 +52,8 @@ async function receipt(userId,actionId,status,evidence) {
   await mergeOutcome(userId,actionId.slice(4),{status,device_evidence:evidence,received_at:new Date().toISOString()});
 }
 const mergeOutcome=(userId,id,patch,db=supabaseFetch)=>db("rpc/bmb_merge_outcome",{method:"POST",body:JSON.stringify({p_user:userId,p_id:id,p_patch:patch})});
-function opportunities(sessions,events,now=Date.now()) {
+function opportunities(events,now=Date.now()) {
   const candidates=[];
-  const recent=sessions.filter(s=>Date.parse(s.ended_at)>now-7*86400000&&["manual","emergency"].includes(s.ended_reason));
-  if(recent.length>=2)candidates.push({kind:"opportunity",priority:40,
-    event_key:fingerprint(recent.map(s=>s.id).sort()),meaning_key:`early_exits:${new Date(now).toISOString().slice(0,10)}`,
-    expires_at:new Date(now+6*3600000).toISOString(),facts:{source:"recorded_protection_sessions",ids:recent.map(s=>s.id),early_exits:recent.length,inference:"Repeated early protection exits may be a useful moment to offer help; this is not measured phone use."}});
   for(const e of events.filter(e=>e.kind==="action"&&["verified","delayed","failed"].includes(e.outcome?.status)))candidates.push({
     kind:e.outcome.status==="failed"?"failure":"intervention",priority:e.outcome.status==="failed"?90:70,
     event_key:`receipt:${e.id}`,meaning_key:`receipt:${e.id}`,expires_at:new Date(Date.parse(e.outcome.received_at||e.created_at)+6*3600000).toISOString(),
@@ -65,7 +67,7 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
   const memory=await getMemory("app",a.auth_user_id,{requireSemantic:true});
   const context=await getContext({},identity.assistant_connect_code);
   context.memory=memory;context.language=memory.language||"en";
-  const sessions=await db(`bmb_sessions?auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&ended_at=gte.${encodeURIComponent(new Date(Date.now()-7*86400000).toISOString())}&select=*&limit=2000`,{method:"GET"});
+  await longitudinal.dailyReview(a,identity,context,brain,db);
   const events=await db(`bmb_events?auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&created_at=gte.${encodeURIComponent(new Date(Date.now()-7*86400000).toISOString())}&select=*&order=created_at.desc`,{method:"GET"});
   // Resume a reservation after worker interruption using the same action ID and
   // expiry. APNs acceptance is transport evidence only, never device execution.
@@ -82,7 +84,27 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
   };
   const waiting=events.find(e=>e.kind==="action"&&!e.outcome.status&&e.grant_version===a.version&&Date.parse(e.expires_at)>Date.now());
   if(waiting)return deliver(waiting);
-  const candidates=opportunities(sessions,events);
+  const deliverNotice=async ev=>{
+    const current=await db(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&select=settings,version`,{method:"GET"});
+    if(current[0]?.version!==ev.grant_version)return {skipped:"grant_changed"};
+    const event={...ev,kind:ev.facts.notice_kind||"opportunity"};
+    if(!notificationGate(event,current[0].settings,context).allowed)return {skipped:"notification_policy"};
+    if(ev.facts.followup_id&&!(await longitudinal.followups(a.auth_user_id,db)).some(f=>f.id===ev.facts.followup_id))return {skipped:"followup_closed"};
+    const attempts=(ev.outcome.notification_attempts||0)+1;
+    await mergeOutcome(a.auth_user_id,ev.id,{notification_attempts:attempts,next_retry_at:new Date(Date.now()+30*60000).toISOString()},db);
+    const transport=await notify(memory.assistant_device_push,{id:ev.id,text:ev.outcome.message_text,expires_at:ev.expires_at});
+    await mergeOutcome(a.auth_user_id,ev.id,{transport},db);
+    return {notification_reserved:ev.id};
+  };
+  const retry=events.find(e=>e.kind==="notification"&&!e.outcome.transport?.sent&&e.grant_version===a.version
+    &&Date.parse(e.expires_at)>Date.now()&&(e.outcome.notification_attempts||0)<3
+    &&(!e.outcome.next_retry_at||Date.parse(e.outcome.next_retry_at)<=Date.now()));
+  if(retry)return deliverNotice(retry);
+  const candidates=opportunities(events);
+  candidates.push(...await longitudinal.reviewOpportunities(a.auth_user_id,a.settings.timezone,db));
+  for(const f of await longitudinal.followups(a.auth_user_id,db))candidates.push({kind:"opportunity",priority:45,
+    event_key:`followup:${f.id}`,meaning_key:`followup:${f.id}`,expires_at:new Date(Date.parse(f.created_at)+7*86400000).toISOString(),
+    facts:{source:"longitudinal_followup",followup_id:f.id,question:f.question,metric:f.metric,evidence_ids:f.evidence_ids}});
   const signals=await db(`bmb_device_signals?auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&occurred_at=gte.${encodeURIComponent(new Date(Date.now()-6*3600000).toISOString())}&select=*&order=occurred_at.desc&limit=100`,{method:"GET"});
   for(const s of signals)candidates.push({kind:"opportunity",priority:60,event_key:`threshold:${s.id}`,meaning_key:`threshold:${s.occurred_at.slice(0,10)}:${s.threshold_minutes}`,
     expires_at:new Date(Date.parse(s.occurred_at)+6*3600000).toISOString(),facts:{source:"native_threshold",source_id:s.id,threshold_minutes:s.threshold_minutes,occurred_at:s.occurred_at,measurement:"Selected distractions reached the configured aggregate usage threshold; no per-app usage is available."}});
@@ -93,7 +115,7 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
     ||c.kind==="opportunity"&&a.settings.grant?.active&&budgetGate("action",c,a.settings,events).allowed);
   if(!selected)return {skipped:"policy_or_budget"};
   const canNotify=notificationGate(selected,a.settings,context).allowed&&budgetGate("notification",selected,a.settings,events).allowed;
-  const canAct=selected.kind==="opportunity"&&a.settings.grant?.active&&actionGate({type:a.settings.grant.action_types[0],minutes:Math.min(30,a.settings.grant.max_minutes)},a.settings,context).allowed&&budgetGate("action",selected,a.settings,events).allowed;
+  const canAct=selected.facts.source!=="longitudinal_followup"&&selected.kind==="opportunity"&&a.settings.grant?.active&&actionGate({type:a.settings.grant.action_types[0],minutes:Math.min(30,a.settings.grant.max_minutes)},a.settings,context).allowed&&budgetGate("action",selected,a.settings,events).allowed;
   if(!canNotify&&!canAct)return {skipped:"policy"};
   const prior=await db(`bmb_events?auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&event_key=eq.${encodeURIComponent(selected.event_key)}&select=id,kind`,{method:"GET"});
   if(prior.some(e=>e.kind==="notification")&&(!canAct||prior.some(e=>e.kind==="action")))return {skipped:"duplicate"};
@@ -120,11 +142,10 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
   }
   if(canNotify) {
     const expiry=notificationExpiry(selected,a.settings);
-    const reserved=await claim("notification",{expires_at:expiry});
+    const reserved=await claim("notification",{expires_at:expiry,facts:{...selected.facts,notice_kind:selected.kind}});
     if(reserved.claimed) {
-      const result=await notify(memory.assistant_device_push,{id:reserved.id,text:plan.message_text,expires_at:expiry});
-      await mergeOutcome(a.auth_user_id,reserved.id,{transport:result},db);
-      return {notification_reserved:reserved.id};
+      const stored=await db(`bmb_events?id=eq.${reserved.id}&auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&select=*`,{method:"GET"});
+      return deliverNotice(stored[0]);
     }
   }
   return {skipped:"budget_or_duplicate"};
