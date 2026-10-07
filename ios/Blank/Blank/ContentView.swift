@@ -4,6 +4,10 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
+    @EnvironmentObject private var screenTimeBlocker: ScreenTimeBlocker
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var healthKitStore = HealthKitStore()
+    @AppStorage("blankHealthOnboardingVersion", store: BlankSharedState.defaults) private var healthOnboardingVersion = 0
     @State private var showingOnboardingDemo = false
     @State private var simulatorGuestHome = false
     @State private var accountRevision = 0
@@ -38,8 +42,8 @@ struct ContentView: View {
     private var productContent: some View {
         let _ = accountRevision
         return ZStack {
-            if showingOnboardingDemo || (!simulatorGuestHome && (!sessionStore.setupComplete || !AssistantAppSession.hasAppleIdentity)) {
-                SetupView {
+            if showingOnboardingDemo || (!simulatorGuestHome && (!sessionStore.setupComplete || !AssistantAppSession.hasAppleIdentity || healthOnboardingVersion != 6 || !SleepAccessPolicy.canEnter(screenTimeApproved: screenTimeBlocker.authorizationStatus == .approved, sleep: healthKitStore.sleepAccess))) {
+                SetupView(healthKitStore: healthKitStore) {
                     withAnimation(.easeInOut(duration: 0.35)) {
                         showingOnboardingDemo = false
                         #if targetEnvironment(simulator)
@@ -59,6 +63,10 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.35), value: showingOnboardingDemo)
         .environment(\.blankMinimalAppearance, true)
+        .task { healthKitStore.verifySleepAccess() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active { healthKitStore.verifySleepAccess() }
+        }
         .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
             accountRevision += 1
             Task { await purchaseStore.updateCustomerProductStatus() }

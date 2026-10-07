@@ -20,16 +20,17 @@ struct SetupView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var screenTimeBlocker: ScreenTimeBlocker
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
+    @ObservedObject private var healthKitStore: HealthKitStore
+    @State private var showingHealthHelp = false
+    @AppStorage("blankHealthOnboardingVersion", store: BlankSharedState.defaults) private var healthOnboardingVersion = 0
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var currentStep: OnboardingStep = .account
-    @State private var showingPicker = false
     @State private var completionInFlight = false
     @State private var automaticCompletionAttempted = false
     @State private var notificationReady = false
-    @State private var notificationDenied = false
     @State private var message: String?
 
     @AppStorage("blankOnboardingStepRaw", store: BlankSharedState.defaults) private var savedStepRaw = 0
@@ -39,10 +40,17 @@ struct SetupView: View {
 
     var onFinishForQA: (() -> Void)?
 
-    init(_ onFinishForQA: (() -> Void)? = nil) {
+    init(healthKitStore: HealthKitStore = HealthKitStore(), _ onFinishForQA: (() -> Void)? = nil) {
+        self.healthKitStore = healthKitStore
         self.onFinishForQA = onFinishForQA
         #if DEBUG && targetEnvironment(simulator)
-        _currentStep = State(initialValue: AssistantAppPreview.scenario == "product-onboarding-device" ? .device : .account)
+        _currentStep = State(initialValue: AssistantAppPreview.scenario.hasPrefix("product-onboarding-device") ? .device : .account)
+        if AssistantAppPreview.scenario == "product-onboarding-device-empty" {
+            healthKitStore.setPreviewSleepAccess(.noData)
+        }
+        if AssistantAppPreview.scenario == "product-onboarding-device-error" {
+            healthKitStore.setPreviewSleepAccess(.failed("Fixture"))
+        }
         #endif
     }
 
@@ -59,7 +67,16 @@ struct SetupView: View {
             }
         }
         .statusBarHidden(true)
-        .familyActivityPicker(isPresented: $showingPicker, selection: $sessionStore.selection)
+        .sheet(isPresented: $showingHealthHelp) {
+            NavigationStack {
+                ScrollView {
+                    Text(copy("Abre Salud → tu perfil → Apps → Blankmind y activa la lectura de sueño. Si ya está activada, revisa Salud → Sueño para comprobar que hay registros. Después vuelve y pulsa Volver a comprobar.", "Open Health → your profile → Apps → Blankmind and enable Sleep reading. If it is already enabled, check Health → Sleep for recorded sleep. Then return and tap Check again."))
+                        .font(.blankBody).padding(24)
+                }
+                .navigationTitle(copy("Acceso a Salud", "Health access"))
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(copy("Listo", "Done")) { showingHealthHelp = false } } }
+            }
+        }
         #if targetEnvironment(simulator)
         .overlay(alignment: .topLeading) {
           GeometryReader { proxy in
@@ -90,13 +107,13 @@ struct SetupView: View {
             #if DEBUG && targetEnvironment(simulator)
             if AssistantAppPreview.scenario.hasPrefix("product-onboarding") { return }
             #endif
-            if onboardingFlowVersion != 5 {
+            if onboardingFlowVersion != 6 {
                 savedStepRaw = OnboardingStep.account.rawValue
-                onboardingFlowVersion = 5
+                onboardingFlowVersion = 6
             }
             if !AssistantAppSession.hasAppleIdentity || assistantConnectCode.isEmpty {
                 currentStep = .account
-            } else if !sessionStore.setupComplete {
+            } else {
                 currentStep = .device
             }
             await refreshDeviceState()
@@ -121,18 +138,7 @@ struct SetupView: View {
         .onChange(of: deviceReady) { ready in
             if !ready { automaticCompletionAttempted = false }
         }
-        .onChange(of: sessionStore.selection) { selection in
-            screenTimeBlocker.updateSelection(selection, isBlankActive: sessionStore.isBlankActive)
-            if sessionStore.hasSelectedApps { message = nil }
-            Task {
-                await BlankFunnelAnalytics.track(
-                    "apps_selection_updated",
-                    step: currentStep.analyticsName,
-                    properties: ["selection_count": sessionStore.selectionCount,
-                                 "has_selected_apps": sessionStore.hasSelectedApps]
-                )
-            }
-        }
+
     }
 
     private var functionalStep: some View {
@@ -156,45 +162,54 @@ struct SetupView: View {
         }
     }
 
+    private func copy(_ es: String, _ en: String) -> String { Locale.current.languageCode == "es" ? es : en }
+
     private var deviceContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(dynamicTypeSize.isAccessibilitySize ? "Set up\nBlankmind" : "Set up Blankmind")
+        VStack(alignment: .leading, spacing: 24) {
+            Text(copy("Preparemos tu descanso", "Let's get ready"))
                 .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
-                .tracking(-0.9)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityLabel("Set up Blankmind")
-                .padding(.bottom, 24)
-
-            AccountJustifiedCopy(text: NSAttributedString(string: "Screen Time lets Blankmind block distractions. Choose apps for one reusable protection list, and enable notifications to receive block requests from chat."), foregroundColor: UIColor(MinimalHomeDesign.ink))
-                .padding(.bottom, 24)
-
-            VStack(spacing: 12) {
-                permissionButton(
-                    title: "Allow Screen Time",
-                    ready: screenTimeBlocker.authorizationStatus == .approved,
-                    action: authorizeScreenTime
-                )
-                permissionButton(
-                    title: "Choose apps",
-                    ready: sessionStore.hasSelectedApps
-                ) {
-                    if screenTimeBlocker.authorizationStatus == .approved {
-                        showingPicker = true
-                    } else {
-                        message = "Allow Screen Time before choosing apps."
-                    }
-                }
-                permissionButton(
-                    title: "Enable notifications",
-                    ready: notificationReady,
-                    action: requestNotifications
-                )
+                .tracking(-0.9).fixedSize(horizontal: false, vertical: true)
+            if !needsSleepRecovery {
+                Text(copy("Necesito dos conexiones para acompañarte: Screen Time para protegerte de las distracciones y Salud para entender tu sueño junto a tu actividad y señales físicas.", "I need two connections to support you: Screen Time to protect you from distractions, and Health to understand your sleep alongside activity and physical signals."))
+                    .font(.blankBody).fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: .infinity)
+            VStack(spacing: 12) {
+                permissionButton(title: copy("Permitir Screen Time", "Allow Screen Time"),
+                    ready: screenTimeBlocker.authorizationStatus == .approved, action: authorizeScreenTime)
+                permissionButton(title: copy("Conectar Apple Health", "Connect Apple Health"),
+                    ready: healthKitStore.sleepAccess.hasData, action: healthKitStore.requestAccess)
+                    .disabled(healthKitStore.state == .requesting || healthKitStore.sleepCheckInFlight)
+            }
+            if healthKitStore.sleepCheckInFlight || healthKitStore.state == .requesting {
+                Text(copy("Comprobando los registros disponibles…", "Checking available records…"))
+                    .font(.blankBody).accessibilityAddTraits(.updatesFrequently)
+            } else if healthKitStore.sleepAccess == .noData {
+                Text(copy("Aún no puedo leer registros de sueño. Revisa el acceso y el seguimiento. Si empiezas hoy, duerme con tu reloj y vuelve cuando aparezcan registros en Salud.", "I can't read sleep records yet. Check access and sleep tracking. If you're starting today, wear your watch overnight and return when records appear in Health."))
+                    .font(.blankBody).fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("onboarding-sleep-empty")
+                recoveryButtons
+            } else if case .failed = healthKitStore.sleepAccess {
+                Text(copy("No pudimos comprobar Salud. Desbloquea el iPhone y vuelve a intentarlo. También puedes revisar el acceso y el seguimiento de sueño.", "We couldn't check Health. Unlock your iPhone and try again. You can also review access and sleep tracking."))
+                    .font(.blankBody).fixedSize(horizontal: false, vertical: true)
+                recoveryButtons
+            } else if healthKitStore.sleepAccess.hasData {
+                Text(copy("Ya tenemos registros de sueño disponibles. Seguiremos reuniendo contexto para entender tus patrones.", "Sleep records are available. We'll keep gathering context to understand your patterns."))
+                    .font(.blankBody).accessibilityIdentifier("onboarding-sleep-available")
+            }
         }
+        .foregroundStyle(MinimalHomeDesign.ink)
         .frame(maxWidth: .infinity, alignment: .leading)
         .disabled(completionInFlight)
+    }
+
+    private var recoveryButtons: some View {
+        VStack(spacing: 12) {
+            permissionButton(title: copy("Revisar acceso", "Review access"), ready: false) { showingHealthHelp = true }
+            permissionButton(title: copy("Configurar seguimiento", "Set up sleep tracking"), ready: false) {
+                if let url = URL(string: "https://support.apple.com/108906") { openURL(url) }
+            }
+            permissionButton(title: copy("Volver a comprobar", "Check again"), ready: false) { healthKitStore.verifySleepAccess() }
+        }
     }
 
     private func permissionButton(
@@ -230,15 +245,22 @@ struct SetupView: View {
         .accessibilityLabel(title)
         .accessibilityValue(ready ? "Completed" : "Not completed")
     }
+    private var needsSleepRecovery: Bool {
+        switch healthKitStore.sleepAccess {
+        case .noData, .failed: return true
+        default: return false
+        }
+    }
+
     private var canAutomaticallyComplete: Bool {
-        currentStep == .device && deviceReady && !showingPicker
-            && scenePhase == .active && !sessionStore.setupComplete
+        currentStep == .device && deviceReady
+            && scenePhase == .active
     }
 
     private var deviceReady: Bool {
-        !assistantConnectCode.isEmpty
-            && screenTimeBlocker.authorizationStatus == .approved
-            && sessionStore.hasSelectedApps && notificationReady
+        !assistantConnectCode.isEmpty && SleepAccessPolicy.canEnter(
+            screenTimeApproved: screenTimeBlocker.authorizationStatus == .approved,
+            sleep: healthKitStore.sleepAccess)
     }
 
     private func authorizeScreenTime() {
@@ -257,24 +279,6 @@ struct SetupView: View {
         }
     }
 
-    private func requestNotifications() {
-        if notificationDenied {
-            openSettings()
-            return
-        }
-        Task {
-            let granted = (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])) ?? false
-            await refreshNotificationStatus()
-            if notificationReady { UIApplication.shared.registerForRemoteNotifications() }
-            await BlankFunnelAnalytics.track(
-                "notifications_permission_result",
-                step: currentStep.analyticsName,
-                properties: ["granted": granted, "ready": notificationReady]
-            )
-            message = notificationReady ? nil : "Enable alerts in iPhone Settings to receive block requests."
-        }
-    }
-
     private func openSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         openURL(url)
@@ -283,11 +287,11 @@ struct SetupView: View {
     private func refreshDeviceState() async {
         await screenTimeBlocker.refreshAuthorizationStatusUntilSettled()
         await refreshNotificationStatus()
+        healthKitStore.verifySleepAccess()
     }
 
     private func refreshNotificationStatus() async {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
-        notificationDenied = settings.authorizationStatus == .denied
         switch settings.authorizationStatus {
         case .authorized, .provisional, .ephemeral:
             notificationReady = settings.alertSetting == .enabled
@@ -302,46 +306,20 @@ struct SetupView: View {
 
     @MainActor
     private func completeSetup() async {
-        guard !completionInFlight, !sessionStore.setupComplete else { return }
+        guard !completionInFlight else { return }
+        let setupOwner = AssistantAppSession.userID
         completionInFlight = true
         message = nil
         defer { completionInFlight = false }
         await refreshDeviceState()
         guard deviceReady else {
-            message = "Finish the three iPhone settings before continuing."
+            message = copy("Permite Screen Time y conecta registros de sueño para continuar.", "Allow Screen Time and connect sleep records to continue.")
             return
         }
         do {
             _ = try await AssistantAppClient().activate()
             guard await syncAssistantContext(deviceReady: false) else {
                 message = "Could not save this iPhone's setup. Try again."
-                return
-            }
-            UIApplication.shared.registerForRemoteNotifications()
-            var token = BlankSharedState.defaults.string(forKey: "blankAssistantPushToken") ?? ""
-            for _ in 0..<5 where token.isEmpty {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                token = BlankSharedState.defaults.string(forKey: "blankAssistantPushToken") ?? ""
-            }
-            guard !token.isEmpty else {
-                message = "Waiting for iPhone notifications. Try again in a moment."
-                return
-            }
-            #if DEBUG
-            let environment = "sandbox"
-            #else
-            let environment = "production"
-            #endif
-            guard await AssistantActionInboxClient().registerDevicePush(
-                token: token, environment: environment, connectCode: assistantConnectCode,
-                channel: "app"
-            ) else {
-                message = "This iPhone could not register for notifications. Try again."
-                return
-            }
-            BlankSharedState.defaults.set(true, forKey: "blankAssistantPushRegistered")
-            guard await syncAssistantContext(deviceReady: true) else {
-                message = "Could not sync this iPhone. Try again."
                 return
             }
             let completed = try await postAssistantChannel("complete_onboarding")
@@ -351,6 +329,8 @@ struct SetupView: View {
             }
             savedStepRaw = OnboardingStep.account.rawValue
             await purchaseStore.registerReferredActivation(referredUserId: currentAnonymousUserId())
+            guard deviceReady, AssistantAppSession.userID == setupOwner else { return }
+            healthOnboardingVersion = 6
             sessionStore.finishSetup()
             onFinishForQA?()
         } catch {
@@ -365,6 +345,9 @@ struct SetupView: View {
             channel: "app",
             payload: [
                 "locale": Locale.current.identifier,
+                "onboarding_version": 6,
+                "sleep_data_available": healthKitStore.sleepAccess.hasData,
+                "sleep_data_checked_at": ISO8601DateFormatter().string(from: Date()),
                 "has_selected_apps": sessionStore.hasSelectedApps,
                 "selection_count": sessionStore.selectionCount,
                 "screen_time_authorized": screenTimeBlocker.authorizationStatus == .approved,
@@ -404,7 +387,7 @@ struct SetupView: View {
     }
 
     private var analyticsProperties: [String: Any] {
-        ["flow_version": 5,
+        ["flow_version": 6,
          "channel": "app",
          "screen_time_status": screenTimeBlocker.authorizationStatusLabel,
          "selection_count": sessionStore.selectionCount]

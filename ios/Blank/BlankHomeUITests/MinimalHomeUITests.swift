@@ -131,6 +131,39 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertFalse(confirm.exists)
     }
 
+    func testEmptySleepKeepsRecoveryInPreparation() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["BLANK_UI_SCENARIO"] = "product-onboarding-device-empty"
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["onboarding-sleep-empty"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["home-tab-chat"].exists)
+        XCTAssertFalse(app.buttons["Choose apps"].exists)
+        XCTAssertFalse(app.buttons["Enable notifications"].exists)
+        for title in ["Review access", "Set up sleep tracking", "Check again"] {
+            let button = app.buttons[title]
+            for _ in 0..<6 { if button.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+            XCTAssertTrue(button.isHittable, title)
+        }
+    }
+
+    func testFirstConversationOffersAppSelection() {
+        let app = launch("product-home-first-use")
+        XCTAssertTrue(app.buttons["first-use-choose-apps"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["first-use-notifications"].exists)
+        XCTAssertTrue(app.buttons["home-voice"].isHittable)
+    }
+
+    func testFirstConversationNotificationsCanBeDeferred() {
+        let app = launch("product-home-first-use-notifications")
+        XCTAssertTrue(app.buttons["first-use-notifications"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["first-use-choose-apps"].exists)
+        app.buttons["Not now"].tap()
+        XCTAssertFalse(app.buttons["first-use-notifications"].exists)
+        XCTAssertTrue(app.buttons["home-voice"].isHittable)
+    }
+
     func testLargestTextKeepsOnboardingActionsReachable() {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -146,7 +179,7 @@ final class MinimalHomeUITests: XCTestCase {
         }
         XCTAssertTrue(apple.isHittable)
         app.buttons["Preview device setup"].tap()
-        for title in ["Allow Screen Time", "Choose apps", "Enable notifications"] {
+        for title in ["Allow Screen Time", "Connect Apple Health"] {
             let action = app.buttons[title]
             XCTAssertTrue(action.waitForExistence(timeout: 5))
             for _ in 0..<8 {

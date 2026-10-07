@@ -1,3 +1,4 @@
+const { onboardingReady } = require("./_onboarding_access");
 const { getSupabaseUser, json, parseJsonBody, requireMethod, supabaseFetch } = require("./_membership");
 const {
   cleanChannel,
@@ -253,11 +254,7 @@ async function completeOnboarding(body, appAuth = null) {
   }
   const context = await getAssistantUserContext(status.connectCode);
   const memory = await getAssistantMemory(status.connection.channel, status.connection.channelUser);
-  const ready = context.has_selected_apps === true
-    && Number(context.selection_count) > 0
-    && context.screen_time_authorized === true
-    && context.notification_authorized === true
-    && Boolean(memory.assistant_device_push?.token);
+  const ready = onboardingReady(context, memory, status.connection.channel);
   if (!ready) return json(200, { ok: true, ready: false, reason: "device_setup_incomplete" });
   if (status.connection.channel === "app") {
     return json(200, { ok: true, ready: true });

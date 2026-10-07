@@ -719,6 +719,11 @@ struct AssistantAppView: View {
     var simulatorGuest = false
     var usesHomePresentation = false
     var isHomeVisible = true
+    var offersFirstUseSetup = false
+    var notificationsAuthorized = false
+    var onChooseInitialApps: () -> Void = {}
+    var onEnableInitialNotifications: () -> Void = {}
+    @State private var notificationOfferDismissed = false
     var onHomeActionPrepared: () -> Void = {}
     var onConversationActivityChanged: (Bool) -> Void = { _ in }
     var onOpenControls: (HomeSection?) -> Void = { _ in }
@@ -923,6 +928,7 @@ struct AssistantAppView: View {
                 .preferredColorScheme(dark ? .dark : .light)
         }
         .onAppear { presentationIsVisible = true; BlankBrain.shared.chatIsOpen = isHomeVisible; BlankBrain.shared.sync() }
+        .onChange(of: owner) { _ in notificationOfferDismissed = false }
         .onChange(of: isHomeVisible) { visible in
             if !visible { writingHaptics.stop() }
             BlankBrain.shared.chatIsOpen = visible && scenePhase == .active
@@ -942,6 +948,52 @@ struct AssistantAppView: View {
     }
 
     @State private var showingHomeKeyboard = false
+
+    private var firstUseSetupEnabled: Bool {
+        #if DEBUG && targetEnvironment(simulator)
+        if AssistantAppPreview.scenario.hasPrefix("product-home-first-use") { return true }
+        #endif
+        return offersFirstUseSetup && !simulatorGuest
+    }
+    private var notificationOfferKey: String {
+        "blankInitialNotificationOffer." + (AssistantAppSession.userID ?? "preview")
+    }
+    private var needsInitialApps: Bool { firstUseSetupEnabled && !sessionStore.hasSelectedApps }
+    private var needsInitialNotifications: Bool {
+        firstUseSetupEnabled && sessionStore.hasSelectedApps && !notificationsAuthorized
+            && !notificationOfferDismissed && !BlankSharedState.defaults.bool(forKey: notificationOfferKey)
+    }
+    private var firstUseGreeting: String {
+        if needsInitialApps {
+            return spanish ? "Ya podemos empezar. Elige las apps que te distraen cuando quieres descansar. Las usaré cuando me pidas protección." : "We're ready to begin. Choose the apps that distract you when you want to rest. I'll use this list when you ask for protection."
+        }
+        return spanish ? "Tu lista está preparada. ¿Quieres recibir avisos cuando haya algo útil que revisar?" : "Your list is ready. Would you like notifications when there's something useful to review?"
+    }
+    @ViewBuilder private var firstUseControls: some View {
+        if needsInitialApps || needsInitialNotifications {
+            VStack(spacing: 12) {
+                if latest != nil {
+                    Text(firstUseGreeting).font(.blankBody).fixedSize(horizontal: false, vertical: true)
+                }
+                Button(action: needsInitialApps ? onChooseInitialApps : onEnableInitialNotifications) {
+                    Text(needsInitialApps ? (spanish ? "Elegir apps" : "Choose apps") : (spanish ? "Activar notificaciones" : "Enable notifications"))
+                        .font(.blankBody).frame(maxWidth: .infinity, minHeight: 44)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .foregroundStyle(MinimalHomeDesign.voiceInk)
+                        .background(MinimalHomeDesign.ink, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(needsInitialApps ? "first-use-choose-apps" : "first-use-notifications")
+                if needsInitialNotifications {
+                    Button(spanish ? "Ahora no" : "Not now") {
+                        notificationOfferDismissed = true
+                        BlankSharedState.defaults.set(true, forKey: notificationOfferKey)
+                    }
+                    .font(.blankBody).frame(minHeight: 44).buttonStyle(.plain)
+                }
+            }
+        }
+    }
 
     private var homeConversation: some View {
         GeometryReader { geometry in
@@ -977,7 +1029,10 @@ struct AssistantAppView: View {
                             } else if isSending || (composer.pending != nil && error == nil) {
                                 BlankLoadingIndicator(color: foreground)
                             } else {
-                                homeResponse(greeting ?? (spanish ? "Hola, ¿cómo estás hoy?" : "Hey, how are you doing today?"))
+                                homeResponse((needsInitialApps || needsInitialNotifications) ? firstUseGreeting : (greeting ?? (spanish ? "Hola, ¿cómo estás hoy?" : "Hey, how are you doing today?")))
+                            }
+                            if !waiting && !speech.isRecording && !speech.isStarting && !requiresVerification {
+                                firstUseControls
                             }
                             if error != nil || isApplyingAction || draftTooLong || requiresVerification
                                 || latest.map({ !$0.actionId.isEmpty || $0.controlSection != nil }) == true {
@@ -1480,6 +1535,9 @@ struct AssistantAppView: View {
 
     #if DEBUG
     private func loadHomePreview() {
+        if AssistantAppPreview.scenario.hasPrefix("product-home-first-use") {
+            BlankSharedState.defaults.removeObject(forKey: notificationOfferKey)
+        }
         isLoading = false
         greeting = "Hello Alex,\nwhat's on your mind\nthis evening?"
         let scenario = AssistantAppPreview.scenario

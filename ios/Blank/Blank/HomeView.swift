@@ -399,6 +399,10 @@ struct HomeView: View {
 
                 AssistantAppView(simulatorGuest: simulatorGuest, usesHomePresentation: true,
                     isHomeVisible: activeSection == nil,
+                    offersFirstUseSetup: BlankSharedState.defaults.integer(forKey: "blankHealthOnboardingVersion") == 6,
+                    notificationsAuthorized: assistantNotificationsAuthorized,
+                    onChooseInitialApps: { showingPicker = true },
+                    onEnableInitialNotifications: requestInitialNotifications,
                     onHomeActionPrepared: { confirmPendingAssistantAction() },
                     onConversationActivityChanged: { homeConversationBusy = $0 },
                     onOpenControls: { section in if let section { openSection(section) } }) { actionId in
@@ -2177,6 +2181,19 @@ struct HomeView: View {
 
     private func syncAssistantContext() {
         BlankBrain.shared.sync()
+    }
+
+    private func requestInitialNotifications() {
+        Task { @MainActor in
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            if settings.authorizationStatus == .denied {
+                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                return
+            }
+            _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
+            UIApplication.shared.registerForRemoteNotifications()
+            refreshAssistantNotificationAuthorization()
+        }
     }
 
     private func refreshAssistantNotificationAuthorization() {
@@ -4187,12 +4204,12 @@ private struct HomePreviewScene: View {
 @MainActor
 struct PostOnboardingPreviewScene: View {
     static var enabled: Bool {
-        ["product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-emergency-confirm-active", "product-automatic", "product-automatic-active", "product-automatic-error", "product-notifications", "product-notifications-active", "product-schedule", "product-schedule-active", "product-account", "product-onboarding-account", "product-onboarding-device"]
+        ["product-home-first-use-notifications", "product-home-first-use", "product-onboarding-device-empty", "product-onboarding-device-error", "product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-emergency-confirm-active", "product-automatic", "product-automatic-active", "product-automatic-error", "product-notifications", "product-notifications-active", "product-schedule", "product-schedule-active", "product-account", "product-onboarding-account", "product-onboarding-device"]
             .contains(AssistantAppPreview.scenario)
     }
 
     @StateObject private var sessionStore = SessionStore.preview(
-        isBlankActive: AssistantAppPreview.scenario.hasSuffix("-active"), protectedSelectionCount: 0)
+        isBlankActive: AssistantAppPreview.scenario.hasSuffix("-active"), protectedSelectionCount: AssistantAppPreview.scenario == "product-home-first-use-notifications" ? 3 : 0)
     @StateObject private var screenTimeBlocker = ScreenTimeBlocker.preview()
     @State private var showingPicker = false
 
