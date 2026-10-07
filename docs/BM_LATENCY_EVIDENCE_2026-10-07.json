@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-07T12:25:56.37Z",
+  "comparable": true,
+  "baseline": {
+    "all": {
+      "samples": 100,
+      "passed": 89,
+      "errors": 11,
+      "first_text_ms": {
+        "p50": 3330.3539000000455,
+        "p90": 13630.71669999999,
+        "p95": 17142.813599999994
+      },
+      "final_ms": {
+        "p50": 4135.770100000023,
+        "p95": 17861.820699999982
+      },
+      "database_calls": 23,
+      "model_calls": 1,
+      "mean_tokens": 6138
+    },
+    "simple": {
+      "samples": 50,
+      "passed": 49,
+      "errors": 1,
+      "first_text_ms": {
+        "p50": 3191.9405999999726,
+        "p90": 4267.856200000038,
+        "p95": 4522.8126
+      },
+      "final_ms": {
+        "p50": 3902.766900000046,
+        "p95": 9549.511800000037
+      },
+      "database_calls": 23,
+      "model_calls": 1,
+      "mean_tokens": 5204
+    },
+    "personal": {
+      "samples": 30,
+      "passed": 20,
+      "errors": 10,
+      "first_text_ms": {
+        "p50": 4592.992400000003,
+        "p90": 17225.337900000042,
+        "p95": 18015.538300000015
+      },
+      "final_ms": {
+        "p50": 5291.262400000007,
+        "p95": 18916.976200000034
+      },
+      "database_calls": 23,
+      "model_calls": 1,
+      "mean_tokens": 10356
+    },
+    "action": {
+      "samples": 20,
+      "passed": 20,
+      "errors": 0,
+      "first_text_ms": {
+        "p50": 3421.7498999999953,
+        "p90": 3799.4848999999813,
+        "p95": 3872.6045999999915
+      },
+      "final_ms": {
+        "p50": 4128.703900000022,
+        "p95": 5787.598799999978
+      },
+      "database_calls": 23,
+      "model_calls": 1,
+      "mean_tokens": 4207
+    }
+  },
+  "candidate": {
+    "all": {
+      "samples": 100,
+      "passed": 98,
+      "errors": 2,
+      "first_text_ms": {
+        "p50": 2699.9934000000003,
+        "p90": 4490.376599999989,
+        "p95": 15039.940100000007
+      },
+      "final_ms": {
+        "p50": 3581.35619999998,
+        "p95": 16023.885300000082
+      },
+      "database_calls": 15,
+      "model_calls": 1,
+      "mean_tokens": 5961
+    },
+    "simple": {
+      "samples": 50,
+      "passed": 49,
+      "errors": 1,
+      "first_text_ms": {
+        "p50": 2458.3471999999892,
+        "p90": 3341.2197000000015,
+        "p95": 3528.951000000001
+      },
+      "final_ms": {
+        "p50": 3319.6650999999983,
+        "p95": 8538.549899999984
+      },
+      "database_calls": 15,
+      "model_calls": 1,
+      "mean_tokens": 5196
+    },
+    "personal": {
+      "samples": 30,
+      "passed": 29,
+      "errors": 1,
+      "first_text_ms": {
+        "p50": 3289.216199999966,
+        "p90": 16012.64379999999,
+        "p95": 17636.0233
+      },
+      "final_ms": {
+        "p50": 3960.3017999999574,
+        "p95": 18696.85009999998
+      },
+      "database_calls": 15,
+      "model_calls": 1,
+      "mean_tokens": 8468
+    },
+    "action": {
+      "samples": 20,
+      "passed": 20,
+      "errors": 0,
+      "first_text_ms": {
+        "p50": 2884.881600000008,
+        "p90": 3300.4994000000006,
+        "p95": 3452.491100000043
+      },
+      "final_ms": {
+        "p50": 3540.5592999999644,
+        "p95": 5060.139300000039
+      },
+      "database_calls": 15,
+      "model_calls": 1,
+      "mean_tokens": 4203
+    }
+  },
+  "improvement": {
+    "all": {
+      "first_text_p50_percent": 18.93,
+      "first_text_p95_percent": 12.27,
+      "final_p50_percent": 13.41,
+      "baseline_errors": 11,
+      "candidate_errors": 2
+    },
+    "simple": {
+      "first_text_p50_percent": 22.98,
+      "first_text_p95_percent": 21.97,
+      "final_p50_percent": 14.94,
+      "baseline_errors": 1,
+      "candidate_errors": 1
+    },
+    "personal": {
+      "first_text_p50_percent": 28.39,
+      "first_text_p95_percent": 2.11,
+      "final_p50_percent": 25.15,
+      "baseline_errors": 10,
+      "candidate_errors": 1
+    },
+    "action": {
+      "first_text_p50_percent": 15.69,
+      "first_text_p95_percent": 10.85,
+      "final_p50_percent": 14.25,
+      "baseline_errors": 0,
+      "candidate_errors": 0
+    }
+  },
+  "acceptance": {
+    "simple_first_text_p90_under_2s": false,
+    "first_text_p95_improved_30_percent": false,
+    "final_p50_improved_25_percent": false,
+    "no_increased_errors": true,
+    "cleanup_verified": true
+  },
+  "physical_device_tested": false,
+  "netlify_transport_tested": false,
+  "limitation": "Real provider and QA database, local production handler. Not iPhone, Wi-Fi/mobile or Netlify cold-start evidence. Percentiles exclude failed turns; errors are reported separately."
+}

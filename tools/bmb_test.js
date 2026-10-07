@@ -103,6 +103,12 @@ async function main() {
   await assert.rejects(()=>turn({...base(),response_text:"Your evening: protected"}),/invalid_prose/);
   assert.equal((await turn({...base(),response_text:"Let's start at 22:30."})).plan.response_text,"Let's start at 22:30.");
   await assert.rejects(()=>turn({...base(),cited_sources:["other-user"]}),/unknown_citation/);
+  saved=[{key:"bedtime",value:"23:00",source_at:"2026-10-01T00:00:00Z"}];
+  await turn({...base(),cited_sources:["memory:bedtime"]});
+  await assert.rejects(()=>turn({...base(),cited_sources:["memory:goal"]}),/unknown_citation/);
+  saved=[{key:"bedtime",value:null,source_at:"2026-10-01T00:00:00Z"}];
+  await assert.rejects(()=>turn({...base(),cited_sources:["memory:bedtime"]}),/unknown_citation/);
+  saved=[];
   await assert.rejects(()=>turn({...base(),memory:{operation:"set",key:"goal",value:"help",evidence:"help"},message_kind:"question"}),/ungrounded_memory/);
   result=await turn({...base(),memory:{operation:"set",key:"goal",value:"help",evidence:"help"}});assert.equal(result.context.brain_memory_effect.value,"help");
   result=await turn({...base(),decision:"execute",message_kind:"action_request",memory:{operation:"forget_all",key:null,value:null,evidence:"help"}});

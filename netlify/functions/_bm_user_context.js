@@ -29,10 +29,14 @@ async function canonicalIdentity(connectCode) {
   return rows[0] || null;
 }
 
-async function persistCanonicalSnapshot(connectCode, context, source = "assistant_context_sync") {
+function verifiedIdentity(connectCode, identity) {
+  return identity?.auth_user_id && clean(identity.assistant_connect_code, 32).toUpperCase() === clean(connectCode, 32).toUpperCase() ? identity : null;
+}
+
+async function persistCanonicalSnapshot(connectCode, context, source = "assistant_context_sync", options = {}) {
   const code = clean(connectCode, 32).toUpperCase();
   if (!code || !safeObject(context).anonymous_user_id) return null;
-  const identity = await canonicalIdentity(code);
+  const identity = verifiedIdentity(code, options.identity) || await canonicalIdentity(code);
   if (!identity?.auth_user_id) {
     const legacyRows = await supabaseFetch("rpc/upsert_bm_legacy_user_context", {
       method: "POST",
@@ -56,9 +60,9 @@ async function persistCanonicalSnapshot(connectCode, context, source = "assistan
   return Array.isArray(rows) ? rows[0] || null : rows;
 }
 
-async function enrichAssistantContext(input = {}, connectCode = "") {
+async function enrichAssistantContext(input = {}, connectCode = "", options = {}) {
   const base = safeObject(input);
-  const identity = await canonicalIdentity(connectCode);
+  const identity = verifiedIdentity(connectCode, options.identity) || await canonicalIdentity(connectCode);
   const snapshotRows = identity?.auth_user_id
     ? await supabaseFetch(`bm_user_context_snapshots?user_id=eq.${encodeURIComponent(identity.auth_user_id)}&select=anonymous_user_id,context,context_version,updated_at&limit=1`, { method: "GET" })
     : await safeRows(`bm_legacy_context_snapshots?connect_code=eq.${encodeURIComponent(clean(connectCode, 32).toUpperCase())}&select=context,context_version,updated_at&limit=1`);
@@ -69,6 +73,11 @@ async function enrichAssistantContext(input = {}, connectCode = "") {
   const mergedBase = { ...base, ...durableContext };
   const anonymousUserId = clean(mergedBase.anonymous_user_id || identity?.anonymous_user_id || snapshot.anonymous_user_id, 120);
   if (!anonymousUserId) return mergedBase;
+
+  // BMB retrieves these sources through its scoped catalog when needed. Keep
+  // the current durable snapshot, but do not load unused legacy BAI sources.
+  if (options.includeLegacySources === false) return { ...mergedBase,
+    anonymous_user_id: anonymousUserId, canonical_user_id: clean(identity?.auth_user_id, 80) };
 
   const [onboarding, insights, outcomes, memories, signals] = await Promise.all([
     safeRows(`onboarding_responses?anonymous_user_id=eq.${encodeURIComponent(anonymousUserId)}&select=name,age_range,goal,profile,daily_hours,ai_goal,weak_moment,selected_plan,submitted_at&limit=1`),

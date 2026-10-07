@@ -1,0 +1,12 @@
+{
+  "count": 300,
+  "languages": {
+    "es": 150,
+    "en": 150
+  },
+  "tuning": 100,
+  "heldout": 200,
+  "sha256": "eb1690a8addefe463579618cb84c4de5ac7f272ab9f69336cf1997f0c79e5d37",
+  "independent_human_review": false,
+  "real_user_data": false
+}

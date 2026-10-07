@@ -211,6 +211,67 @@ enum AssistantReplyText {
     }
 }
 
+struct AssistantLatencySample {
+    let action: String
+    let turnID: String?
+    let route: String
+    let outcome: String
+    let preparationMilliseconds: Double
+    let firstTextMilliseconds: Double?
+    let totalMilliseconds: Double
+
+    func log() {
+        var value: [String: Any] = ["event": "bm_client_timing", "schema_version": 1,
+            "action": action, "route": route, "outcome": outcome,
+            "preparation_ms": preparationMilliseconds, "elapsed_ms": totalMilliseconds]
+        if let turnID, UUID(uuidString: turnID) != nil { value["turn_id"] = turnID }
+        if let firstTextMilliseconds { value["first_text_ms"] = firstTextMilliseconds }
+        guard let data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]),
+              let json = String(data: data, encoding: .utf8) else { return }
+        NSLog("%@", json)
+    }
+}
+
+// Monotonic local durations include main-actor delivery of the first text.
+// No prompt, response, account identifier, network type or credentials.
+final class AssistantLatencyTiming: @unchecked Sendable {
+    private let lock = NSLock()
+    private let clock: () -> Double
+    private let start: Double
+    private var preparation = 0.0
+    private var first: Double?
+    private var route = "json"
+    private var finished = false
+    let action: String
+    let turnID: String?
+
+    init(action: String = "send", turnID: String? = nil,
+         clock: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime }) {
+        self.action = action == "transcribe" ? "transcribe" : "send"
+        self.turnID = turnID
+        self.clock = clock
+        self.start = clock()
+    }
+    func prepared() { lock.lock(); defer { lock.unlock() }; preparation = max(0, (clock() - start) * 1000) }
+    func using(_ value: String) { lock.lock(); defer { lock.unlock() }; route = ["stream", "fallback", "json"].contains(value) ? value : "json" }
+    func visible(_ text: String) {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        lock.lock(); defer { lock.unlock() }
+        if first == nil && !finished { first = max(0, (clock() - start) * 1000) }
+    }
+    func finish(outcome: String, observe: ((AssistantLatencySample) -> Void)? = nil) {
+        lock.lock()
+        guard !finished else { lock.unlock(); return }
+        finished = true
+        let sample = AssistantLatencySample(action: action, turnID: turnID, route: route,
+            outcome: ["completed", "failed", "cancelled"].contains(outcome) ? outcome : "failed",
+            preparationMilliseconds: preparation, firstTextMilliseconds: first,
+            totalMilliseconds: max(0, (clock() - start) * 1000))
+        lock.unlock()
+        if let observe { observe(sample) } else { sample.log() }
+    }
+}
+
 private struct AssistantAppEnvelope: Decodable {
     let ok: Bool
     let turns: [AssistantAppTurn]?
@@ -322,6 +383,7 @@ struct AssistantAppClient {
     var session: URLSession = .shared
     var baseURL: URL?
     var sessionRefresh: AssistantAppSessionRefresh = .shared
+    var latencyObserver: ((AssistantLatencySample) -> Void)?
 
     func activate() async throws -> String {
         let result = try await request(action: "activate", extra: [:])
@@ -333,9 +395,16 @@ struct AssistantAppClient {
     }
 
     func transcribe(audio: Data) async throws -> String {
-        let result = try await request(action: "transcribe", extra: ["audio_base64": audio.base64EncodedString()])
-        guard let text = result.text, !text.isEmpty else { throw AssistantAppError.invalidResponse }
-        return text
+        let timing = AssistantLatencyTiming(action: "transcribe")
+        do {
+            let result = try await request(action: "transcribe", extra: ["audio_base64": audio.base64EncodedString()])
+            guard let text = result.text, !text.isEmpty else { throw AssistantAppError.invalidResponse }
+            timing.finish(outcome: "completed", observe: latencyObserver)
+            return text
+        } catch {
+            timing.finish(outcome: error is CancellationError ? "cancelled" : "failed", observe: latencyObserver)
+            throw error
+        }
     }
 
     func greeting(spanish: Bool) async throws -> String {
@@ -355,18 +424,36 @@ struct AssistantAppClient {
     }
 
     func send(text: String, turnId: String, context: [String: Any]? = nil,
-              onDraft: (@MainActor (String) -> Void)? = nil) async throws -> AssistantAppTurn {
+              onDraft: (@MainActor (String) -> Void)? = nil,
+              timing suppliedTiming: AssistantLatencyTiming? = nil) async throws -> AssistantAppTurn {
+        let timing = suppliedTiming ?? AssistantLatencyTiming(turnID: turnId)
+        do {
         var extra: [String: Any] = ["text": text, "turn_id": turnId]
         if let context { extra["context"] = context }
         let result: AssistantAppEnvelope
-        if let onDraft, let streamed = try await sendStream(extra: extra, turnId: turnId, onDraft: onDraft) {
-            result = streamed
+        if let onDraft {
+            timing.using("stream")
+            if let streamed = try await sendStream(extra: extra, turnId: turnId, onDraft: { value in
+                onDraft(value)
+                timing.visible(AssistantReplyText.plain(value))
+            }) {
+                result = streamed
+            } else {
+                timing.using("fallback")
+                result = try await request(action: "send", extra: extra)
+            }
         } else {
             // The new app remains usable against a backend without this route.
             result = try await request(action: "send", extra: extra)
         }
         guard let turn = result.turn else { throw AssistantAppError.invalidResponse }
+        if turn.status == "completed" { timing.visible(turn.assistantText) }
+        timing.finish(outcome: turn.status == "completed" ? "completed" : "failed", observe: latencyObserver)
         return turn
+        } catch {
+            timing.finish(outcome: error is CancellationError ? "cancelled" : "failed", observe: latencyObserver)
+            throw error
+        }
     }
 
     private func sendStream(extra: [String: Any], turnId: String,
@@ -1481,8 +1568,17 @@ struct AssistantAppView: View {
             }
         }
         do {
+            let timing = AssistantLatencyTiming(turnID: pending.id)
+            let context = await BlankBrain.shared.freshSnapshot()
+            timing.prepared()
+            guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
+                  expectedRevision == conversationRevision, sendRequestID == requestID,
+                  composer.pending?.id == pending.id else {
+                timing.finish(outcome: "cancelled")
+                return
+            }
             let turn = try await AssistantAppClient().send(text: pending.text, turnId: pending.id,
-                context: await BlankBrain.shared.freshSnapshot(), onDraft: { text in
+                context: context, onDraft: { text in
                     guard expectedOwner == self.owner, expectedOwner == AssistantAppSession.userID,
                           expectedRevision == self.conversationRevision, self.sendRequestID == requestID,
                           self.composer.pending?.id == pending.id else { return }
@@ -1493,7 +1589,7 @@ struct AssistantAppView: View {
                             && (!self.usesHomePresentation || self.isHomeVisible)
                             && !self.speech.isRecording && !self.speech.isStarting
                             && !self.preview && !self.simulatorGuest)
-                })
+                }, timing: timing)
             guard expectedOwner == owner, expectedOwner == AssistantAppSession.userID,
                   expectedRevision == conversationRevision else { return }
             writingHaptics.stop()

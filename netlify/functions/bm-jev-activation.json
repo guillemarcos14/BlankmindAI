@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "model": "jev-1.13.0",
+  "taxonomy": "blankmind-topics-1",
+  "enabled": false,
+  "thresholds": null,
+  "evidence": null,
+  "reason": "No real Jev evaluation, independent human review, paired benchmark or physical iPhone evidence yet."
+}

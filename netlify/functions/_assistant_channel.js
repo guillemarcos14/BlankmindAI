@@ -340,10 +340,11 @@ async function getAssistantMemory(channel, channelUser, options = {}) {
   const normalizedChannel = cleanChannel(channel);
   const normalizedUser = cleanText(channelUser, 160);
   if (!normalizedChannel || !normalizedUser) return {};
-  const rows = await supabaseFetch(
-    `${EVENT_TABLE}?anonymous_user_id=eq.${encodeURIComponent(assistantChannelUserId(normalizedChannel, normalizedUser))}&select=payload,submitted_at&order=submitted_at.desc,id.desc&limit=100`,
-    { method: "GET" }
-  );
+  const requiresSemantic = options.requireSemantic === true || semanticPersistenceRequired();
+  const [rows, stored] = await Promise.all([
+    supabaseFetch(`${EVENT_TABLE}?anonymous_user_id=eq.${encodeURIComponent(assistantChannelUserId(normalizedChannel, normalizedUser))}&select=payload,submitted_at&order=submitted_at.desc,id.desc&limit=100`, { method: "GET" }),
+    requiresSemantic ? readSemanticConversation(assistantChannelUserId(normalizedChannel, normalizedUser)) : null,
+  ]);
   const memory = rows.reverse().reduce((memory, row) => {
     const next = row.payload?.properties?.memory;
     if (!next || typeof next !== "object") return memory;
@@ -366,8 +367,7 @@ async function getAssistantMemory(channel, channelUser, options = {}) {
     }
     return merged;
   }, {});
-  if (options.requireSemantic === true || semanticPersistenceRequired()) {
-    const stored = await readSemanticConversation(assistantChannelUserId(normalizedChannel, normalizedUser));
+  if (requiresSemantic) {
     // An empty or expired dedicated session must not resurrect older event-log state.
     delete memory.conversation_state;
     delete memory.pending_blocking;
