@@ -73,7 +73,8 @@ function metadata(body, mode, elapsedMs, thresholds) {
     topics: selected.topics, sources: selected.sources, intent: selected.intent, abstained: selected.abstained,
     probabilities: Object.fromEntries(Object.entries(body.answers).filter(([, a]) => a.type === "noul").map(([k, a]) => [k, a.noul])),
     intent_distribution: body.answers.intent.probabilities, intent_confidence: body.answers.intent.confidence,
-    thresholds: thresholds || null, usage: body.usage, cost_usd: body.usage.input_tokens * 0.042 / 1000000, elapsed_ms: elapsedMs };
+    thresholds: thresholds || null, usage: { input_tokens: body.usage.input_tokens, output_tokens: body.usage.output_tokens },
+    cost_usd: body.usage.input_tokens * 0.042 / 1000000, elapsed_ms: elapsedMs };
 }
 async function classify({ userId, turnId, mode = "shadow" }, { db = supabaseFetch, fetcher = fetch, env = process.env, signal } = {}) {
   const config = configuration(env);

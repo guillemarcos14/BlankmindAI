@@ -27,6 +27,8 @@ async function main() {
   assert.equal(await jev.classify({userId:crypto.randomUUID(),turnId},{env,db,fetcher}),null);
   const result=await jev.classify({userId,turnId,mode:"experiment"},{env,db,fetcher});
   assert.equal(vendor,1);assert.equal(result.taxonomy,jev.taxonomy.version);assert.equal(result.cost_usd,.000042);assert.equal(result.intent,"question");
+  const echoed=structuredClone(body);echoed.usage.echo="untrusted-provider-content";
+  assert.deepEqual(jev.metadata(echoed,"shadow",1,null).usage,{input_tokens:1000,output_tokens:0});
   assert(!JSON.stringify(result).includes("sleep records"));assert(!JSON.stringify(result).includes("test-only-key"));
   assert.equal(await jev.classify({userId,turnId},{env,db:async()=>({claimed:false}),fetcher}),null);assert.equal(vendor,1);
   const failed=await jev.classify({userId,turnId},{env,db,fetcher:async()=>({ok:false,status:429})});
