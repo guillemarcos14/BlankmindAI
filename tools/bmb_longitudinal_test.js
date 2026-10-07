@@ -68,6 +68,7 @@ async function main(){
    const p=options.body?JSON.parse(options.body):{};
    if(path==="rpc/bmb_claim_daily_review")return {claimed:false};
    if(path.startsWith("bmb_followups?"))return [f];
+   if(path.startsWith("bmb_daily_reviews?"))return [];
    if(path.startsWith("bmb_accounts?"))return [a];
    if(path.startsWith("bmb_events?"))return ledger;
    if(path.startsWith("bmb_sessions?")||path.startsWith("bmb_device_signals?"))return [];
@@ -82,6 +83,18 @@ async function main(){
  await tickAccount(a,deps);assert.equal(notices,1);assert.equal(ledger.length,1);
  ledger[0].outcome.next_retry_at="2020-01-01";await tickAccount(a,deps);assert.equal(notices,2);assert.equal(modelCalls,1);assert.equal(ledger.length,1);
  await tickAccount(a,deps);assert.equal(notices,2);assert.equal(modelCalls,1,"Accepted delivery or topic repeated");
+ const insight={id:"review-A",created_at:new Date().toISOString(),report:{confidence:.8,question:null,evidence_ids:["row-A"],
+   recommendation:{kind:"experiment",summary:"Try a shorter evening protection once.",success_metric:"restfulness",review_after_days:4}}};
+ assert.equal((await L.reviewOpportunities(a.auth_user_id,"UTC",async()=>[insight])).length,1);
+ assert.equal((await L.reviewOpportunities(a.auth_user_id,"UTC",async()=>[{...insight,report:{...insight.report,question:"Need more context"}}])).length,0);
+ assert.equal((await L.reviewOpportunities(a.auth_user_id,"UTC",async()=>[{...insight,report:{...insight.report,confidence:.4}}])).length,0);
+ ledger=[];
+ const insightDB=async(path,options)=>path.startsWith("bmb_daily_reviews?")?[insight]:path.startsWith("bmb_followups?")?[]:loopDB(path,options);
+ const outside=await tickAccount(a,{...deps,db:insightDB,brain:async args=>{
+   assert.equal(args.proactive.selected.facts.source,"longitudinal_insight");assert.equal(args.proactive.can_execute,false);
+   return {plan:{proactive_decision:"execute",proactive_action:{type:"start_protection",minutes:30},message_text:"Trying"}};
+ }});
+ assert.equal(outside.skipped,"model_action_outside_grant");assert.equal(ledger.length,0,"A recommendation bypassed action permission");
  console.log("PASS longitudinal: personal baselines/midnight, sparse/conflicting data, multiple facts, grounded answers, daily evidence/leases, privacy, contextual notification and retry without actions");
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

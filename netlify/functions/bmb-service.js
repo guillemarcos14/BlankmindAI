@@ -102,6 +102,7 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
     &&(!e.outcome.next_retry_at||Date.parse(e.outcome.next_retry_at)<=Date.now()));
   if(retry)return deliverNotice(retry);
   const candidates=opportunities(sessions,events);
+  candidates.push(...await longitudinal.reviewOpportunities(a.auth_user_id,a.settings.timezone,db));
   for(const f of await longitudinal.followups(a.auth_user_id,db))candidates.push({kind:"opportunity",priority:45,
     event_key:`followup:${f.id}`,meaning_key:`followup:${f.id}`,expires_at:new Date(Date.parse(f.created_at)+7*86400000).toISOString(),
     facts:{source:"longitudinal_followup",followup_id:f.id,question:f.question,metric:f.metric,evidence_ids:f.evidence_ids}});

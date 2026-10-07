@@ -19,6 +19,8 @@ const reviewSchema=nil(object({summary:str,confidence:{type:"number",minimum:0,m
   hypotheses:{type:"array",maxItems:4,items:object({explanation:str,status:{type:"string",enum:["possible","supported","contradicted"]},
     evidence_ids:{type:"array",items:str,maxItems:12}})},
   missing_information:{type:"array",items:str,maxItems:5},question:nil(str),
+  recommendation:nil(object({kind:{type:"string",enum:["maintain","experiment"]},summary:str,
+    success_metric:{type:"string",enum:Object.keys(METRICS)},review_after_days:{type:"integer",minimum:1,maximum:14}})),
   question_metric:nil({type:"string",enum:Object.keys(METRICS)}),evidence_ids:{type:"array",items:str,maxItems:20}}));
 function validateEffects(result,prompt,proactive,followups=[],now=Date.now()) {
   const observations=result.observations||[];
@@ -126,6 +128,15 @@ async function followups(userId,db=supabaseFetch) {
   try{return await db(`bmb_followups?auth_user_id=eq.${encodeURIComponent(userId)}&status=eq.open&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&select=id,status,question,metric,evidence_ids,created_at&order=created_at.desc&limit=3`,{method:"GET"});}
   catch(e){if(/404|does not exist|column|relation/.test(e.message))return [];throw e;}
 }
+async function reviewOpportunities(userId,timezone,db=supabaseFetch,now=Date.now()) {
+  let rows;
+  try {rows=await db(`bmb_daily_reviews?auth_user_id=eq.${encodeURIComponent(userId)}&status=eq.completed&local_day=eq.${day(now,timezone)}&select=id,report,created_at&limit=1`,{method:"GET"});}
+  catch(e){if(/404|does not exist|column|relation/.test(e.message))return [];throw e;}
+  return rows.filter(r=>r.report?.recommendation?.kind==="experiment"&&!r.report.question&&r.report.confidence>=.7&&r.report.evidence_ids?.length)
+    .map(r=>({kind:"opportunity",priority:40,event_key:`insight:${r.id}`,meaning_key:`insight:${r.report.recommendation.success_metric}`,
+      expires_at:new Date(Date.parse(r.created_at)+24*3600000).toISOString(),facts:{source:"longitudinal_insight",review_id:r.id,
+        recommendation:r.report.recommendation,evidence_ids:r.report.evidence_ids,confidence:r.report.confidence}}));
+}
 async function greetingContext(userId,db=supabaseFetch,eventID=null) {
   if(eventID) {
     if(!/^[a-f\d-]{36}$/i.test(eventID))throw Error("bmb_invalid_event_id");
@@ -151,7 +162,7 @@ async function dailyReview(a,identity,context,brain,db=supabaseFetch,now=Date.no
   try {
     const {readSource}=require("./bmb-sources");
     const from=new Date(Math.max(now-35*86400000,Date.parse(claimed.cutoff)||0)).toISOString(),sources=[];
-    for(const source of ["observations","features","onboarding","wellness","wearables","sessions","plan_outcomes","recommendation_feedback","learning_changes","reviews","history"]) {
+    for(const source of ["observations","features","onboarding","wellness","wearables","sessions","events","plan_outcomes","recommendation_feedback","learning_changes","reviews","history"]) {
       for(let offset=0;offset<(source==="observations"?2000:80);offset+=40) {
         const s=await readSource(a.auth_user_id,identity,{source,from,to:null,offset},claimed.cutoff,db);sources.push(s);
         if(s.next_offset===null||s.next_offset===undefined)break;
@@ -169,7 +180,7 @@ async function dailyReview(a,identity,context,brain,db=supabaseFetch,now=Date.no
       if(s.source==="features")return {id:r.id,created_at:r.created_at,period_start:r.period_start,period_end:r.period_end,
         profile:r.payload?.profile,weekly:r.payload?.weekly,correlations:r.payload?.correlations,
         note:"Daily sleep metrics are in native_daily; aggregates do not establish causation."};
-      if(s.source==="reviews")return {id:r.id,local_day:r.local_day,summary:r.report?.summary,hypotheses:r.report?.hypotheses};
+      if(s.source==="reviews")return {id:r.id,local_day:r.local_day,summary:r.report?.summary,hypotheses:r.report?.hypotheses,recommendation:r.report?.recommendation};
       return r;
     }),digest_truncated:(s.rows||[]).length>(s.source==="observations"||s.source==="native_daily"?200:20)}));
     const changes=variations(observations,a.settings.timezone,now);
@@ -183,7 +194,9 @@ async function dailyReview(a,identity,context,brain,db=supabaseFetch,now=Date.no
     const ids=new Set(sources.flatMap(s=>(s.rows||[]).map(r=>String(r.id))));
     if(!report.summary?.trim()||report.summary.length>2000||!Number.isFinite(report.confidence)||report.confidence<0||report.confidence>1
       ||report.evidence_ids.some(id=>!ids.has(id))||report.hypotheses.some(h=>h.evidence_ids.some(id=>!ids.has(id))||h.status==="supported"&&!h.evidence_ids.length)
-      ||report.question&&(!report.evidence_ids.length||!Object.hasOwn(METRICS,report.question_metric)))throw Error("bmb_ungrounded_review");
+      ||report.question&&(!report.evidence_ids.length||!Object.hasOwn(METRICS,report.question_metric))
+      ||report.recommendation&&(!report.evidence_ids.length||!report.recommendation.summary?.trim()||!Object.hasOwn(METRICS,report.recommendation.success_metric)
+        ||!Number.isInteger(report.recommendation.review_after_days)||report.recommendation.review_after_days<1||report.recommendation.review_after_days>14))throw Error("bmb_ungrounded_review");
     const saved=await db("rpc/bmb_finish_daily_review",{method:"POST",body:JSON.stringify({p_user:a.auth_user_id,p_day:localDay,p_token:claimed.token,
       p_report:{...report,sources:sources.map(s=>({source:s.source,available:s.available,coverage:s.coverage,next_offset:s.next_offset,reason:s.reason})),changes}})});
     const committed=Array.isArray(saved)?saved[0]:saved;
@@ -191,4 +204,4 @@ async function dailyReview(a,identity,context,brain,db=supabaseFetch,now=Date.no
     return committed;
   }catch(e){await db("rpc/bmb_fail_daily_review",{method:"POST",body:JSON.stringify({p_user:a.auth_user_id,p_day:localDay,p_token:claimed.token})}).catch(()=>{});throw e;}
 }
-module.exports={METRICS,observationSchema,followupSchema,reviewSchema,validateEffects,day,variations,nativeDaily,followups,greetingContext,dailyReview};
+module.exports={METRICS,observationSchema,followupSchema,reviewSchema,validateEffects,day,variations,nativeDaily,followups,greetingContext,dailyReview,reviewOpportunities};
