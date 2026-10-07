@@ -72,7 +72,8 @@ assert.match(sessionStore, /canonicalProtectionName = BlankSharedState\.canonica
 assert.doesNotMatch(sessionStore, /@Published private\(set\) var focusModes/);
 assert.doesNotMatch(sessionStore, /func duplicateMode\(/);
 assert.doesNotMatch(sessionStore, /func createMode\(/);
-assert.match(setupView, /one reusable protection list/i);
+// Reusable selection is configured in Home after mandatory access.
+assert.match(homeView, /selection: \$sessionStore\.selection/);
 assert.match(read("ios/Blank/Blank/BlankBrain.swift"), /"single_distraction_block": true/);
 assert.match(homeView, /BlankBrain\.shared\.sync\(\)/);
 assert.doesNotMatch(homeView, /ManualModeEditorScreen/);
