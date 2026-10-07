@@ -89,7 +89,9 @@ Native CI 37620146205 passed client/timing/recovery tests, Simulator build and
 the complete Home UI suite. Screenshot capture is separate. Backend CI
 37620145979 passed contract/runtime, PostgreSQL recovery and Android checks.
 The initial local harness was run before a clean commit (72/73, scope clear);
-final clean-source harness is recorded separately at closure. Physical release
+Final clean-source harness passed 73/73 with no scope violations, report
+`ph_1791376110422_9d14568f`. Private bundling produced all nine functions with
+streaming metadata intact at source `a51abd0`; no publish was performed. Physical release
 evidence remains 0/20; no production gate is bypassed.
 
 ## Physical measurement protocol
