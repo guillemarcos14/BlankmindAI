@@ -63,6 +63,7 @@
     "max_repair_attempts": 0,
     "repair_commands": [],
     "commands": [
+      { "name": "bm_decisions", "run": "node tools/bm_decisions_test.js" },
       { "name": "bm_voice_output", "run": "node tools/bm_voice_output_test.js" },
       { "name": "node_syntax_voice_stream", "run": "node --check netlify/functions/assistant-app-voice.mjs" },
       { "name": "bm_response_stream", "run": "node tools/bm_response_stream_test.js" },
