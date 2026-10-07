@@ -54,6 +54,25 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(voice.frame.height, 44)
     }
 
+    func testVoiceDisclosureAndMuteStayReachableWithoutNetwork() {
+        let app = launch("product-home-response")
+        let mute = app.buttons["voice-replies-toggle"]
+        XCTAssertTrue(mute.waitForExistence(timeout: 5))
+        // Accessibility frame subtraction can round an exact 44pt to
+        // 43.99999999999994. Allow only numerical noise, not a smaller target.
+        XCTAssertGreaterThanOrEqual(mute.frame.width + 0.000001, 44)
+        XCTAssertGreaterThanOrEqual(mute.frame.height + 0.000001, 44)
+        XCTAssertTrue(app.staticTexts["AI-generated voice"].exists)
+        XCTAssertTrue(app.buttons["reply-voice"].exists)
+        let original = mute.label
+        mute.tap()
+        XCTAssertNotEqual(mute.label, original)
+        mute.tap()
+        XCTAssertEqual(mute.label, original)
+        XCTAssertTrue(app.buttons["home-voice"].isHittable)
+        XCTAssertTrue(app.buttons["home-tab-control"].isHittable)
+    }
+
     func testEdgeSwipesNavigateNeighboursAndIgnoreCentreAndVerticalDrags() {
         let app = launch()
         func drag(_ x: CGFloat, _ y: CGFloat, _ endX: CGFloat, _ endY: CGFloat) {

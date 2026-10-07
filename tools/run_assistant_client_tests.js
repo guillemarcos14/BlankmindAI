@@ -37,6 +37,8 @@ const viewFixture = `
     var spanish = false
     var acceptingSpeech = false
     var speech = SpeechFixture()
+    var voice = VoiceFixture()
+    var voiceRepliesEnabled = true
     var saveTask: Task<Void, Never>?
     var conversationRevision = 0
     var sendRequestID: UUID?
@@ -68,7 +70,7 @@ const viewFixture = `
     func onApplyAction(_ id: String) async throws { appliedActions.append(id) }
     func dismiss() { dismissCount += 1 }
     func reloadForTest() async { await reload() }
-    func sendForTest() async { await send() }
+    func sendForTest(audioText: String? = nil) async { await send(audioText: audioText) }
     func applyForTest(_ id: String) async { await applyAction(id) }
     func restoreForTest() { restoreOwner() }
     func recoverForTest() async { await recoverPendingMessage(delays: [1_000_000, 1_000_000, 1_000_000]) }
@@ -78,6 +80,13 @@ ${applyMethod}
 }
 `;
 const hapticsFixture = `
+@MainActor final class VoiceFixture {
+    var isBusy = false
+    var played: [String] = []
+    func stop() { isBusy = false }
+    func reset() { stop() }
+    func play(turnID: String, owner: String) { played.append(turnID); isBusy = true }
+}
 @MainActor final class WritingHapticsFixture {
     var updates: [String] = []
     var stops = 0

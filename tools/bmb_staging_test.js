@@ -4,17 +4,17 @@ const assert=require('node:assert/strict');const staging=require('./bmb_staging'
  const fs=require('fs'),os=require('os'),path=require('path');
  const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'blank-stream-package-test-'));
  const tracked=new Set();
- for(const name of staging.ENTRIES){const file=`netlify/functions/${name}${name==='assistant-app-stream'?'.mjs':'.js'}`;tracked.add(file);fs.mkdirSync(path.dirname(path.join(fixture,file)),{recursive:true});fs.writeFileSync(path.join(fixture,file),'synthetic');}
+ for(const name of staging.ENTRIES){const file=`netlify/functions/${name}${['assistant-app-stream','assistant-app-voice'].includes(name)?'.mjs':'.js'}`;tracked.add(file);fs.mkdirSync(path.dirname(path.join(fixture,file)),{recursive:true});fs.writeFileSync(path.join(fixture,file),'synthetic');}
  let buffered=false;
  const bundler={zipFunctions:async(wrappers,target)=>{fs.mkdirSync(target);return staging.ENTRIES.map(name=>{
-   const streaming=name==='assistant-app-stream',extension=streaming?'.mjs':'.js';
+   const streaming=['assistant-app-stream','assistant-app-voice'].includes(name),extension=streaming?'.mjs':'.js';
    const wrapper=path.join(wrappers,name+extension),entry=path.join(fixture,'netlify/functions',name+extension);
    if(streaming){assert.match(fs.readFileSync(wrapper,'utf8'),/export \{ default \} from/);assert(!fs.readFileSync(wrapper,'utf8').includes('exports.handler'));}
    const archive=path.join(target,name+'.zip');fs.writeFileSync(archive,'synthetic-'+name);
    return{name,path:archive,bundler:streaming?'nft':'esbuild',invocationMode:streaming?(buffered?'buffered':'stream'):undefined,runtimeAPIVersion:streaming?2:1,runtimeVersion:'nodejs22.x',buildData:{runtimeAPIVersion:streaming?2:1},inputs:[wrapper,entry]};
  }).map((bundle,index,list)=>{if(index===list.length-1)fs.writeFileSync(path.join(target,'manifest.json'),JSON.stringify({functions:list,timestamp:Date.now()}));return bundle;});}};
  const packaged=await staging.packageCandidate({source:fixture},{tracked},bundler);
- assert.equal(packaged.functions.find(x=>x.name==='assistant-app-stream').invocation_mode,'stream');
+ for (const name of ['assistant-app-stream','assistant-app-voice']) assert.equal(packaged.functions.find(x=>x.name===name).invocation_mode,'stream');
  assert(fs.existsSync(path.join(packaged.directory,'.netlify/functions/manifest.json')));
  assert(!staging.deployCommand({cli:'synthetic',site:staging.SITE_ID},packaged).includes('--skip-functions-cache'));
  const uploads=[];const deployId='b'.repeat(24);
@@ -27,6 +27,7 @@ const assert=require('node:assert/strict');const staging=require('./bmb_staging'
  });
  assert.equal(result.deploy_id,deployId);
  assert(uploads.some(x=>x.url.includes('/functions/assistant-app-stream?runtime=nodejs22.x&invocation_mode=stream')&&x.method==='PUT'));
+ assert(uploads.some(x=>x.url.includes('/functions/assistant-app-voice?runtime=nodejs22.x&invocation_mode=stream')&&x.method==='PUT'));
  buffered=true;await assert.rejects(staging.packageCandidate({source:fixture},{tracked},bundler),/correct buffered\/streaming runtime/);
  const before={URL:process.env.URL,KEY:process.env.SUPABASE_SERVICE_ROLE_KEY,COOKIE:process.env.BMB_PRIVATE_STAGE_COOKIE,fetch:global.fetch};
  try{process.env.URL=staging.SITE_URL;process.env.SUPABASE_SERVICE_ROLE_KEY='synthetic';process.env.BMB_PRIVATE_STAGE_COOKIE='synthetic-cookie';let count=0;
