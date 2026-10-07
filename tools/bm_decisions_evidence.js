@@ -1,0 +1,19 @@
+"use strict";
+const fs=require("node:fs"),crypto=require("node:crypto"),{summarize}=require("./bm_decisions_benchmark"),{percentile}=require("./bm_latency_benchmark");
+function load(file){const bytes=fs.readFileSync(file);return {artifact_sha256:crypto.createHash("sha256").update(bytes).digest("hex"),...JSON.parse(bytes)};}
+function main(){
+ const initial=load("tmp/decisions/classification-original.json"),tuning=load("tmp/decisions/classification-tuning-revised.json"),heldout=load("tmp/decisions/classification-heldout-revised.json"),pilot=load("tmp/decisions/pilot.json"),benchmark=load("tmp/decisions/benchmark.json"),quality=load("tmp/decisions/quality.json");
+ if(!benchmark.complete||!quality.complete||benchmark.records.length!==240)throw Error("decisions_complete_evidence_required");
+ const summary=summarize(benchmark.records,benchmark.rates),baseline=summary.optimized,candidate=summary.decisions,ratio=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&b>0?a/b:null;
+ const paired=[];for(let pair=0;pair<120;pair++){const a=benchmark.records.find(r=>r.pair===pair&&r.variant==="optimized"),b=benchmark.records.find(r=>r.pair===pair&&r.variant==="decisions");if(a?.passed&&b?.passed)paired.push({pair,baseline_first_text_ms:a.first_text_ms,decisions_first_text_ms:b.first_text_ms});}
+ const costRatio=ratio(candidate.total_estimated_cost_usd,baseline.total_estimated_cost_usd),firstRatio=ratio(candidate.first_text_ms.p50,baseline.first_text_ms.p50);
+ const knownDecisions=[initial,tuning,heldout].flatMap(x=>x.records).reduce((s,r)=>s+(r.result?.usage.input_tokens||0)*.1/1e6,0)+[pilot,benchmark].flatMap(x=>x.records).flatMap(x=>x.provider_requests).filter(x=>x.endpoint==="decisions").reduce((s,r)=>s+(r.usage?.input_tokens||0)*.1/1e6,0)+131*.1/1e6;
+ const gates={first_text_p50_ratio:firstRatio,first_text_p95_ratio:ratio(candidate.first_text_ms.p95,baseline.first_text_ms.p95),final_p95_ratio:ratio(candidate.final_ms.p95,baseline.final_ms.p95),total_estimated_cost_ratio:costRatio,
+  median_target_met:firstRatio!=null&&firstRatio<=.8,cost_target_met:costRatio!=null&&costRatio<=.8,first_text_p95_no_regression:candidate.first_text_ms.p95<=baseline.first_text_ms.p95,final_p95_no_regression:candidate.final_ms.p95<=baseline.final_ms.p95,
+  errors_no_regression:candidate.errors<=baseline.errors,quality_human_validated:false,physical_device_tested:false,activation:false,gates_passed:false};
+ const report={schema_version:1,generated_at:new Date().toISOString(),provenance:"Actual providers and QA database, authored synthetic fixtures; local handlers, no cloud deployment",classification:{initial,tuning_revised:tuning,heldout_revised:heldout,fresh_sealed_holdout:false,independent_human_review:false},pilot,benchmark:{...benchmark,summary},quality,
+  paired_success:{samples:paired.length,median_ratio:ratio(percentile(paired.map(x=>x.decisions_first_text_ms),.5),percentile(paired.map(x=>x.baseline_first_text_ms),.5)),pairs:paired},
+  spend:{known_decisions_estimate_usd:knownDecisions,direct_access_probe_input_tokens:131,invoice_verified:false,unknown_application_requests:{optimized:baseline.unknown_billed_requests,decisions:candidate.unknown_billed_requests},reviewer_overhead_included_in_application_cost:false},gates};
+ fs.writeFileSync("docs/BM_DECISIONS_EVIDENCE_2026-10-07.json",JSON.stringify(report,null,2)+"\n");console.log(JSON.stringify({summary,gates,spend:report.spend,paired_success:report.paired_success.samples}));
+}
+if(require.main===module)try{main();}catch(e){console.error(e.message);process.exitCode=1;}module.exports={load};
