@@ -37,7 +37,7 @@ begin
  r:=bm_jev_reserve(u,inflight,since_at,'shadow');token:=(r->>'token')::uuid;
  insert into bm_brain_memories(auth_user_id,key,value,source_at) values(u,'_reset',null,now());
  if (bm_jev_finish(u,inflight,token,result,null)->>'saved')::boolean then raise exception 'Forget race restored labels'; end if;
- if exists(select 1 from bm_jev_turn_labels where auth_user_id=u and (status<>'forgotten' or result is not null)) then raise exception 'Tombstone did not purge'; end if;
+ if exists(select 1 from bm_jev_turn_labels l where l.auth_user_id=u and (l.status<>'forgotten' or l.result is not null)) then raise exception 'Tombstone did not purge'; end if;
  if jsonb_array_length(bm_jev_conversation_labels(u))<>0 then raise exception 'Forgotten labels exposed'; end if;
  if exists(select 1 from bm_jev_pending(array[u],since_at)) then raise exception 'Forgotten work requeued'; end if;
  update bm_jev_spend set attempts=1000,reserved_usd=1 where day=(now() at time zone 'UTC')::date;
