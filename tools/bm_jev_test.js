@@ -44,6 +44,14 @@ async function main() {
   let drafts=[];
   await timing.run({turnId,action:"send"},async()=>{assert.equal(timing.currentTurn(),turnId);timing.advisory({status:"completed"});return {statusCode:200};},s=>drafts.push(s));
   assert.equal(drafts[0].jev[0].status,"completed");assert.equal(timing.currentTurn(),null);
+  let sampled=false;
+  await jev.drain({config:jev.configuration({...env,BM_JEV_QA_PERCENT:"5"}),db:async(route,options)=>{assert.equal(route,"rpc/bm_jev_pending_sampled");assert.equal(JSON.parse(options.body).p_percent,5);sampled=true;return [];}});
+  assert(sampled,"Cohort must be applied before the database batch limit");
+  const meter=require("./bm_jev_benchmark"),rates={input:1,cached:0.1,output:2};
+  const row={variant:"jev",passed:true,first_text_ms:10,elapsed_ms:20,database_calls:1,model_calls:2,jev_calls:1,jev_known_cost_usd:.01,jev_unknown_cost_upper_usd:0,usage:{input_tokens:100,output_tokens:10}};
+  assert.equal(meter.summarize([row],rates).jev.total_cost_usd,null,"Aggregate usage cannot certify all retries were metered");
+  assert.equal(meter.summarize([{...row,usage_records:2,metered_usage:row.usage}],rates).jev.total_cost_usd,.01012);
+  assert.equal(meter.summarize([{...row,usage_records:2,jev_unknown_cost_upper_usd:.001}],rates).jev.total_cost_usd,null);
   const corpus=require("./datasets/bm_jev_v1.json"),manifest=require("./datasets/bm_jev_v1.manifest.json");
   assert.equal(corpus.cases.length,300);assert.equal(new Set(corpus.cases.map(c=>c.id)).size,300);assert.equal(new Set(corpus.cases.map(c=>c.current_message)).size,300);
   assert.equal(crypto.createHash("sha256").update(fs.readFileSync("tools/datasets/bm_jev_v1.json","utf8").replace(/\r\n/g,"\n")).digest("hex"),manifest.sha256);

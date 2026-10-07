@@ -25,14 +25,18 @@ function cost(usage,rates) {
 }
 function summarize(records,rates) {
   return Object.fromEntries(["optimized","jev"].map(variant=>{
-    const all=records.filter(r=>r.variant===variant),good=all.filter(r=>r.passed),known=all.map(r=>cost(r.usage,rates));
+    const all=records.filter(r=>r.variant===variant),good=all.filter(r=>r.passed),known=all.map(r=>cost(r.metered_usage||r.usage,rates));
+    const verified=all.length>0&&all.every(r=>r.usage_records===r.model_calls&&r.model_calls>0);
+    const subtotal=known.some(x=>x===null)?null:known.reduce((s,x)=>s+x,0)+all.reduce((s,r)=>s+r.jev_known_cost_usd,0);
     return [variant,{samples:all.length,passed:good.length,errors:all.length-good.length,
       first_text_ms:{p50:percentile(good.map(r=>r.first_text_ms),.5),p95:percentile(good.map(r=>r.first_text_ms),.95)},
       final_ms:{p50:percentile(good.map(r=>r.elapsed_ms),.5),p95:percentile(good.map(r=>r.elapsed_ms),.95)},
       database_calls_p50:percentile(all.map(r=>r.database_calls),.5),model_calls:all.reduce((s,r)=>s+r.model_calls,0),jev_calls:all.reduce((s,r)=>s+r.jev_calls,0),
       tokens:all.reduce((s,r)=>s+(r.usage?.total_tokens||0),0),jev_known_cost_usd:all.reduce((s,r)=>s+r.jev_known_cost_usd,0),
       jev_unknown_cost_upper_usd:all.reduce((s,r)=>s+r.jev_unknown_cost_upper_usd,0),
-      total_cost_usd:known.some(x=>x===null)||all.some(r=>r.jev_unknown_cost_upper_usd>0)?null:known.reduce((s,x)=>s+x,0)+all.reduce((s,r)=>s+r.jev_known_cost_usd,0),
+      generative_usage_fully_metered:verified,
+      total_cost_usd:verified&&!all.some(r=>r.jev_unknown_cost_upper_usd>0)?subtotal:null,
+      cost_interval_usd:{lower:subtotal,upper:verified&&subtotal!==null?subtotal+all.reduce((s,r)=>s+r.jev_unknown_cost_upper_usd,0):null},
       generative_estimated_cost_usd:known.some(x=>x===null)?null:known.reduce((s,x)=>s+x,0)}];
   }));
 }
@@ -99,8 +103,10 @@ async function main(){
      await request("/rest/v1/bm_brain_memories",[{auth_user_id:user,key:"goal",value:"sleep better",source_text:"I want to sleep better",source_at:new Date(Date.now()-3600000).toISOString()},
        {auth_user_id:user,key:"bedtime",value:"23:00",source_text:"I go to bed at 23:00",source_at:new Date(Date.now()-3600000).toISOString()}]);
      const [group,text]=CASES[pair%CASES.length],turn=crypto.randomUUID();process.env.BM_JEV_PREFETCH_EXPERIMENT=variant==="jev"?"true":"false";
-     active={pair,variant,group,turn_id:turn,start:performance.now(),first_text_ms:null,database_calls:0,model_calls:0,jev_calls:0,jev_known_cost_usd:0,jev_unknown_cost_upper_usd:0};
-     console.info=line=>{try{const m=JSON.parse(line);if(m.event==="bm_turn_timing"){active.usage=m.usage;active.stages=m.stages;active.jev=m.jev||[];}}catch(_){};};
+     active={pair,variant,group,turn_id:turn,start:performance.now(),first_text_ms:null,database_calls:0,model_calls:0,usage_records:0,metered_usage:{},jev_calls:0,jev_known_cost_usd:0,jev_unknown_cost_upper_usd:0};
+     console.info=line=>{try{const m=JSON.parse(line);if(["bm_stream_timing","bm_token_usage"].includes(m.event)&&Number.isSafeInteger(m.usage?.input_tokens)&&Number.isSafeInteger(m.usage?.output_tokens)){
+       active.usage_records++;for(const [k,v]of Object.entries(m.usage))active.metered_usage[k]=(active.metered_usage[k]||0)+v;
+     }if(m.event==="bm_turn_timing"){active.usage=m.usage;active.stages=m.stages;active.jev=m.jev||[];}}catch(_){};};
      let response;try{response=await invoke(variant,{action:"send",turn_id:turn,text,context:context()});}catch(_){response={statusCode:503,body:"{}"};}
      const value=JSON.parse(response.body),t=value.turn||{},noAction=!t.action_id&&!t.auto_apply;
      const row={...active,start:undefined,status:response.statusCode,elapsed_ms:performance.now()-active.start,

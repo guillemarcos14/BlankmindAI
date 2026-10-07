@@ -44,10 +44,39 @@ begin
  insert into assistant_app_turns(id,auth_user_id,user_text,status,created_at) values(gen_random_uuid(),u,'new','processing',now()+interval '1 second') returning id into t;
  if (bm_jev_reserve(u,t,since_at,'experiment')->>'claimed')::boolean then raise exception 'Daily fleet spend exceeded'; end if;
 end $$;
+do $$
+declare u uuid:='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'; x uuid; selected_id uuid; bucket bigint; n integer;
+begin
+ if mod(get_byte(digest('00000000-0000-4000-8000-000000000001','sha256'),0)::bigint*16777216+
+ get_byte(digest('00000000-0000-4000-8000-000000000001','sha256'),1)::bigint*65536+
+ get_byte(digest('00000000-0000-4000-8000-000000000001','sha256'),2)::bigint*256+
+ get_byte(digest('00000000-0000-4000-8000-000000000001','sha256'),3),100)<>48 then raise exception 'Cohort differs from JavaScript'; end if;
+ for n in 1..20 loop
+  loop
+   x:=gen_random_uuid();
+   bucket:=mod(get_byte(digest(x::text,'sha256'),0)::bigint*16777216+get_byte(digest(x::text,'sha256'),1)::bigint*65536+get_byte(digest(x::text,'sha256'),2)::bigint*256+get_byte(digest(x::text,'sha256'),3),100);
+   exit when bucket>=5;
+  end loop;
+  insert into assistant_app_turns(id,auth_user_id,user_text,assistant_text,status,completed_at,created_at)
+  values(x,u,'Unselected synthetic turn','Reply','completed',now(),now()+interval '1 second'+n*interval '1 millisecond');
+ end loop;
+ loop
+  selected_id:=gen_random_uuid();
+  bucket:=mod(get_byte(digest(selected_id::text,'sha256'),0)::bigint*16777216+get_byte(digest(selected_id::text,'sha256'),1)::bigint*65536+get_byte(digest(selected_id::text,'sha256'),2)::bigint*256+get_byte(digest(selected_id::text,'sha256'),3),100);
+  exit when bucket<5;
+ end loop;
+ insert into assistant_app_turns(id,auth_user_id,user_text,assistant_text,status,completed_at,created_at)
+ values(selected_id,u,'Selected synthetic turn','Reply','completed',now(),now()+interval '2 seconds');
+ if exists(select 1 from bm_jev_pending(array[u],now()-interval '1 minute') p where p.id=selected_id) then raise exception 'Fixture did not reproduce starvation'; end if;
+ if not exists(select 1 from bm_jev_pending_sampled(array[u],now()-interval '1 minute',5) p where p.id=selected_id) then raise exception 'Selected turn starved behind twenty unselected turns'; end if;
+ if exists(select 1 from bm_jev_pending_sampled(array[u],now()-interval '1 minute',0)) then raise exception 'Zero cohort returned work'; end if;
+ if (select count(*) from bm_jev_pending_sampled(array[u],now()-interval '1 minute',100))<>20 then raise exception 'Batch bound lost'; end if;
+end $$;
 set local role authenticated;
 do $$ begin
  begin perform * from bm_jev_turn_labels;raise exception 'Authenticated table access';exception when insufficient_privilege then null;end;
  begin perform bm_jev_pending(array[]::uuid[],now());raise exception 'Authenticated RPC access';exception when insufficient_privilege then null;end;
+ begin perform bm_jev_pending_sampled(array[]::uuid[],now(),100);raise exception 'Authenticated sampled RPC access';exception when insufficient_privilege then null;end;
 end $$;
 reset role;
 rollback;
