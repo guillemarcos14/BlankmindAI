@@ -391,5 +391,6 @@ exports.handler = async (event, context, options = {}) => {
 };
 
 exports.authenticatedIdentity = authenticatedIdentity;
+exports.readTurn = readTurn;
 exports.actionStatus = actionStatus;
 exports.visibleReply = visibleReply;

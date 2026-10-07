@@ -31,6 +31,7 @@ private final class TransportStub: URLProtocol {
         var body = "{}"
         var error: Error?
         var contentType = "application/json"
+        var headers: [String: String] = [:]
     }
     static var respond: (URLRequest) -> Reply = { _ in Reply() }
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -42,7 +43,7 @@ private final class TransportStub: URLProtocol {
             return
         }
         let response = HTTPURLResponse(url: request.url!, statusCode: reply.status,
-            httpVersion: "HTTP/1.1", headerFields: ["Content-Type": reply.contentType])!
+            httpVersion: "HTTP/1.1", headerFields: reply.headers.merging(["Content-Type": reply.contentType]) { _, new in new })!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Data(reply.body.utf8))
         client?.urlProtocolDidFinishLoading(self)
@@ -175,6 +176,8 @@ struct AssistantClientTests {
         do { _ = try await client.history(); fatalError("Expected cancellation") }
         catch is CancellationError { }
         try await verifyStreamingClient(client)
+        try await verifyVoiceClient(client)
+        try await verifyVoiceAutoplay()
         try await verifyViewRaces()
         try await verifyFollowupHandoff(client)
         try await verifyAutomaticRecovery()
@@ -543,4 +546,69 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     AssistantActionReceiptStore.clear(actionId: queued.actionId)
     check(AssistantActionReceiptStore.load() == nil, "Receipt cleanup failed")
     print("action receipts: immediate CTA removal, stale history, exact action/account, setup and terminal outcomes passed")
+}
+
+@MainActor private func verifyVoiceClient(_ client: AssistantAppClient) async throws {
+    AssistantAppSession.save(accessToken: "voice#A", refreshToken: "refresh-A")
+    let turn = "22222222-2222-4222-8222-222222222222"
+    let id = UUID()
+    let frames = "{\"type\":\"audio\",\"turn_id\":\"\(turn)\",\"pcm\":\"AAD/fwCA\"}\n{\"type\":\"end\",\"turn_id\":\"\(turn)\"}\n"
+    let headers = ["X-Voice-Format": "pcm-s16le-24000-mono"]
+    var audio = Data()
+    TransportStub.respond = { request in
+        check(request.url!.lastPathComponent == "assistant-app-voice", "Voice route mismatch")
+        let payload = try! JSONSerialization.jsonObject(with: requestBody(request)) as! [String: Any]
+        check(payload["request_id"] as? String == id.uuidString.lowercased() && payload["text"] == nil, "Voice accepts only a durable turn and request ID")
+        return .init(body: frames, contentType: "application/x-ndjson", headers: headers)
+    }
+    try await client.voice(turnId: turn, requestId: id) { audio.append($0) }
+    check(audio == Data([0,0,255,127,0,128]), "PCM transport changed samples")
+    for broken in [frames.components(separatedBy: "\n").first! + "\n", frames.replacingOccurrences(of: turn, with: "wrong-turn"), "{\"type\":\"audio\",\"turn_id\":\"\(turn)\",\"pcm\":\"AQ==\"}\n"] {
+        TransportStub.respond = { _ in .init(body: broken, contentType: "application/x-ndjson", headers: headers) }
+        do { try await client.voice(turnId: turn, requestId: id) { _ in }; fatalError("Invalid voice accepted") }
+        catch AssistantAppError.invalidResponse {}
+    }
+    TransportStub.respond = { _ in .init(status: 429) }
+    do { try await client.voice(turnId: turn, requestId: id) { _ in }; fatalError("Quota accepted") }
+    catch let error as AssistantAppError { check(error.problem == .rateLimited, "Quota loses typed error") }
+    TransportStub.respond = { _ in .init(error: URLError(.cancelled)) }
+    do { try await client.voice(turnId: turn, requestId: id) { _ in }; fatalError("Cancellation ignored") }
+    catch is CancellationError {}
+    TransportStub.respond = { _ in .init(body: frames, contentType: "application/x-ndjson", headers: headers) }
+    do {
+        try await client.voice(turnId: turn, requestId: id) { _ in AssistantAppSession.save(accessToken: "voice#B", refreshToken: "refresh-B") }
+        fatalError("Old account voice continued")
+    } catch AssistantAppError.sessionChanged {}
+    AssistantAppSession.save(accessToken: "expired#A", refreshToken: "refresh-A")
+    var attempts = 0
+    TransportStub.respond = { request in
+        if request.url!.lastPathComponent == "app-auth" { return .init(body: #"{"ok":true,"access_token":"fresh#A","refresh_token":"rotated-A"}"#) }
+        attempts += 1
+        return request.value(forHTTPHeaderField: "Authorization") == "Bearer expired#A" ? .init(status: 401) : .init(body: frames, contentType: "application/x-ndjson", headers: headers)
+    }
+    try await client.voice(turnId: turn, requestId: id) { _ in }
+    check(attempts == 2, "Voice failed to refresh once")
+    print("voice transport: PCM, final marker, format, quota, cancellation, refresh and account isolation PASS")
+}
+
+@MainActor private func verifyVoiceAutoplay() async throws {
+    AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    let view = ConversationFixture()
+    view.owner = "A"; view.composer = AssistantComposerState()
+    let turn = "22222222-2222-4222-8222-222222222222"
+    ViewTransport.send = { text, _ in
+        AssistantAppTurn(id: turn, userText: text, assistantText: "Final reply", status: "completed", actionId: "", actionLabel: "", actionStatus: "", createdAt: "2026-10-07T12:00:00Z")
+    }
+    await view.sendForTest(audioText: "Spoken request")
+    check(view.voice.played == [turn], "New spoken turn did not autoplay")
+    view.composer = AssistantComposerState(); view.composer.draft = "Written request"
+    await view.sendForTest()
+    check(view.voice.played.count == 1, "Written turn unexpectedly spoke")
+    view.composer = AssistantComposerState(); view.voiceRepliesEnabled = false
+    await view.sendForTest(audioText: "Muted request")
+    check(view.voice.played.count == 1, "Muted turn unexpectedly spoke")
+    view.composer = AssistantComposerState(); view.voiceRepliesEnabled = true; view.isHomeVisible = false
+    await view.sendForTest(audioText: "Hidden request")
+    check(view.voice.played.count == 1, "Hidden chat unexpectedly spoke")
+    print("voice autoplay: spoken final only, written/muted/hidden silence PASS")
 }
