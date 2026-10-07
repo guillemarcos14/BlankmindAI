@@ -1151,6 +1151,7 @@ struct AssistantAppView: View {
                 Button {
                     guard !simulatorGuest else { return }
                     if requiresVerification { showAccountSignIn = true; return }
+                    if voice.isBusy { voice.stop(); return }
                     voice.stop()
                     if !speech.isRecording && !speech.isStarting {
                         composerFocused = false
@@ -1159,7 +1160,10 @@ struct AssistantAppView: View {
                     speech.toggle()
                 } label: {
                     Group {
-                        if speech.isStarting {
+                        if voice.isBusy {
+                            if voice.isPlaying { RoundedRectangle(cornerRadius: 2).frame(width: 14, height: 14) }
+                            else { ProgressView().tint(MinimalHomeDesign.voiceInk) }
+                        } else if speech.isStarting {
                             ProgressView().tint(MinimalHomeDesign.voiceInk)
                         } else if speech.isRecording {
                             RoundedRectangle(cornerRadius: 2).frame(width: 14, height: 14)
@@ -1175,7 +1179,7 @@ struct AssistantAppView: View {
                 .buttonStyle(.plain)
                 .disabled(waiting || speech.isStarting)
                 .opacity(waiting ? 0.5 : 1)
-                .accessibilityLabel(speech.isRecording ? (spanish ? "Enviar audio" : "Send audio") : (spanish ? "Hablar con Blankmind" : "Speak to Blankmind"))
+                .accessibilityLabel(voice.isBusy ? "Stop voice" : (speech.isRecording ? "Send audio" : "Speak to Blankmind"))
                 .accessibilityHint(spanish ? "Toca para hablar. Toca de nuevo para enviar. Mantén pulsado para escribir." : "Tap to speak. Tap again to send. Hold to write.")
                 .accessibilityIdentifier("home-voice")
                 .contextMenu {
@@ -1388,6 +1392,7 @@ struct AssistantAppView: View {
 
     @ViewBuilder private var composerActions: some View {
         Button {
+                if voice.isBusy { voice.stop(); return }
                 voice.stop()
                 if !speech.isRecording && !speech.isStarting {
                     composerFocused = false
@@ -1395,16 +1400,16 @@ struct AssistantAppView: View {
                 }
                 speech.toggle()
             } label: {
-                Image(systemName: speech.isRecording || speech.isStarting ? "stop.circle.fill" : "mic")
+                Image(systemName: voice.isBusy || speech.isRecording || speech.isStarting ? "stop.circle.fill" : "mic")
                     .font(.system(size: 22)).frame(width: 44, height: 50)
             }
             .fixedSize(horizontal: true, vertical: false)
             .foregroundStyle(usesHomePresentation ? MinimalHomeDesign.voiceInk : foreground)
             .disabled(requiresVerification || simulatorGuest || waiting || speech.isStarting)
             .opacity(requiresVerification || isSending ? 0.45 : 1)
-            .accessibilityLabel(speech.isRecording || speech.isStarting
+            .accessibilityLabel(voice.isBusy ? "Stop voice" : (speech.isRecording || speech.isStarting
                                 ? (spanish ? "Enviar audio" : "Send audio")
-                                : (spanish ? "Grabar audio" : "Record audio"))
+                                : (spanish ? "Grabar audio" : "Record audio")))
             if !speech.hasAudio && !speech.isRecording && !speech.isStarting && !composer.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Button { Task { await send() } } label: {
                     Image(systemName: "arrow.up.circle.fill").font(.system(size: 29))
