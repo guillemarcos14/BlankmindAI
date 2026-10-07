@@ -18,4 +18,6 @@ New pure Swift policy tests cover absence, in-bed/awake, manual/stale/future/inv
 
 Verified: all 10 Home/onboarding UI tests, native tests and Simulator build passed in run `37609663316`. Its screenshot step reached the original 15-minute limit after 49 native images; capture budget is now 20 minutes. Backend/Android/PostgreSQL CI passed on final native source `19fe5e2` in run `37612924706`. The product harness passed 71/71 checks with baseline and enforced scope (`ph_1791371795004_37f3f9ca`). A targeted final capture/accessibility confirmation is run `37612917281`.
 
+Final confirmation `37612917281` completed successfully on `19fe5e2`: native tests, Simulator build, largest-text accessibility test and all 14 screenshots. Reviewed Pro/SE, English/Spanish, absence/error recovery and first-use choices. Recovery actions fit the regular Pro viewport after removing repeated introductory copy; the native panel scrolls at accessibility text sizes. Evidence is in `tmp/health-onboarding-confirmation` and the CI artifacts. No additional UI iteration remains.
+
 No production deployment, API agreement, migration or TestFlight upload is part of this implementation. Publish coordinated backend + iOS candidate through release before testing real access: old backend correctly rejects version6 until updated.
