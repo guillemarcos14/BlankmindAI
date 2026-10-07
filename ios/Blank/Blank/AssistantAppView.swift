@@ -227,9 +227,7 @@ struct AssistantAppHistoryPage {
 
 enum AssistantGreetingFallback {
     static func make() -> String {
-        let greetings = Locale.current.languageCode == "es"
-            ? ["Hola, ¿cómo estás hoy?", "Hola, ¿qué tienes en mente?", "Hey, ¿cómo va el día?"]
-            : ["Hey, how are you doing today?", "Hi, what's on your mind?", "Hey, how's your day going?"]
+        let greetings = ["Hey, how are you doing today?", "Hi, what's on your mind?", "Hey, how's your day going?"]
         return greetings.randomElement()!
     }
 }
@@ -302,7 +300,7 @@ enum AssistantAppError: LocalizedError {
         }
     }
 
-    var errorDescription: String? { problem.message(spanish: Locale.current.languageCode == "es") }
+    var errorDescription: String? { problem.message(spanish: false) }
 
 }
 
@@ -595,7 +593,7 @@ final class AssistantSpeechInput: ObservableObject {
     deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
 
     private func copy(_ spanish: String, _ english: String) -> String {
-        Locale.current.languageCode == "es" ? spanish : english
+        english
     }
 
     func toggle() {
@@ -734,7 +732,7 @@ struct AssistantAppView: View {
         guard composer.pending == nil else { return nil }
         return turns.first(where: { $0.id == visibleTurnID && $0.status == "completed" })
     }
-    private var spanish: Bool { Locale.current.languageCode == "es" }
+    private var spanish: Bool { false }
     private var preview: Bool {
         #if DEBUG
         return AssistantAppPreview.enabled
@@ -965,9 +963,9 @@ struct AssistantAppView: View {
     }
     private var firstUseGreeting: String {
         if needsInitialApps {
-            return spanish ? "Ya podemos empezar. Elige las apps que te distraen cuando quieres descansar. Las usaré cuando me pidas protección." : "We're ready to begin. Choose the apps that distract you when you want to rest. I'll use this list when you ask for protection."
+            return "We're ready to begin. Choose the apps that distract you when you want to rest. I'll use this list when you ask for protection."
         }
-        return spanish ? "Tu lista está preparada. ¿Quieres recibir avisos cuando haya algo útil que revisar?" : "Your list is ready. Would you like notifications when there's something useful to review?"
+        return "Your list is ready. Would you like notifications when there's something useful to review?"
     }
     @ViewBuilder private var firstUseControls: some View {
         if needsInitialApps || needsInitialNotifications {
@@ -976,7 +974,7 @@ struct AssistantAppView: View {
                     Text(firstUseGreeting).font(.blankBody).fixedSize(horizontal: false, vertical: true)
                 }
                 Button(action: needsInitialApps ? onChooseInitialApps : onEnableInitialNotifications) {
-                    Text(needsInitialApps ? (spanish ? "Elegir apps" : "Choose apps") : (spanish ? "Activar notificaciones" : "Enable notifications"))
+                    Text(needsInitialApps ? "Choose apps" : "Enable notifications")
                         .font(.blankBody).frame(maxWidth: .infinity, minHeight: 44)
                         .padding(.horizontal, 14).padding(.vertical, 8)
                         .foregroundStyle(MinimalHomeDesign.voiceInk)
@@ -985,7 +983,7 @@ struct AssistantAppView: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier(needsInitialApps ? "first-use-choose-apps" : "first-use-notifications")
                 if needsInitialNotifications {
-                    Button(spanish ? "Ahora no" : "Not now") {
+                    Button("Not now") {
                         notificationOfferDismissed = true
                         BlankSharedState.defaults.set(true, forKey: notificationOfferKey)
                     }
@@ -1668,7 +1666,7 @@ struct AssistantAppHistoryView: View {
     let background: Color
     let onApplyAction: (String) -> Void
     @State private var owner: String?
-    private var spanish: Bool { Locale.current.languageCode == "es" }
+    private var spanish: Bool { false }
     private var preview: Bool {
         #if DEBUG
         return AssistantAppPreview.scenario == "history"
@@ -1903,7 +1901,7 @@ private struct BlankLoadingIndicator: View {
             .frame(height: 24)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Locale.current.languageCode == "es" ? "Cargando" : "Loading")
+        .accessibilityLabel("Loading")
     }
 }
 

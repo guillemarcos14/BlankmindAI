@@ -1,11 +1,11 @@
 import XCTest
 
 final class MinimalHomeUITests: XCTestCase {
-    private func launch(_ scenario: String = "product-home") -> XCUIApplication {
+    private func launch(_ scenario: String = "product-home", language: String = "en") -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["BLANK_UI_SCENARIO"] = scenario
-        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["-AppleLanguages", "(\(language))", "-AppleLocale", language == "es" ? "es_ES" : "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["home-tab-chat"].waitForExistence(timeout: 10))
         return app
@@ -135,7 +135,7 @@ final class MinimalHomeUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["BLANK_UI_SCENARIO"] = "product-onboarding-device-empty"
-        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["-AppleLanguages", "(es)", "-AppleLocale", "es_ES"]
         app.launch()
         XCTAssertTrue(app.staticTexts["onboarding-sleep-empty"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["home-tab-chat"].exists)
@@ -149,14 +149,15 @@ final class MinimalHomeUITests: XCTestCase {
     }
 
     func testFirstConversationOffersAppSelection() {
-        let app = launch("product-home-first-use")
+        let app = launch("product-home-first-use", language: "es")
         XCTAssertTrue(app.buttons["first-use-choose-apps"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons["first-use-choose-apps"].label, "Choose apps")
         XCTAssertFalse(app.buttons["first-use-notifications"].exists)
         XCTAssertTrue(app.buttons["home-voice"].isHittable)
     }
 
     func testFirstConversationNotificationsCanBeDeferred() {
-        let app = launch("product-home-first-use-notifications")
+        let app = launch("product-home-first-use-notifications", language: "es")
         XCTAssertTrue(app.buttons["first-use-notifications"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["first-use-choose-apps"].exists)
         app.buttons["Not now"].tap()
