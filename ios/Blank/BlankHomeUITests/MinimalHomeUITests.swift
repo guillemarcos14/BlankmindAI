@@ -165,6 +165,22 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home-voice"].isHittable)
     }
 
+    func testSimulatorCanOpenHomeWithoutHealthFromOnboarding() {
+        for scenario in ["product-onboarding-account", "product-onboarding-device-empty"] {
+            let app = XCUIApplication()
+            app.launchEnvironment["BLANK_UI_SCENARIO"] = scenario
+            app.launchArguments = ["-AppleLanguages", "(es)", "-AppleLocale", "es_ES"]
+            app.launch()
+            let home = app.buttons["Preview Home"]
+            XCTAssertTrue(home.waitForExistence(timeout: 10))
+            home.tap()
+            XCTAssertTrue(app.buttons["home-tab-chat"].waitForExistence(timeout: 10))
+            XCTAssertTrue(app.buttons["home-voice"].exists)
+            XCTAssertFalse(app.buttons["Connect Apple Health"].exists)
+            app.terminate()
+        }
+    }
+
     func testLargestTextKeepsOnboardingActionsReachable() {
         continueAfterFailure = false
         let app = XCUIApplication()

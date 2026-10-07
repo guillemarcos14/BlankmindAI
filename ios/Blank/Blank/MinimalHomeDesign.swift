@@ -126,6 +126,25 @@ struct MinimalHomePanelShape: Shape {
     }
 }
 
+// Account, permission, recovery and retry actions share the device-step reference.
+struct OnboardingButtonStyle: ButtonStyle {
+    var completed = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.blankOnboardingControl)
+            .multilineTextAlignment(.leading)
+            .foregroundStyle(completed ? MinimalHomeDesign.ink : MinimalHomeDesign.voiceInk)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .background(completed ? MinimalHomeDesign.ink.opacity(0.12) : MinimalHomeDesign.ink,
+                        in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(Rectangle())
+            .opacity(configuration.isPressed ? 0.85 : 1)
+    }
+}
+
 // Onboarding shares Home's full atmospheric panel and quiet lower ground.
 // Content scrolls inside the panel when Dynamic Type or a short phone needs it.
 struct MinimalOnboardingPanel<Content: View>: View {

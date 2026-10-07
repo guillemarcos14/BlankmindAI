@@ -3770,12 +3770,65 @@ private struct DistractionsScreen: View {
     }
 }
 
+// Custom onboarding visuals use the same native Apple authorization request and
+// completion handler as the system button; account linking and token checks stay shared.
+@MainActor
+private final class OnboardingAppleAuthorization: NSObject, ObservableObject,
+    ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    private var controller: ASAuthorizationController?
+    private var anchor: ASPresentationAnchor?
+    private var completion: ((Result<ASAuthorization, Error>) -> Void)?
+
+    func perform(_ request: ASAuthorizationAppleIDRequest,
+                 completion: @escaping (Result<ASAuthorization, Error>) -> Void) {
+        guard controller == nil else { return }
+        guard let window = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .filter({ $0.activationState == .foregroundActive })
+            .flatMap(\.windows).first(where: \.isKeyWindow) else {
+            completion(.failure(NSError(domain: ASAuthorizationError.errorDomain,
+                                        code: ASAuthorizationError.failed.rawValue)))
+            return
+        }
+        anchor = window
+        self.completion = completion
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        self.controller = controller
+        controller.performRequests()
+    }
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        anchor ?? ASPresentationAnchor()
+    }
+
+    func authorizationController(controller: ASAuthorizationController,
+                                 didCompleteWithAuthorization authorization: ASAuthorization) {
+        finish(.success(authorization))
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        finish(.failure(error))
+    }
+
+    private func finish(_ result: Result<ASAuthorization, Error>) {
+        let handler = completion
+        completion = nil
+        controller = nil
+        anchor = nil
+        handler?(result)
+    }
+}
+
 struct AppAccountSignInSheet: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.dismiss) private var dismiss
     @State private var rawNonce: String?
     @State private var isWorking = false
     @State private var errorMessage: String?
+    @State private var appleRequestInFlight = false
+    @StateObject private var appleAuthorization = OnboardingAppleAuthorization()
 
     let showsCancel: Bool
     var onSignedIn: (() -> Void)?
@@ -3839,7 +3892,23 @@ struct AppAccountSignInSheet: View {
                     .padding(.bottom, 16)
             }
 
-            SignInWithAppleButton(.continue, onRequest: { request in
+            if !showsCancel {
+                Button(action: startOnboardingAppleAuthorization) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "apple.logo").accessibilityHidden(true)
+                        Text("Continue with Apple")
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 8)
+                        if isWorking || appleRequestInFlight {
+                            ProgressView().tint(MinimalHomeDesign.voiceInk)
+                        }
+                    }
+                }
+                .buttonStyle(OnboardingButtonStyle())
+                .disabled(isWorking || appleRequestInFlight)
+                .accessibilityLabel("Continue with Apple")
+            } else {
+              SignInWithAppleButton(.continue, onRequest: { request in
                 let nonce = Self.makeNonce()
                 rawNonce = nonce
                 request.requestedScopes = [.email]
@@ -3855,6 +3924,7 @@ struct AppAccountSignInSheet: View {
                         ProgressView().tint(showsCancel ? BlankColors.pureWhite : MinimalHomeDesign.voiceInk)
                     }
                 }
+            }
             if let errorMessage {
                 Text(errorMessage)
                     .font(.blankInter(size: 14, relativeTo: .footnote))
@@ -3863,6 +3933,21 @@ struct AppAccountSignInSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 16)
             }
+        }
+    }
+
+    private func startOnboardingAppleAuthorization() {
+        guard !isWorking, !appleRequestInFlight else { return }
+        let nonce = Self.makeNonce()
+        rawNonce = nonce
+        let request = ASAuthorizationAppleIDProvider().createRequest()
+        request.requestedScopes = [.email]
+        request.nonce = Self.hashNonce(nonce)
+        appleRequestInFlight = true
+        errorMessage = nil
+        appleAuthorization.perform(request) { result in
+            appleRequestInFlight = false
+            finishAppleAuthorization(result)
         }
     }
 
@@ -4212,6 +4297,7 @@ struct PostOnboardingPreviewScene: View {
         isBlankActive: AssistantAppPreview.scenario.hasSuffix("-active"), protectedSelectionCount: AssistantAppPreview.scenario == "product-home-first-use-notifications" ? 3 : 0)
     @StateObject private var screenTimeBlocker = ScreenTimeBlocker.preview()
     @State private var showingPicker = false
+    @State private var simulatorHome = false
 
     private var section: HomeSection? {
         switch AssistantAppPreview.scenario {
@@ -4226,8 +4312,8 @@ struct PostOnboardingPreviewScene: View {
 
     var body: some View {
         GeometryReader { proxy in
-            if AssistantAppPreview.scenario.hasPrefix("product-onboarding") {
-                SetupView()
+            if AssistantAppPreview.scenario.hasPrefix("product-onboarding") && !simulatorHome {
+                SetupView { simulatorHome = true }
             } else if AssistantAppPreview.scenario == "product-account" {
                 AccountSettingsSheet()
             } else if AssistantAppPreview.scenario.hasPrefix("product-control") {
@@ -4255,7 +4341,7 @@ struct PostOnboardingPreviewScene: View {
                     onClose: {}
                 )
             } else {
-                HomeView(simulatorGuest: true)
+                HomeView(simulatorGuest: true) { simulatorHome = false }
             }
         }
         .ignoresSafeArea(.container)

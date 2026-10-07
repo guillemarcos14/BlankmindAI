@@ -154,9 +154,10 @@ struct SetupView: View {
                     .padding(.top, 24)
                     .accessibilityAddTraits(.updatesFrequently)
                 if deviceReady && automaticCompletionAttempted {
-                    Button("Retry") { Task { await completeSetup() } }
-                        .font(.blankInter(size: 17))
-                        .frame(minHeight: 44)
+                    Button { Task { await completeSetup() } } label: {
+                        HStack { Text("Retry"); Spacer(minLength: 8) }
+                    }
+                    .buttonStyle(OnboardingButtonStyle())
                 }
             }
         }
@@ -228,18 +229,8 @@ struct SetupView: View {
                         .accessibilityHidden(true)
                 }
             }
-            .font(.blankOnboardingControl)
-            .multilineTextAlignment(.leading)
-            .foregroundStyle(ready ? MinimalHomeDesign.ink : MinimalHomeDesign.voiceInk)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .background(ready ? MinimalHomeDesign.ink.opacity(0.12) : MinimalHomeDesign.ink,
-                        in: RoundedRectangle(cornerRadius: 16))
-            .contentShape(Rectangle())
-            .environment(\.isEnabled, true)
         }
-        .buttonStyle(OnboardingPermissionButtonStyle())
+        .buttonStyle(OnboardingButtonStyle(completed: ready))
         .disabled(ready)
         .accessibilityLabel(title)
         .accessibilityValue(ready ? "Completed" : "Not completed")
@@ -392,10 +383,4 @@ struct SetupView: View {
          "selection_count": sessionStore.selectionCount]
     }
 
-}
-
-private struct OnboardingPermissionButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label.opacity(configuration.isPressed ? 0.85 : 1)
-    }
 }
