@@ -29,7 +29,7 @@ async function run() {
       const activated = await request(c.netlify, "/.netlify/functions/assistant-app", { action: "activate", app_install_id: user.install },
         { ...c.extraHeaders, authorization: "Bearer " + user.token });
       ensure(activated.ok, "activate_failed"); user.connect = (await activated.json()).assistant_connect_code;
-      const links = await db("blankmind_identity_links?auth_user_id=eq." + user.id + "&select=id,anonymous_user_id", undefined, "GET");
+      const links = await db("blankmind_identity_links?auth_user_id=eq." + user.id + "&select=*", undefined, "GET");
       ensure(links.ok, "identity_read_failed"); user.links = await links.json();
     }
     const a = users[0], b = users[1], turns = [];
@@ -90,7 +90,8 @@ async function run() {
   } catch (error) { failure = /^[a-z0-9_]+$/i.test(error.message) ? error.message : "unexpected_cloud_error"; }
   finally {
     for (const user of users) {
-      const namespaces = [memoryIdentity("app", user.id), "connect:" + user.connect, ...(user.links || []).map(row => row.anonymous_user_id)].filter(Boolean);
+      const namespaces = [memoryIdentity("app", user.id), "connect:" + user.connect, "app:" + user.id,
+        ...(user.links || []).map(row => row.anonymous_user_id)].filter(Boolean);
       for (const [name, action] of [
         ["identity", () => db("blankmind_identity_links?auth_user_id=eq." + user.id, undefined, "DELETE")],
         ...namespaces.map(id => ["events", () => db("digital_wellness_feature_payloads?anonymous_user_id=eq." + encodeURIComponent(id), undefined, "DELETE")]),
