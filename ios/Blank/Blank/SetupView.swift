@@ -70,11 +70,11 @@ struct SetupView: View {
         .sheet(isPresented: $showingHealthHelp) {
             NavigationStack {
                 ScrollView {
-                    Text(copy("Abre Salud → tu perfil → Apps → Blankmind y activa la lectura de sueño. Si ya está activada, revisa Salud → Sueño para comprobar que hay registros. Después vuelve y pulsa Volver a comprobar.", "Open Health → your profile → Apps → Blankmind and enable Sleep reading. If it is already enabled, check Health → Sleep for recorded sleep. Then return and tap Check again."))
+                    Text("Open Health → your profile → Apps → Blankmind and enable Sleep reading. If it is already enabled, check Health → Sleep for recorded sleep. Then return and tap Check again.")
                         .font(.blankBody).padding(24)
                 }
-                .navigationTitle(copy("Acceso a Salud", "Health access"))
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(copy("Listo", "Done")) { showingHealthHelp = false } } }
+                .navigationTitle("Health access")
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showingHealthHelp = false } } }
             }
         }
         #if targetEnvironment(simulator)
@@ -162,38 +162,37 @@ struct SetupView: View {
         }
     }
 
-    private func copy(_ es: String, _ en: String) -> String { Locale.current.languageCode == "es" ? es : en }
 
     private var deviceContent: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text(copy("Preparemos tu descanso", "Let's get ready"))
+            Text("Let's get ready")
                 .font(.blankOnboardingEditorial(size: 32, relativeTo: .title))
                 .tracking(-0.9).fixedSize(horizontal: false, vertical: true)
             if !needsSleepRecovery {
-                Text(copy("Necesito dos conexiones para acompañarte: Screen Time para protegerte de las distracciones y Salud para entender tu sueño junto a tu actividad y señales físicas.", "I need two connections to support you: Screen Time to protect you from distractions, and Health to understand your sleep alongside activity and physical signals."))
+                Text("I need two connections to support you: Screen Time to protect you from distractions, and Health to understand your sleep alongside activity and physical signals.")
                     .font(.blankBody).fixedSize(horizontal: false, vertical: true)
             }
             VStack(spacing: 12) {
-                permissionButton(title: copy("Permitir Screen Time", "Allow Screen Time"),
+                permissionButton(title: "Allow Screen Time",
                     ready: screenTimeBlocker.authorizationStatus == .approved, action: authorizeScreenTime)
-                permissionButton(title: copy("Conectar Apple Health", "Connect Apple Health"),
+                permissionButton(title: "Connect Apple Health",
                     ready: healthKitStore.sleepAccess.hasData, action: healthKitStore.requestAccess)
                     .disabled(healthKitStore.state == .requesting || healthKitStore.sleepCheckInFlight)
             }
             if healthKitStore.sleepCheckInFlight || healthKitStore.state == .requesting {
-                Text(copy("Comprobando los registros disponibles…", "Checking available records…"))
+                Text("Checking available records…")
                     .font(.blankBody).accessibilityAddTraits(.updatesFrequently)
             } else if healthKitStore.sleepAccess == .noData {
-                Text(copy("Aún no puedo leer registros de sueño. Revisa el acceso y el seguimiento. Si empiezas hoy, duerme con tu reloj y vuelve cuando aparezcan registros en Salud.", "I can't read sleep records yet. Check access and sleep tracking. If you're starting today, wear your watch overnight and return when records appear in Health."))
+                Text("I can't read sleep records yet. Check access and sleep tracking. If you're starting today, wear your watch overnight and return when records appear in Health.")
                     .font(.blankBody).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("onboarding-sleep-empty")
                 recoveryButtons
             } else if case .failed = healthKitStore.sleepAccess {
-                Text(copy("No pudimos comprobar Salud. Desbloquea el iPhone y vuelve a intentarlo. También puedes revisar el acceso y el seguimiento de sueño.", "We couldn't check Health. Unlock your iPhone and try again. You can also review access and sleep tracking."))
+                Text("We couldn't check Health. Unlock your iPhone and try again. You can also review access and sleep tracking.")
                     .font(.blankBody).fixedSize(horizontal: false, vertical: true)
                 recoveryButtons
             } else if healthKitStore.sleepAccess.hasData {
-                Text(copy("Ya tenemos registros de sueño disponibles. Seguiremos reuniendo contexto para entender tus patrones.", "Sleep records are available. We'll keep gathering context to understand your patterns."))
+                Text("Sleep records are available. We'll keep gathering context to understand your patterns.")
                     .font(.blankBody).accessibilityIdentifier("onboarding-sleep-available")
             }
         }
@@ -204,11 +203,11 @@ struct SetupView: View {
 
     private var recoveryButtons: some View {
         VStack(spacing: 12) {
-            permissionButton(title: copy("Revisar acceso", "Review access"), ready: false) { showingHealthHelp = true }
-            permissionButton(title: copy("Configurar seguimiento", "Set up sleep tracking"), ready: false) {
+            permissionButton(title: "Review access", ready: false) { showingHealthHelp = true }
+            permissionButton(title: "Set up sleep tracking", ready: false) {
                 if let url = URL(string: "https://support.apple.com/108906") { openURL(url) }
             }
-            permissionButton(title: copy("Volver a comprobar", "Check again"), ready: false) { healthKitStore.verifySleepAccess() }
+            permissionButton(title: "Check again", ready: false) { healthKitStore.verifySleepAccess() }
         }
     }
 
@@ -313,7 +312,7 @@ struct SetupView: View {
         defer { completionInFlight = false }
         await refreshDeviceState()
         guard deviceReady else {
-            message = copy("Permite Screen Time y conecta registros de sueño para continuar.", "Allow Screen Time and connect sleep records to continue.")
+            message = "Allow Screen Time and connect sleep records to continue."
             return
         }
         do {
