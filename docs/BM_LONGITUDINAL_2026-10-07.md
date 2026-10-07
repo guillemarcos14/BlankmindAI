@@ -35,3 +35,10 @@ El olvido existente corta toda personalizacion historica automatica: redacta val
 Tests: `node tools/bmb_longitudinal_test.js`, contratos BMB/reactivo/streaming/recovery y SQL real con los tests de memoria, app y autonomia. CI PostgreSQL incorpora migracion y pruebas nuevas; iOS CI compila los cambios de notificacion, navegacion y presentacion. El harness tiene baseline previa y validacion de scope.
 
 Publicar requiere la conversacion de integracion backend descrita en `AGENTS.md`: aplicar migracion y desplegar funciones coordinadamente, despues distribuir una build iOS. Esta rama no modifica Netlify/Supabase productivos ni TestFlight. Antes de declarar funcionamiento en usuarios reales hay que comprobar ingestion real, ritmo diario, consulta por notificacion y respuesta en iPhone. La calidad generativa nueva requiere evaluacion con proveedor real; los fixtures no la acreditan.
+
+### Evidencia de desarrollo
+
+- Harness local: 70/71, scope sin infracciones; unico fallo release_gate_quick por gate productivo previo/replay y evidencia fisica, sin relajar condiciones.
+- SQL real: migracion028 y cuatro suites de base de datos correctas en PostgreSQL embebido (PGlite0.5.8 con pgcrypto real); Docker no disponible. CI tambien ejecuta PostgreSQL15.
+- Proveedor real gpt-5.6-luna:5/5 casos, seis llamadas/32.280tokens, datos sinteticos, cero mutaciones cloud/push/acciones. Comprueba cuatro noches mas tarde/hipotesis alternativas, datos escasos, respuesta con multiples observaciones, desvio de tema e hipotesis ajenas. Evaluaciones previas detectaron unidades ambiguas y falta de alternativas; corregidos antes del resultado final. Informe tmp/bmb/longitudinal-live-eval.json.
+- iOS CI en curso; el primer intento compilo las pruebas y detecto un unwrap en el fixture HTTP nuevo: corregido usando el lector existente de httpBody/httpBodyStream. No es evidencia de distribucion ni de Screen Time fisico.

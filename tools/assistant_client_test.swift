@@ -291,7 +291,7 @@ struct ConversationTestClient {
     AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
     let eventID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
     TransportStub.respond = { request in
-        let body = try! JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
+        let body = try! JSONSerialization.jsonObject(with: requestBody(request)) as! [String: Any]
         check(body["action"] as? String == "bmb_followup" && body["event_id"] as? String == eventID, "Followup used a generic greeting or wrong event")
         return .init(body: #"{"ok":true,"text":"Has your routine changed?"}"#)
     }
