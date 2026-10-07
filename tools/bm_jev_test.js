@@ -19,6 +19,8 @@ async function main() {
   assert.deepEqual(jev.select(body,thresholds).topics,["sleep"]);assert.deepEqual(jev.select(body,null).topics,[]);
   const uncertain=structuredClone(body);uncertain.answers.ambiguous.noul=.5;assert(jev.select(uncertain,thresholds).abstained);
   assert.equal(jev.configuration({}).enabled,false);
+  const cohort=jev.configuration({...env,BM_JEV_QA_USERS:userId.toUpperCase(),BM_JEV_QA_PERCENT:"5"});
+  assert.equal(jev.eligible(userId.toUpperCase(),turnId.toUpperCase(),cohort),jev.eligible(userId,turnId,cohort),"SQL and client UUID casing must not change the cohort");
   for(const change of [{SUPABASE_URL:"https://vhiikgyyfisejjwqtxfc.supabase.co"},{BM_JEV_DATA_POLICY:"real"},{TYPESAFE_API_KEY:""},{BM_JEV_QA_USERS:"client-supplied"},{BM_JEV_QA_SINCE:"invalid"}])assert.equal(jev.configuration({...env,...change}).enabled,false);
   let calls=[],vendor=0;
   const db=async(route,options)=>{calls.push({route,body:JSON.parse(options.body)});return route.endsWith("reserve")?{claimed:true,token:crypto.randomUUID(),text:"Do I have sleep records?"}:{saved:true};};

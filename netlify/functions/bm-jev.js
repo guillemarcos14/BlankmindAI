@@ -55,7 +55,7 @@ function select(body, thresholds) {
   return out;
 }
 function configuration(env = process.env) {
-  const users = (env.BM_JEV_QA_USERS || "").split(",").filter(x => UUID.test(x));
+  const users = [...new Set((env.BM_JEV_QA_USERS || "").split(",").filter(x => UUID.test(x)).map(x => x.toLowerCase()))];
   const since = Date.parse(env.BM_JEV_QA_SINCE || "");
   const enabled = env.BM_JEV_SHADOW_ENABLED === "true" && env.BM_JEV_DATA_POLICY === "synthetic-private-qa"
     && env.SUPABASE_URL === PRIVATE_DB && Boolean(env.TYPESAFE_API_KEY) && users.length > 0 && users.length <= 20 && Number.isFinite(since);
@@ -64,8 +64,8 @@ function configuration(env = process.env) {
     fraction: Math.min(100, Math.max(0, Number(env.BM_JEV_QA_PERCENT || 0) || 0)) };
 }
 function eligible(userId, turnId, config) {
-  if (!config.enabled || !config.users.includes(userId) || !UUID.test(turnId || "")) return false;
-  return crypto.createHash("sha256").update(turnId).digest().readUInt32BE(0) % 100 < config.fraction;
+  if (!config.enabled || !config.users.includes(String(userId).toLowerCase()) || !UUID.test(turnId || "")) return false;
+  return crypto.createHash("sha256").update(turnId.toLowerCase()).digest().readUInt32BE(0) % 100 < config.fraction;
 }
 function metadata(body, mode, elapsedMs, thresholds) {
   const selected = select(body, thresholds);

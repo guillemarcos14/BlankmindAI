@@ -43,7 +43,7 @@ function summarize(records,rates) {
 async function main(){
  const args=process.argv.slice(2),get=(k,d)=>args.includes(k)?args[args.indexOf(k)+1]:d;
  if(!args.includes("--run"))throw Error("jev_explicit_benchmark_required");
- const pairs=Number(get("--pairs",300));if(!Number.isInteger(pairs)||pairs<1||pairs>300)throw Error("jev_pairs_invalid");
+ const pairs=Number(get("--pairs",300)),fromPair=Number(get("--from-pair",0));if(!Number.isInteger(pairs)||pairs<1||pairs>300||!Number.isInteger(fromPair)||fromPair<0||fromPair+pairs>300)throw Error("jev_pairs_invalid");
  const c=configuration();if(process.env.SUPABASE_URL!==c.supabase||!process.env.OPENAI_API_KEY||!process.env.TYPESAFE_API_KEY)throw Error("jev_private_providers_required");
  const rateFile=get("--rates",null),rates=rateFile?JSON.parse(fs.readFileSync(rateFile)):null;
  if(rates&&(!["input","cached","output"].every(k=>Number.isFinite(rates[k])&&rates[k]>=0)||rates.model!==(process.env.OPENAI_MODEL||"gpt-5.6-luna")||!rates.source))throw Error("jev_rates_invalid");
@@ -77,7 +77,7 @@ async function main(){
  };
  const sourceHashes=Object.fromEntries(Object.entries(roots).map(([key,root])=>[key,Object.fromEntries(["assistant-app.js","bmb-brain.js","bm-jev.js","bm-jev-taxonomy.json"].flatMap(n=>{const f=path.join(root,"netlify/functions",n);return fs.existsSync(f)?[[n,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]]:[]}))]));
  const report={schema_version:1,run_id:runId,provider_real:true,jev_real:true,database_real:true,netlify_transport_tested:false,physical_device_tested:false,native_actions_executed:0,
-   order:"paired AB/BA alternation; independent identical fixtures",sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,complete:false,gates_passed:false};
+   order:"paired AB/BA alternation; independent identical fixtures",from_pair:fromPair,pair_count:pairs,sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,complete:false,gates_passed:false};
  const save=()=>fs.writeFileSync(file,JSON.stringify({...report,summary:summarize(records,rates)},null,2));
  let user,connect,token;
  const context=()=>({context_revision:Date.now()*1000,language:"en",locale:"en",timezone:"Europe/Madrid",has_selected_apps:true,selection_count:2,
@@ -95,7 +95,11 @@ async function main(){
    Object.assign(process.env,{BM_JEV_SHADOW_ENABLED:"true",BM_JEV_DATA_POLICY:"synthetic-private-qa",BM_JEV_QA_USERS:user,BM_JEV_QA_SINCE:new Date(Date.now()-60000).toISOString(),BM_JEV_QA_PERCENT:"100"});
    // Migration is a prerequisite; fail before paid turns if it is absent.
    await request("/rest/v1/rpc/bm_jev_pending",{p_users:[user],p_since:process.env.BM_JEV_QA_SINCE});
-   for(let pair=0;pair<pairs;pair++)for(const variant of pair%2?["jev","optimized"]:["optimized","jev"]){
+   for(let pair=fromPair;pair<fromPair+pairs;pair++){
+    // Long paired runs can exceed the one-hour access-token lifetime. Renew
+    // before each pair; keep authentication failures as explicit failures.
+    token=(await request("/auth/v1/token?grant_type=password",{email,password},{apikey:c.anonKey})).access_token;
+    for(const variant of pair%2?["jev","optimized"]:["optimized","jev"]){
      for(const table of ["assistant_app_turns","bmb_events","bmb_followups","bmb_observations","bm_brain_memories","bmb_sessions"])
        await request(`/rest/v1/${table}?auth_user_id=eq.${user}`,undefined,service,"DELETE");
      for(const table of ["assistant_semantic_conversations","digital_wellness_feature_payloads"])
@@ -118,6 +122,7 @@ async function main(){
      if(group==="incomplete")row.passed=row.passed&&/\?/.test(t.assistant_text||"");
      records.push(row);active=null;console.info=originalInfo;save();
      if(records.length%20===0)console.log(JSON.stringify({turns:records.length,pairs:pair+1,errors:records.filter(r=>!r.passed).length}));
+   }
    }
    report.complete=records.length===pairs*2;
  }finally{

@@ -18,7 +18,7 @@ async function main(){
  if(fs.existsSync(file))previous=JSON.parse(fs.readFileSync(file)).reviews||[];
  let last=0;do{
   const report=JSON.parse(fs.readFileSync(source));
-  if(report.records.length>last){const input=turns(report),checkpoint=(reviews,error)=>{previous=reviews;fs.writeFileSync(file,JSON.stringify({schema_version:1,generated_at:new Date().toISOString(),source_run_id:report.run_id,
+  if(report.records.length>last||report.complete){const input=turns(report),checkpoint=(reviews,error)=>{previous=reviews;fs.writeFileSync(file,JSON.stringify({schema_version:1,generated_at:new Date().toISOString(),source_run_id:report.run_id,
    provenance:"Independent provider judgement using original BM quality judge, synthetic replies; not human review",source_complete:report.complete,complete:report.complete&&reviews.length===600,
    native_action_parameters_reviewed:false,physical_device_tested:false,gates_passed:false,reviews,infrastructure_error:error,
    by_variant:Object.fromEntries(["optimized","jev"].map(v=>[v,summarize(reviews.filter(x=>x.conversation_id===v))]))},null,2));};
