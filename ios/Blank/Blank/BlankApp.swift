@@ -8,10 +8,12 @@ enum AssistantRemoteNotification {
     static let applyActionIdentifier = "BM_APPLY_NOW"
     static let pollAfterOpenKey = "blankAssistantPollAfterOpen"
     static let tappedActionIDKey = "blankAssistantTappedActionID"
+    static let tappedEventIDKey = "blankAssistantTappedEventID"
 }
 
 extension Notification.Name {
     static let blankAssistantApplyNowRequested = Notification.Name("blankAssistantApplyNowRequested")
+    static let blankAssistantFollowupRequested = Notification.Name("blankAssistantFollowupRequested")
 }
 
 // Only private QA archives opt in. Production builds cannot install this cookie.
@@ -141,6 +143,11 @@ struct BlankApp: App {
 
         if action == "referral" {
             purchaseStore.captureReferral(from: url)
+            return
+        }
+
+        if action == "assistant" {
+            NotificationCenter.default.post(name: .blankAssistantFollowupRequested, object: nil)
             return
         }
         if action == "timer" || action == "schedule-timer" {
@@ -363,8 +370,11 @@ final class BlankAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificatio
     ) {
         let userInfo = response.notification.request.content.userInfo
         let isAssistantAction = userInfo["bm_action_id"] != nil
-        if userInfo["bm_event_id"] != nil, let url = URL(string:"blank://assistant") {
-            DispatchQueue.main.async { UIApplication.shared.open(url) }
+        if let eventID = userInfo["bm_event_id"] as? String, let url = URL(string:"blank://assistant") {
+            BlankSharedState.defaults.set(eventID, forKey: AssistantRemoteNotification.tappedEventIDKey)
+            DispatchQueue.main.async {
+                UIApplication.shared.open(url)
+            }
         }
         let shouldApply = response.actionIdentifier == AssistantRemoteNotification.applyActionIdentifier
             || response.actionIdentifier == UNNotificationDefaultActionIdentifier

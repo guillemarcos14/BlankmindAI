@@ -8,7 +8,7 @@ membership.supabaseFetch=async(path,options)=>{
   if(path.startsWith("bm_brain_memories"))return saved;
   if(path.startsWith("bmb_accounts"))return [];
   if(path.startsWith("assistant_app_turns"))return history;
-  if(path.startsWith("bmb_sessions"))return [];
+  if(path.startsWith("bmb_sessions")||path.startsWith("bmb_followups"))return [];
   throw Error(path);
 };
 const brain=require("../netlify/functions/bmb-brain");

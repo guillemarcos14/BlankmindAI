@@ -11,3 +11,9 @@ No alignment change: for long replies/list summaries, left alignment is the reco
 Apple initializer reference: https://developer.apple.com/documentation/corehaptics/chhapticengine/init(audiosession:)
 
 Validation and distribution receipts to follow. No new TestFlight uploaded yet.
+
+## Verified status
+
+Backend published to private QA as6ac536fdbe78b280f7828665 fromfb9879f, nine digests match; no migrations. Remote smoke8/8 and cleanup6/6, including forced bold prompt with no emphasis markers in any draft/final, durable replay/conflict and supported/unsupported durations. 71 drafts, first 7874ms/final 10064ms in one synthetic sample. The104 client now receives cleaned copy.
+
+Harness70/70 with scope and baseline00e66fd. CI37507627628 passed native production-client/presentation/controller tests and full Simulator compilation; Home UI checks in progress. No new signed archive or TestFlight upload: CUA inventory shows no MacinCloud RDP tab or active in-app browser session. User must open the existing MacinCloud session before native distribution can continue.104 still has the old haptic profile; perception and device settings are unverified.

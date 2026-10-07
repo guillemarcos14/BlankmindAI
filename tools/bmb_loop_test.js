@@ -9,14 +9,15 @@ const crypto=require("node:crypto");
 const now=()=>new Date().toISOString();
 async function main(){
   const a={auth_user_id:"account-A",app_install_id:"install-A",version:1,settings:settings({timezone:"UTC",grant:{active:true,action_types:["start_protection"],expires_at:new Date(Date.now()+86400000).toISOString()},notifications:{enabled:true,start_minute:0,end_minute:0}})};
-  const sessions=[1,2].map(i=>({id:`session-${i}`,ended_at:now(),ended_reason:"manual"}));
   let ledger=[],queued=[],pushes=[],notices=[],modelCalls=0,assessed=new Set(),failQueue=false;
   const context={has_selected_apps:true,screen_time_authorized:true,notification_authorized:true,
     brain_snapshot:{generated_at:now(),timezone:"UTC",sessions:[]}};
   const db=async(path,options={})=>{
     const p=options.body?JSON.parse(options.body):{};
-    if(path.startsWith("bmb_sessions?"))return sessions;
-    if(path.startsWith("bmb_device_signals?")||path.startsWith("assistant_app_turns?"))return [];
+    if(path.startsWith("bmb_followups?")||path.startsWith("bmb_daily_reviews?"))return [];
+    if(path==="rpc/bmb_claim_daily_review")return {claimed:false};
+    if(path.startsWith("assistant_app_turns?"))return [];
+    if(path.startsWith("bmb_device_signals?"))return [{id:"signal-A",occurred_at:now(),threshold_minutes:30}];
     if(path.startsWith("bmb_accounts?"))return [a];
     if(path.startsWith("bmb_events?")) {
       const q=new URL("https://db/"+path).searchParams;
@@ -66,7 +67,7 @@ async function main(){
   ledger=[{...ledger[0],outcome:{},expires_at:new Date(Date.now()+600000).toISOString()}];a.settings.grant.active=false;
   await tickAccount(a,deps);assert.equal(queued.length,1);assert.equal(modelCalls,2);
   const expiredAction={...ledger[0],expires_at:"2020-01-01",outcome:{status:"verified",received_at:now()}};
-  assert(opportunities([], [expiredAction]).length===1,"Receipt inherited expired action delivery window");
+  assert(opportunities([expiredAction]).length===1,"Receipt inherited expired action delivery window");
   a.app_install_id="different-install";
   assert.equal((await tickAccount(a,deps)).skipped,"installation_changed");
   console.log("BMB loop: contextual decision → current grant → durable reservation/retry → canonical inbox → synthetic native receipt → free-text notice → shared budget/replay/revocation passed");
