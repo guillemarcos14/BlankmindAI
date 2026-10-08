@@ -1,6 +1,52 @@
 import XCTest
 
 final class MinimalHomeUITests: XCTestCase {
+    func testControlGroupsKeepSettingsReachableAndRootClear() {
+        let app = launch("product-control")
+        func capture(_ name: String) {
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = name
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        func reveal(_ button: XCUIElement) {
+            for _ in 0..<4 {
+                if button.isHittable { return }
+                app.scrollViews.firstMatch.swipeUp()
+            }
+        }
+        XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["schedule"].exists)
+        XCTAssertFalse(app.buttons["automatic protection"].exists)
+        XCTAssertFalse(app.buttons["conversation history"].exists)
+        XCTAssertFalse(app.buttons["privacy policy"].exists)
+        capture("control-root")
+        app.buttons["protection"].tap()
+        XCTAssertTrue(app.buttons["schedule"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["automatic protection"].exists)
+        capture("control-protection")
+        app.buttons["schedule"].tap()
+        XCTAssertTrue(app.buttons["back"].waitForExistence(timeout: 5))
+        app.buttons["back"].tap()
+        XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
+        reveal(app.buttons["Data & Permissions"])
+        app.buttons["Data & Permissions"].tap()
+        XCTAssertTrue(app.buttons["conversation history"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["health"].exists)
+        XCTAssertTrue(app.buttons["screen time"].exists)
+        XCTAssertFalse(app.buttons["synthetic sleep"].exists, "Guest cannot enable QA sleep")
+        capture("control-data")
+        app.buttons["back"].tap()
+        reveal(app.buttons["account"])
+        app.buttons["account"].tap()
+        XCTAssertTrue(app.buttons["manage account"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["privacy policy"].exists)
+        XCTAssertTrue(app.buttons["terms of service"].exists)
+        capture("control-account")
+        app.buttons["back"].tap()
+        XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
+    }
+
     func testSleepSourceKeepsProductionScreensAndUnmetAccountGate() {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -12,7 +58,7 @@ final class MinimalHomeUITests: XCTestCase {
         app.terminate()
         let home = launch()
         home.buttons["home-tab-control"].tap()
-        XCTAssertTrue(home.buttons["automatic protection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(home.buttons["protection"].waitForExistence(timeout: 5))
         XCTAssertTrue(home.buttons["distractions"].exists)
         home.buttons["home-tab-progress"].tap()
         XCTAssertTrue(home.staticTexts["Progress"].waitForExistence(timeout: 5))
@@ -43,13 +89,13 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home-tab-chat"].isSelected)
         XCTAssertTrue(app.buttons["home-voice"].exists)
         app.buttons["home-tab-control"].tap()
-        XCTAssertTrue(app.buttons["automatic protection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["notifications"].exists)
         XCTAssertTrue(app.buttons["distractions"].exists)
         app.buttons["distractions"].tap()
         XCTAssertTrue(app.buttons["back"].waitForExistence(timeout: 5))
         app.buttons["back"].tap()
-        XCTAssertTrue(app.buttons["automatic protection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
         app.buttons["home-tab-chat"].tap()
         XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
         app.buttons["home-tab-progress"].tap()
@@ -92,7 +138,7 @@ final class MinimalHomeUITests: XCTestCase {
                 .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: endX, dy: endY)))
         }
         drag(0.02, 0.5, 0.65, 0.5)
-        XCTAssertTrue(app.buttons["automatic protection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["home-tab-control"].isSelected)
         drag(0.98, 0.5, 0.35, 0.5)
         XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
@@ -109,10 +155,12 @@ final class MinimalHomeUITests: XCTestCase {
     func testControlFormsKeepNativeEditingAndDismissal() {
         let app = launch()
         app.buttons["home-tab-control"].tap()
+        app.buttons["protection"].tap()
         app.buttons["automatic protection"].tap()
         XCTAssertTrue(app.switches["Allow automatic protection"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.datePickers.firstMatch.exists)
         app.buttons["Done"].tap()
+        app.buttons["back"].tap()
         let notices = app.buttons["notifications"]
         if !notices.isHittable { app.scrollViews.firstMatch.swipeUp() }
         notices.tap()

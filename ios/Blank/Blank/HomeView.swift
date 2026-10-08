@@ -2694,6 +2694,20 @@ struct SectionHeader: View {
     }
 }
 
+private enum ControlSettingsGroup: String {
+    case protection = "Protection"
+    case data = "Data & Permissions"
+    case account = "Account"
+
+    var subtitle: String {
+        switch self {
+        case .protection: return "Manage your routines and automatic protection."
+        case .data: return "Review your conversations and connected data."
+        case .account: return "Manage your account and review our policies."
+        }
+    }
+}
+
 private struct SettingsScreen: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.openURL) private var openURL
@@ -2701,6 +2715,7 @@ private struct SettingsScreen: View {
     @State private var showingAccount = false
     @State private var selectedBMBSettings: BMBSettingsSection?
     @State private var showingHistory = false
+    @State private var selectedGroup: ControlSettingsGroup?
 
     let onClose: () -> Void
     let onOpenEmergency: () -> Void
@@ -2722,45 +2737,47 @@ private struct SettingsScreen: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(
-                    title: isControl ? "control" : "settings",
-                    subtitle: isControl ? "Manage your protection and routines.\nAll your settings, in one place." : "Manage your account and preferences.\nReview access, support and privacy.",
-                    action: onClose,
+                    title: selectedGroup?.rawValue ?? (isControl ? "control" : "settings"),
+                    subtitle: selectedGroup?.subtitle ?? (isControl ? "Manage your protection and routines.\nAll your settings, in one place." : "Manage your account and preferences.\nReview access, support and privacy."),
+                    action: {
+                        if selectedGroup != nil { selectedGroup = nil }
+                        else { onClose() }
+                    },
                     titleColor: textColor,
                     subtitleColor: secondaryColor
                 )
                 .padding(.bottom, 20)
 
-                settingsRow(title: "emergency", detail: "unlock access while blanked", action: onOpenEmergency)
-                if isControl {
-                    if let protectionControl { protectionControl }
-                    settingsRow(title: "distractions", detail: "choose apps and review your blocks", action: onOpenDistractions)
+                switch selectedGroup {
+                case nil:
+                    settingsRow(title: "emergency", detail: "unlock access while blanked", action: onOpenEmergency)
+                    if isControl {
+                        if let protectionControl { protectionControl }
+                        settingsRow(title: "distractions", detail: "choose apps and review your blocks", action: onOpenDistractions)
+                    }
+                    settingsRow(title: "protection", detail: "routines and automatic protection", action: { selectedGroup = .protection })
+                    settingsRow(title: "notifications", detail: "choose which notices you receive and when", action: { selectedBMBSettings = .notifications })
+                    settingsRow(title: "Data & Permissions", detail: "connected data, permissions and conversation history", action: { selectedGroup = .data })
+                    settingsRow(title: "account", detail: "account controls, privacy and terms", action: { selectedGroup = .account })
+                case .protection:
                     settingsRow(title: "schedule", detail: "manage your protection routines", action: onOpenSchedule)
+                    settingsRow(title: "automatic protection", detail: "choose when and how Blankmind may act", action: { selectedBMBSettings = .automaticProtection })
+                case .data:
+                    settingsRow(title: "conversation history", detail: "review previous conversations", action: { showingHistory = true })
+                    settingsRow(title: "health", detail: healthStatus, symbol: healthStatus == "connected" ? "checkmark" : "chevron.right", secondary: healthStatus == "connected", action: onRequestHealthAccess)
+                    settingsRow(title: "screen time", detail: screenTimeStatus, symbol: screenTimeStatus == "approved" ? "checkmark" : "chevron.right", secondary: screenTimeStatus == "approved", action: onRequestScreenTimePermission)
+                    if HealthKitStore.shared.canUseSyntheticSleep {
+                        settingsRow(title: "synthetic sleep", detail: HealthKitStore.shared.syntheticSleepEnabled ? "on · sleep only" : "off", action: {
+                            HealthKitStore.shared.setSyntheticSleepEnabled(!HealthKitStore.shared.syntheticSleepEnabled)
+                        })
+                    }
+                case .account:
+                    settingsRow(title: "manage account", detail: "Apple sign-in and account controls", action: { showingAccount = true })
+                    settingsRow(title: "privacy policy", detail: "how Blankmind handles your data", symbol: "arrow.up.right", secondary: true,
+                                action: { openURL(URL(string: "https://blankmind.ai/privacy")!) })
+                    settingsRow(title: "terms of service", detail: "terms for using Blankmind", symbol: "arrow.up.right", secondary: true,
+                                action: { openURL(URL(string: "https://blankmind.ai/terms")!) })
                 }
-                settingsRow(title: "automatic protection", detail: "choose when and how Blankmind may act", action: { selectedBMBSettings = .automaticProtection })
-                settingsRow(title: "notifications", detail: "choose which notices you receive and when", action: { selectedBMBSettings = .notifications })
-                settingsRow(title: "conversation history", detail: "review previous conversations", action: { showingHistory = true })
-                settingsRow(title: "account", detail: "Apple sign-in and account controls", action: { showingAccount = true })
-                if screenTimeStatus != "approved" {
-                    settingsRow(title: "screen time", detail: screenTimeStatus, action: onRequestScreenTimePermission)
-                }
-                if HealthKitStore.shared.canUseSyntheticSleep {
-                    settingsRow(title: "synthetic sleep", detail: HealthKitStore.shared.syntheticSleepEnabled ? "on · sleep only" : "off", action: {
-                        HealthKitStore.shared.setSyntheticSleepEnabled(!HealthKitStore.shared.syntheticSleepEnabled)
-                    })
-                }
-                if healthStatus != "connected" {
-                    settingsRow(title: "health", detail: healthStatus, action: onRequestHealthAccess)
-                }
-                if screenTimeStatus == "approved" {
-                    settingsRow(title: "screen time", detail: screenTimeStatus, symbol: "checkmark", secondary: true, action: onRequestScreenTimePermission)
-                }
-                if healthStatus == "connected" {
-                    settingsRow(title: "health", detail: healthStatus, symbol: "checkmark", secondary: true, action: onRequestHealthAccess)
-                }
-                settingsRow(title: "privacy policy", detail: "how Blankmind handles your data", symbol: "arrow.up.right", secondary: true,
-                            action: { openURL(URL(string: "https://blankmind.ai/privacy")!) })
-                settingsRow(title: "terms of service", detail: "terms for using Blankmind", symbol: "arrow.up.right", secondary: true,
-                            action: { openURL(URL(string: "https://blankmind.ai/terms")!) })
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.bottom, 24)
