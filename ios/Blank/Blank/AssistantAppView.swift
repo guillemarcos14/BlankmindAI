@@ -1277,6 +1277,7 @@ struct AssistantAppView: View {
                 .accessibilityHint(spanish ? "Toca para hablar. Toca de nuevo para enviar. Mantén pulsado para escribir." : "Tap to speak. Tap again to send. Hold to write.")
                 .accessibilityIdentifier("home-voice")
                 .contextMenu {
+                    spokenReplySetting
                     Button { showingHomeKeyboard = true } label: {
                         Label(spanish ? "Escribir un mensaje" : "Write a message", systemImage: "keyboard")
                     }
@@ -1404,6 +1405,13 @@ struct AssistantAppView: View {
         return AssistantReplyText.plain(turn.assistantText)
     }
 
+    private var spokenReplySetting: some View {
+        Toggle("Spoken replies", isOn: $voiceRepliesEnabled)
+            .onChange(of: voiceRepliesEnabled) { enabled in
+                if !enabled { voice.stop() }
+            }
+    }
+
     private var composerBar: some View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
@@ -1469,6 +1477,7 @@ struct AssistantAppView: View {
             .accessibilityLabel(voice.isBusy ? "Stop voice" : (speech.isRecording || speech.isStarting
                                 ? (spanish ? "Enviar audio" : "Send audio")
                                 : (spanish ? "Grabar audio" : "Record audio")))
+            .contextMenu { spokenReplySetting }
             if !speech.hasAudio && !speech.isRecording && !speech.isStarting && !composer.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Button { Task { await send() } } label: {
                     Image(systemName: "arrow.up.circle.fill").font(.system(size: 29))
