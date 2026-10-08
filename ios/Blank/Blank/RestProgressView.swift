@@ -85,6 +85,7 @@ struct RestProgressContent: View {
                 HStack { Text("all health context"); Spacer(); Image(systemName: "chevron.right") }
                     .font(.blankInter(size: 16, relativeTo: .body))
                     .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("progress-all-context")
@@ -200,11 +201,21 @@ struct RestProgressContent: View {
     private var trendCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             header("rest over time", icon: "chart.bar.fill")
-            Picker("Progress metric", selection: $metric) {
-                ForEach(RestProgressMetric.allCases) { value in Text(value.rawValue).tag(value) }
+            Menu {
+                Picker("Progress metric", selection: $metric) {
+                    ForEach(RestProgressMetric.allCases) { value in Text(value.rawValue).tag(value) }
+                }
+            } label: {
+                HStack {
+                    Text(metric.rawValue)
+                    Spacer()
+                    Image(systemName: "chevron.down").font(.system(size: 12))
+                }
+                .font(.blankInter(size: 16, relativeTo: .body))
+                .frame(minHeight: 44).contentShape(Rectangle())
             }
-            .pickerStyle(.menu).tint(ink)
-            .font(.blankInter(size: 16, relativeTo: .body)).frame(minHeight: 44, alignment: .leading)
+            .tint(ink).buttonStyle(.plain)
+            .accessibilityLabel("Progress metric, " + metric.rawValue)
             .accessibilityIdentifier("progress-metric")
             if chartPoints.isEmpty {
                 Text("No records for this metric yet.").font(.blankInter(size: 17, relativeTo: .body))
