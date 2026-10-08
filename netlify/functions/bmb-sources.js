@@ -28,15 +28,17 @@ const CATALOG={
 const SOURCE_NAMES=[...Object.keys(CATALOG),"protection_statistics"];
 // Source references belong in cited_sources; the app cannot render opaque IDs.
 // Preserve facts and ordinary brackets; remove only closed catalog references.
-function cleanCitations(text){if(typeof text!=="string")return text;
+function cleanCitations(text,{quotedIn=""}={}){if(typeof text!=="string")return text;
+ const refs=SOURCE_NAMES.filter(id=>!quotedIn.includes("["+id+"]")&&!new RegExp("\\b(?:Fuente|Source)\\s*:?\\s*"+id+"(?:\\.|(?=\\s|$))","i").test(quotedIn));
  let value=text.replace(/\uE200[\s\S]*?(?:\uE201|$)/gu,"");
- value=value.replace(/\[([^\]]+)\]/g,(whole,id)=>SOURCE_NAMES.includes(id.trim())?"":whole);
- const names=SOURCE_NAMES.join("|");
+ value=value.replace(/\[([^\]]+)\]/g,(whole,id)=>refs.includes(id.trim())?"":whole);
+ if(!refs.length)return value.trim();
+ const names=refs.join("|");
  value=value.replace(new RegExp("\\b(?:Fuente|Source)\\s*:?\\s*(?:"+names+")(?:\\.|(?=\\s|$))","gi"),"");
  const open=value.lastIndexOf("[");
- if(open>=0&&!value.slice(open).includes("]")&&SOURCE_NAMES.some(id=>id.startsWith(value.slice(open+1))))value=value.slice(0,open);
+ if(open>=0&&!value.slice(open).includes("]")&&refs.some(id=>id.startsWith(value.slice(open+1))))value=value.slice(0,open);
  const label=/\b(?:Fuente|Source)\s*:?\s*([a-z_]*)\.?$/i.exec(value);
- if(label&&SOURCE_NAMES.some(id=>id.startsWith(label[1])))value=value.slice(0,label.index);
+ if(label&&refs.some(id=>id.startsWith(label[1].toLowerCase())))value=value.slice(0,label.index);
  return value.trim();
 }
 function sanitize(value,depth=0) {

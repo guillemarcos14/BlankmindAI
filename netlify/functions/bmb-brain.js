@@ -77,7 +77,7 @@ function actionIdentity(a) {
 async function generate(input,{model=readModelJson,onDraft}={}) {
   if(onDraft) {
     onDraft(""); // Discard a prior read, repair or restored-offer draft.
-    model=options=>require("./bm-response-stream").readModelStream({...options,onDraft:text=>onDraft(cleanCitations(text))});
+    model=options=>require("./bm-response-stream").readModelStream({...options,onDraft:text=>onDraft(cleanCitations(text,{quotedIn:input.current_message}))});
   }
   const {body}=await timing.span("model",()=>model({request:{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
     input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
@@ -143,7 +143,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
       result=await run(input);
     }
   }
-  if(result?.phase==="final")result.response_text=cleanCitations(result.response_text);
+  if(result?.phase==="final")result.response_text=cleanCitations(result.response_text,{quotedIn:prompt});
   const m=result?.memory;
   const needsRepair=result?.phase==="final"&&(
     /:(?!\d{2}\b)/.test(result.response_text||"")||(!proactive&&(!result.evidence?.trim()||!prompt.includes(result.evidence)))||
@@ -161,7 +161,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   if(!proactive && (!result.evidence?.trim()||!prompt.includes(result.evidence)))throw Error("bmb_ungrounded_intent");
   if(!["en","es"].includes(result.response_language))throw Error("bmb_invalid_language");
   if(result.cited_sources?.some(id=>!input.coverage.some(s=>s.source_id===id)&&!input.memories.some(m=>m.id===id)&&!sources.some(s=>s.source_id===id||s.rows?.some(r=>r.id===id))))throw Error("bmb_unknown_citation");
-  let text=cleanCitations(result.response_text||"");
+  let text=cleanCitations(result.response_text||"",{quotedIn:prompt});
   if((!text&&result.decision!=="silent")||/:(?!\d{2}\b)/.test(text))throw Error("bmb_invalid_prose");
   let action=null,execute=false,acceptanceRecovery=false,durationLimited=false;
   try { action=result.action?normalizeAction(result.action):null; }
