@@ -21,8 +21,11 @@
     "Blank Brain/**",
     ".github/**",
     "supabase/migrations/**",
-    "supabase/functions/**"
-    ,"netlify.toml", "PRODUCT.md", "DESIGN.md", ".impeccable/design.json"
+    "supabase/functions/**",
+    "netlify.toml",
+    "PRODUCT.md",
+    "DESIGN.md",
+    ".impeccable/design.json"
   ],
   "acceptance": [
     "El cambio tiene contexto mínimo de Blank Brain y del proceso de desarrollo.",
@@ -63,84 +66,323 @@
     "max_repair_attempts": 0,
     "repair_commands": [],
     "commands": [
-      { "name": "bm_decisions", "run": "node tools/bm_decisions_test.js" },
-      { "name": "bm_retrieval_step", "run": "node tools/bm_retrieval_step_test.js" },
-      { "name": "bm_voice_output", "run": "node tools/bm_voice_output_test.js" },
-      { "name": "node_syntax_voice_stream", "run": "node --check netlify/functions/assistant-app-voice.mjs" },
-      { "name": "bm_response_stream", "run": "node tools/bm_response_stream_test.js" },
-      { "name": "bm_latency", "run": "node tools/bm_latency_test.js" },
-      { "name": "bm_jev", "run": "node tools/bm_jev_test.js" },
-      { "name": "bmb_longitudinal", "run": "node tools/bmb_longitudinal_test.js" },
-      { "name": "bmb_greeting", "run": "node tools/bmb_greeting_test.js" },
-      { "name": "bmb_vision", "run": "node tools/bmb_test.js" },
-      { "name": "bmb_autonomy_loop", "run": "node tools/bmb_loop_test.js" },
-      { "name": "bm_audio_input", "run": "node tools/bm_audio_input_test.js" },
-      { "name": "bm_chat_natural", "run": "node tools/bm_chat_natural_test.js" },
-      { "name": "node_syntax_agent", "run": "node --check netlify/functions/blanked-agent.js" },
-      { "name": "node_syntax_harness", "run": "node --check netlify/functions/bm-harness.js" },
-      { "name": "node_syntax_loop", "run": "node --check netlify/functions/bm-loop.js" },
-      { "name": "node_syntax_context", "run": "node --check netlify/functions/bm-context.js" },
-      { "name": "node_syntax_personal_context_view", "run": "node --check netlify/functions/bm-personal-context-view.js" },
-      { "name": "node_syntax_contextual_response", "run": "node --check netlify/functions/bm-contextual-response.js" },
-      { "name": "bm_contextual_response", "run": "node tools/bm_contextual_response_test.js" },
-      { "name": "node_syntax_schedule_management", "run": "node --check netlify/functions/bm-schedule-management.js" },
-      { "name": "node_syntax_blocking", "run": "node --check netlify/functions/bm-blocking-contract.js" },
-      { "name": "node_syntax_contracts", "run": "node --check netlify/functions/bm-contracts.js" },
-      { "name": "node_syntax_policy", "run": "node --check netlify/functions/bm-policy.js" },
-      { "name": "node_syntax_verification", "run": "node --check netlify/functions/bm-verification.js" },
-      { "name": "node_syntax_learning", "run": "node --check netlify/functions/bm-learning.js" },
-      { "name": "node_syntax_assistant_push", "run": "node --check netlify/functions/_assistant_push.js" },
-      { "name": "node_syntax_waitlist_store", "run": "node --check netlify/functions/_waitlist_store.js" },
-      { "name": "node_syntax_waitlist_ai", "run": "node --check netlify/functions/_waitlist_ai.js" },
-      { "name": "node_syntax_waitlist_whatsapp", "run": "node --check netlify/functions/_waitlist_whatsapp.js" },
-      { "name": "node_syntax_waitlist_start", "run": "node --check netlify/functions/waitlist-start.js" },
-      { "name": "node_syntax_waitlist_agent", "run": "node --check netlify/functions/waitlist-agent.js" },
-      { "name": "node_syntax_bm_final_qa_access", "run": "node --check netlify/functions/_bm_final_qa_access.js" },
-      { "name": "node_syntax_bm_final_qa_dispatch", "run": "node --check netlify/functions/_bm_final_qa_dispatch.js" },
-      { "name": "node_syntax_waitlist_data", "run": "node --check netlify/functions/waitlist-data.js" },
-      { "name": "waitlist_early_access", "run": "node tools/waitlist_early_access_test.js" },
-      { "name": "bm_final_qa_router", "run": "node tools/bm_final_qa_router_test.js" },
-      { "name": "production_app_activation", "run": "node tools/production_app_activation_test.js" },
-      { "name": "assistant_app_recovery", "run": "node tools/assistant_app_test.js" },
-      { "name": "bm_central_brain", "run": "node tools/bm_brain_test.js" },
-      { "name": "assistant_cloud_test_safety", "run": "node tools/assistant_app_cloud_test.js --self-test" },
-      { "name": "app_auth_refresh", "run": "node tools/app_auth_test.js" },
-      { "name": "bm_legacy_context_recovery", "run": "node tools/bm_legacy_context_recovery_test.js" },
-      { "name": "bm_app_receipts", "run": "node tools/bm_app_receipt_test.js" },
-      { "name": "assistant_channel_identity", "run": "node tools/assistant_channel_identity_test.js" },
-      { "name": "assistant_action_concurrency", "run": "node tools/assistant_action_concurrency_test.js" },
-      { "name": "assistant_pending_lifecycle", "run": "node tools/assistant_pending_lifecycle_test.js" },
-      { "name": "backend_release_preflight", "run": "node tools/backend_release_preflight_test.js" },
-      { "name": "backend_staging_safety", "run": "node tools/backend_staging_test.js" },
-      { "name": "bm_final_qa_dispatch", "run": "node tools/bm_final_qa_dispatch_test.js" },
-      { "name": "bm_openai_request_contract", "run": "node tools/bm_openai_request_contract_test.js" },
-      { "name": "bm_loop_contract", "run": "node tools/bm_loop_contract_test.js" },
-      { "name": "bm_regressions", "run": "node tools/bm_regression_test.js" },
-      { "name": "bm_app_presence", "run": "node tools/bm_app_presence_test.js" },
-      { "name": "bm_harness", "run": "node tools/bm_harness_test.js" },
-      { "name": "bm_loop", "run": "node tools/bm_loop_test.js" },
-      { "name": "bm_blocking_contract", "run": "node tools/bm_blocking_contract_test.js" },
-      { "name": "bm_excellence_gate", "run": "node tools/bm_excellence_gate.js" },
-      { "name": "agent_smoke", "run": "node tools/blanked_agent_smoke_test.js" },
-      { "name": "assistant_conversation_memory", "run": "node tools/assistant_conversation_memory_test.js" },
-      { "name": "bm_semantic_state", "run": "node tools/bm_semantic_state_test.js" },
-      { "name": "bm_semantic_delivery", "run": "node tools/bm_semantic_delivery_test.js" },
-      { "name": "bm_single_block_mvp", "run": "node tools/bm_single_block_mvp_test.js" },
-      { "name": "bm_semantic_extraction", "run": "node tools/bm_semantic_extraction_test.js" },
-      { "name": "bm_response_reliability", "run": "node tools/bm_response_reliability_test.js" },
-      { "name": "bm_semantic_oracle_mutations", "run": "node tools/bm_semantic_oracle_test.js" },
-      { "name": "bm_evaluator_integrity", "run": "node tools/bm_evaluator_integrity_gate.js" },
-      { "name": "bm_action_envelope_contract", "run": "node tools/bm_action_envelope_contract_test.js" },
-      { "name": "bm_autonomous_messaging", "run": "node tools/bm_autonomous_messaging_test.js" },
-      { "name": "bm_release_readiness", "run": "node tools/bm_release_readiness_gate_test.js" },
-      { "name": "bm_sol_quality_judge", "run": "node tools/bm_sol_quality_judge_test.js" },
-      { "name": "bm_semantic_store", "run": "node tools/bm_semantic_store_test.js" },
-      { "name": "bm_channel_contract", "run": "node tools/bm_channel_contract_test.js" },
-      { "name": "onboarding_access", "run": "node tools/onboarding_access_test.js" },
-      { "name": "bm_global_context", "run": "node tools/bm_global_context_test.js" },
-      { "name": "bm_sms_pending_action", "run": "node tools/bm_sms_pending_action_test.js" },
-      { "name": "bm_thursday_reliability", "run": "node tools/bm_thursday_reliability_test.js" },
-      { "name": "release_gate_quick", "run": "node tools/bai_release_gate.js --quick", "timeout_ms": 180000 }
+      {
+        "name": "bm_retrieval_wide_faults",
+        "run": "node tools/bm_retrieval_wide_fault_test.js"
+      },
+      {
+        "name": "bm_decisions",
+        "run": "node tools/bm_decisions_test.js"
+      },
+      {
+        "name": "bm_retrieval_step",
+        "run": "node tools/bm_retrieval_step_test.js"
+      },
+      {
+        "name": "bm_voice_output",
+        "run": "node tools/bm_voice_output_test.js"
+      },
+      {
+        "name": "node_syntax_voice_stream",
+        "run": "node --check netlify/functions/assistant-app-voice.mjs"
+      },
+      {
+        "name": "bm_response_stream",
+        "run": "node tools/bm_response_stream_test.js"
+      },
+      {
+        "name": "bm_latency",
+        "run": "node tools/bm_latency_test.js"
+      },
+      {
+        "name": "bm_jev",
+        "run": "node tools/bm_jev_test.js"
+      },
+      {
+        "name": "bmb_longitudinal",
+        "run": "node tools/bmb_longitudinal_test.js"
+      },
+      {
+        "name": "bmb_greeting",
+        "run": "node tools/bmb_greeting_test.js"
+      },
+      {
+        "name": "bmb_vision",
+        "run": "node tools/bmb_test.js"
+      },
+      {
+        "name": "bmb_autonomy_loop",
+        "run": "node tools/bmb_loop_test.js"
+      },
+      {
+        "name": "bm_audio_input",
+        "run": "node tools/bm_audio_input_test.js"
+      },
+      {
+        "name": "bm_chat_natural",
+        "run": "node tools/bm_chat_natural_test.js"
+      },
+      {
+        "name": "node_syntax_agent",
+        "run": "node --check netlify/functions/blanked-agent.js"
+      },
+      {
+        "name": "node_syntax_harness",
+        "run": "node --check netlify/functions/bm-harness.js"
+      },
+      {
+        "name": "node_syntax_loop",
+        "run": "node --check netlify/functions/bm-loop.js"
+      },
+      {
+        "name": "node_syntax_context",
+        "run": "node --check netlify/functions/bm-context.js"
+      },
+      {
+        "name": "node_syntax_personal_context_view",
+        "run": "node --check netlify/functions/bm-personal-context-view.js"
+      },
+      {
+        "name": "node_syntax_contextual_response",
+        "run": "node --check netlify/functions/bm-contextual-response.js"
+      },
+      {
+        "name": "bm_contextual_response",
+        "run": "node tools/bm_contextual_response_test.js"
+      },
+      {
+        "name": "node_syntax_schedule_management",
+        "run": "node --check netlify/functions/bm-schedule-management.js"
+      },
+      {
+        "name": "node_syntax_blocking",
+        "run": "node --check netlify/functions/bm-blocking-contract.js"
+      },
+      {
+        "name": "node_syntax_contracts",
+        "run": "node --check netlify/functions/bm-contracts.js"
+      },
+      {
+        "name": "node_syntax_policy",
+        "run": "node --check netlify/functions/bm-policy.js"
+      },
+      {
+        "name": "node_syntax_verification",
+        "run": "node --check netlify/functions/bm-verification.js"
+      },
+      {
+        "name": "node_syntax_learning",
+        "run": "node --check netlify/functions/bm-learning.js"
+      },
+      {
+        "name": "node_syntax_assistant_push",
+        "run": "node --check netlify/functions/_assistant_push.js"
+      },
+      {
+        "name": "node_syntax_waitlist_store",
+        "run": "node --check netlify/functions/_waitlist_store.js"
+      },
+      {
+        "name": "node_syntax_waitlist_ai",
+        "run": "node --check netlify/functions/_waitlist_ai.js"
+      },
+      {
+        "name": "node_syntax_waitlist_whatsapp",
+        "run": "node --check netlify/functions/_waitlist_whatsapp.js"
+      },
+      {
+        "name": "node_syntax_waitlist_start",
+        "run": "node --check netlify/functions/waitlist-start.js"
+      },
+      {
+        "name": "node_syntax_waitlist_agent",
+        "run": "node --check netlify/functions/waitlist-agent.js"
+      },
+      {
+        "name": "node_syntax_bm_final_qa_access",
+        "run": "node --check netlify/functions/_bm_final_qa_access.js"
+      },
+      {
+        "name": "node_syntax_bm_final_qa_dispatch",
+        "run": "node --check netlify/functions/_bm_final_qa_dispatch.js"
+      },
+      {
+        "name": "node_syntax_waitlist_data",
+        "run": "node --check netlify/functions/waitlist-data.js"
+      },
+      {
+        "name": "waitlist_early_access",
+        "run": "node tools/waitlist_early_access_test.js"
+      },
+      {
+        "name": "bm_final_qa_router",
+        "run": "node tools/bm_final_qa_router_test.js"
+      },
+      {
+        "name": "production_app_activation",
+        "run": "node tools/production_app_activation_test.js"
+      },
+      {
+        "name": "assistant_app_recovery",
+        "run": "node tools/assistant_app_test.js"
+      },
+      {
+        "name": "bm_central_brain",
+        "run": "node tools/bm_brain_test.js"
+      },
+      {
+        "name": "assistant_cloud_test_safety",
+        "run": "node tools/assistant_app_cloud_test.js --self-test"
+      },
+      {
+        "name": "app_auth_refresh",
+        "run": "node tools/app_auth_test.js"
+      },
+      {
+        "name": "bm_legacy_context_recovery",
+        "run": "node tools/bm_legacy_context_recovery_test.js"
+      },
+      {
+        "name": "bm_app_receipts",
+        "run": "node tools/bm_app_receipt_test.js"
+      },
+      {
+        "name": "assistant_channel_identity",
+        "run": "node tools/assistant_channel_identity_test.js"
+      },
+      {
+        "name": "assistant_action_concurrency",
+        "run": "node tools/assistant_action_concurrency_test.js"
+      },
+      {
+        "name": "assistant_pending_lifecycle",
+        "run": "node tools/assistant_pending_lifecycle_test.js"
+      },
+      {
+        "name": "backend_release_preflight",
+        "run": "node tools/backend_release_preflight_test.js"
+      },
+      {
+        "name": "backend_staging_safety",
+        "run": "node tools/backend_staging_test.js"
+      },
+      {
+        "name": "bm_final_qa_dispatch",
+        "run": "node tools/bm_final_qa_dispatch_test.js"
+      },
+      {
+        "name": "bm_openai_request_contract",
+        "run": "node tools/bm_openai_request_contract_test.js"
+      },
+      {
+        "name": "bm_loop_contract",
+        "run": "node tools/bm_loop_contract_test.js"
+      },
+      {
+        "name": "bm_regressions",
+        "run": "node tools/bm_regression_test.js"
+      },
+      {
+        "name": "bm_app_presence",
+        "run": "node tools/bm_app_presence_test.js"
+      },
+      {
+        "name": "bm_harness",
+        "run": "node tools/bm_harness_test.js"
+      },
+      {
+        "name": "bm_loop",
+        "run": "node tools/bm_loop_test.js"
+      },
+      {
+        "name": "bm_blocking_contract",
+        "run": "node tools/bm_blocking_contract_test.js"
+      },
+      {
+        "name": "bm_excellence_gate",
+        "run": "node tools/bm_excellence_gate.js"
+      },
+      {
+        "name": "agent_smoke",
+        "run": "node tools/blanked_agent_smoke_test.js"
+      },
+      {
+        "name": "assistant_conversation_memory",
+        "run": "node tools/assistant_conversation_memory_test.js"
+      },
+      {
+        "name": "bm_semantic_state",
+        "run": "node tools/bm_semantic_state_test.js"
+      },
+      {
+        "name": "bm_semantic_delivery",
+        "run": "node tools/bm_semantic_delivery_test.js"
+      },
+      {
+        "name": "bm_single_block_mvp",
+        "run": "node tools/bm_single_block_mvp_test.js"
+      },
+      {
+        "name": "bm_semantic_extraction",
+        "run": "node tools/bm_semantic_extraction_test.js"
+      },
+      {
+        "name": "bm_response_reliability",
+        "run": "node tools/bm_response_reliability_test.js"
+      },
+      {
+        "name": "bm_semantic_oracle_mutations",
+        "run": "node tools/bm_semantic_oracle_test.js"
+      },
+      {
+        "name": "bm_evaluator_integrity",
+        "run": "node tools/bm_evaluator_integrity_gate.js"
+      },
+      {
+        "name": "bm_action_envelope_contract",
+        "run": "node tools/bm_action_envelope_contract_test.js"
+      },
+      {
+        "name": "bm_autonomous_messaging",
+        "run": "node tools/bm_autonomous_messaging_test.js"
+      },
+      {
+        "name": "bm_release_readiness",
+        "run": "node tools/bm_release_readiness_gate_test.js"
+      },
+      {
+        "name": "bm_sol_quality_judge",
+        "run": "node tools/bm_sol_quality_judge_test.js"
+      },
+      {
+        "name": "bm_semantic_store",
+        "run": "node tools/bm_semantic_store_test.js"
+      },
+      {
+        "name": "bm_channel_contract",
+        "run": "node tools/bm_channel_contract_test.js"
+      },
+      {
+        "name": "onboarding_access",
+        "run": "node tools/onboarding_access_test.js"
+      },
+      {
+        "name": "bm_global_context",
+        "run": "node tools/bm_global_context_test.js"
+      },
+      {
+        "name": "bm_sms_pending_action",
+        "run": "node tools/bm_sms_pending_action_test.js"
+      },
+      {
+        "name": "bm_thursday_reliability",
+        "run": "node tools/bm_thursday_reliability_test.js"
+      },
+      {
+        "name": "release_gate_quick",
+        "run": "node tools/bai_release_gate.js --quick",
+        "timeout_ms": 180000
+      }
     ]
   },
   "memory_updates": [
