@@ -22,3 +22,19 @@ and retained links/permissions. Native sleep tests cover private TestFlight, pub
 configuration, public/missing receipt and persisted source account isolation.
 CI macOS is required for Swift compilation, simulator UI and screenshot review.
 No signing, distribution or new TestFlight build is included in this change.
+## Completed validation
+
+Runtime source: e3082fa (96b48eb plus legacy Settings routing correction).
+Local harness: 78/78 with baseline and --enforce-scope, including --diff-base 9f9c70b;
+run ph_1791469444819_e94ec2cf.
+Native Swift tests, Simulator build and 14 UI tests: PASS, CI 37792063971.
+BM Harness Gate: all three jobs PASS, CI 37792202704.
+Visual inspection: Control idle/active on Pro, compact SE and largest Dynamic Type.
+Original gradient, typography, colors, separators and action spacing are retained;
+compact and large-text screens scroll to the remaining settings as before.
+UI test attachments include the three subgroup pages and root.
+Evidence: tmp/control-visual/phone-product-control.png and sibling captures;
+GitHub artifact ios-conversation-visuals on CI 37792063971.
+
+No archive, signing, TestFlight upload or physical blocking validation was performed.
+The existing installed TestFlight build remains unchanged until a new distribution.
