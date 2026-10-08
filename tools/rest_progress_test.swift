@@ -58,4 +58,26 @@ let session = BlankSession(profileId: UUID(), strategy: .manual, startedAt: star
 check(snap.protectedMinutes(night: nights[0], sessions: [session, session], morning: false) == 50, "Protection overlaps/pauses double counted")
 check(snap.association(sessions: [session], historyStart: nil) == nil, "Unknown protection history treated as unprotected")
 check(snap.association(sessions: [session], historyStart: now) == nil, "Pre-account sleep included in comparison")
+var cohortNights: [RestNight] = [], cohortRatings: [RestCheckIn] = [], cohortSessions: [BlankSession] = []
+for offset in 0..<10 {
+    let wake = calendar.date(byAdding: .day, value: -offset, to: end)!
+    let onset = wake.addingTimeInterval(-8 * 3600)
+    let day = calendar.startOfDay(for: wake)
+    cohortNights.append(RestNight(date: day, start: onset, end: wake,
+        asleep: [RestInterval(start: onset, end: wake)], awakeMinutes: nil, stageMinutes: [:],
+        inBedMinutes: nil, source: "measured", manual: false))
+    cohortRatings.append(RestCheckIn(day: RestCheckInRepository.dayKey(day, calendar: calendar),
+        recordedAt: wake.addingTimeInterval(600), score: offset < 5 ? 4 : 2))
+    if offset < 5 {
+        cohortSessions.append(BlankSession(profileId: UUID(), strategy: .manual,
+            startedAt: onset.addingTimeInterval(-45 * 60), endedAt: onset))
+    }
+}
+let cohort = RestProgressSnapshot.make(nights: cohortNights, checkIns: cohortRatings, now: now, calendar: calendar)
+let link = cohort.association(sessions: cohortSessions, historyStart: date("2026-09-01T00:00:00Z"))
+check(link?.protected == 5 && link?.other == 5 && link?.delta == 2, "Observed association cohorts or check-in delta incorrect")
+let earlyRatings = cohortRatings.map { RestCheckIn(day: $0.day, recordedAt: $0.recordedAt.addingTimeInterval(-9 * 3600), score: $0.score) }
+check(RestProgressSnapshot.make(nights: cohortNights, checkIns: earlyRatings, now: now, calendar: calendar)
+    .association(sessions: cohortSessions, historyStart: date("2026-09-01T00:00:00Z")) == nil,
+    "Check-in before waking included as morning outcome")
 print("Rest Progress: source reconciliation, DST, unknown data, check-in isolation/deletion, baseline and protection passed")

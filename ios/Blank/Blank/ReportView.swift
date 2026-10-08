@@ -50,8 +50,8 @@ struct ReportView: View {
             }
         }
         .background {
-            if usesMainBackground { Color.clear }
-            else { MinimalSectionBackground() }
+            (sessionStore.isBlankActive ? BlankColors.newLookDarkBackground : BlankColors.minimalBackground)
+                .ignoresSafeArea()
         }
         .foregroundStyle(BlankColors.cardInk)
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)

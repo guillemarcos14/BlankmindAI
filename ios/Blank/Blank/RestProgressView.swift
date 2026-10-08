@@ -319,7 +319,7 @@ struct RestProgressContent: View {
                                 } else { metricRow(item) }
                                 if let last = item.points.last {
                                     caption("Latest: \(number(last.value, unit: item.unit)) · \(last.date.formatted(date: .abbreviated, time: .omitted))")
-                                    caption("Source: " + last.sources.joined(separator: ", "))
+                                    caption("Source: " + (last.sources.isEmpty ? "Apple Health" : last.sources.joined(separator: ", ")))
                                 }
                                 caption(item.note)
                                 if !item.entries.isEmpty {
