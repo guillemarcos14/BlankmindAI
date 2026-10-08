@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "authored_before_run": true,
+  "independent_human_annotation": false,
+  "cases": [
+    {
+      "id": "retrieval-01",
+      "route": "sleep_yesterday",
+      "text": "¿Cuánto dormí ayer según mis registros?",
+      "language": "es",
+      "profile": "standard"
+    },
+    {
+      "id": "retrieval-02",
+      "route": "sleep_yesterday",
+      "text": "What sleep duration did I record yesterday?",
+      "language": "en",
+      "profile": "standard"
+    },
+    {
+      "id": "retrieval-03",
+      "route": "sleep_yesterday",
+      "text": "¿Cuántas horas de sueño tengo registradas ayer?",
+      "language": "es",
+      "profile": "missing"
+    },
+    {
+      "id": "retrieval-04",
+      "route": "sleep_yesterday",
+      "text": "How many hours of sleep are recorded for me yesterday?",
+      "language": "en",
+      "profile": "missing"
+    },
+    {
+      "id": "retrieval-05",
+      "route": "sleep_yesterday",
+      "text": "¿Qué duración de sueño aparece en mis registros de ayer?",
+      "language": "es",
+      "profile": "forgotten"
+    },
+    {
+      "id": "retrieval-06",
+      "route": "sleep_yesterday",
+      "text": "What duration appears in my saved sleep measurements for yesterday?",
+      "language": "en",
+      "profile": "forgotten"
+    },
+    {
+      "id": "retrieval-07",
+      "route": "sleep_yesterday",
+      "text": "¿Cuántos minutos de sueño se midieron ayer?",
+      "language": "es",
+      "profile": "standard"
+    },
+    {
+      "id": "retrieval-08",
+      "route": "sleep_yesterday",
+      "text": "How many measured sleep minutes do I have for yesterday?",
+      "language": "en",
+      "profile": "standard"
+    },
+    {
+      "id": "retrieval-09",
+      "route": "sleep_week",
+      "text": "¿Cuál es el promedio de las duraciones de sueño registradas esta semana?",
+      "language": "es",
+      "profile": "standard"
+    },
+    {
+      "id": "retrieval-10",
+      "route": "sleep_week",
+      "text": "What is my average recorded sleep duration this calendar week?",
+      "language": "en",
+      "profile": "standard"
+    },
+    {
+      "id": "retrieval-11",
+      "route": "sleep_week",
+      "text": "¿Cuántas horas dormí de media según las mediciones de esta semana?",
+      "language": "es",
+      "profile": "missing"
+    },
+    {
+      "id": "retrieval-12",
+      "route": "sleep_week",
+      "text": "What is the mean of my sleep duration measurements this week?",
+      "language": "en",
+      "profile": "missing"
+    },
+    {
+      "id": "retrieval-13",
+      "route": "protection_week",
+      "text": "¿Cuántos minutos de protección tengo registrados esta semana?",
+      "language": "es",
+      "profile": "standard"
+    },
+    {
+      "id": "retrieval-14",
+      "route": "protection_week",
+      "text": "How many recorded protection minutes do I have this week?",
+      "language": "en",
+      "profile": "standard"
+    },
+    {
+      "id": "retrieval-15",
+      "route": "protection_week",
+      "text": "¿Cuál es mi total de minutos de protección registrados esta semana?",
+      "language": "es",
+      "profile": "empty"
+    },
+    {
+      "id": "retrieval-16",
+      "route": "protection_week",
+      "text": "What is my total recorded protection time this calendar week?",
+      "language": "en",
+      "profile": "empty"
+    },
+    {
+      "id": "retrieval-17",
+      "route": "protection_yesterday",
+      "text": "¿Cuántos minutos de protección se registraron ayer?",
+      "language": "es",
+      "profile": "standard"
+    },
+    {
+      "id": "retrieval-18",
+      "route": "protection_yesterday",
+      "text": "How many protection minutes were recorded yesterday?",
+      "language": "en",
+      "profile": "standard"
+    },
+    {
+      "id": "retrieval-19",
+      "route": "protection_yesterday",
+      "text": "¿Qué total de minutos de protección consta ayer?",
+      "language": "es",
+      "profile": "empty"
+    },
+    {
+      "id": "retrieval-20",
+      "route": "protection_yesterday",
+      "text": "What total recorded protection minutes do I have for yesterday?",
+      "language": "en",
+      "profile": "empty"
+    }
+  ]
+}
