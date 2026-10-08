@@ -4170,6 +4170,11 @@ private struct AccountSettingsSheet: View {
             guard (200..<300).contains(response.statusCode) else {
                 throw AppAccountSignInError.message("Could not delete your account. Try again or contact support.")
             }
+            RestCheckInRepository.delete(owner: AssistantAppSession.userID, defaults: BlankSharedState.defaults)
+            if let owner = AssistantAppSession.userID {
+                BlankSharedState.defaults.removeObject(forKey: "blankRestHistoryStart." + owner)
+            }
+            RestHealthContext.shared.clear()
             AssistantAppSession.clear()
             isVerifyingDeletion = false
             BlankSharedState.defaults.removeObject(forKey: "blankAssistantConnectCode")

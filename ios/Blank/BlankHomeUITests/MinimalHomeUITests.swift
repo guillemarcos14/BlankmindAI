@@ -1,6 +1,25 @@
 import XCTest
 
 final class MinimalHomeUITests: XCTestCase {
+    func testProgressShowsRestContextAndPreservesNavigation() {
+        let app = launch("product-shell-progress")
+        XCTAssertTrue(app.staticTexts["Progress"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["You feel more rested"].exists)
+        XCTAssertTrue(app.buttons["progress-metric"].exists)
+        XCTAssertFalse(app.staticTexts["risk signal"].exists)
+        app.buttons["progress-metric"].tap()
+        app.buttons["Sleep duration"].tap()
+        XCTAssertTrue(app.staticTexts["main sleep episode · hours"].exists)
+        app.swipeUp()
+        app.swipeUp()
+        let context = app.buttons["progress-all-context"]
+        XCTAssertTrue(context.waitForExistence(timeout: 5))
+        context.tap()
+        XCTAssertTrue(app.staticTexts["All health context"].waitForExistence(timeout: 5))
+        app.buttons["Done"].tap()
+        XCTAssertTrue(app.buttons["home-tab-chat"].exists)
+    }
+
     func testSleepSourceKeepsProductionScreensAndUnmetAccountGate() {
         continueAfterFailure = false
         let app = XCUIApplication()
