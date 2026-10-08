@@ -132,7 +132,8 @@ final class RestHealthContext: ObservableObject {
     init() {
         owner = AssistantAppSession.userID
         observer = NotificationCenter.default.addObserver(forName: AssistantAppSession.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.clear()
+            guard let self, self.owner != AssistantAppSession.userID else { return }
+            self.clear()
         }
     }
     deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }

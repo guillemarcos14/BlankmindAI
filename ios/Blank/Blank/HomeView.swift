@@ -4157,6 +4157,7 @@ private struct AccountSettingsSheet: View {
     @MainActor
     private func deleteAccount(authorizationCode: String) async {
         guard !isDeleting else { return }
+        let deletingOwner = AssistantAppSession.userID
         isDeleting = true
         errorMessage = nil
         defer { isDeleting = false }
@@ -4170,10 +4171,11 @@ private struct AccountSettingsSheet: View {
             guard (200..<300).contains(response.statusCode) else {
                 throw AppAccountSignInError.message("Could not delete your account. Try again or contact support.")
             }
-            RestCheckInRepository.delete(owner: AssistantAppSession.userID, defaults: BlankSharedState.defaults)
-            if let owner = AssistantAppSession.userID {
+            RestCheckInRepository.delete(owner: deletingOwner, defaults: BlankSharedState.defaults)
+            if let owner = deletingOwner {
                 BlankSharedState.defaults.removeObject(forKey: "blankRestHistoryStart." + owner)
             }
+            guard deletingOwner == AssistantAppSession.userID else { return }
             RestHealthContext.shared.clear()
             AssistantAppSession.clear()
             isVerifyingDeletion = false

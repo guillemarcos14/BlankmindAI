@@ -254,7 +254,8 @@ struct RestProgressContent: View {
         let reference = RestProgressSnapshot.mean(baseline.map(\.value))
         let detail: String
         if current.count >= 3, baseline.count >= 7, let mean, let reference {
-            detail = String(format: "%+.1f %@ · %d vs %d days", mean - reference, metric.unit, current.count, baseline.count)
+            let change = metric.unit == "%" ? (mean - reference) * 100 : mean - reference
+            detail = String(format: "%+.1f %@ · %d vs %d days", change, metric.unit, current.count, baseline.count)
         } else { detail = "\(current.count) days · building reference" }
         return dataRow(metric.title, value: mean.map { number($0, unit: metric.unit) } ?? "No recent records", detail: detail)
     }
