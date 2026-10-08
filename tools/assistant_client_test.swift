@@ -563,6 +563,18 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     }
     try await client.voice(turnId: turn, requestId: id, onCue: { _ in }) { audio.append($0) }
     check(audio == Data([0,0,255,127,0,128]), "PCM transport changed samples")
+    let cueFrame = "{\"type\":\"cue\",\"turn_id\":\"\(turn)\",\"start\":0.25,\"end\":5}\n"
+    var cues: [AssistantVoiceCue] = []
+    TransportStub.respond = { request in
+        let payload = try! JSONSerialization.jsonObject(with: requestBody(request)) as! [String: Any]
+        check(payload["synchronized"] as? Bool == true, "Synchronized playback must request word times")
+        return .init(body: cueFrame + frames, contentType: "application/x-ndjson", headers: headers)
+    }
+    try await client.voice(turnId: turn, requestId: id, onCue: { cues.append($0) }) { _ in }
+    check(cues.count == 1 && cues[0].start == 0.25 && cues[0].end == 5, "Voice lost canonical word timings")
+    TransportStub.respond = { _ in .init(body: frames.replacingOccurrences(of: "{\"type\":\"end\"", with: cueFrame + "{\"type\":\"end\""), contentType: "application/x-ndjson", headers: headers) }
+    do { try await client.voice(turnId: turn, requestId: id, onCue: { _ in }) { _ in }; fatalError("Late cue accepted") }
+    catch AssistantAppError.invalidResponse {}
     for broken in [frames.components(separatedBy: "\n").first! + "\n", frames.replacingOccurrences(of: turn, with: "wrong-turn"), "{\"type\":\"audio\",\"turn_id\":\"\(turn)\",\"pcm\":\"AQ==\"}\n"] {
         TransportStub.respond = { _ in .init(body: broken, contentType: "application/x-ndjson", headers: headers) }
         do { try await client.voice(turnId: turn, requestId: id, onCue: { _ in }) { _ in }; fatalError("Invalid voice accepted") }
