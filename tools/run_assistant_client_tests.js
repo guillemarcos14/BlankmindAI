@@ -80,12 +80,13 @@ ${applyMethod}
 }
 `;
 const hapticsFixture = `
+struct AssistantVoiceCue { let start: Double; let end: Int }
 @MainActor final class VoiceFixture {
     var isBusy = false
     var played: [String] = []
     func stop() { isBusy = false }
     func reset() { stop() }
-    func play(turnID: String, owner: String) { played.append(turnID); isBusy = true }
+    func play(turnID: String, owner: String, text: String? = nil) { played.append(turnID); isBusy = true }
 }
 @MainActor final class WritingHapticsFixture {
     var updates: [String] = []

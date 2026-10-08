@@ -3,6 +3,7 @@
 const { supabaseFetch } = require("./_membership");
 const assistant = require("./assistant-app");
 const { plainAssistantText } = require("./_assistant_reply_text");
+const { timingForAudio } = require("./bm-voice-alignment");
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_AUDIO_BYTES = 12000000;
 const headers = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
@@ -20,7 +21,8 @@ async function voice(request, deps = {}) {
     body = JSON.parse(raw);
   } catch (_) { return failure(400, "invalid_json"); }
   if (!body || Array.isArray(body) || typeof body !== "object"
-      || Object.keys(body).some(key => !["turn_id", "request_id", "app_install_id"].includes(key))
+      || Object.keys(body).some(key => !["turn_id", "request_id", "app_install_id", "synchronized"].includes(key))
+      || (body.synchronized !== undefined && typeof body.synchronized !== "boolean")
       || !UUID.test(body.turn_id || "") || !UUID.test(body.request_id || "")) {
     return failure(400, "invalid_voice_request");
   }
@@ -80,6 +82,51 @@ async function voice(request, deps = {}) {
     }
     const reader = upstream.body.getReader();
     const encoder = new TextEncoder();
+    if (body.synchronized === true) {
+      // The provider supplies PCM without word times. Align the complete audio
+      // before playback; no guessed typing speed and no uncommitted drafts.
+      const chunks = [];
+      let length = 0;
+      try {
+        while (true) {
+          const next = await reader.read();
+          if (next.done) break;
+          length += next.value.length;
+          if (length > MAX_AUDIO_BYTES) throw new Error("audio_limit");
+          chunks.push(Buffer.from(next.value));
+        }
+        if (!length || length % 2) throw new Error("invalid_audio");
+        const pcm = Buffer.concat(chunks);
+        const cues = await timingForAudio(pcm, text, deps.fetch || fetch, abort.signal);
+        // Recheck deletion/ownership after the additional provider request.
+        const final = await readTurn(auth.user.id, body.turn_id);
+        if (abort.signal.aborted || !final || final.status !== "completed"
+            || final.assistant_text !== row.assistant_text) throw new Error("voice_text_unavailable");
+        let cueIndex = 0, offset = 0;
+        const stream = new ReadableStream({
+          pull(controller) {
+            if (abort.signal.aborted) { controller.error(new Error("cancelled")); cleanup(); return; }
+            const base = { turn_id: body.turn_id };
+            if (cueIndex < cues.length) {
+              controller.enqueue(encoder.encode(JSON.stringify({ ...base, type: "cue", ...cues[cueIndex++] }) + "\n"));
+            } else if (offset < pcm.length) {
+              const chunk = pcm.subarray(offset, offset + 8192); offset += chunk.length;
+              firstAudio ??= Math.round(performance.now() - started); audioBytes += chunk.length;
+              controller.enqueue(encoder.encode(JSON.stringify({ ...base, type: "audio", pcm: chunk.toString("base64") }) + "\n"));
+            } else {
+              controller.enqueue(encoder.encode(JSON.stringify({ ...base, type: "end" }) + "\n"));
+              controller.close(); cleanup();
+            }
+          },
+          cancel() { abort.abort(); cleanup(); },
+        });
+        return new Response(stream, { headers: { ...headers,
+          "Content-Type": "application/x-ndjson; charset=utf-8", "X-Voice-Format": "pcm-s16le-24000-mono" } });
+      } catch (_) {
+        abort.abort(); await reader.cancel().catch(() => {}); cleanup();
+        return failure(503, "voice_unavailable");
+      }
+    }
     let total = 0;
     let pending = new Uint8Array(0);
     let done = false;

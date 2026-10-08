@@ -408,6 +408,7 @@ struct AssistantAppClient {
     }
 
     func voice(turnId: String, requestId: UUID,
+               onCue: @escaping @MainActor (AssistantVoiceCue) throws -> Void,
                onAudio: @escaping @MainActor (Data) async throws -> Void) async throws {
         let raw = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String ?? ""
         guard let base = baseURL ?? (raw.contains("$(") ? nil : URL(string: raw)),
@@ -416,9 +417,10 @@ struct AssistantAppClient {
             throw AssistantAppError.authenticationRequired
         }
         let payload = try JSONSerialization.data(withJSONObject: ["turn_id": turnId,
-            "request_id": requestId.uuidString.lowercased(), "app_install_id": BlankSharedState.appInstallId])
+            "request_id": requestId.uuidString.lowercased(), "app_install_id": BlankSharedState.appInstallId,
+            "synchronized": true])
         do {
-            try await readVoice(base: base, payload: payload, token: access, userID: userID, turnId: turnId, onAudio: onAudio)
+            try await readVoice(base: base, payload: payload, token: access, userID: userID, turnId: turnId, onCue: onCue, onAudio: onAudio)
         } catch AssistantAppError.authenticationRequired {
             guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
             let token = try await sessionRefresh.accessToken(rejected: access) {
@@ -426,11 +428,12 @@ struct AssistantAppClient {
             }
             try Task.checkCancellation()
             guard userID == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
-            try await readVoice(base: base, payload: payload, token: token, userID: userID, turnId: turnId, onAudio: onAudio)
+            try await readVoice(base: base, payload: payload, token: token, userID: userID, turnId: turnId, onCue: onCue, onAudio: onAudio)
         }
     }
 
     private func readVoice(base: URL, payload: Data, token: String, userID: String, turnId: String,
+                           onCue: @escaping @MainActor (AssistantVoiceCue) throws -> Void,
                            onAudio: @escaping @MainActor (Data) async throws -> Void) async throws {
         let started = ProcessInfo.processInfo.systemUptime
         var firstAudio: Int?
@@ -468,6 +471,12 @@ struct AssistantAppClient {
                       let type = frame["type"] as? String else { throw AssistantAppError.invalidResponse }
                 if type == "error" { throw AssistantAppError.server(status: 503, code: "voice_unavailable") }
                 guard frame["turn_id"] as? String == turnId else { throw AssistantAppError.invalidResponse }
+                if type == "cue" {
+                    guard total == 0, let start = frame["start"] as? Double,
+                          let end = frame["end"] as? Int else { throw AssistantAppError.invalidResponse }
+                    try await onCue(AssistantVoiceCue(start: start, end: end))
+                    continue
+                }
                 if type == "end" {
                     guard total > 0 else { throw AssistantAppError.invalidResponse }
                     completed = true
@@ -959,12 +968,12 @@ struct AssistantAppView: View {
                                 .accessibilityAddTraits(.isHeader)
                         }
                         if let latest {
-                            Text(AssistantReplyText.plain(latest.assistantText))
+                            Text(displayedReply(latest))
                                 .font(.blankInter(size: 20))
                                 .lineSpacing(4)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
-                                .accessibilityLabel("Blankmind: \(latest.assistantText)")
+                                .accessibilityLabel("Blankmind: \(displayedReply(latest))")
                         } else if isSending && !streamedText.isEmpty {
                             Text(AssistantReplyText.plain(streamedText))
                                 .font(.blankInter(size: 20))
@@ -1003,7 +1012,6 @@ struct AssistantAppView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 8) {
                     status
-                    voiceControls
                     composerBar
                 }.padding(.bottom, 8).background(background)
             }
@@ -1194,7 +1202,7 @@ struct AssistantAppView: View {
                     // Retain the web's actual material, with enough shade for readable ivory text.
                     Color.black.opacity(0.28)
                     HomeReplyScrollView(
-                        revision: latest?.assistantText ?? streamedText,
+                        revision: latest.map(displayedReply) ?? streamedText,
                         identity: owner + (composer.pending?.id ?? latest?.id ?? "greeting"),
                         viewportHeight: viewportHeight
                     ) {
@@ -1205,9 +1213,8 @@ struct AssistantAppView: View {
                                 AssistantAudioWaveform(audio: speech)
                                     .frame(maxWidth: 240, minHeight: 50)
                             } else if let latest {
-                                homeResponse(latest.assistantText)
-                                    .accessibilityLabel("Blankmind: \(latest.assistantText)")
-                                voiceControls
+                                homeResponse(displayedReply(latest))
+                                    .accessibilityLabel("Blankmind: \(displayedReply(latest))")
                             } else if isSending && !streamedText.isEmpty {
                                 homeResponse(streamedText)
                             } else if isSending || (composer.pending != nil && error == nil) {
@@ -1392,44 +1399,9 @@ struct AssistantAppView: View {
         .accessibilityElement(children: .contain)
     }
 
-    @ViewBuilder private var voiceControls: some View {
-        if let latest, (!simulatorGuest || preview), !speech.isRecording, !speech.isStarting {
-            VStack(spacing: 2) {
-                HStack(spacing: 12) {
-                    Button {
-                        if voice.isBusy { voice.stop() }
-                        else {
-                            writingHaptics.stop()
-                            voice.play(turnID: latest.id, owner: owner)
-                        }
-                    } label: {
-                        Label(voice.isBusy ? (voice.isPlaying ? "Stop voice" : "Cancel voice") : "Listen",
-                              systemImage: voice.isBusy ? "stop.fill" : "speaker.wave.2")
-                            .frame(minHeight: 44)
-                    }
-                    .accessibilityIdentifier("reply-voice")
-                    .disabled((waiting && !voice.isBusy) || requiresVerification || preview)
-                    Button {
-                        voiceRepliesEnabled.toggle()
-                        if !voiceRepliesEnabled { voice.stop() }
-                    } label: {
-                        Image(systemName: voiceRepliesEnabled ? "speaker.wave.2.fill" : "speaker.slash")
-                            .frame(width: 44, height: 44)
-                    }
-                    .accessibilityLabel(voiceRepliesEnabled ? "Mute spoken replies" : "Enable spoken replies")
-                    .accessibilityIdentifier("voice-replies-toggle")
-                }
-                .font(.blankInter(size: 14))
-                Text(voice.isBusy && !voice.isPlaying ? "Preparing AI voice…" : "AI-generated voice")
-                    .font(.blankInter(size: 12, relativeTo: .caption))
-                    .foregroundStyle(foreground.opacity(0.65))
-                if let voiceError = voice.error {
-                    Text(voiceError).font(.blankInter(size: 14)).foregroundStyle(foreground.opacity(0.8))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .accessibilityElement(children: .contain)
-        }
+    private func displayedReply(_ turn: AssistantAppTurn) -> String {
+        if voice.isBusy, voice.turnID == turn.id { return voice.visibleText }
+        return AssistantReplyText.plain(turn.assistantText)
     }
 
     private var composerBar: some View {
@@ -1734,6 +1706,8 @@ struct AssistantAppView: View {
                           expectedRevision == self.conversationRevision, self.sendRequestID == requestID,
                           self.composer.pending?.id == pending.id else { return }
                     let visibleText = AssistantReplyText.plain(text)
+                    // Spoken replies reveal committed words from the audio clock.
+                    guard audioText == nil || !self.voiceRepliesEnabled else { return }
                     self.streamedText = visibleText
                     self.writingHaptics.update(text: visibleText,
                         enabled: self.presentationIsVisible && self.scenePhase == .active
@@ -1753,7 +1727,7 @@ struct AssistantAppView: View {
                expectedOwner == owner, owner == AssistantAppSession.userID,
                expectedRevision == conversationRevision, isHomeVisible, scenePhase == .active,
                presentationIsVisible, !speech.isRecording, !speech.isStarting {
-                voice.play(turnID: turn.id, owner: owner)
+                voice.play(turnID: turn.id, owner: owner, text: AssistantReplyText.plain(turn.assistantText))
             }
         } catch {
             guard expectedOwner == owner, expectedRevision == conversationRevision else { return }
