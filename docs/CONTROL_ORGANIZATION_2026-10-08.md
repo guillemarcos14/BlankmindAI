@@ -3,7 +3,7 @@
 Based on voice/text-sync 9f9c70b (QA109 and subsequent native improvements).
 
 Control now has five settings entries: Distractions, Protection, Notifications,
-Data & Permissions, Account. Emergency and the hold action remain unchanged.
+Data & Permissions, Account. Emergency is followed directly by Distractions; the redundant manual hold block is removed.
 Protection contains Schedule and Automatic Protection. Data & Permissions contains
 Conversation History, Health, Screen Time, and the private synthetic sleep switch.
 Account contains Manage Account, Privacy Policy and Terms of Service.
@@ -30,7 +30,7 @@ run ph_1791469444819_e94ec2cf.
 Native Swift tests, Simulator build and 14 UI tests: PASS, CI 37792063971.
 BM Harness Gate: all three jobs PASS, CI 37792202704.
 Visual inspection: Control idle/active on Pro, compact SE and largest Dynamic Type.
-Original gradient, typography, colors, separators and action spacing are retained;
+Original gradient, typography, colors and row separators are retained;
 compact and large-text screens scroll to the remaining settings as before.
 UI test attachments include the three subgroup pages and root.
 Evidence: tmp/control-visual/phone-product-control.png and sibling captures;
@@ -46,3 +46,5 @@ by Distractions with the existing 12pt row spacing; there is no spacer or replac
 Blank now entry. Widget and voice remain the existing blocking entry points.
 The private unused hold view and its AnyView plumbing are removed. Emergency,
 row styles, permissions and protection settings are preserved.
+
+Follow-up validated on source29f9da8: harness78/78/scope (ph_1791471570339_11da07a1), native tests/build/targeted Control UI/captures CI37796978325 PASS, BM CI37796983378 all three jobs PASS. Idle/active Control screenshots reviewed: Emergency and Distractions consecutive with the same row spacing, no hold block. Evidence tmp/control-no-hold-visual/phone-product-control.png and active sibling. CI adds a control test filter to confirm this small revision after the prior full14-test pass. No TestFlight upload.
