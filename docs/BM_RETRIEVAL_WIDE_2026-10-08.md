@@ -147,3 +147,7 @@ Keep both private experiment flags off and retain the synthetic allowlist/normal
 ## Validation closure
 
 Clean evidence/tool source `bff047b`: harness **79/79**, `ph_1791463747482_8edd8915`, baseline `baseline-wide.json`, enforced full commit scope against frozen `3e8362c` (24 paths, zero violations). The earlier dirty-tree release-gate failure is preserved as an intermediate validation, not a runtime regression. [CI37779447701](https://github.com/guillemarcos14/BlankmindAI/actions/runs/37779447701) passes PostgreSQL recovery, runtime/contracts and Android compile/unit tests. This final closure only records documentation; source runtime and measured answers remain frozen. Latest draft-PR checks show any subsequent documentation-head validation separately.
+
+## Human feedback received after closure
+
+Guillem prefers the candidate15/22 (68.2%), reference7/22; pairs17/18 are incomplete. These are preferences, not excellent/acceptable/poor scores or activation approval. [Exact choices and requested style changes](BM_RETRIEVAL_HUMAN_RESULTS_2026-10-08.md). Shared BMB/compact-prose instructions now prepare more natural contextual tone, no double-hyphen/long-dash sentence punctuation and hours+minutes for durations≥60min unless minutes are explicitly requested. This is a post-measurement runtime change: previous source hashes, latency, cost and human answers remain evidence of the frozen source, not measurements of this new prompt. No deployment or paid rerun.
