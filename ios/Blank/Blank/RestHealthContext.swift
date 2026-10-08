@@ -101,6 +101,8 @@ enum RestHealthCatalog {
             .replacingOccurrences(of: "HKClinicalTypeIdentifier", with: "")
             .replacingOccurrences(of: "HKDataType", with: "")
             .replacingOccurrences(of: "HK", with: "")
+            .replacingOccurrences(of: "Identifier", with: "")
+            .replacingOccurrences(of: "Type", with: "")
         return stripped.replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression).lowercased()
     }
     static func family(_ id: String) -> String {
@@ -181,7 +183,8 @@ final class RestHealthContext: ObservableObject {
         for type in types[index..<min(index + 6, types.count)] {
             group.enter()
             var finished = false // Only read/write on main queue, including timeout.
-            let predicate = HKQuery.predicateForSamples(withStart: start, end: now)
+            // Chronic diagnoses and medications may be older than the trend window.
+            let predicate = HKQuery.predicateForSamples(withStart: type is HKClinicalType ? nil : start, end: now)
             let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: 10000,
                 sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { [weak self] _, samples, queryError in
                 DispatchQueue.main.async {
@@ -339,7 +342,8 @@ final class RestHealthContext: ObservableObject {
         }
         return RestHealthMetric(id: type.identifier, title: RestHealthCatalog.name(type.identifier),
             family: RestHealthCatalog.family(type.identifier), unit: unit, points: points,
-            note: "Recorded entries; their presence does not diagnose a condition. Clinical documents and ECG waveforms remain in Apple Health." + (capped ? " Latest 10,000 records only." : ""),
+            note: (type is HKClinicalType ? "Available clinical history, including records older than 35 days. " : "")
+                + "Recorded entries; their presence does not diagnose a condition. Clinical documents and ECG waveforms remain in Apple Health." + (capped ? " Latest 10,000 records only." : ""),
             isCategory: unit == "records", entries: entries)
     }
 }

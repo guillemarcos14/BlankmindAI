@@ -11,7 +11,7 @@ on:
       ui_tests:
         description: UI coverage (targeted confirmation after a full passing run)
         type: choice
-        options: [all, onboarding]
+        options: [all, onboarding, progress]
         default: all
   pull_request:
     paths:
@@ -80,10 +80,18 @@ jobs:
           if [ "${{ inputs.ui_tests || 'all' }}" = onboarding ]; then
             suite=BlankHomeUITests/MinimalHomeUITests/testLargestTextKeepsOnboardingActionsReachable
           fi
+          if [ "${{ inputs.ui_tests || 'all' }}" = progress ]; then
+            suite=BlankHomeUITests/MinimalHomeUITests
+          fi
           xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank \
             -configuration Debug -destination "platform=iOS Simulator,id=$device" \
             -derivedDataPath tmp/ios-build -resultBundlePath tmp/home-ui-tests.xcresult \
             -only-testing:"$suite" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-ui-tests
+          path: tmp/home-ui-tests.xcresult/
       - name: Capture conversation states on iPhone simulator
         if: ${{ !cancelled() && steps.simulator_build.outcome == 'success' }}
         timeout-minutes: 20
@@ -93,8 +101,3 @@ jobs:
         with:
           name: ios-conversation-visuals
           path: tmp/ios-visual/
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: home-ui-tests
-          path: tmp/home-ui-tests.xcresult/

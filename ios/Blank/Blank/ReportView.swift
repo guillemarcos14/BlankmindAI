@@ -4,6 +4,7 @@ struct ReportView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
     @StateObject private var healthKitStore = HealthKitStore.shared
+    @State private var showContext = false
     var usesMainBackground = false
     var onClose: (() -> Void)? = nil
 
@@ -15,7 +16,7 @@ struct ReportView: View {
                 if let onClose {
                     SectionHeader(title: "progress",
                         subtitle: "Understand how your rest changes.\nYour sleep, body and habits in context.",
-                        action: onClose, titleColor: headerPrimary, subtitleColor: headerSecondary)
+                        action: { if showContext { showContext = false } else { onClose() } }, titleColor: headerPrimary, subtitleColor: headerSecondary)
                         .padding(.bottom, 12)
                 } else {
                     TopSheetHeader(title: "progress",
@@ -24,7 +25,7 @@ struct ReportView: View {
                         .padding(.top, 16).padding(.bottom, 24)
                 }
             }
-            RestProgressContent()
+            RestProgressContent(showContext: $showContext)
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -40,13 +41,13 @@ struct ReportView: View {
                             content.padding(.bottom, 34).frame(width: contentWidth, alignment: .top)
                             Spacer(minLength: 0)
                         }.frame(width: viewportWidth, alignment: .center)
-                    }.frame(width: viewportWidth, height: proxy.size.height, alignment: .top)
+                    }.id(showContext).frame(width: viewportWidth, height: proxy.size.height, alignment: .top)
                 }
             } else {
                 List {
                     content.padding(.horizontal, 22).padding(.top, 24).padding(.bottom, 34)
                         .listRowInsets(EdgeInsets()).listRowSeparator(.hidden).listRowBackground(Color.clear)
-                }.listStyle(.plain).scrollContentBackground(.hidden)
+                }.id(showContext).listStyle(.plain).scrollContentBackground(.hidden)
             }
         }
         .background {

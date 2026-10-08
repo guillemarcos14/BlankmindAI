@@ -62,7 +62,7 @@ if [ "${3:-all}" = uniform ] || [ "${3:-all}" = onboarding ] || [ "${3:-all}" = 
   done
   xcrun simctl ui "$device_id" appearance light
 fi
-if [ "${3:-all}" != onboarding ]; then
+if [ "${3:-all}" != onboarding ] && [ "${3:-all}" != progress ]; then
 xcrun simctl ui "$device_id" appearance dark
 xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true
 SIMCTL_CHILD_BLANK_UI_SCENARIO=product-home xcrun simctl launch "$device_id" "$bundle"
@@ -91,7 +91,7 @@ compact=$(xcrun simctl create 'Blank Home Compact' com.apple.CoreSimulator.SimDe
 xcrun simctl boot "$compact"
 xcrun simctl bootstatus "$compact" -b
 xcrun simctl install "$compact" "$app"
-if [ "${3:-all}" != onboarding ]; then
+if [ "${3:-all}" != onboarding ] && [ "${3:-all}" != progress ]; then
 SIMCTL_CHILD_BLANK_UI_SCENARIO=product-home-response xcrun simctl launch "$compact" "$bundle" -AppleLanguages '(en)' -AppleLocale en_US
 sleep 8
 xcrun simctl io "$compact" screenshot "$output/phone-compact-home.png"

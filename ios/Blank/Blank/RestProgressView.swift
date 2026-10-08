@@ -8,7 +8,8 @@ struct RestProgressContent: View {
     @ObservedObject private var sleep = HealthKitStore.shared
     @State private var checkIns: [RestCheckIn] = []
     @State private var metric: RestProgressMetric = .perceived
-    @State private var showContext = false
+    @Binding var showContext: Bool
+    @State private var checkInExpanded = false
     @State private var checkInError: String?
     private let defaults = BlankSharedState.defaults
     private var ink: Color { BlankColors.cardInk }
@@ -56,6 +57,20 @@ struct RestProgressContent: View {
     }
 
     var body: some View {
+        Group {
+            if showContext { contextContent }
+            else { summaryContent }
+        }
+        .foregroundStyle(ink)
+        .onAppear { reload(); health.refresh(); sleep.refresh(days: 35) }
+        .onChange(of: sleep.state) { state in
+            if state == .connected { health.refresh(force: true) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
+            reload(); health.refresh()
+        }
+    }
+    private var summaryContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 caption("last 7 days")
@@ -87,15 +102,6 @@ struct RestProgressContent: View {
                     .font(.blankInter(size: 16, relativeTo: .body)).frame(minHeight: 44)
             }
         }
-        .foregroundStyle(ink)
-        .onAppear { reload(); health.refresh(); sleep.refresh(days: 35) }
-        .onChange(of: sleep.state) { state in
-            if state == .connected { health.refresh(force: true) }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
-            reload(); health.refresh()
-        }
-        .sheet(isPresented: $showContext) { contextSheet }
     }
     private func reload() {
         checkIns = RestCheckInRepository.load(owner: account, defaults: defaults)
@@ -133,6 +139,7 @@ struct RestProgressContent: View {
                 caption("A personal comparison needs 3 check-ins this week and 7 in the previous 4 weeks.")
             }
             Divider().overlay(ink.opacity(0.12))
+            DisclosureGroup(isExpanded: $checkInExpanded) {
             Text("How rested do you feel after waking?").font(.blankInter(size: 17, relativeTo: .body))
             let layout = textSize.isAccessibilitySize
                 ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
@@ -143,8 +150,13 @@ struct RestProgressContent: View {
                 }
             }
             HStack { caption("1 · not rested"); Spacer(); caption("5 · very rested") }
-            if let score = todayRating { caption("Today: \(score)/5 · tap to update") }
-            else if account == nil { caption("Sign in to save your morning check-in.") }
+            } label: {
+                HStack {
+                    Text(todayRating.map { "Morning check-in · \($0)/5" } ?? "Add morning check-in")
+                    Spacer()
+                }.font(.blankInter(size: 16, relativeTo: .body)).frame(minHeight: 44)
+            }.tint(ink).accessibilityIdentifier("progress-check-in")
+            if account == nil { caption("Sign in to save your morning check-in.") }
             if let checkInError { caption(checkInError) }
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).reportFlatCard()
@@ -296,12 +308,10 @@ struct RestProgressContent: View {
         let count = max(0, Int(minutes.rounded()))
         return count < 60 ? "\(count) min" : "\(count / 60) h \(count % 60) min"
     }
-    private var contextSheet: some View {
-        NavigationStack {
-            ScrollView {
+    private var contextContent: some View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("All health context").font(.blankInter(size: 26, relativeTo: .title3))
-                    caption("Last 35 days · stays on this device. No additional data is sent to AI from Progress.")
+                    caption("Last 35 days + available clinical history · stays on this device. No additional data is sent to AI from Progress.")
                     Button("Review Apple Health access") {
                         HealthKitStore.shared.requestAccess()
                     }.font(.blankInter(size: 16, relativeTo: .body)).frame(minHeight: 44)
@@ -341,11 +351,10 @@ struct RestProgressContent: View {
                     }
                     if contextMetrics.isEmpty { caption("No additional records are available yet. Review Health access and refresh.") }
                     caption("Availability depends on your device, region, records and permissions. Clinical documents and ECG waveforms can be reviewed in Apple Health.")
-                }.padding(24)
-            }
-            .background(BlankColors.canvas).foregroundStyle(ink)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showContext = false }.tint(ink) } }
-        }.preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
+                    Button("Back to Progress") { showContext = false }
+                        .font(.blankInter(size: 16, relativeTo: .body)).frame(minHeight: 44)
+                        .accessibilityIdentifier("progress-context-back")
+                }.foregroundStyle(ink)
     }
     private var sleepDetails: some View {
         VStack(alignment: .leading, spacing: 14) {

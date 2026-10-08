@@ -441,7 +441,7 @@ final class HealthKitStore: ObservableObject {
                 RestSleepObservation(start: $0.startDate, end: $0.endDate, value: $0.value,
                     source: $0.sourceRevision.source.bundleIdentifier,
                     manual: $0.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
-            }, now: end, calendar: calendar)
+            }, now: min(end, Date()), calendar: calendar)
             let summaries = Dictionary(uniqueKeysWithValues: nights.map { night in
                 (night.date, HealthSleepSummary(
                     inBedMinutes: night.inBedMinutes.map { Int($0.rounded()) },
