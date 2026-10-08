@@ -1,6 +1,27 @@
 import XCTest
 
 final class MinimalHomeUITests: XCTestCase {
+    func testProgressShowsRestContextAndPreservesNavigation() {
+        let app = launch("product-shell-progress")
+        XCTAssertTrue(app.staticTexts["Progress"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["You feel more rested"].exists)
+        XCTAssertTrue(app.buttons["progress-metric"].exists)
+        XCTAssertFalse(app.staticTexts["risk signal"].exists)
+        app.buttons["progress-metric"].tap()
+        app.buttons["Sleep duration"].tap()
+        XCTAssertTrue(app.staticTexts["main sleep episode · hours"].exists)
+        app.swipeUp()
+        app.swipeUp()
+        let context = app.buttons["progress-all-context"]
+        XCTAssertTrue(context.waitForExistence(timeout: 5))
+        context.tap()
+        XCTAssertTrue(app.staticTexts["All health context"].waitForExistence(timeout: 5))
+        app.buttons["back"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["You feel more rested"].waitForExistence(timeout: 5))
+        app.buttons["home-tab-chat"].tap()
+        XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
+    }
+
     func testSleepSourceKeepsProductionScreensAndUnmetAccountGate() {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -128,10 +149,10 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertTrue(app.switches["Receive notifications"].waitForExistence(timeout: 5))
         app.buttons["Done"].tap()
         app.buttons["home-tab-progress"].tap()
-        let protect = app.buttons["progress-protect"]
-        XCTAssertTrue(protect.waitForExistence(timeout: 5))
-        XCTAssertGreaterThanOrEqual(protect.frame.width, 44)
-        XCTAssertGreaterThanOrEqual(protect.frame.height, 44)
+        let progressMetric = app.buttons["progress-metric"]
+        XCTAssertTrue(progressMetric.waitForExistence(timeout: 5))
+        XCTAssertGreaterThanOrEqual(progressMetric.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(progressMetric.frame.height, 44)
         app.scrollViews.firstMatch.swipeUp()
         XCTAssertTrue(app.buttons["home-tab-control"].isHittable)
         app.buttons["home-tab-chat"].tap()

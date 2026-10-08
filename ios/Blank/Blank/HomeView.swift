@@ -4157,6 +4157,7 @@ private struct AccountSettingsSheet: View {
     @MainActor
     private func deleteAccount(authorizationCode: String) async {
         guard !isDeleting else { return }
+        let deletingOwner = AssistantAppSession.userID
         isDeleting = true
         errorMessage = nil
         defer { isDeleting = false }
@@ -4170,6 +4171,12 @@ private struct AccountSettingsSheet: View {
             guard (200..<300).contains(response.statusCode) else {
                 throw AppAccountSignInError.message("Could not delete your account. Try again or contact support.")
             }
+            RestCheckInRepository.delete(owner: deletingOwner, defaults: BlankSharedState.defaults)
+            if let owner = deletingOwner {
+                BlankSharedState.defaults.removeObject(forKey: "blankRestHistoryStart." + owner)
+            }
+            guard deletingOwner == AssistantAppSession.userID else { return }
+            RestHealthContext.shared.clear()
             AssistantAppSession.clear()
             isVerifyingDeletion = false
             BlankSharedState.defaults.removeObject(forKey: "blankAssistantConnectCode")
@@ -4312,7 +4319,7 @@ private struct HomePreviewScene: View {
 @MainActor
 struct PostOnboardingPreviewScene: View {
     static var enabled: Bool {
-        ["product-home-first-use-notifications", "product-home-first-use", "product-onboarding-device-empty", "product-onboarding-device-error", "product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-emergency-confirm-active", "product-automatic", "product-automatic-active", "product-automatic-error", "product-notifications", "product-notifications-active", "product-schedule", "product-schedule-active", "product-account", "product-onboarding-account", "product-onboarding-device"]
+        ["product-home-first-use-notifications", "product-home-first-use", "product-onboarding-device-empty", "product-onboarding-device-error", "product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-shell-progress-empty", "product-shell-progress-detail", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-emergency-confirm-active", "product-automatic", "product-automatic-active", "product-automatic-error", "product-notifications", "product-notifications-active", "product-schedule", "product-schedule-active", "product-account", "product-onboarding-account", "product-onboarding-device"]
             .contains(AssistantAppPreview.scenario)
     }
 

@@ -20,6 +20,9 @@
 
 
 /* Begin PBXBuildFile section */
+		BC0810080000000000000022 /* RestProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0810080000000000000021; };
+		BC0810080000000000000012 /* RestHealthContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0810080000000000000011; };
+		BC0810080000000000000002 /* RestProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0810080000000000000001; };
 		BA10000700000000000000001 /* AssistantVoicePlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000700000000000000002 /* AssistantVoicePlayback.swift */; };
 		8B0710010000000000000001 /* SleepAccessPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0710010000000000000002 /* SleepAccessPolicy.swift */; };
 		BA10000600000000000000001 /* AssistantWritingHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000600000000000000002 /* AssistantWritingHaptics.swift */; };
@@ -112,6 +115,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		BC0810080000000000000021 /* RestProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestProgressView.swift; sourceTree = "<group>"; };
+		BC0810080000000000000011 /* RestHealthContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestHealthContext.swift; sourceTree = "<group>"; };
+		BC0810080000000000000001 /* RestProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestProgress.swift; sourceTree = "<group>"; };
 		BA10000700000000000000002 /* AssistantVoicePlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantVoicePlayback.swift; sourceTree = "<group>"; };
 		8B0710010000000000000002 /* SleepAccessPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepAccessPolicy.swift; sourceTree = "<group>"; };
 		BA10000600000000000000002 /* AssistantWritingHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantWritingHaptics.swift; sourceTree = "<group>"; };
@@ -236,6 +242,9 @@
 				8A00000100000000000000F3 /* AssistantComposerState.swift */,
 				8A000001000000000000001B /* BlankDomainModels.swift */,
 				8A000001000000000000001C /* ReportView.swift */,
+				BC0810080000000000000021 /* RestProgressView.swift */,
+				BC0810080000000000000011 /* RestHealthContext.swift */,
+				BC0810080000000000000001 /* RestProgress.swift */,
 				8A0000010000000000000027 /* StoreKitPurchaseStore.swift */,
 				8A0000010000000000000029 /* HealthKitStore.swift */,
 				8B0710010000000000000002 /* SleepAccessPolicy.swift */,
@@ -541,6 +550,9 @@
 				8A00000100000000000000F2 /* AssistantComposerState.swift in Sources */,
 				8A0000010000000000000009 /* BlankDomainModels.swift in Sources */,
 				8A000001000000000000000A /* ReportView.swift in Sources */,
+				BC0810080000000000000022 /* RestProgressView.swift in Sources */,
+				BC0810080000000000000012 /* RestHealthContext.swift in Sources */,
+				BC0810080000000000000002 /* RestProgress.swift in Sources */,
 				8A0000010000000000000028 /* StoreKitPurchaseStore.swift in Sources */,
 				8A000001000000000000002A /* HealthKitStore.swift in Sources */,
 				8B0710010000000000000001 /* SleepAccessPolicy.swift in Sources */,

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -46,7 +46,9 @@
 	<key>NFCReaderUsageDescription</key>
 	<string>Blankmind may use NFC for legacy tag backup flows when enabled.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Blankmind reads Apple Health data you allow, including sleep, activity, workouts, mindful minutes, heart rate, resting heart rate, HRV, respiratory rate, oxygen saturation, VO2 max and energy, to generate digital wellness insights. It does not provide medical diagnosis.</string>
+	<string>Blankmind reads health data you choose to share, including sleep, physical signals, activity, daylight, nutrition, reproductive health, symptoms and wellbeing, to put your rest and disconnection habits in context. Progress analysis stays on your device. It does not diagnose medical conditions.</string>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>Blankmind reads the clinical records you choose to share to show available health context alongside your rest patterns. Clinical documents remain on your device and in Apple Health; Progress does not send them to AI or diagnose conditions.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Blankmind does not write data to Apple Health.</string>
 	<key>NSFaceIDUsageDescription</key>
