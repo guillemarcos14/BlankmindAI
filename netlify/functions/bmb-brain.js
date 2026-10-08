@@ -79,12 +79,14 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     onDraft(""); // Discard a prior read, repair or restored-offer draft.
     model=options=>require("./bm-response-stream").readModelStream({...options,onDraft});
   }
-  const {body}=await timing.span("model",()=>model({request:{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
+  const request=input.retrieval_contract?require("./bm-retrieval-step").proseRequest(input):{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
     input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
-    text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema}}},timeoutMs:18000,errorPrefix:"bmb"}));
+    text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema}}};
+  const {body}=await timing.span("model",()=>model({request,timeoutMs:18000,errorPrefix:"bmb"}));
   timing.usage(body.usage);
   if(body.status==="incomplete")throw Error("bmb_model_incomplete");
-  return JSON.parse(body.output_text||(body.output||[]).flatMap(o=>o.content||[]).filter(o=>o.type==="output_text").map(o=>o.text).join(""));
+  const result=JSON.parse(body.output_text||(body.output||[]).flatMap(o=>o.content||[]).filter(o=>o.type==="output_text").map(o=>o.text).join(""));
+  return input.retrieval_contract?require("./bm-retrieval-step").expandProse(result,input):result;
 }
 async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run=input=>generate(input,{onDraft}),db=supabaseFetch,memories=null,recover=require("./bmb-proposal").recover}={}) {
   // Policy and followups are independent of the memory cutoff; history is not.

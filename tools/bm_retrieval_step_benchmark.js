@@ -28,23 +28,24 @@ async function seed(spec,{request,user,service,now}){
  const {midnight,dayOffset}=require('../netlify/functions/bm-brain-data');const tz='Europe/Madrid',today=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(now),yesterday=dayOffset(today,-1),iso=t=>new Date(t).toISOString();
  const expected={route:spec.route,scope:'Own recorded data only, not phone usage or time saved',profile:spec.profile};
  if(spec.route.startsWith('sleep')){
-  const days=[dayOffset(today,-3),dayOffset(today,-2),yesterday],values=[420,480,450];
+  const days=[dayOffset(today,-3),dayOffset(today,-2),yesterday],values=spec.sleep_minutes||[420,480,450];
   if(spec.profile!=='missing')await request('/rest/v1/bmb_observations',days.map((day,i)=>({auth_user_id:user,source_key:'fixture:'+day,metric:'sleep_duration',value_number:values[i],unit:'minutes',measured_at:iso(midnight(day,tz)+10*3600000),timezone:tz,source:'native_health',measurement:'measured',evidence:'Synthetic measured sleep duration',created_at:iso(midnight(day,tz)+11*3600000)})));
   if(spec.profile==='forgotten')await request('/rest/v1/bm_brain_memories',[{auth_user_id:user,key:'goal',value:null,source_text:'Forget everything about me.',source_at:iso(midnight(today,tz))}]);
   const weekday=new Date(today+'T12:00:00Z').getUTCDay(),weekDay=dayOffset(today,-((weekday+6)%7));const visible=spec.profile==='standard'?days.map((day,i)=>({day,minutes:values[i]})).filter(x=>spec.route==='sleep_yesterday'?x.day===yesterday:x.day>=weekDay):[];
   expected.minutes=visible.length?visible.reduce((s,x)=>s+x.minutes,0)/visible.length:null;expected.available_records=visible;expected.interpretation=visible.length?'Report measured sleep duration with units; week is mean of available measurements, not all nights.':'No sleep duration available in these eligible observations. Do not invent a duration, claim zero sleep, or use forgotten rows.';
  }else{
   if(spec.profile==='standard'){
-   const base=midnight(yesterday,tz)+14*3600000;
-   await request('/rest/v1/bmb_sessions',[{id:crypto.randomUUID(),auth_user_id:user,started_at:iso(base),ended_at:iso(base+60*60000),observed_at:iso(base+60*60000),entry_mode:'manual',ended_reason:'timer'},{id:crypto.randomUUID(),auth_user_id:user,started_at:iso(base+45*60000),ended_at:iso(base+90*60000),observed_at:iso(base+90*60000),entry_mode:'manual',ended_reason:'timer'},{id:crypto.randomUUID(),auth_user_id:user,started_at:iso(base-14*86400000),ended_at:iso(base-14*86400000+120*60000),observed_at:iso(base-14*86400000+120*60000),entry_mode:'manual',ended_reason:'timer'}]);
+   const base=midnight(yesterday,tz)+14*3600000,scale=(spec.protection_minutes||90)/90;
+   await request('/rest/v1/bmb_sessions',[{id:crypto.randomUUID(),auth_user_id:user,started_at:iso(base),ended_at:iso(base+60*60000*scale),observed_at:iso(base+60*60000*scale),entry_mode:'manual',ended_reason:'timer'},{id:crypto.randomUUID(),auth_user_id:user,started_at:iso(base+45*60000*scale),ended_at:iso(base+90*60000*scale),observed_at:iso(base+90*60000*scale),entry_mode:'manual',ended_reason:'timer'},{id:crypto.randomUUID(),auth_user_id:user,started_at:iso(base-14*86400000),ended_at:iso(base-14*86400000+120*60000),observed_at:iso(base-14*86400000+120*60000),entry_mode:'manual',ended_reason:'timer'}]);
   }
-  expected.minutes=spec.profile==='standard'?90:0;expected.interpretation='Exact union of recorded protection intervals, excluding old sessions outside the requested period. Empty persisted sessions means zero recorded protection minutes. Never claim phone usage, time saved or a current physical block.';
+  expected.minutes=spec.profile==='standard'?(spec.protection_minutes||90):0;expected.interpretation='Exact union of recorded protection intervals, excluding old sessions outside the requested period. Empty persisted sessions means zero recorded protection minutes. Never claim phone usage, time saved or a current physical block.';
  }
  return expected;
 }
 async function main(){
  const args=process.argv.slice(2),get=(k,d)=>args.includes(k)?args[args.indexOf(k)+1]:d;
  if(!args.includes("--run"))throw Error("retrieval_explicit_benchmark_required");
+ const CASES=JSON.parse(fs.readFileSync(get("--cases","tools/datasets/bm_retrieval_step_cases_2026-10-08.json"))).cases;
  const pairs=Number(get("--pairs",20)),fromPair=Number(get("--from-pair",0));if(!Number.isInteger(pairs)||pairs<1||pairs>300||!Number.isInteger(fromPair)||fromPair<0||fromPair+pairs>300)throw Error("decisions_pairs_invalid");
  const c=configuration();if(process.env.SUPABASE_URL!==c.supabase||!process.env.OPENAI_API_KEY)throw Error("decisions_private_providers_required");
  const rateFile=get("--rates",null),rates=rateFile?JSON.parse(fs.readFileSync(rateFile)):null;
@@ -70,11 +71,11 @@ async function main(){
    const r=await originalFetch(c.supabase+route,{method,headers:{"content-type":"application/json",...headers},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(90000)});
    const data=await r.json().catch(()=>null);if(!r.ok)throw Error("decisions_qa_http_"+r.status);return data;
  };
- const sourceHashes=Object.fromEntries(Object.entries(roots).map(([key,root])=>[key,Object.fromEntries(["assistant-app.js","bmb-brain.js","bm-decisions.js","bm-retrieval-step.js","bmb-sources.js"].flatMap(n=>{const f=path.join(root,"netlify/functions",n);return fs.existsSync(f)?[[n,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]]:[]}))]));
- const report={schema_version:1,run_id:runId,provider_real:true,decisions_real:true,database_real:true,netlify_transport_tested:false,physical_device_tested:false,native_actions_executed:0,source_commits:{optimized:"ecaad604d3d7894c937e3c4c7422b7aa59180a1f",decisions:require("node:child_process").execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim()},
+ const sourceHashes=Object.fromEntries(Object.entries(roots).map(([key,root])=>[key,Object.fromEntries(["assistant-app.js","bmb-brain.js","bm-decisions.js","bm-retrieval-step.js","bmb-sources.js","bm-brain-data.js","bm-response-stream.js"].flatMap(n=>{const f=path.join(root,"netlify/functions",n);return fs.existsSync(f)?[[n,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]]:[]}))]));
+ const report={schema_version:1,run_id:runId,provider_real:true,decisions_real:true,database_real:true,netlify_transport_tested:false,physical_device_tested:false,native_actions_executed:0,source_commits:{optimized:require("node:child_process").execFileSync("git",["-C",roots.optimized,"rev-parse","HEAD"],{encoding:"utf8"}).trim(),decisions:require("node:child_process").execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim()},
    order:"paired AB/BA alternation; independent identical fixtures",from_pair:fromPair,pair_count:pairs,sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,complete:false,gates_passed:false};
  const save=()=>fs.writeFileSync(file,JSON.stringify({...report,summary:summarize(records,rates)},null,2));
- let user,connect,token;const fixtureNow=Date.now();report.fixture_clock=new Date(fixtureNow).toISOString();report.case_manifest=require("./datasets/bm_retrieval_step_cases_2026-10-08.json");
+ let user,connect,token;const fixtureNow=Date.now();report.fixture_clock=new Date(fixtureNow).toISOString();report.case_manifest=JSON.parse(fs.readFileSync(get("--cases","tools/datasets/bm_retrieval_step_cases_2026-10-08.json")));
  const context=()=>({context_revision:Date.now()*1000,language:"en",locale:"en",timezone:"Europe/Madrid",has_selected_apps:true,selection_count:2,
    screen_time_authorized:true,is_blank_active:false,protection_target:"selected_distractions",device_execution_ready:true,schedule:{windows:[]},
    brain_snapshot:{schema_version:1,generated_at:new Date().toISOString(),timezone:"Europe/Madrid",sessions:[],history_complete:true,account:{signed_in:true,premium_access:true}}});
@@ -135,7 +136,7 @@ async function main(){
      ["digital_wellness_feature_payloads","anonymous_user_id=eq."+encodeURIComponent("connect:"+connect)],["assistant_semantic_conversations","anonymous_user_id=eq."+memoryIdentity("app",user)],
      ["blankmind_identity_links","auth_user_id=eq."+user]])try{await request(`/rest/v1/${table}?${filter}`,undefined,service,"DELETE");cleanup.push({table,passed:true});}catch(_){cleanup.push({table,passed:false});}
    if(user)try{await request("/auth/v1/admin/users/"+user,undefined,service,"DELETE");cleanup.push({table:"auth.users",passed:true});}catch(_){cleanup.push({table:"auth.users",passed:false});}
-   report.summary=summarize(records,rates);report.gates_passed=false;report.limitations=["20 authored factual retrieval questions, 40 turns, single repetition; independent human review absent","Physical iPhone and deployed Netlify not measured","Unknown billed retries/timeouts prevent an exact total cost when present"];
+   report.summary=summarize(records,rates);report.gates_passed=false;report.limitations=["Authored factual retrieval questions; independent human review absent; repeats are labelled by case ID","Physical iPhone and deployed Netlify not measured","Unknown billed retries/timeouts prevent an exact total cost when present"];
    save();
  }
  console.log(JSON.stringify({report:file,complete:report.complete,summary:report.summary,cleanup,gates_passed:false}));
