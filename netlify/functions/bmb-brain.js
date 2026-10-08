@@ -83,10 +83,13 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     onDraft(""); // Discard a prior read, repair or restored-offer draft.
     model=options=>require("./bm-response-stream").readModelStream({...options,onDraft:text=>onDraft(cleanCitations(input.retrieval_contract?require("./bm-retrieval-step").cleanProse(text):text,{quotedIn:input.current_message,partial:true}))});
   }
+  const availableCitations=[...new Set([...(input.coverage||[]).map(s=>s.source_id),...(input.memories||[]).map(m=>m.id),...(input.sources||[]).flatMap(s=>[s.source_id,...(s.rows||[]).map(r=>r.id)])].filter(id=>typeof id==='string'&&id))];
+  const citationSchema=availableCitations.length?{...schema.properties.cited_sources,items:{type:'string',enum:availableCitations}}:{...schema.properties.cited_sources,maxItems:0};
   const outputSchema=input.mode==="proactive"?schema:{...schema,properties:{...schema.properties,decision:{...schema.properties.decision,enum:schema.properties.decision.enum.filter(value=>value!=="silent")}}};
+  const boundedSchema={...outputSchema,properties:{...outputSchema.properties,cited_sources:citationSchema}};
   const request=input.retrieval_contract?require("./bm-retrieval-step").proseRequest(input):{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
     input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
-    text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema:outputSchema}}};
+    text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema:boundedSchema}}};
   const {body}=await timing.span("model",()=>model({request,timeoutMs:18000,errorPrefix:"bmb"}));
   timing.usage(body.usage);
   if(body.status==="incomplete")throw Error("bmb_model_incomplete");
@@ -152,18 +155,20 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   }
   if(result?.phase==="final")result.response_text=cleanCitations(result.response_text,{quotedIn:prompt});
   const m=result?.memory;
+  const simulatedSleep=input.sources.find(s=>s.source_id==="current_sleep"&&s.available&&s.is_synthetic);
+  const syntheticCopy=simulatedSleep&&result?.phase==="final"&&result.cited_sources?.some(id=>id==="current_sleep"||id.startsWith("current_sleep:"))&&!/simulat|sint[eé]tic|demo|fictici/i.test(result.response_text||"");
   const reactiveEmpty=!proactive&&result?.phase==="final"&&(result.decision==="silent"||!result.response_text?.trim());
-  const needsRepair=result?.phase==="final"&&(reactiveEmpty||
+  const needsRepair=result?.phase==="final"&&(reactiveEmpty||syntheticCopy||
     /:(?!\d{2}\b)/.test(result.response_text||"")||(!proactive&&(!result.evidence?.trim()||!prompt.includes(result.evidence)))||
     (m&&(!m.evidence?.trim()||!prompt.includes(m.evidence)||(m.operation==="set"&&(!m.value?.trim()||!prompt.includes(m.value))))));
   if(needsRepair) {
-    const repairEffects=reactiveEmpty?JSON.stringify({memory:result.memory,observations:result.observations,followup_resolution:result.followup_resolution,longitudinal_review:result.longitudinal_review,pending_request:result.pending_request}):null;
+    const repairEffects=reactiveEmpty||syntheticCopy?JSON.stringify({memory:result.memory,observations:result.observations,followup_resolution:result.followup_resolution,longitudinal_review:result.longitudinal_review,pending_request:result.pending_request}):null;
     const control={kind:result.message_kind,decision:reactiveEmpty&&result.decision==="silent"?"respond":result.decision,action:result.action?fingerprint(result.action):null,accepted:result.accepted_proposal};
     input.previous_generated_result=result;
-    input.conformance_error=(reactiveEmpty?"This reactive turn has no visible reply. Return a nonempty useful answer to current_message. Never use silent here. If the previous decision was silent, use respond with no action; otherwise preserve the decision. Preserve all device, memory and tracking authority. ":"")+"Repair copy/output conformance only. Remove narrative colons while preserving clock times. evidence and memory.evidence must be literal nonempty current_message substrings. memory.value must copy one exact meaningful contiguous substring, or memory=null. Preserve message_kind, decision (except the explicit silent-to-respond repair), accepted_proposal and every action parameter exactly. Return final, no reads. Keep the reply natural.";
+    input.conformance_error=(syntheticCopy?"This reply uses simulated current_sleep. Briefly identify the sleep as simulated/sample data, including when the user asks for minutes only. Preserve the requested units and exact numeric facts. ":"")+(reactiveEmpty?"This reactive turn has no visible reply. Return a nonempty useful answer to current_message. Never use silent here. If the previous decision was silent, use respond with no action; otherwise preserve the decision. Preserve all device, memory and tracking authority. ":"")+"Repair copy/output conformance only. Remove narrative colons while preserving clock times. evidence and memory.evidence must be literal nonempty current_message substrings. memory.value must copy one exact meaningful contiguous substring, or memory=null. Preserve message_kind, decision (except the explicit silent-to-respond repair), accepted_proposal and every action parameter exactly. Return final, no reads. Keep the reply natural.";
     input.tool_budget_remaining=0;
     result=await run(input);
-    if(reactiveEmpty&&repairEffects!==JSON.stringify({memory:result.memory,observations:result.observations,followup_resolution:result.followup_resolution,longitudinal_review:result.longitudinal_review,pending_request:result.pending_request}))throw Error("bmb_repair_changed_effects");
+    if((reactiveEmpty||syntheticCopy)&&repairEffects!==JSON.stringify({memory:result.memory,observations:result.observations,followup_resolution:result.followup_resolution,longitudinal_review:result.longitudinal_review,pending_request:result.pending_request}))throw Error("bmb_repair_changed_effects");
     if(result.message_kind!==control.kind||result.decision!==control.decision||result.accepted_proposal!==control.accepted||
       (result.action?fingerprint(result.action):null)!==control.action)throw Error("bmb_repair_changed_authority");
   }
