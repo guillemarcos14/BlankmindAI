@@ -90,9 +90,9 @@ async function main(){
      console.info=line=>{try{const m=JSON.parse(line);if(["bm_stream_timing","bm_token_usage"].includes(m.event)&&Number.isSafeInteger(m.usage?.input_tokens)&&Number.isSafeInteger(m.usage?.output_tokens)){
        active.usage_records++;for(const [k,v]of Object.entries(m.usage))active.metered_usage[k]=(active.metered_usage[k]||0)+v;
      }if(m.event==="bm_decisions_timing")active.decisions_trace.push(m);if(m.event.startsWith("bm_retrieval_step_"))active.retrieval_trace.push(m);if(m.event==="bm_turn_timing"){active.usage=m.usage;active.stages=m.stages;active.decisions=m.decisions||[];}}catch(_){};};
-     let response;try{response=await (pair%8===0?invokeStream:invoke)(variant,{action:"send",turn_id:turn,text,context:{...context(),language,locale:language}});}catch(_){response={statusCode:503,body:"{}"};}
+     let response;try{response=await (args.includes('--all-ndjson')||pair%8===0?invokeStream:invoke)(variant,{action:"send",turn_id:turn,text,context:{...context(),language,locale:language}});}catch(_){response={statusCode:503,body:"{}"};}
      const value=JSON.parse(response.body),t=value.turn||{},noAction=!t.action_id&&!t.auto_apply;
-     const row={...active,case_id:spec.id,eligible:spec.eligible,expected:{...expected,criterion:spec.expectation,history:[...history]},transport:pair%8===0?"local-ndjson-handler":"local-json-handler",profile:spec.profile,language,start:undefined,status:response.statusCode,elapsed_ms:performance.now()-active.start,
+     const row={...active,case_id:spec.id,eligible:spec.eligible,expected:{...expected,criterion:spec.expectation,history:[...history]},transport:args.includes('--all-ndjson')||pair%8===0?"local-ndjson-handler":"local-json-handler",profile:spec.profile,language,start:undefined,status:response.statusCode,elapsed_ms:performance.now()-active.start,
        passed:response.statusCode===200&&t.status==="completed"&&typeof t.assistant_text==="string"&&Boolean(t.assistant_text.trim())&&(["action","actions_combined"].includes(group)?Boolean(t.action_id&&t.auto_apply):noAction),
        // Synthetic text is kept for semantic review, never live-user transcripts.
        synthetic_input:text,synthetic_response:t.assistant_text||null,action_id_present:Boolean(t.action_id),auto_apply:Boolean(t.auto_apply)};
