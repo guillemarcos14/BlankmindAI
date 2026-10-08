@@ -45,7 +45,7 @@ Opaque references stay in structured citations. The shared renderer cleans catal
 
 ## Validation and limits
 
-Frozen measured source checks14/14, quality digests bound to every isolated fixture, all five cleanup checks pass in each run. Final harness and CI recorded below when complete.
+Frozen measured source checks14/14, quality digests bound to every isolated fixture, all five cleanup checks pass in each run. Harness78/78, zero repairs and no scope violations: `ph_1791455364715_f4cb7fe0`, against the pre-edit baseline `ph_1791450119683_ee66e6df`. CI37763869149 on e82c9eb passes contracts/runtime, PostgreSQL recovery and Android compile/unit tests.
 
 Quality verdicts are from gpt-5.6-sol, not independent humans. Cases are authored by the implementing agent, one measured repetition per final case, no sealed human holdout. Local handlers use real OpenAI and private QA DB; deployed transport, physical iPhone and voice are not measured. General conversation/actions were not benchmarked. These results support the narrow architecture and do not certify overall production quality or response time.
 
