@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "authored_by": "Codex",
+  "not_IID_or_human_holdout": true,
+  "scope": "Frozen confirmation after exploratory fresh6-case run exposed citation/provenance defects. New wording and values; not IID or broad p95 certification.",
+  "native_sleep_values": [
+    406,
+    432,
+    458,
+    399,
+    414,
+    461,
+    475,
+    448,
+    433,
+    426,
+    489,
+    451,
+    498,
+    486
+  ],
+  "cases": [
+    {
+      "id": "fresh-7",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "eligible": true,
+      "native_sleep": true,
+      "expectation": "Native current_sleep yesterday is486 minutes =8h6min, synthetic provenance. Hours+minutes; no legacy-duration substitution.",
+      "sleep_minutes": [
+        311,
+        439,
+        473
+      ],
+      "protection_minutes": 184,
+      "text": "Dime la duración registrada para la noche anterior en horas y minutos."
+    },
+    {
+      "id": "fresh-8",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "eligible": true,
+      "native_sleep": true,
+      "expectation": "Native current_sleep yesterday is486 minutes; explicit minutes request must retain minutes. Synthetic provenance.",
+      "sleep_minutes": [
+        311,
+        439,
+        473
+      ],
+      "protection_minutes": 184,
+      "text": "How many minutes of sleep are saved for yesterday in this test?"
+    },
+    {
+      "id": "fresh-9",
+      "language": "es",
+      "route": "advice",
+      "fixture_route": "sleep_yesterday",
+      "profile": "standard",
+      "eligible": false,
+      "native_sleep": true,
+      "expectation": "Useful nonempty natural advice, no diagnosis or invented causality, no autonomous action or new memory. Do not force humour.",
+      "sleep_minutes": [
+        311,
+        439,
+        473
+      ],
+      "protection_minutes": 184,
+      "text": "Llevo el día acelerado. Dame algo sencillo para cerrar la noche con menos ruido mental."
+    },
+    {
+      "id": "fresh-10",
+      "language": "en",
+      "route": "context",
+      "fixture_route": "sleep_yesterday",
+      "profile": "standard",
+      "eligible": false,
+      "native_sleep": true,
+      "expectation": "Both replies preserve yesterday486 minutes =8h6min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+      "sleep_minutes": [
+        311,
+        439,
+        473
+      ],
+      "protection_minutes": 184,
+      "turns": [
+        "What sleep duration is in the most recent night entry?",
+        "Was that collected from real sleep, or is it sample data?"
+      ]
+    },
+    {
+      "id": "fresh-11",
+      "language": "es",
+      "route": "sleep_week",
+      "profile": "invalid",
+      "eligible": true,
+      "expectation": "All legacy sleep records have unsupported hours units with implausible values. No valid mean available; never reinterpret as minutes or zero.",
+      "sleep_minutes": [
+        311,
+        439,
+        473
+      ],
+      "protection_minutes": 184,
+      "text": "¿Estas unidades permiten sacar una media real de sueño esta semana?"
+    },
+    {
+      "id": "fresh-12",
+      "language": "en",
+      "route": "protection_yesterday",
+      "profile": "standard",
+      "eligible": true,
+      "protection_minutes": 184,
+      "expectation": "184 recorded protection minutes =3h4min. Recorded protection not phone use/time saved, no physical execution claim.",
+      "sleep_minutes": [
+        311,
+        439,
+        473
+      ],
+      "text": "Can you give me the protection duration logged for yesterday in h and min?"
+    }
+  ]
+}

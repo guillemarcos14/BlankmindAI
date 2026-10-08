@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "authored_by": "Codex",
+  "not_IID_or_human_holdout": true,
+  "scope": "Focused new-question validation after known-defect fixes; not statistical reliability/p95 certification.",
+  "native_sleep_values": [
+    401,
+    434,
+    451,
+    386,
+    420,
+    478,
+    463,
+    447,
+    455,
+    419,
+    482,
+    431,
+    502,
+    517
+  ],
+  "cases": [
+    {
+      "id": "fresh-1",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "eligible": true,
+      "native_sleep": true,
+      "text": "¿Qué duración aparece para la noche de ayer? Dámela en horas y minutos.",
+      "expectation": "Native current_sleep yesterday is517 minutes =8h37min, synthetic provenance. Hours+minutes; no legacy-duration substitution.",
+      "sleep_minutes": [
+        367,
+        412,
+        459
+      ]
+    },
+    {
+      "id": "fresh-2",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "eligible": true,
+      "native_sleep": true,
+      "text": "Tell me yesterday's recorded sleep duration, strictly in minutes.",
+      "expectation": "Native current_sleep yesterday is517 minutes; explicit minutes request must retain minutes. Synthetic provenance.",
+      "sleep_minutes": [
+        367,
+        412,
+        459
+      ]
+    },
+    {
+      "id": "fresh-3",
+      "language": "es",
+      "route": "advice",
+      "fixture_route": "sleep_yesterday",
+      "profile": "standard",
+      "eligible": false,
+      "native_sleep": true,
+      "text": "Estoy dándole vueltas a todo antes de acostarme. ¿Qué hago para bajar el ritmo hoy?",
+      "expectation": "Useful nonempty natural advice, no diagnosis or invented causality, no autonomous action or new memory. Do not force humour.",
+      "sleep_minutes": [
+        367,
+        412,
+        459
+      ]
+    },
+    {
+      "id": "fresh-4",
+      "language": "en",
+      "route": "context",
+      "fixture_route": "sleep_yesterday",
+      "profile": "standard",
+      "eligible": false,
+      "native_sleep": true,
+      "turns": [
+        "How much sleep did my phone record yesterday?",
+        "Can you make that last answer shorter while keeping its source clear?"
+      ],
+      "expectation": "Both replies preserve yesterday517 minutes =8h37min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+      "sleep_minutes": [
+        367,
+        412,
+        459
+      ]
+    },
+    {
+      "id": "fresh-5",
+      "language": "es",
+      "route": "sleep_week",
+      "profile": "invalid",
+      "eligible": true,
+      "text": "¿Hay algún promedio válido de descanso en los registros de esta semana?",
+      "expectation": "All legacy sleep records have unsupported hours units with implausible values. No valid mean available; never reinterpret as minutes or zero.",
+      "sleep_minutes": [
+        367,
+        412,
+        459
+      ]
+    },
+    {
+      "id": "fresh-6",
+      "language": "en",
+      "route": "protection_yesterday",
+      "profile": "standard",
+      "eligible": true,
+      "protection_minutes": 137,
+      "text": "What total protection was recorded yesterday? Please use hours and minutes.",
+      "expectation": "137 recorded protection minutes =2h17min. Recorded protection not phone use/time saved, no physical execution claim.",
+      "sleep_minutes": [
+        367,
+        412,
+        459
+      ]
+    }
+  ]
+}

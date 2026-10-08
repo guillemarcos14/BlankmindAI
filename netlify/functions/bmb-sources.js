@@ -26,6 +26,33 @@ const CATALOG={
   device_signals:["bmb_device_signals","auth_user_id","id,kind,occurred_at,threshold_minutes","occurred_at"]
 };
 const SOURCE_NAMES=[...Object.keys(CATALOG),"protection_statistics"];
+// Source references belong in cited_sources; the app cannot render opaque IDs.
+// Preserve facts and ordinary brackets; remove only closed catalog references.
+function cleanCitations(text,{quotedIn="",partial=false}={}){if(typeof text!=="string")return text;
+ const refs=SOURCE_NAMES.filter(id=>!quotedIn.includes("["+id+"]")&&!new RegExp("\\b(?:Fuente|Source)\\s*:?\\s*"+id+"(?:\\.|(?=\\s|$))","i").test(quotedIn));
+ let value=text.replace(/\uE200[\s\S]*?(?:\uE201|$)/gu,"");
+ value=value.replace(/\[([^\]]+)\]/g,(whole,id)=>refs.includes(id.trim())?"":whole);
+ if(!refs.length)return value.trim();
+ const names=refs.join("|");
+ if(refs.length)value=value.replace(new RegExp("\\b(?:Fuente|Source)\\s*:?\\s*(?:"+names+")(?:\\.|(?=\\s|$))","gi"),"");
+ // Hide internal UUID references in final replies AND incremental drafts.
+ const uuid=/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+ value=value.replace(/\[([^\]]*)\]/g,(whole,inside)=>{
+   const tokens=inside.split(/[,;\s]+/).filter(Boolean);
+   return tokens.length&&tokens.every(t=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t))&&!quotedIn.includes(whole)?"":whole;
+ });
+ value=value.replace(uuid,id=>quotedIn.includes(id)?id:"");
+ const dangling=/\[([0-9a-f-]*(?:[,;\s]+[0-9a-f-]*)*)$/i.exec(value);
+ if(dangling&&!quotedIn.includes(dangling[0]))value=value.slice(0,dangling.index);
+ if(partial){const word=/\b[0-9a-f]{1,8}(?:-[0-9a-f-]*)?$/i.exec(value);if(word&&!quotedIn.includes(word[0]))value=value.slice(0,word.index);}
+ const barePartial=/\b[0-9a-f]{8}-(?:[0-9a-f-]*)$/i.exec(value);
+ if(barePartial&&!quotedIn.includes(barePartial[0]))value=value.slice(0,barePartial.index);
+ const open=value.lastIndexOf("[");
+ if(open>=0&&!value.slice(open).includes("]")&&refs.some(id=>id.startsWith(value.slice(open+1))))value=value.slice(0,open);
+ const label=/\b(?:Fuente|Source)\s*:?\s*([a-z_]*)\.?$/i.exec(value);
+ if(label&&refs.some(id=>id.startsWith(label[1].toLowerCase())))value=value.slice(0,label.index);
+ return value.trim();
+}
 function sanitize(value,depth=0) {
   if(depth>12)return null;
   if(typeof value==="string")return value.replace(/\b(?:sk-[A-Za-z0-9_-]{16,}|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b/g,"[credential removed]").slice(0,4000);
@@ -53,9 +80,11 @@ async function readSource(userId,identity,q,cutoff,db=supabaseFetch) {
     }
     const observed=rows.map(r=>r.observed_at).filter(Boolean).sort().at(-1)||null;
     const snapshot={sessions:rows,history_complete:complete,history_started_at:rows.map(r=>r.started_at).sort()[0]||null,generated_at:observed};
-    const data=statistics(snapshot,{from,to,timezone:zone(q.timezone||"UTC")},now);
+    const data=complete&&rows.length===0
+      ?{available:true,from,to,timezone:zone(q.timezone||"UTC"),protected_seconds:0,session_count:0,break_count:0,partial:true,observed_at:null,metric:"recorded_protection_duration",saved_time_available:false}
+      :statistics(snapshot,{from,to,timezone:zone(q.timezone||"UTC")},now);
     delete data.sessions;
-    return {source:q.source,source_id:q.source,available:rows.length>0,reason:rows.length?null:"no_recorded_history",rows:[{id:"protection_statistics",...data}],coverage:complete?"all_persisted_overlapping_rows":"first_10000_overlapping_rows",next_offset:null};
+    return {source:q.source,source_id:q.source,available:data.available,reason:data.available?null:"no_recorded_history",rows:[{id:"protection_statistics",...data}],coverage:complete?"all_persisted_overlapping_rows":"first_10000_overlapping_rows",next_offset:null};
   }
   const spec=CATALOG[q.source];if(!spec)throw Error("bmb_unknown_source");
   const [table,filter,select,time,personal,consent]=spec;
@@ -77,8 +106,15 @@ async function readSource(userId,identity,q,cutoff,db=supabaseFetch) {
   }
   try {
     const rows=await db(path,{method:"GET"});
-    return {source:q.source,source_id:q.source,available:true,rows:sanitize(rows.slice(0,40)),next_offset:rows.length>40?q.offset+40:null,
+    const rejected=[];
+    const usable=rows.slice(0,40).filter(row=>{
+      if(q.source!=="observations"||row.metric!=="sleep_duration")return true;
+      const reason=row.unit!=="minutes"?"unsupported_duration_unit":!Number.isFinite(row.value_number)||row.value_number<0||row.value_number>1440?"invalid_sleep_duration":null;
+      if(reason)rejected.push({id:row.id,unit:row.unit,reason});
+      return !reason;
+    });
+    return {source:q.source,source_id:q.source,available:true,rows:sanitize(usable),...(rejected.length?{rejected_sleep_measurements:rejected,measurement_warning:"Excluded invalid sleep-duration records. Never reinterpret their numbers as minutes or as zero; answer only from valid rows and state relevant missing coverage."}:{}),next_offset:rows.length>40?q.offset+40:null,
       coverage:rows.length?"persisted_verified_account_rows":"no_consented_rows_in_range",personalization_after:personal?cutoff||null:null};
   }catch(error){if(/404|does not exist|column|relation/.test(error.message))return {source:q.source,source_id:q.source,available:false,reason:"source_schema_unavailable"};throw error;}
 }
-module.exports={SOURCE_NAMES,CATALOG,sanitize,inventory,readSource};
+module.exports={SOURCE_NAMES,CATALOG,sanitize,inventory,readSource,cleanCitations};
