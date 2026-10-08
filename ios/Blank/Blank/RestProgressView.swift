@@ -331,6 +331,13 @@ struct RestProgressContent: View {
                     if let error = health.error { caption(error) }
                     if health.loading { ProgressView("Loading health context…").tint(ink) }
                     sleepDetails
+                    if !health.traits.isEmpty {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("Personal context").font(.blankInter(size: 20, relativeTo: .headline))
+                            ForEach(health.traits) { trait in dataRow(trait.title, value: trait.value, detail: "Apple Health") }
+                            caption("Available characteristics · no measurement timestamp supplied. Age is derived from your date of birth today.")
+                        }.padding(16).frame(maxWidth: .infinity, alignment: .leading).reportFlatCard()
+                    }
                     ForEach(Array(Set(contextMetrics.map(\.family))).sorted(), id: \.self) { family in
                         VStack(alignment: .leading, spacing: 14) {
                             Text(family).font(.blankInter(size: 20, relativeTo: .headline))

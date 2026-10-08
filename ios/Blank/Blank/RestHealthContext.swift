@@ -94,7 +94,13 @@ enum RestHealthCatalog {
         if #available(iOS 18, *) { types.append(HKObjectType.stateOfMindType()) }
         return types
     }
-    static var readTypes: Set<HKObjectType> { Set(sampleTypes.map { $0 as HKObjectType }) }
+    static var characteristics: [HKCharacteristicType] {
+        let identifiers: [HKCharacteristicTypeIdentifier] = [.dateOfBirth, .biologicalSex, .bloodType, .fitzpatrickSkinType, .wheelchairUse]
+        return identifiers.compactMap { HKObjectType.characteristicType(forIdentifier: $0) }
+    }
+    static var readTypes: Set<HKObjectType> {
+        Set(sampleTypes.map { $0 as HKObjectType } + characteristics.map { $0 as HKObjectType })
+    }
     static func name(_ identifier: String) -> String {
         let stripped = identifier.replacingOccurrences(of: "HKQuantityTypeIdentifier", with: "")
             .replacingOccurrences(of: "HKCategoryTypeIdentifier", with: "")
@@ -118,10 +124,17 @@ enum RestHealthCatalog {
     }
 }
 
+struct RestHealthTrait: Identifiable {
+    let id: String
+    let title: String
+    let value: String
+}
+
 final class RestHealthContext: ObservableObject {
     static let shared = RestHealthContext()
     @Published private(set) var metrics: [RestHealthMetric] = []
     @Published private(set) var nights: [RestNight] = []
+    @Published private(set) var traits: [RestHealthTrait] = []
     @Published private(set) var loading = false
     @Published private(set) var error: String?
     @Published private(set) var loadedAt: Date?
@@ -143,7 +156,7 @@ final class RestHealthContext: ObservableObject {
         request = UUID()
         queries.forEach(health.stop)
         queries = []
-        metrics = []; nights = []; heartSamples = []; loading = false; error = nil; loadedAt = nil
+        metrics = []; nights = []; traits = []; heartSamples = []; loading = false; error = nil; loadedAt = nil
         owner = AssistantAppSession.userID
     }
     func refresh(force: Bool = false) {
@@ -157,6 +170,7 @@ final class RestHealthContext: ObservableObject {
         let start = calendar.date(byAdding: .day, value: -35, to: calendar.startOfDay(for: now))!
         // Query a bounded number concurrently; each query has a timeout and a latest-sample cap.
         let types = RestHealthCatalog.sampleTypes
+        readCharacteristics(now: now)
         health.preferredUnits(for: Set(RestHealthCatalog.quantities)) { [weak self] units, unitError in
             DispatchQueue.main.async {
                 guard let self, self.request == token, account == AssistantAppSession.userID else { return }
@@ -170,6 +184,34 @@ final class RestHealthContext: ObservableObject {
             self.queries = []; self.request = UUID(); self.loading = false
             self.error = "Some health data did not respond. Refresh to try again."
         }
+    }
+    private func readCharacteristics(now: Date) {
+        // These have dedicated read APIs, not sample queries or measurement dates.
+        // Missing/not-set and read-denied remain indistinguishable.
+        var values: [RestHealthTrait] = []
+        let calendar = Calendar(identifier: .gregorian)
+        if let components = try? health.dateOfBirthComponents(), let birthday = calendar.date(from: components),
+           birthday <= now, let years = calendar.dateComponents([.year], from: birthday, to: now).year {
+            values.append(RestHealthTrait(id: "age", title: "age from date of birth", value: "\(years) years"))
+        }
+        if let object = try? health.biologicalSex() {
+            let labels: [HKBiologicalSex: String] = [.female: "female", .male: "male", .other: "other"]
+            if let value = labels[object.biologicalSex] { values.append(RestHealthTrait(id: "sex", title: "biological sex", value: value)) }
+        }
+        if let object = try? health.bloodType() {
+            let labels: [HKBloodType: String] = [.aPositive: "A+", .aNegative: "A−", .bPositive: "B+", .bNegative: "B−",
+                .abPositive: "AB+", .abNegative: "AB−", .oPositive: "O+", .oNegative: "O−"]
+            if let value = labels[object.bloodType] { values.append(RestHealthTrait(id: "blood", title: "blood type", value: value)) }
+        }
+        if let object = try? health.fitzpatrickSkinType(), (1...6).contains(object.skinType.rawValue) {
+            let roman = ["I", "II", "III", "IV", "V", "VI"]
+            values.append(RestHealthTrait(id: "skin", title: "Fitzpatrick skin type", value: roman[object.skinType.rawValue - 1]))
+        }
+        if let object = try? health.wheelchairUse(), object.wheelchairUse != .notSet {
+            let labels: [HKWheelchairUse: String] = [.yes: "yes", .no: "no"]
+            if let value = labels[object.wheelchairUse] { values.append(RestHealthTrait(id: "wheelchair", title: "wheelchair use", value: value)) }
+        }
+        traits = values
     }
     private func readBatch(types: [HKSampleType], index: Int, units: [HKQuantityType: HKUnit], token: UUID,
                            account: String?, start: Date, now: Date, calendar: Calendar) {
