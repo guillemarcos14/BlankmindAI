@@ -25,6 +25,9 @@ settle_capture() {
   esac
 }
 scenarios='action active active-empty active-error error empty signin history product-home product-home-active product-home-response product-home-error product-home-long product-control product-control-active product-shell-progress product-menu product-menu-active product-progress product-progress-active product-settings product-settings-active product-distractions product-distractions-active product-emergency product-emergency-active product-emergency-confirm-active product-automatic product-automatic-active product-notifications product-notifications-active'
+if [ "${3:-all}" = progress ]; then
+  scenarios='product-shell-progress product-shell-progress-empty product-shell-progress-detail product-progress-active'
+fi
 if [ "${3:-all}" = home ]; then
   scenarios='product-home product-home-active product-home-response product-home-error product-home-long product-control product-control-active product-shell-progress'
 fi
@@ -40,9 +43,10 @@ for scenario in $scenarios; do
   settle_capture "$scenario"
   xcrun simctl io "$device_id" screenshot "$output/phone-$scenario.png"
 done
-if [ "${3:-all}" = uniform ] || [ "${3:-all}" = onboarding ]; then
+if [ "${3:-all}" = uniform ] || [ "${3:-all}" = onboarding ] || [ "${3:-all}" = progress ]; then
   large_scenarios='product-control product-shell-progress product-schedule product-automatic product-notifications product-onboarding-account product-onboarding-device'
   if [ "${3:-all}" = onboarding ]; then large_scenarios='product-onboarding-account product-onboarding-device'; fi
+  if [ "${3:-all}" = progress ]; then large_scenarios='product-shell-progress product-progress-active'; fi
   for scenario in $large_scenarios; do
     xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true
     SIMCTL_CHILD_BLANK_UI_SCENARIO="$scenario" xcrun simctl launch "$device_id" "$bundle" -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL
@@ -50,7 +54,7 @@ if [ "${3:-all}" = uniform ] || [ "${3:-all}" = onboarding ]; then
     xcrun simctl io "$device_id" screenshot "$output/phone-$scenario-dynamic-type.png"
   done
   xcrun simctl ui "$device_id" appearance dark
-  for scenario in product-onboarding-account product-onboarding-device; do
+  for scenario in $(if [ "${3:-all}" = progress ]; then echo 'product-shell-progress'; else echo 'product-onboarding-account product-onboarding-device'; fi); do
     xcrun simctl terminate "$device_id" "$bundle" 2>/dev/null || true
     SIMCTL_CHILD_BLANK_UI_SCENARIO="$scenario" xcrun simctl launch "$device_id" "$bundle"
     settle_capture "$scenario"
@@ -96,16 +100,17 @@ SIMCTL_CHILD_BLANK_UI_SCENARIO=product-home-error xcrun simctl launch "$compact"
 sleep 8
 xcrun simctl io "$compact" screenshot "$output/phone-compact-dynamic-error.png"
 fi
-if [ "${3:-all}" = uniform ] || [ "${3:-all}" = onboarding ]; then
+if [ "${3:-all}" = uniform ] || [ "${3:-all}" = onboarding ] || [ "${3:-all}" = progress ]; then
   compact_scenarios='product-control product-schedule product-notifications product-onboarding-account product-onboarding-device'
   if [ "${3:-all}" = onboarding ]; then compact_scenarios='product-onboarding-account product-onboarding-device'; fi
+  if [ "${3:-all}" = progress ]; then compact_scenarios='product-shell-progress product-shell-progress-empty product-progress-active'; fi
   for scenario in $compact_scenarios; do
     xcrun simctl terminate "$compact" "$bundle" 2>/dev/null || true
     SIMCTL_CHILD_BLANK_UI_SCENARIO="$scenario" xcrun simctl launch "$compact" "$bundle" -AppleLanguages '(en)' -AppleLocale en_US
     settle_capture "$scenario"
     xcrun simctl io "$compact" screenshot "$output/phone-compact-$scenario.png"
   done
-  for scenario in product-onboarding-account product-onboarding-device; do
+  for scenario in $(if [ "${3:-all}" = progress ]; then echo 'product-shell-progress'; else echo 'product-onboarding-account product-onboarding-device'; fi); do
     xcrun simctl terminate "$compact" "$bundle" 2>/dev/null || true
     SIMCTL_CHILD_BLANK_UI_SCENARIO="$scenario" xcrun simctl launch "$compact" "$bundle" -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL
     settle_capture "$scenario"

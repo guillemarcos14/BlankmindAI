@@ -6,7 +6,7 @@ on:
       capture:
         description: Native screenshot coverage
         type: choice
-        options: [uniform, onboarding, home, all]
+        options: [uniform, onboarding, home, progress, all]
         default: uniform
       ui_tests:
         description: UI coverage (targeted confirmation after a full passing run)
@@ -87,7 +87,7 @@ jobs:
       - name: Capture conversation states on iPhone simulator
         if: ${{ !cancelled() && steps.simulator_build.outcome == 'success' }}
         timeout-minutes: 20
-        run: bash tools/capture_assistant_ios.sh tmp/ios-build/Build/Products/Debug-iphonesimulator/Blank.app tmp/ios-visual "${{ inputs.capture || 'uniform' }}"
+        run: bash tools/capture_assistant_ios.sh tmp/ios-build/Build/Products/Debug-iphonesimulator/Blank.app tmp/ios-visual "${{ inputs.capture || (startsWith(github.ref_name, 'codex/progress-rest-') && 'progress') || 'uniform' }}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

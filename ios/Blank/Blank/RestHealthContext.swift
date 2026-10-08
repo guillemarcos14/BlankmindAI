@@ -302,8 +302,43 @@ final class RestHealthContext: ObservableObject {
             return RestHealthPoint(date: day, value: value, count: rows.count,
                 sources: Array(Set(rows.map { $0.sourceRevision.source.name })).sorted())
         }.sorted { $0.date < $1.date }
+        let entries = samples.prefix(100).map { sample -> RestHealthEntry in
+            var title = RestHealthCatalog.name(type.identifier)
+            var detail = "Recorded in Apple Health"
+            if let record = sample as? HKClinicalRecord {
+                title = record.displayName
+                detail = "Clinical record · original document in Apple Health"
+            } else if let workout = sample as? HKWorkout {
+                detail = "\(Int(workout.duration / 60)) min of recorded exercise"
+            } else if let ecg = sample as? HKElectrocardiogram {
+                detail = "Recorded ECG"
+                if let pulse = ecg.averageHeartRate {
+                    detail += String(format: " · %.0f bpm", pulse.doubleValue(for: HKUnit.count().unitDivided(by: .minute())))
+                }
+            } else if let category = sample as? HKCategorySample {
+                let symptoms = ["Fatigue", "NightSweats", "Headache", "Fever", "Coughing", "ShortnessOfBreath",
+                    "Dizziness", "Nausea", "GeneralizedBodyAche", "SleepChanges", "LowerBackPain", "HotFlashes"]
+                if symptoms.contains(where: type.identifier.contains), let severity = HKCategoryValueSeverity(rawValue: category.value) {
+                    switch severity {
+                    case .notPresent: detail = "Not present"
+                    case .mild: detail = "Mild"
+                    case .moderate: detail = "Moderate"
+                    case .severe: detail = "Severe"
+                    default: detail = "Severity unspecified"
+                    }
+                } else if type.identifier == HKCategoryTypeIdentifier.mindfulSession.rawValue {
+                    detail = "\(Int(sample.endDate.timeIntervalSince(sample.startDate) / 60)) mindful minutes"
+                }
+            }
+            if #available(iOS 18, *), let mood = sample as? HKStateOfMind {
+                detail = String(format: "Recorded mood valence: %.2f (−1 to 1)", mood.valence)
+            }
+            return RestHealthEntry(id: sample.uuid, date: sample.endDate, title: title, detail: detail,
+                source: sample.sourceRevision.source.name)
+        }
         return RestHealthMetric(id: type.identifier, title: RestHealthCatalog.name(type.identifier),
             family: RestHealthCatalog.family(type.identifier), unit: unit, points: points,
-            note: "Recorded entries, not severity or a diagnosis. Clinical documents and ECG waveforms remain in Apple Health." + (capped ? " Latest 10,000 records only." : ""), isCategory: unit == "records")
+            note: "Recorded entries; their presence does not diagnose a condition. Clinical documents and ECG waveforms remain in Apple Health." + (capped ? " Latest 10,000 records only." : ""),
+            isCategory: unit == "records", entries: entries)
     }
 }

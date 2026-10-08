@@ -31,13 +31,13 @@ struct RestProgressContent: View {
             }
         }
         #if DEBUG && targetEnvironment(simulator)
-        if AssistantAppPreview.scenario.contains("progress") { return RestProgressFixture.nights() }
+        if AssistantAppPreview.scenario.contains("progress") && !AssistantAppPreview.scenario.contains("empty") { return RestProgressFixture.nights() }
         #endif
         return health.nights
     }
     private var contextMetrics: [RestHealthMetric] {
         #if DEBUG && targetEnvironment(simulator)
-        if AssistantAppPreview.scenario.contains("progress") { return RestProgressFixture.metrics() }
+        if AssistantAppPreview.scenario.contains("progress") && !AssistantAppPreview.scenario.contains("empty") { return RestProgressFixture.metrics() }
         #endif
         return sleep.syntheticSleepEnabled ? health.metrics.filter { $0.id != "blank.nightHeartRate" && !$0.id.contains("Sleep") } : health.metrics
     }
@@ -104,7 +104,8 @@ struct RestProgressContent: View {
             defaults.set(Date().timeIntervalSince1970, forKey: "blankRestHistoryStart." + account)
         }
         #if DEBUG && targetEnvironment(simulator)
-        if AssistantAppPreview.scenario.contains("progress") { checkIns = RestProgressFixture.ratings() }
+        if AssistantAppPreview.scenario.contains("progress") && !AssistantAppPreview.scenario.contains("empty") { checkIns = RestProgressFixture.ratings() }
+        if AssistantAppPreview.scenario.contains("progress-detail") { showContext = true }
         #endif
     }
     private func caption(_ value: String) -> some View {
@@ -321,6 +322,18 @@ struct RestProgressContent: View {
                                     caption("Source: " + last.sources.joined(separator: ", "))
                                 }
                                 caption(item.note)
+                                if !item.entries.isEmpty {
+                                    DisclosureGroup("Recent entries") {
+                                        ForEach(item.entries) { entry in
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(entry.title).font(.blankInter(size: 16, relativeTo: .body))
+                                                caption(entry.detail)
+                                                caption(entry.date.formatted(date: .abbreviated, time: .shortened) + " · " + entry.source)
+                                            }.padding(.vertical, 6)
+                                        }
+                                        caption("Latest \(item.entries.count) entries shown")
+                                    }.font(.blankInter(size: 16, relativeTo: .body)).tint(ink)
+                                }
                                 Divider().overlay(ink.opacity(0.1))
                             }
                         }.padding(16).frame(maxWidth: .infinity, alignment: .leading).reportFlatCard()

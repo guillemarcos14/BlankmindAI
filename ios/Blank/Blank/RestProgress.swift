@@ -134,6 +134,15 @@ struct RestHealthMetric: Identifiable {
     let points: [RestHealthPoint]
     let note: String
     var isCategory: Bool = false
+    var entries: [RestHealthEntry] = []
+}
+
+struct RestHealthEntry: Identifiable {
+    let id: UUID
+    let date: Date
+    let title: String
+    let detail: String
+    let source: String
 }
 
 enum RestProgressMetric: String, CaseIterable, Identifiable {
