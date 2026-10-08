@@ -1,9 +1,9 @@
-# Real app with synthetic sleep — 2026-10-08
-
-Supersedes build108: the parallel SyntheticDemoView and fictitious sessions, protection, activity and scripted chat are removed. ReportView restored from6b2da2c, retaining the real UI and actions; only its shared health source and provenance label change.
-
-Private QA/DEBUG authenticated accounts can select synthetic sleep during real onboarding or Control. Choice persists per account. Apple sign-in, Screen Time approval, backend activation/context/complete_onboarding and version6 remain required. HealthKit permission/status and watch counts stay measured/opaque, never synthesized.
-
-ContentView, HomeView, ReportView and BlankBrain share HealthKitStore. The provider replaces only sleep fields, retains measured non-sleep fields, excludes real sleep from synthetic reports, creates14 completed nights using local calendar days and scopes async callbacks to owner/source/query generation. Sign-out/toggles discard stale results. Source,14 nights and an explicit synthetic warning reach BM through existing personal_profile and health_signal_reasons fields, verified through server normalization and personalContextView. No backend deploy or PR27 integration required. Sleep choice can be turned off in Control; unavailable measured sleep returns to the existing gate.
-
-Validation: provider tests in DEBUG, private QA and production configurations cover completed nights, stages, midnight/DST, preserving real activity, source exclusivity, owner/guest isolation and disabling. UI suite verifies the real three sections and unmet anonymous gate. Native compilation/CI, signed archive109 and upload pending. Baseline tmp/product-harness/real-app-sleep-baseline.json predates changes.
+# Real app with synthetic sleep — 2026-10-08
+
+Supersedes build108: the parallel SyntheticDemoView and fictitious sessions, protection, activity and scripted chat are removed. ReportView restored from6b2da2c, retaining the real UI and actions; only its shared health source and provenance label change.
+
+Private QA/DEBUG authenticated accounts can select synthetic sleep during real onboarding or Control. Choice persists per account. Apple sign-in, Screen Time approval, backend activation/context/complete_onboarding and version6 remain required. HealthKit permission/status and watch counts stay measured/opaque, never synthesized.
+
+ContentView, HomeView, ReportView and BlankBrain share HealthKitStore. The provider replaces only sleep fields, retains measured non-sleep fields, excludes real sleep from synthetic reports, creates14 completed nights using local calendar days and scopes async callbacks to owner/source/query generation. Sign-out/toggles discard stale results. Source,14 nights and an explicit synthetic warning reach BM through existing personal_profile and health_signal_reasons fields, verified through server normalization and personalContextView. No backend deploy or PR27 integration required. Sleep choice can be turned off in Control; unavailable measured sleep returns to the existing gate.
+
+Validation: provider tests in DEBUG, private QA and production configurations cover completed nights, stages, midnight/DST, preserving real activity, source exclusivity, owner/guest isolation and disabling. UI suite verifies the real three sections and unmet anonymous gate. Native compilation/CI, signed archive109 and upload pending. Baseline tmp/product-harness/real-app-sleep-baseline.json predates changes.
