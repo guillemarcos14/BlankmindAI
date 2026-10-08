@@ -11,7 +11,7 @@ on:
       ui_tests:
         description: UI coverage (targeted confirmation after a full passing run)
         type: choice
-        options: [all, onboarding]
+        options: [all, onboarding, control]
         default: all
   pull_request:
     paths:
@@ -78,6 +78,9 @@ jobs:
           suite=BlankHomeUITests
           if [ "${{ inputs.ui_tests || 'all' }}" = onboarding ]; then
             suite=BlankHomeUITests/MinimalHomeUITests/testLargestTextKeepsOnboardingActionsReachable
+          fi
+          if [ "${{ inputs.ui_tests || 'all' }}" = control ]; then
+            suite=BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear
           fi
           xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank \
             -configuration Debug -destination "platform=iOS Simulator,id=$device" \
