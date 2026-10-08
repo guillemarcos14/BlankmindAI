@@ -100,27 +100,38 @@ enum BlankFunnelAnalytics {
     }
 }
 
-// In-memory samples only: never inserted into HealthKit, session history or BM context.
-struct SyntheticDemoData {
-    let sessions: [BlankSession]
-    let events: [BlankUsageEvent]
-    let health: [HealthDaySummary]
+// Private QA source: only completed sleep nights, never sessions or activity.
+enum SyntheticSleepSource {
+    static var allowed: Bool {
+        #if DEBUG || BLANK_PRIVATE_STAGE_QA
+        return true
+        #else
+        return false
+        #endif
+    }
 
-    init(now: Date = Date(), calendar: Calendar = .current) {
+    static func enabled(owner: String?, defaults: UserDefaults) -> Bool {
+        guard allowed, let owner, !owner.isEmpty else { return false }
+        return defaults.bool(forKey: "blankSyntheticSleep.\(owner)")
+    }
+
+    static func setEnabled(_ enabled: Bool, owner: String?, defaults: UserDefaults) {
+        guard allowed, let owner, !owner.isEmpty else { return }
+        defaults.set(enabled, forKey: "blankSyntheticSleep.\(owner)")
+    }
+
+    static func applying(to real: [HealthDaySummary], now: Date = Date(), days: Int = 14,
+                         calendar: Calendar = .current) -> [HealthDaySummary] {
+        guard days > 0 else { return [] }
         let today = calendar.startOfDay(for: now)
-        let profile = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-        var sessions: [BlankSession] = []
-        var health: [HealthDaySummary] = []
-        for offset in (0..<14).reversed() {
-            let day = calendar.date(byAdding: .day, value: -offset, to: today)!
-            let end = min(day.addingTimeInterval(12 * 3600), now.addingTimeInterval(-60))
-            let duration = 60 + (offset % 5) * 15
-            sessions.append(BlankSession(profileId: profile, strategy: .manual,
-                startedAt: end.addingTimeInterval(-Double(duration) * 60), endedAt: end,
-                entryMode: .app, endedReason: .timer,
-                selectionSnapshot: BlankSelectionSnapshot(applicationCount: 3),
-                plannedDurationMinutes: duration, calendar: calendar))
-            let sleep = 410 + (offset % 4) * 15
+        let wakeToday = calendar.date(bySettingHour: 7, minute: 30, second: 0, of: today)!
+        let latest = now >= wakeToday ? today : calendar.date(byAdding: .day, value: -1, to: today)!
+        var byDay = Dictionary(real.map { (calendar.startOfDay(for: $0.date), $0) }, uniquingKeysWith: { _, last in last })
+        // Strip every real sleep field first: sources are mutually exclusive, including dates outside the fixture.
+        for day in Array(byDay.keys) { byDay[day] = replacingSleep(in: byDay[day]!, with: HealthDaySummary(date: day)) }
+        for offset in 0..<days {
+            let day = calendar.date(byAdding: .day, value: -offset, to: latest)!
+            let sleep = 410 + offset % 4 * 15
             var sample = HealthDaySummary(date: day)
             sample.inBedMinutes = sleep + 25
             sample.sleepMinutes = sleep
@@ -128,23 +139,34 @@ struct SyntheticDemoData {
             sample.remSleepMinutes = 90
             sample.coreSleepMinutes = sleep - 165
             sample.awakeMinutes = 25
-            sample.bedtimeMinute = 23 * 60 + (offset % 3) * 10
-            sample.wakeMinute = 7 * 60 + (offset % 3) * 10
-            sample.steps = 6200 + offset * 180
-            sample.workoutMinutes = 30
-            sample.restingHeartRate = 57 + offset % 4
-            sample.hrvSDNN = 48 + offset % 6
-            sample.signalCount = 12
-            health.append(sample)
+            sample.wakeMinute = 7 * 60 + 30
+            sample.bedtimeMinute = (sample.wakeMinute! - sleep - 25 + 1440) % 1440
+            byDay[day] = replacingSleep(in: byDay[day] ?? HealthDaySummary(date: day), with: sample)
         }
-        self.sessions = sessions
-        self.events = sessions.map { session in
-            BlankUsageEvent(kind: .blockEnded, sessionId: session.id,
-                occurredAt: session.endedAt!, entryMode: .app, endedReason: .timer,
-                duration: session.duration,
-                selectionSnapshot: BlankSelectionSnapshot(applicationCount: 3), calendar: calendar)
-        }
-        self.health = health
+        return byDay.values.filter(\.hasSignals).sorted { $0.date < $1.date }
+    }
+
+    static func removingSleep(from summaries: [HealthDaySummary]) -> [HealthDaySummary] {
+        summaries.map { replacingSleep(in: $0, with: HealthDaySummary(date: $0.date)) }.filter(\.hasSignals)
+    }
+
+    private static func replacingSleep(in real: HealthDaySummary, with sleep: HealthDaySummary) -> HealthDaySummary {
+        var result = real
+        result.inBedMinutes = sleep.inBedMinutes
+        result.sleepMinutes = sleep.sleepMinutes
+        result.deepSleepMinutes = sleep.deepSleepMinutes
+        result.remSleepMinutes = sleep.remSleepMinutes
+        result.coreSleepMinutes = sleep.coreSleepMinutes
+        result.awakeMinutes = sleep.awakeMinutes
+        result.bedtimeMinute = sleep.bedtimeMinute
+        result.wakeMinute = sleep.wakeMinute
+        result.signalCount = [result.inBedMinutes, result.sleepMinutes, result.deepSleepMinutes,
+            result.remSleepMinutes, result.coreSleepMinutes, result.awakeMinutes, result.bedtimeMinute,
+            result.wakeMinute, result.steps, result.distanceMeters, result.activeEnergyKcal,
+            result.basalEnergyKcal, result.workoutMinutes, result.mindfulMinutes, result.averageHeartRate,
+            result.restingHeartRate, result.hrvSDNN, result.respiratoryRate, result.oxygenSaturation,
+            result.vo2Max, result.flightsClimbed].compactMap { $0 }.count
+        return result
     }
 }
 

@@ -1,32 +1,25 @@
 import XCTest
 
 final class MinimalHomeUITests: XCTestCase {
-    func testSyntheticDemoWithoutSleepAndReturnToOnboarding() {
+    func testSleepSourceKeepsProductionScreensAndUnmetAccountGate() {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["BLANK_UI_SCENARIO"] = "product-onboarding-device-empty"
         app.launch()
-        let entry = app.buttons["onboarding-synthetic-demo"]
-        XCTAssertTrue(entry.waitForExistence(timeout: 10))
-        if !entry.isHittable { app.swipeUp() }
-        entry.tap()
-        XCTAssertTrue(app.staticTexts["synthetic-demo-banner"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["synthetic-demo-sleep"].exists)
-        // The production report cannot apply a protection using fictional evidence.
-        app.swipeUp()
-        let protect = app.buttons["progress-protect"]
-        XCTAssertTrue(protect.exists)
-        XCTAssertFalse(protect.isEnabled)
-        app.buttons["home-tab-chat"].tap()
-        app.buttons["Show my sample sleep"].tap()
-        XCTAssertTrue(app.staticTexts["synthetic-demo-reply"].label.contains("14 nights"))
-        app.buttons["home-tab-control"].tap()
-        app.buttons["synthetic-demo-protection"].tap()
-        XCTAssertTrue(app.staticTexts["Sample protection active. Your apps remain accessible."].exists)
-        app.buttons["synthetic-demo-exit"].tap()
-        XCTAssertTrue(entry.waitForExistence(timeout: 5))
-        // Exiting returns to the unmet Health requirement; demo never completes setup.
-        XCTAssertTrue(app.staticTexts["onboarding-sleep-empty"].exists)
+        XCTAssertTrue(app.staticTexts["onboarding-sleep-empty"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["onboarding-synthetic-demo"].exists, "Anonymous users cannot enable account-scoped sleep")
+        XCTAssertFalse(app.staticTexts["synthetic-demo-banner"].exists)
+        app.terminate()
+        let home = launch()
+        home.buttons["home-tab-control"].tap()
+        XCTAssertTrue(home.buttons["automatic protection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(home.buttons["distractions"].exists)
+        home.buttons["home-tab-progress"].tap()
+        XCTAssertTrue(home.staticTexts["Progress"].waitForExistence(timeout: 5))
+        XCTAssertFalse(home.staticTexts["synthetic-demo-banner"].exists)
+        home.buttons["home-tab-chat"].tap()
+        XCTAssertTrue(home.buttons["home-voice"].waitForExistence(timeout: 5))
+        XCTAssertFalse(home.buttons["Show my sample sleep"].exists)
     }
 
     private func launch(_ scenario: String = "product-home", language: String = "en") -> XCUIApplication {

@@ -22,7 +22,6 @@ struct SetupView: View {
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
     @ObservedObject private var healthKitStore: HealthKitStore
     @State private var showingHealthHelp = false
-    @State private var showingSyntheticDemo = false
     @AppStorage("blankHealthOnboardingVersion", store: BlankSharedState.defaults) private var healthOnboardingVersion = 0
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
@@ -41,7 +40,7 @@ struct SetupView: View {
 
     var onFinishForQA: (() -> Void)?
 
-    init(healthKitStore: HealthKitStore = HealthKitStore(), _ onFinishForQA: (() -> Void)? = nil) {
+    init(healthKitStore: HealthKitStore = HealthKitStore.shared, _ onFinishForQA: (() -> Void)? = nil) {
         self.healthKitStore = healthKitStore
         self.onFinishForQA = onFinishForQA
         #if DEBUG && targetEnvironment(simulator)
@@ -68,9 +67,6 @@ struct SetupView: View {
             }
         }
         .statusBarHidden(true)
-        .fullScreenCover(isPresented: $showingSyntheticDemo) {
-            SyntheticDemoView()
-        }
         .sheet(isPresented: $showingHealthHelp) {
             NavigationStack {
                 ScrollView {
@@ -200,12 +196,16 @@ struct SetupView: View {
                 Text("Sleep records are available. We'll keep gathering context to understand your patterns.")
                     .font(.blankBody).accessibilityIdentifier("onboarding-sleep-available")
             }
-            Button("Explore demo with sample data") { showingSyntheticDemo = true }
+            if healthKitStore.canUseSyntheticSleep {
+                Button(healthKitStore.syntheticSleepEnabled ? "Use Apple Health sleep" : "Use synthetic sleep") {
+                    healthKitStore.setSyntheticSleepEnabled(!healthKitStore.syntheticSleepEnabled)
+                }
                 .buttonStyle(OnboardingButtonStyle())
                 .accessibilityIdentifier("onboarding-synthetic-demo")
-            Text("Explore without sleep records. All demo numbers are fictional.")
-                .font(.blankInter(size: 13, relativeTo: .caption))
-                .fixedSize(horizontal: false, vertical: true)
+                Text("Only sleep is synthetic. Blankmind, protection and activity remain real.")
+                    .font(.blankInter(size: 13, relativeTo: .caption))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .foregroundStyle(MinimalHomeDesign.ink)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -260,7 +260,7 @@ struct SetupView: View {
     private var deviceReady: Bool {
         !assistantConnectCode.isEmpty && SleepAccessPolicy.canEnter(
             screenTimeApproved: screenTimeBlocker.authorizationStatus == .approved,
-            sleep: healthKitStore.sleepAccess)
+            sleep: healthKitStore.onboardingSleepAccess)
     }
 
     private func authorizeScreenTime() {
@@ -318,11 +318,14 @@ struct SetupView: View {
         }
         do {
             _ = try await AssistantAppClient().activate()
+            guard setupOwner == AssistantAppSession.userID else { return }
             guard await syncAssistantContext(deviceReady: false) else {
                 message = "Could not save this iPhone's setup. Try again."
                 return
             }
+            guard setupOwner == AssistantAppSession.userID else { return }
             let completed = try await postAssistantChannel("complete_onboarding")
+            guard setupOwner == AssistantAppSession.userID else { return }
             guard completed["ready"] as? Bool == true else {
                 message = "Blankmind is still checking this iPhone. Try again in a moment."
                 return
@@ -346,7 +349,9 @@ struct SetupView: View {
             payload: [
                 "locale": Locale.current.identifier,
                 "onboarding_version": 6,
-                "sleep_data_available": healthKitStore.sleepAccess.hasData,
+                "sleep_data_available": healthKitStore.sleepDataAvailable,
+                "health_signal_reasons": healthKitStore.sleepProvenance,
+                "personal_profile": healthKitStore.sleepContextProfile(),
                 "sleep_data_checked_at": ISO8601DateFormatter().string(from: Date()),
                 "has_selected_apps": sessionStore.hasSelectedApps,
                 "selection_count": sessionStore.selectionCount,
