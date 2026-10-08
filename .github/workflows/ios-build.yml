@@ -49,6 +49,7 @@ jobs:
           swiftc ios/Blank/Blank/SleepAccessPolicy.swift tools/sleep_access_test.swift -o tmp/native-tests/sleep-access
           tmp/native-tests/sleep-access
           node tools/onboarding_access_test.js
+          node tools/run_synthetic_demo_tests.js
           node tools/run_assistant_client_tests.js
           swiftc -swift-version 5 -parse-as-library ios/Blank/Blank/AssistantWritingHaptics.swift tools/assistant_writing_haptics_test.swift -o tmp/native-tests/writing-haptics
           tmp/native-tests/writing-haptics

@@ -7,6 +7,11 @@ struct ReportView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var usesMainBackground = false
     var onClose: (() -> Void)? = nil
+    var demoData: SyntheticDemoData? = nil
+    private var reportSessions: [BlankSession] { demoData?.sessions ?? sessionStore.brainSessions }
+    private var reportEvents: [BlankUsageEvent] { demoData?.events ?? sessionStore.brainUsageEvents }
+    private var reportHealth: [HealthDaySummary] { demoData?.health ?? healthKitStore.summaries }
+    private var protectionActive: Bool { demoData == nil && sessionStore.isBlankActive }
     @StateObject private var healthKitStore = HealthKitStore()
     @State private var isSubmittingWellnessFeatures = false
     @State private var wellnessSyncMessage: String?
@@ -28,12 +33,12 @@ struct ReportView: View {
     private var reportSecondary: Color { BlankColors.cardInk.opacity(0.86) }
     private var accentBlue: Color { BlankColors.cardInk }
     private var recoveryGreen: Color { BlankColors.cardInk.opacity(0.84) }
-    private var headerPrimary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.charcoal }
-    private var headerSecondary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk }
+    private var headerPrimary: Color { protectionActive ? BlankColors.pureWhite : BlankColors.charcoal }
+    private var headerSecondary: Color { protectionActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk }
 
     private var report: BlankProgressReport {
         BlankProgressAggregator.aggregate(
-            sessions: sessionStore.brainSessions
+            sessions: reportSessions
         )
     }
 
@@ -42,22 +47,22 @@ struct ReportView: View {
         let weekly = progress.weeklyReport
         let now = Date()
         let todayStart = Calendar.current.startOfDay(for: now)
-        let todayFocusTime = focusTime(sessions: sessionStore.brainSessions, from: todayStart, to: now)
-        let todaySessionCount = sessionCount(sessions: sessionStore.brainSessions, from: todayStart, to: now)
+        let todayFocusTime = focusTime(sessions: reportSessions, from: todayStart, to: now)
+        let todaySessionCount = sessionCount(sessions: reportSessions, from: todayStart, to: now)
         let todaySavedTime = cappedSavedTime(totalFocusTime: todayFocusTime, sessionCount: todaySessionCount)
-        let totalFocusTime = focusTime(sessions: sessionStore.brainSessions, from: .distantPast, to: Date())
-        let totalSessionCount = sessionCount(sessions: sessionStore.brainSessions, from: .distantPast, to: Date())
+        let totalFocusTime = focusTime(sessions: reportSessions, from: .distantPast, to: Date())
+        let totalSessionCount = sessionCount(sessions: reportSessions, from: .distantPast, to: Date())
         let savedTime = cappedSavedTime(totalFocusTime: totalFocusTime, sessionCount: totalSessionCount)
         let diagnosis = DigitalWellnessAI.currentDiagnosis(
-            events: sessionStore.brainUsageEvents,
-            sessions: sessionStore.brainSessions,
-            selectionCount: sessionStore.selectionCount
+            events: reportEvents,
+            sessions: reportSessions,
+            selectionCount: demoData == nil ? sessionStore.selectionCount : 3
         )
-        let healthContext = healthRecoveryContext(summaries: healthKitStore.summaries)
+        let healthContext = healthRecoveryContext(summaries: reportHealth)
         let controlForecast = healthControlForecast(
             context: healthContext,
-            events: sessionStore.brainUsageEvents,
-            sessions: sessionStore.brainSessions,
+            events: reportEvents,
+            sessions: reportSessions,
             diagnosis: diagnosis
         )
         let content = AnyView(
@@ -70,7 +75,7 @@ struct ReportView: View {
                 totalSessionCount: totalSessionCount,
                 savedTime: savedTime,
                 forecast: controlForecast,
-                emergencyUnlocksRemaining: sessionStore.emergencyUnlocksRemaining
+                emergencyUnlocksRemaining: demoData == nil ? sessionStore.emergencyUnlocksRemaining : 3
             )
         )
 
@@ -110,8 +115,9 @@ struct ReportView: View {
         }
         .background(reportBackground)
         .foregroundStyle(reportPrimary)
-        .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
+        .preferredColorScheme(protectionActive ? .dark : .light)
         .onAppear {
+            guard demoData == nil else { return }
             healthKitStore.refresh()
             refreshDailyAIIfNeeded()
         }
@@ -130,6 +136,22 @@ struct ReportView: View {
     ) -> some View {
             VStack(alignment: .leading, spacing: 12) {
                 newLookProgressHeader()
+
+                if let demoData {
+                    let nights = demoData.health.count
+                    let sleep = demoData.health.compactMap(\.sleepMinutes).reduce(0, +) / max(1, nights)
+                    let steps = demoData.health.compactMap(\.steps).reduce(0, +) / max(1, nights)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("sample health · fictional")
+                        Text("\(sleep / 60) h \(sleep % 60) min average sleep")
+                            .accessibilityIdentifier("synthetic-demo-sleep")
+                        Text("\(steps) steps/day · \(nights) nights")
+                    }
+                    .font(.blankBody)
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .reportFlatCard()
+                }
 
                 // Risk is deliberately the first card: it turns the report into a daily decision.
                 newLookRiskCard(forecast: forecast)
@@ -264,7 +286,7 @@ struct ReportView: View {
 
                 if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 8) }
 
-                if sessionStore.isBlankActive {
+                if protectionActive {
                     Text("protected")
                         .font(.blankInter(size: 12, weight: .regular, relativeTo: .caption))
                         .foregroundStyle(recoveryGreen)
@@ -279,6 +301,7 @@ struct ReportView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .disabled(demoData != nil)
                     .accessibilityIdentifier("progress-protect")
                     .accessibilityLabel("Protect selected distractions")
                 }
@@ -562,20 +585,22 @@ struct ReportView: View {
     }
 
     private var reportBackground: some View {
-        (sessionStore.isBlankActive ? BlankColors.newLookDarkBackground : BlankColors.minimalBackground)
+        (protectionActive ? BlankColors.newLookDarkBackground : BlankColors.minimalBackground)
             .ignoresSafeArea()
     }
 
     private func startBlank(durationMinutes: Int? = nil) {
+        guard demoData == nil else { return }
         _ = sessionStore.activateBlank(durationMinutes: durationMinutes)
-        screenTimeBlocker.apply(isBlankActive: sessionStore.isBlankActive)
+        screenTimeBlocker.apply(isBlankActive: protectionActive)
     }
 
     private func scheduleForecastBlock(_ forecast: ControlForecast, source: String) {
+        guard demoData == nil else { return }
         let startMinute = forecast.windowStartMinute
         let endMinute = forecast.windowEndMinute
         sessionStore.applyAdaptivePlan(startMinute: startMinute, endMinute: endMinute, durationDays: 1, activateCurrentWindow: false)
-        screenTimeBlocker.apply(isBlankActive: sessionStore.isBlankActive)
+        screenTimeBlocker.apply(isBlankActive: protectionActive)
         Task {
             await BlankFunnelAnalytics.track(
                 "ai_plan_applied",
@@ -594,12 +619,13 @@ struct ReportView: View {
     }
 
     private func healthSourceStatus(context: HealthRecoveryContext) -> String {
+        if demoData != nil { return "Sample data" }
         guard case .connected = healthKitStore.state else {
             if case .failed(_) = healthKitStore.state { return "Partial" }
             return "Off"
         }
-        if healthKitStore.summaries.isEmpty { return "No data" }
-        if let latest = healthKitStore.summaries.map(\.date).max(),
+        if reportHealth.isEmpty { return "No data" }
+        if let latest = reportHealth.map(\.date).max(),
            Date().timeIntervalSince(latest) > 72 * 60 * 60 {
             return "Stale"
         }
@@ -943,6 +969,7 @@ struct ReportView: View {
     }
 
     private func refreshDailyAIIfNeeded() {
+        guard demoData == nil else { return }
         guard wellnessFeatureConsent, !isSubmittingWellnessFeatures else { return }
         let elapsed = Date().timeIntervalSince1970 - remoteWellnessLastSyncAt
         guard elapsed > 20 * 60 * 60 else { return }
@@ -951,7 +978,8 @@ struct ReportView: View {
     }
 
     private func syncDigitalWellnessFeatures(showSuccessMessage: Bool) {
-        let payload = sessionStore.digitalWellnessFeaturePayload(healthSummaries: healthKitStore.summaries)
+        guard demoData == nil else { return }
+        let payload = sessionStore.digitalWellnessFeaturePayload(healthSummaries: reportHealth)
         let anonymousUserId = currentAnonymousUserId()
 
         Task {
@@ -959,8 +987,8 @@ struct ReportView: View {
                 await BlankFunnelAnalytics.track(
                     "ai_insight_requested",
                     properties: [
-                        "health_days": healthKitStore.summaries.count,
-                        "usage_events": sessionStore.brainUsageEvents.count,
+                        "health_days": reportHealth.count,
+                        "usage_events": reportEvents.count,
                         "selection_count": sessionStore.selectionCount
                     ]
                 )
@@ -974,8 +1002,8 @@ struct ReportView: View {
                     "ai_insight_received",
                     properties: [
                         "source": insight.source ?? "unknown",
-                        "health_days": healthKitStore.summaries.count,
-                        "usage_events": sessionStore.brainUsageEvents.count
+                        "health_days": reportHealth.count,
+                        "usage_events": reportEvents.count
                     ]
                 )
                 await MainActor.run {
@@ -993,7 +1021,7 @@ struct ReportView: View {
     }
 
     private func trackHealthDataState(payload: DigitalWellnessFeaturePayload) {
-        let context = healthRecoveryContext(summaries: healthKitStore.summaries)
+        let context = healthRecoveryContext(summaries: reportHealth)
         let status = healthSourceStatus(context: context)
         guard status == "Connected" || status == "Partial" || status == "Stale" else { return }
         Task {

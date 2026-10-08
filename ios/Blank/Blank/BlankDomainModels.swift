@@ -100,6 +100,54 @@ enum BlankFunnelAnalytics {
     }
 }
 
+// In-memory samples only: never inserted into HealthKit, session history or BM context.
+struct SyntheticDemoData {
+    let sessions: [BlankSession]
+    let events: [BlankUsageEvent]
+    let health: [HealthDaySummary]
+
+    init(now: Date = Date(), calendar: Calendar = .current) {
+        let today = calendar.startOfDay(for: now)
+        let profile = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        var sessions: [BlankSession] = []
+        var health: [HealthDaySummary] = []
+        for offset in (0..<14).reversed() {
+            let day = calendar.date(byAdding: .day, value: -offset, to: today)!
+            let end = min(day.addingTimeInterval(12 * 3600), now.addingTimeInterval(-60))
+            let duration = 60 + (offset % 5) * 15
+            sessions.append(BlankSession(profileId: profile, strategy: .manual,
+                startedAt: end.addingTimeInterval(-Double(duration) * 60), endedAt: end,
+                entryMode: .app, endedReason: .timer,
+                selectionSnapshot: BlankSelectionSnapshot(applicationCount: 3),
+                plannedDurationMinutes: duration, calendar: calendar))
+            let sleep = 410 + (offset % 4) * 15
+            var sample = HealthDaySummary(date: day)
+            sample.inBedMinutes = sleep + 25
+            sample.sleepMinutes = sleep
+            sample.deepSleepMinutes = 75
+            sample.remSleepMinutes = 90
+            sample.coreSleepMinutes = sleep - 165
+            sample.awakeMinutes = 25
+            sample.bedtimeMinute = 23 * 60 + (offset % 3) * 10
+            sample.wakeMinute = 7 * 60 + (offset % 3) * 10
+            sample.steps = 6200 + offset * 180
+            sample.workoutMinutes = 30
+            sample.restingHeartRate = 57 + offset % 4
+            sample.hrvSDNN = 48 + offset % 6
+            sample.signalCount = 12
+            health.append(sample)
+        }
+        self.sessions = sessions
+        self.events = sessions.map { session in
+            BlankUsageEvent(kind: .blockEnded, sessionId: session.id,
+                occurredAt: session.endedAt!, entryMode: .app, endedReason: .timer,
+                duration: session.duration,
+                selectionSnapshot: BlankSelectionSnapshot(applicationCount: 3), calendar: calendar)
+        }
+        self.health = health
+    }
+}
+
 struct HealthDaySummary: Identifiable, Equatable {
     var id: Date { date }
     var date: Date

@@ -22,6 +22,7 @@ struct SetupView: View {
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
     @ObservedObject private var healthKitStore: HealthKitStore
     @State private var showingHealthHelp = false
+    @State private var showingSyntheticDemo = false
     @AppStorage("blankHealthOnboardingVersion", store: BlankSharedState.defaults) private var healthOnboardingVersion = 0
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
@@ -67,6 +68,9 @@ struct SetupView: View {
             }
         }
         .statusBarHidden(true)
+        .fullScreenCover(isPresented: $showingSyntheticDemo) {
+            SyntheticDemoView()
+        }
         .sheet(isPresented: $showingHealthHelp) {
             NavigationStack {
                 ScrollView {
@@ -196,6 +200,12 @@ struct SetupView: View {
                 Text("Sleep records are available. We'll keep gathering context to understand your patterns.")
                     .font(.blankBody).accessibilityIdentifier("onboarding-sleep-available")
             }
+            Button("Explore demo with sample data") { showingSyntheticDemo = true }
+                .buttonStyle(OnboardingButtonStyle())
+                .accessibilityIdentifier("onboarding-synthetic-demo")
+            Text("Explore without sleep records. All demo numbers are fictional.")
+                .font(.blankInter(size: 13, relativeTo: .caption))
+                .fixedSize(horizontal: false, vertical: true)
         }
         .foregroundStyle(MinimalHomeDesign.ink)
         .frame(maxWidth: .infinity, alignment: .leading)

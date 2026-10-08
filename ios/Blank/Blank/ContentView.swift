@@ -74,6 +74,71 @@ struct ContentView: View {
     }
 }
 
+// This scene owns only transient UI state. It never opens an authenticated chat,
+// marks onboarding complete, writes samples to a store or applies Screen Time.
+struct SyntheticDemoView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var tab: MinimalHomeTab = .progress
+    @State private var data = SyntheticDemoData()
+    @State private var sampleProtection = false
+    @State private var sampleReply = "These are fictional records. Explore Progress to see how your report will look once sleep records are connected."
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("DEMO · SAMPLE DATA")
+                    .font(.blankInter(size: 13, relativeTo: .caption))
+                    .accessibilityIdentifier("synthetic-demo-banner")
+                Spacer(minLength: 8)
+                Button("Exit demo") { dismiss() }
+                    .frame(minWidth: 44, minHeight: 44)
+                    .accessibilityIdentifier("synthetic-demo-exit")
+            }
+            .padding(.horizontal, 24)
+            MinimalHomeNavigation(selected: tab, foreground: BlankColors.cardInk) { tab = $0 }
+            if tab == .progress {
+                ReportView(usesMainBackground: true, demoData: data)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        Text(tab.label).font(.blankInter(size: 32, relativeTo: .title))
+                        if tab == .control {
+                            Text("Example night protection: 22:30–07:00\n3 example distractions\n14 days of fictional history")
+                            Button(sampleProtection ? "Stop sample protection" : "Try sample protection") {
+                                sampleProtection.toggle()
+                            }
+                            .frame(minHeight: 44)
+                            .accessibilityIdentifier("synthetic-demo-protection")
+                            Text(sampleProtection ? "Sample protection active. Your apps remain accessible." : "Sample protection inactive.")
+                            Text("This preview does not block apps or change your settings.")
+                        } else {
+                            Text(sampleReply)
+                                .accessibilityIdentifier("synthetic-demo-reply")
+                            Button("Show my sample sleep") {
+                                let average = data.health.compactMap(\.sleepMinutes).reduce(0, +) / data.health.count
+                                sampleReply = "In this fictional history, average sleep is \(average / 60) h \(average % 60) min across 14 nights. These are sample numbers, not measurements from your iPhone."
+                            }
+                            .frame(minHeight: 44)
+                            Button("Show my sample protection") {
+                                let minutes = Int(data.sessions.reduce(0) { $0 + $1.duration } / 60)
+                                sampleReply = "This example has \(data.sessions.count) completed sessions and \(minutes / 60) h \(minutes % 60) min of protection. The demo uses scripted replies."
+                            }
+                            .frame(minHeight: 44)
+                        }
+                    }
+                    .font(.blankBody)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(24)
+                }
+            }
+        }
+        .background(BlankColors.minimalBackground.ignoresSafeArea())
+        .foregroundStyle(BlankColors.cardInk)
+        .preferredColorScheme(.light)
+        .environment(\.blankSectionHorizontalPadding, 24)
+    }
+}
+
 struct AssistantContextSyncClient {
     private let defaults = BlankSharedState.defaults
     private let lastSuccessKey = "blankAssistantContextLastSyncedAt"
