@@ -1,0 +1,1211 @@
+{
+  "schema_version": 1,
+  "split": "instrumentation-timing-replay",
+  "authoring_frozen_before_replay": true,
+  "previously_run": true,
+  "not_new_holdout": true,
+  "source_manifest_sha256": "49db36f6cc631123f89a14deeae09762d68104553978953a2c189369a04fc8aa",
+  "description": "All80 factual cases repeated on actual NDJSON handler, same runtime and fixtures. Preserve original final run and failures. First-ever nonempty draft timestamp never resets.",
+  "cases": [
+    {
+      "id": "wide-1",
+      "route": "sleep_yesterday",
+      "text": "¿Cuántos minutos de sueño constan de ayer?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        333,
+        401,
+        427
+      ],
+      "protection_minutes": 37,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-2",
+      "route": "sleep_yesterday",
+      "text": "Quiero ver cuánto dormí ayer según el registro.",
+      "language": "es",
+      "profile": "missing",
+      "sleep_minutes": [
+        344,
+        408,
+        436
+      ],
+      "protection_minutes": 50,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-3",
+      "route": "sleep_yesterday",
+      "text": "¿Cuál fue mi duración de sueño de ayer?",
+      "language": "es",
+      "profile": "zero",
+      "sleep_minutes": [
+        355,
+        415,
+        445
+      ],
+      "protection_minutes": 63,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-4",
+      "route": "sleep_yesterday",
+      "text": "Consulta mis horas dormidas de ayer.",
+      "language": "es",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        366,
+        422,
+        454
+      ],
+      "protection_minutes": 76,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-5",
+      "route": "sleep_yesterday",
+      "text": "¿Qué duración aparece para mi sueño ayer?",
+      "language": "es",
+      "profile": "boundary",
+      "sleep_minutes": [
+        377,
+        429,
+        463
+      ],
+      "protection_minutes": 89,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-6",
+      "route": "sleep_yesterday",
+      "text": "Dime el sueño que declaré ayer.",
+      "language": "es",
+      "profile": "declared",
+      "sleep_minutes": [
+        388,
+        436,
+        472
+      ],
+      "protection_minutes": 102,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-7",
+      "route": "sleep_yesterday",
+      "text": "¿Qué tiempo de sueño figura de ayer en mis datos?",
+      "language": "es",
+      "profile": "duplicate",
+      "sleep_minutes": [
+        399,
+        443,
+        481
+      ],
+      "protection_minutes": 115,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-8",
+      "route": "sleep_yesterday",
+      "text": "¿Cuánto sueño válido registré ayer?",
+      "language": "es",
+      "profile": "invalid",
+      "sleep_minutes": [
+        410,
+        450,
+        490
+      ],
+      "protection_minutes": 128,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-9",
+      "route": "sleep_yesterday",
+      "text": "¿Hay duración de mi sueño de ayer?",
+      "language": "es",
+      "profile": "sparse",
+      "sleep_minutes": [
+        421,
+        457,
+        499
+      ],
+      "protection_minutes": 141,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-10",
+      "route": "sleep_yesterday",
+      "text": "Ayer, ¿qué cantidad de sueño tengo guardada?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        432,
+        464,
+        508
+      ],
+      "protection_minutes": 154,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-11",
+      "route": "sleep_yesterday",
+      "text": "How many sleep minutes are on record for yesterday?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        333,
+        401,
+        427
+      ],
+      "protection_minutes": 37,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-12",
+      "route": "sleep_yesterday",
+      "text": "Show how long I slept yesterday according to my records.",
+      "language": "en",
+      "profile": "missing",
+      "sleep_minutes": [
+        344,
+        408,
+        436
+      ],
+      "protection_minutes": 50,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-13",
+      "route": "sleep_yesterday",
+      "text": "What was my recorded sleep duration yesterday?",
+      "language": "en",
+      "profile": "zero",
+      "sleep_minutes": [
+        355,
+        415,
+        445
+      ],
+      "protection_minutes": 63,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-14",
+      "route": "sleep_yesterday",
+      "text": "Retrieve my hours asleep yesterday.",
+      "language": "en",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        366,
+        422,
+        454
+      ],
+      "protection_minutes": 76,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-15",
+      "route": "sleep_yesterday",
+      "text": "Which sleep duration is saved for yesterday?",
+      "language": "en",
+      "profile": "boundary",
+      "sleep_minutes": [
+        377,
+        429,
+        463
+      ],
+      "protection_minutes": 89,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-16",
+      "route": "sleep_yesterday",
+      "text": "What sleep duration did I declare yesterday?",
+      "language": "en",
+      "profile": "declared",
+      "sleep_minutes": [
+        388,
+        436,
+        472
+      ],
+      "protection_minutes": 102,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-17",
+      "route": "sleep_yesterday",
+      "text": "What sleep time appears in my data for yesterday?",
+      "language": "en",
+      "profile": "duplicate",
+      "sleep_minutes": [
+        399,
+        443,
+        481
+      ],
+      "protection_minutes": 115,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-18",
+      "route": "sleep_yesterday",
+      "text": "How much valid sleep did I record yesterday?",
+      "language": "en",
+      "profile": "invalid",
+      "sleep_minutes": [
+        410,
+        450,
+        490
+      ],
+      "protection_minutes": 128,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-19",
+      "route": "sleep_yesterday",
+      "text": "Is a duration available for my sleep yesterday?",
+      "language": "en",
+      "profile": "sparse",
+      "sleep_minutes": [
+        421,
+        457,
+        499
+      ],
+      "protection_minutes": 141,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-20",
+      "route": "sleep_yesterday",
+      "text": "For yesterday, what amount of sleep is saved for me?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        432,
+        464,
+        508
+      ],
+      "protection_minutes": 154,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-21",
+      "route": "sleep_week",
+      "text": "¿Cuál es mi media de sueño esta semana del calendario?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        333,
+        401,
+        427
+      ],
+      "protection_minutes": 37,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-22",
+      "route": "sleep_week",
+      "text": "Consulta el promedio de mis duraciones de sueño esta semana.",
+      "language": "es",
+      "profile": "missing",
+      "sleep_minutes": [
+        344,
+        408,
+        436
+      ],
+      "protection_minutes": 50,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-23",
+      "route": "sleep_week",
+      "text": "¿Cuántas horas duermo de media según los registros de esta semana?",
+      "language": "es",
+      "profile": "zero",
+      "sleep_minutes": [
+        355,
+        415,
+        445
+      ],
+      "protection_minutes": 63,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-24",
+      "route": "sleep_week",
+      "text": "Quiero la media de sueño guardada de esta semana.",
+      "language": "es",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        366,
+        422,
+        454
+      ],
+      "protection_minutes": 76,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-25",
+      "route": "sleep_week",
+      "text": "Esta semana, ¿cuál es mi duración media de sueño registrada?",
+      "language": "es",
+      "profile": "boundary",
+      "sleep_minutes": [
+        377,
+        429,
+        463
+      ],
+      "protection_minutes": 89,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-26",
+      "route": "sleep_week",
+      "text": "¿Qué promedio de sueño declarado tengo esta semana?",
+      "language": "es",
+      "profile": "declared",
+      "sleep_minutes": [
+        388,
+        436,
+        472
+      ],
+      "protection_minutes": 102,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-27",
+      "route": "sleep_week",
+      "text": "Calcula mi media con el sueño registrado esta semana.",
+      "language": "es",
+      "profile": "duplicate",
+      "sleep_minutes": [
+        399,
+        443,
+        481
+      ],
+      "protection_minutes": 115,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-28",
+      "route": "sleep_week",
+      "text": "¿Cuál es la media de las duraciones válidas de sueño de esta semana?",
+      "language": "es",
+      "profile": "invalid",
+      "sleep_minutes": [
+        410,
+        450,
+        490
+      ],
+      "protection_minutes": 128,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-29",
+      "route": "sleep_week",
+      "text": "¿Se puede ver mi promedio de sueño de esta semana?",
+      "language": "es",
+      "profile": "sparse",
+      "sleep_minutes": [
+        421,
+        457,
+        499
+      ],
+      "protection_minutes": 141,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-30",
+      "route": "sleep_week",
+      "text": "¿Qué media de minutos dormidos muestran mis datos esta semana?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        432,
+        464,
+        508
+      ],
+      "protection_minutes": 154,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-31",
+      "route": "sleep_week",
+      "text": "What is my average recorded sleep this calendar week?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        333,
+        401,
+        427
+      ],
+      "protection_minutes": 37,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-32",
+      "route": "sleep_week",
+      "text": "Retrieve the mean of my sleep durations this week.",
+      "language": "en",
+      "profile": "missing",
+      "sleep_minutes": [
+        344,
+        408,
+        436
+      ],
+      "protection_minutes": 50,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-33",
+      "route": "sleep_week",
+      "text": "How many hours do I sleep on average in this week’s records?",
+      "language": "en",
+      "profile": "zero",
+      "sleep_minutes": [
+        355,
+        415,
+        445
+      ],
+      "protection_minutes": 63,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-34",
+      "route": "sleep_week",
+      "text": "Show my saved sleep average for this week.",
+      "language": "en",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        366,
+        422,
+        454
+      ],
+      "protection_minutes": 76,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-35",
+      "route": "sleep_week",
+      "text": "This week, what is my recorded mean sleep duration?",
+      "language": "en",
+      "profile": "boundary",
+      "sleep_minutes": [
+        377,
+        429,
+        463
+      ],
+      "protection_minutes": 89,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-36",
+      "route": "sleep_week",
+      "text": "What average declared sleep do I have this week?",
+      "language": "en",
+      "profile": "declared",
+      "sleep_minutes": [
+        388,
+        436,
+        472
+      ],
+      "protection_minutes": 102,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-37",
+      "route": "sleep_week",
+      "text": "Calculate my mean from sleep recorded this week.",
+      "language": "en",
+      "profile": "duplicate",
+      "sleep_minutes": [
+        399,
+        443,
+        481
+      ],
+      "protection_minutes": 115,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-38",
+      "route": "sleep_week",
+      "text": "What is the average of my valid sleep durations this week?",
+      "language": "en",
+      "profile": "invalid",
+      "sleep_minutes": [
+        410,
+        450,
+        490
+      ],
+      "protection_minutes": 128,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-39",
+      "route": "sleep_week",
+      "text": "Is my sleep average for this week available?",
+      "language": "en",
+      "profile": "sparse",
+      "sleep_minutes": [
+        421,
+        457,
+        499
+      ],
+      "protection_minutes": 141,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-40",
+      "route": "sleep_week",
+      "text": "What mean sleep minutes do my data show this week?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        432,
+        464,
+        508
+      ],
+      "protection_minutes": 154,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-41",
+      "route": "protection_yesterday",
+      "text": "¿Cuántos minutos de protección constan ayer?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        333,
+        401,
+        427
+      ],
+      "protection_minutes": 37,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-42",
+      "route": "protection_yesterday",
+      "text": "Consulta mi total registrado de protección de ayer.",
+      "language": "es",
+      "profile": "missing",
+      "sleep_minutes": [
+        344,
+        408,
+        436
+      ],
+      "protection_minutes": 50,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-43",
+      "route": "protection_yesterday",
+      "text": "¿Qué tiempo protegido figura para ayer en mis sesiones?",
+      "language": "es",
+      "profile": "zero",
+      "sleep_minutes": [
+        355,
+        415,
+        445
+      ],
+      "protection_minutes": 63,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-44",
+      "route": "protection_yesterday",
+      "text": "Quiero los minutos de protección guardados de ayer.",
+      "language": "es",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        366,
+        422,
+        454
+      ],
+      "protection_minutes": 76,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-45",
+      "route": "protection_yesterday",
+      "text": "Ayer, ¿cuál fue mi total de protección registrado?",
+      "language": "es",
+      "profile": "boundary",
+      "sleep_minutes": [
+        377,
+        429,
+        463
+      ],
+      "protection_minutes": 89,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-46",
+      "route": "protection_yesterday",
+      "text": "¿Cuánto tiempo de protección declararon los registros de ayer?",
+      "language": "es",
+      "profile": "declared",
+      "sleep_minutes": [
+        388,
+        436,
+        472
+      ],
+      "protection_minutes": 102,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-47",
+      "route": "protection_yesterday",
+      "text": "Calcula los minutos de mis sesiones de protección de ayer.",
+      "language": "es",
+      "profile": "duplicate",
+      "sleep_minutes": [
+        399,
+        443,
+        481
+      ],
+      "protection_minutes": 115,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-48",
+      "route": "protection_yesterday",
+      "text": "¿Qué total válido de protección tengo registrado ayer?",
+      "language": "es",
+      "profile": "invalid",
+      "sleep_minutes": [
+        410,
+        450,
+        490
+      ],
+      "protection_minutes": 128,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-49",
+      "route": "protection_yesterday",
+      "text": "¿Hay minutos de protección anotados de ayer?",
+      "language": "es",
+      "profile": "sparse",
+      "sleep_minutes": [
+        421,
+        457,
+        499
+      ],
+      "protection_minutes": 141,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-50",
+      "route": "protection_yesterday",
+      "text": "¿Cuál es la suma sin solapamientos de mi protección de ayer?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        432,
+        464,
+        508
+      ],
+      "protection_minutes": 154,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-51",
+      "route": "protection_yesterday",
+      "text": "How many protection minutes are on record yesterday?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        333,
+        401,
+        427
+      ],
+      "protection_minutes": 37,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-52",
+      "route": "protection_yesterday",
+      "text": "Retrieve my recorded protection total for yesterday.",
+      "language": "en",
+      "profile": "missing",
+      "sleep_minutes": [
+        344,
+        408,
+        436
+      ],
+      "protection_minutes": 50,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-53",
+      "route": "protection_yesterday",
+      "text": "What protected time appears in yesterday’s sessions?",
+      "language": "en",
+      "profile": "zero",
+      "sleep_minutes": [
+        355,
+        415,
+        445
+      ],
+      "protection_minutes": 63,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-54",
+      "route": "protection_yesterday",
+      "text": "Show the saved protection minutes from yesterday.",
+      "language": "en",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        366,
+        422,
+        454
+      ],
+      "protection_minutes": 76,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-55",
+      "route": "protection_yesterday",
+      "text": "Yesterday, what was my recorded protection total?",
+      "language": "en",
+      "profile": "boundary",
+      "sleep_minutes": [
+        377,
+        429,
+        463
+      ],
+      "protection_minutes": 89,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-56",
+      "route": "protection_yesterday",
+      "text": "What protection duration do yesterday’s records report?",
+      "language": "en",
+      "profile": "declared",
+      "sleep_minutes": [
+        388,
+        436,
+        472
+      ],
+      "protection_minutes": 102,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-57",
+      "route": "protection_yesterday",
+      "text": "Calculate minutes from my protection sessions yesterday.",
+      "language": "en",
+      "profile": "duplicate",
+      "sleep_minutes": [
+        399,
+        443,
+        481
+      ],
+      "protection_minutes": 115,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-58",
+      "route": "protection_yesterday",
+      "text": "What valid protection total do I have recorded yesterday?",
+      "language": "en",
+      "profile": "invalid",
+      "sleep_minutes": [
+        410,
+        450,
+        490
+      ],
+      "protection_minutes": 128,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-59",
+      "route": "protection_yesterday",
+      "text": "Are there protection minutes logged for yesterday?",
+      "language": "en",
+      "profile": "sparse",
+      "sleep_minutes": [
+        421,
+        457,
+        499
+      ],
+      "protection_minutes": 141,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-60",
+      "route": "protection_yesterday",
+      "text": "What is my protection total yesterday without double counting overlaps?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        432,
+        464,
+        508
+      ],
+      "protection_minutes": 154,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-61",
+      "route": "protection_week",
+      "text": "¿Cuántos minutos de protección llevo registrados esta semana?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        333,
+        401,
+        427
+      ],
+      "protection_minutes": 37,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-62",
+      "route": "protection_week",
+      "text": "Consulta mi protección total de esta semana del calendario.",
+      "language": "es",
+      "profile": "missing",
+      "sleep_minutes": [
+        344,
+        408,
+        436
+      ],
+      "protection_minutes": 50,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-63",
+      "route": "protection_week",
+      "text": "¿Qué tiempo de protección suman mis registros esta semana?",
+      "language": "es",
+      "profile": "zero",
+      "sleep_minutes": [
+        355,
+        415,
+        445
+      ],
+      "protection_minutes": 63,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-64",
+      "route": "protection_week",
+      "text": "Quiero los minutos de protección guardados esta semana.",
+      "language": "es",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        366,
+        422,
+        454
+      ],
+      "protection_minutes": 76,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-65",
+      "route": "protection_week",
+      "text": "Esta semana, ¿cuál es mi total registrado de protección?",
+      "language": "es",
+      "profile": "boundary",
+      "sleep_minutes": [
+        377,
+        429,
+        463
+      ],
+      "protection_minutes": 89,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-66",
+      "route": "protection_week",
+      "text": "¿Qué duración de protección reportan mis sesiones esta semana?",
+      "language": "es",
+      "profile": "declared",
+      "sleep_minutes": [
+        388,
+        436,
+        472
+      ],
+      "protection_minutes": 102,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-67",
+      "route": "protection_week",
+      "text": "Calcula el total de mis sesiones de protección esta semana.",
+      "language": "es",
+      "profile": "duplicate",
+      "sleep_minutes": [
+        399,
+        443,
+        481
+      ],
+      "protection_minutes": 115,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-68",
+      "route": "protection_week",
+      "text": "¿Cuál es mi total válido de protección registrado esta semana?",
+      "language": "es",
+      "profile": "invalid",
+      "sleep_minutes": [
+        410,
+        450,
+        490
+      ],
+      "protection_minutes": 128,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-69",
+      "route": "protection_week",
+      "text": "¿Hay minutos protegidos registrados esta semana?",
+      "language": "es",
+      "profile": "sparse",
+      "sleep_minutes": [
+        421,
+        457,
+        499
+      ],
+      "protection_minutes": 141,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-70",
+      "route": "protection_week",
+      "text": "¿Qué total de protección tengo esta semana sin contar solapamientos dos veces?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        432,
+        464,
+        508
+      ],
+      "protection_minutes": 154,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-71",
+      "route": "protection_week",
+      "text": "How many protection minutes have I recorded this week?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        333,
+        401,
+        427
+      ],
+      "protection_minutes": 37,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-72",
+      "route": "protection_week",
+      "text": "Retrieve my total protection for this calendar week.",
+      "language": "en",
+      "profile": "missing",
+      "sleep_minutes": [
+        344,
+        408,
+        436
+      ],
+      "protection_minutes": 50,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-73",
+      "route": "protection_week",
+      "text": "What protection time do my records add up to this week?",
+      "language": "en",
+      "profile": "zero",
+      "sleep_minutes": [
+        355,
+        415,
+        445
+      ],
+      "protection_minutes": 63,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-74",
+      "route": "protection_week",
+      "text": "Show the saved protection minutes this week.",
+      "language": "en",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        366,
+        422,
+        454
+      ],
+      "protection_minutes": 76,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-75",
+      "route": "protection_week",
+      "text": "This week, what is my recorded protection total?",
+      "language": "en",
+      "profile": "boundary",
+      "sleep_minutes": [
+        377,
+        429,
+        463
+      ],
+      "protection_minutes": 89,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-76",
+      "route": "protection_week",
+      "text": "What protection duration do my sessions report this week?",
+      "language": "en",
+      "profile": "declared",
+      "sleep_minutes": [
+        388,
+        436,
+        472
+      ],
+      "protection_minutes": 102,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-77",
+      "route": "protection_week",
+      "text": "Calculate the total of my protection sessions this week.",
+      "language": "en",
+      "profile": "duplicate",
+      "sleep_minutes": [
+        399,
+        443,
+        481
+      ],
+      "protection_minutes": 115,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-78",
+      "route": "protection_week",
+      "text": "What is my valid protection total recorded this week?",
+      "language": "en",
+      "profile": "invalid",
+      "sleep_minutes": [
+        410,
+        450,
+        490
+      ],
+      "protection_minutes": 128,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-79",
+      "route": "protection_week",
+      "text": "Are any protected minutes recorded this week?",
+      "language": "en",
+      "profile": "sparse",
+      "sleep_minutes": [
+        421,
+        457,
+        499
+      ],
+      "protection_minutes": 141,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    },
+    {
+      "id": "wide-80",
+      "route": "protection_week",
+      "text": "What protection total do I have this week without counting overlaps twice?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        432,
+        464,
+        508
+      ],
+      "protection_minutes": 154,
+      "eligible": true,
+      "expectation": "Answer only own recorded metric for the requested bounded period, with exact units and provenance. Missing sleep is unknown, zero recorded sleep is zero, recorded protection does not prove device execution."
+    }
+  ]
+}

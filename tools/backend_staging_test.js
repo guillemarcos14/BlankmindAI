@@ -9,26 +9,28 @@ const staging = require("./backend_staging");
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "blank-staging-test-"));
 const sourceDir = path.join(fixture, "netlify", "functions");
 fs.mkdirSync(sourceDir, { recursive: true });
-for (const name of staging.ENTRIES) fs.writeFileSync(path.join(sourceDir, `${name}.js`), 'exports.handler = require("./dependency").handler;\n');
+const extension = name => ["assistant-app-stream", "assistant-app-voice"].includes(name) ? "mjs" : "js";
+for (const name of staging.ENTRIES) fs.writeFileSync(path.join(sourceDir, `${name}.${extension(name)}`), 'exports.handler = require("./dependency").handler;\n');
 fs.writeFileSync(path.join(sourceDir, "dependency.js"), 'exports.handler = async () => ({statusCode:405});\n');
 // These must never become independently exposed function entries.
 fs.writeFileSync(path.join(sourceDir, "cron.js"), 'exports.config = {schedule:"* * * * *"};\n');
 fs.writeFileSync(path.join(sourceDir, "whatsapp-agent.js"), "exports.handler = () => {};\n");
 const names = [...staging.ENTRIES, "dependency", "cron", "whatsapp-agent"];
-const tracked = names.map((name) => `netlify/functions/${name}.js`);
+const tracked = names.map((name) => `netlify/functions/${name}.${extension(name)}`);
 const commit = "a".repeat(40);
 const deployId = "b".repeat(24);
 const digest = (buffer) => crypto.createHash("sha256").update(buffer).digest("hex");
 const args = { source: fixture, cli: "test-cli.js", site: staging.SITE_ID, deploy: false };
 const bundler = { version: "test", zipFunctions: async (wrappers, target) => {
-  staging.assertEntries(fs.readdirSync(wrappers).map((file) => file.replace(/\.js$/, "")));
+  staging.assertEntries(fs.readdirSync(wrappers).map((file) => file.replace(/\.(?:mjs|js)$/, "")));
   fs.mkdirSync(target);
   return staging.ENTRIES.map((name) => {
-    assert(fs.readFileSync(path.join(wrappers, `${name}.js`), "utf8").includes(JSON.stringify(path.join(sourceDir, `${name}.js`))));
+    assert(fs.readFileSync(path.join(wrappers, `${name}.${extension(name)}`), "utf8").includes(JSON.stringify(path.join(sourceDir, `${name}.${extension(name)}`).replaceAll(String.fromCharCode(92), extension(name) === "mjs" ? "/" : String.fromCharCode(92)))));
     const archive = path.join(target, `${name}.zip`);
     fs.writeFileSync(archive, `artifact:${name}`);
-    return { name, path: archive, bundler: "esbuild", runtimeVersion: "nodejs22.x",
-      inputs: [path.join(wrappers, `${name}.js`), path.join(sourceDir, `${name}.js`), path.join(sourceDir, "dependency.js")] };
+    return { name, path: archive, bundler: extension(name) === "mjs" ? "nft" : "esbuild", runtimeVersion: "nodejs22.x",
+      invocationMode: extension(name) === "mjs" ? "stream" : name === "bmb-worker-background" ? "background" : undefined,
+      inputs: [path.join(wrappers, `${name}.${extension(name)}`), path.join(sourceDir, `${name}.${extension(name)}`), path.join(sourceDir, "dependency.js")] };
   });
 } };
 const env = [
@@ -90,7 +92,8 @@ function dependencies({ dirty = false, protectedSite = true, extraFunction = fal
   const dry = dependencies();
   const packaged = await staging.main(args, dry);
   assert.equal(packaged.report.deploy_id, null);
-  assert.equal(packaged.report.functions.length, 6);
+  assert.equal(packaged.report.functions.length, 10);
+  assert.throws(() => staging.validateEnvironment([...env, { key: "BM_RETRIEVAL_ENABLED", scopes: ["functions"], values: [{ context: "production", value: "true" }] }]), /acceleration/);
   assert(packaged.report.source_inputs.some((input) => input.file.endsWith("dependency.js")));
   assert(dry.operations.every((operation) => operation.command === "git"), "dry-run performed a remote read or mutation");
   const scheduled = dependencies();
@@ -121,6 +124,9 @@ function dependencies({ dirty = false, protectedSite = true, extraFunction = fal
   wrongDatabase[0].values[0].value = "https://vhiikgyyfisejjwqtxfc.supabase.co";
   assert.throws(() => staging.validateEnvironment(wrongDatabase), /isolated/);
   assert.throws(() => staging.validateEnvironment([...env, { key: "APNS_AUTH_KEY", scopes: ["functions"], values: [{ context: "all", value: "blocked" }] }]), /Transport/);
+  const apns = ["AUTH_KEY", "KEY_ID", "TEAM_ID", "TOPIC"].map(key => ({ key: "APNS_" + key, scopes: ["functions"], is_secret: key === "AUTH_KEY", values: [{ context: "production", value: key === "TOPIC" ? "com.blanknfc.app.ios" : key === "AUTH_KEY" ? "********" : "AAAAAAAAAA" }] }));
+  assert(staging.validateEnvironment([...env, ...apns]).database_host_verified);
+  assert.throws(() => staging.validateEnvironment([...env, ...apns, { key: "TWILIO_AUTH_TOKEN", scopes: ["functions"], values: [{ context: "all", value: "blocked" }] }]), /Transport/);
   const completed = await staging.main({ ...args, deploy: true }, dependencies());
   assert.equal(completed.report.status, "private_deploy_verified");
   assert.equal(completed.report.remote_function_hashes_verified, true);

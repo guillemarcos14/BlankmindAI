@@ -160,6 +160,8 @@ async function main() {
     {id:"one",started_at:"2026-10-01T10:00:00Z",ended_at:"2026-10-01T11:00:00Z",observed_at:new Date().toISOString()},
     {id:"two",started_at:"2026-10-01T10:30:00Z",ended_at:"2026-10-01T11:30:00Z",pause_started_at:"2026-10-01T11:00:00Z",pause_ended_at:"2026-10-01T11:15:00Z",observed_at:new Date().toISOString()}]);
   assert.equal((await all).rows[0].protected_seconds,4500,"Overlaps or pause double-counted");
+  const emptyRecorded=await sources.readSource("A",null,{source:"protection_statistics",offset:0,from:"2026-10-01T10:00:00Z",to:"2026-10-01T12:00:00Z",timezone:"UTC"},null,async()=>[]);
+  assert.equal(emptyRecorded.available,true);assert.equal(emptyRecorded.rows[0].protected_seconds,0);assert.equal(emptyRecorded.rows[0].partial,true);
   const common=policy.settings({timezone:"UTC",grant:{active:true,action_types:["start_protection"],expires_at:"2027-01-01"},notifications:{enabled:true}});
   const ledger=[{id:"act",kind:"action",event_key:"A",meaning_key:"A",initiative_key:"A",created_at:new Date().toISOString()}];
   assert.equal(policy.budgetGate("notification",{event_key:"B",meaning_key:"B"},common,ledger).allowed,false,"Two unrelated initiatives consumed default daily budget");

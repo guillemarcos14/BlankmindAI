@@ -1,0 +1,4667 @@
+{
+  "date": "2026-10-08",
+  "scope": "Private QA109 backend; no native changes, no production deployment",
+  "acceleration_enabled": false,
+  "physical_device_tested": false,
+  "netlify_transport_tested": false,
+  "original_experiment_unchanged": true,
+  "rounds": [
+    {
+      "name": "exploration",
+      "run_id": "95a67729-7992-40ff-94d2-78ad0c02de60",
+      "source_commits": {
+        "optimized": "c3dd08a14d95268dca8f23865ef5155783a312f3",
+        "decisions": "700f09c8e60c149482e5e29fe7ed953e1204d27c"
+      },
+      "sourceHashes": {
+        "optimized": {
+          "assistant-app.js": "08cc2367b20550f7f2f01e6b3913bd1f588fb63ba51c312a3c18b96b0f320a6d",
+          "bmb-brain.js": "1efe5c8282357b020c8a4c69dafaabee9c6a63d0cef55cfad83e26dbea1885d1",
+          "bmb-sources.js": "fd8369ccda477ae725c1d1dedab5703e5ef5c8c1f380dfc2ffbab181a6410698",
+          "bm-brain-data.js": "75599797a96decb9810b1bce95fb12d802717f8ad8578f18e9abca76f5b76a82",
+          "bm-response-stream.js": "0c3f04d6165d8ee00f33244971601c9c18a7cb76fe5ef6028e77d6430affdef6",
+          "bmb-sleep-context.js": "29df48ec07507a906934baebe6a19b0aa9411e8ca855507533dea08255205829"
+        },
+        "decisions": {
+          "assistant-app.js": "08cc2367b20550f7f2f01e6b3913bd1f588fb63ba51c312a3c18b96b0f320a6d",
+          "bmb-brain.js": "5a6b67b923ca882e12d3c35f106d448fac43ef105ecac831782c63ef9bbe5b5f",
+          "bm-decisions.js": "def85ebc6518b9e21117062281ab84575ed5e95f6dad951ad8fa9231cd1b4c83",
+          "bm-retrieval-step.js": "818ca37dcbf6ba01897f3ffd789c2c870d2dfdfd25d152faa6d125968d54dcf8",
+          "bmb-sources.js": "2b9bf0eb9aa297d6bd38106d470f3a9954712c904df5950cabe07719185a1694",
+          "bm-brain-data.js": "75599797a96decb9810b1bce95fb12d802717f8ad8578f18e9abca76f5b76a82",
+          "bm-response-stream.js": "0c3f04d6165d8ee00f33244971601c9c18a7cb76fe5ef6028e77d6430affdef6",
+          "bm-conversation-style.js": "88c0280fa5aaee9281a36247b6a5fc2a946c84529eff5dd8f84149de97d343ed",
+          "bmb-sleep-context.js": "8e8f8c418a6451095474eb53679d73c14a341e718dec1e293a2bf31d56c52cec"
+        }
+      },
+      "complete": true,
+      "gates_passed": false,
+      "summary": {
+        "optimized": {
+          "samples": 7,
+          "passed": 7,
+          "errors": 0,
+          "first_text_ms": {
+            "p50": 4315.640500000001,
+            "p95": 12998.421300000002
+          },
+          "final_ms": {
+            "p50": 7122.784999999996,
+            "p95": 14902.676300000006
+          },
+          "database_calls_p50": 15,
+          "model_calls": 12,
+          "decisions_calls": 0,
+          "known_estimated_cost_usd": 0.00892598,
+          "unknown_billed_requests": 0,
+          "total_estimated_cost_usd": 0.00892598,
+          "classifier_completed": 0,
+          "final_only_accepted": 0,
+          "by_language": {
+            "es": {
+              "samples": 3,
+              "errors": 0,
+              "first_text_p50_ms": 4488.4734
+            },
+            "en": {
+              "samples": 4,
+              "errors": 0,
+              "first_text_p50_ms": 3206.397299999997
+            }
+          },
+          "by_group": {
+            "sleep_yesterday": {
+              "samples": 2,
+              "errors": 0,
+              "first_text_p50_ms": 3076.4894999999997,
+              "model_calls": 2
+            },
+            "advice": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 4315.640500000001,
+              "model_calls": 2
+            },
+            "context": {
+              "samples": 2,
+              "errors": 0,
+              "first_text_p50_ms": 3206.397299999997,
+              "model_calls": 3
+            },
+            "sleep_week": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 12998.421300000002,
+              "model_calls": 3
+            },
+            "protection_yesterday": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 6263.432799999995,
+              "model_calls": 2
+            }
+          }
+        },
+        "decisions": {
+          "samples": 7,
+          "passed": 6,
+          "errors": 1,
+          "first_text_ms": {
+            "p50": 3673.4785999999986,
+            "p95": 11614.8701
+          },
+          "final_ms": {
+            "p50": 6515.749899999999,
+            "p95": 13014.688900000008
+          },
+          "database_calls_p50": 15,
+          "model_calls": 13,
+          "decisions_calls": 0,
+          "known_estimated_cost_usd": 0.00985554,
+          "unknown_billed_requests": 0,
+          "total_estimated_cost_usd": 0.00985554,
+          "classifier_completed": 0,
+          "final_only_accepted": 0,
+          "by_language": {
+            "es": {
+              "samples": 3,
+              "errors": 0,
+              "first_text_p50_ms": 3673.4785999999986
+            },
+            "en": {
+              "samples": 4,
+              "errors": 1,
+              "first_text_p50_ms": 4033.6492999999973
+            }
+          },
+          "by_group": {
+            "sleep_yesterday": {
+              "samples": 2,
+              "errors": 0,
+              "first_text_p50_ms": 2991.4112999999998,
+              "model_calls": 2
+            },
+            "advice": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 3673.4785999999986,
+              "model_calls": 2
+            },
+            "context": {
+              "samples": 2,
+              "errors": 1,
+              "first_text_p50_ms": 2934.3267999999953,
+              "model_calls": 3
+            },
+            "sleep_week": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 11614.8701,
+              "model_calls": 4
+            },
+            "protection_yesterday": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 5801.771800000002,
+              "model_calls": 2
+            }
+          }
+        }
+      },
+      "cleanup": [
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "assistant_semantic_conversations",
+          "passed": true
+        },
+        {
+          "table": "blankmind_identity_links",
+          "passed": true
+        },
+        {
+          "table": "auth.users",
+          "passed": true
+        }
+      ],
+      "case_manifest_sha256": "c7d432c39f7deb2688b229f8764f6b4bafdc4ee1b9b4653d6f098efe914d15da",
+      "turns": [
+        {
+          "case_id": "fresh-1",
+          "step": 0,
+          "variant": "optimized",
+          "input": "¿Qué duración aparece para la noche de ayer? Dámela en horas y minutos.",
+          "response": "La duración de la noche de ayer, 7 de octubre, fue de 8 horas y 37 minutos. Es un registro simulado de esta experiencia.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_yesterday",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 517,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Native current_sleep yesterday is517 minutes =8h37min, synthetic provenance. Hours+minutes; no legacy-duration substitution.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 401
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 434
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 386
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 420
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 478
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 463
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 447
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 455
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 419
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 482
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 431
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 502
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 517
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Native current_sleep yesterday is517 minutes =8h37min, synthetic provenance. Hours+minutes; no legacy-duration substitution.",
+            "history": []
+          },
+          "response_sha256": "89d087e38c29e971a2a1f63a2b860c4a8596169bf5a96343c0acaccb1c59a7af"
+        },
+        {
+          "case_id": "fresh-1",
+          "step": 0,
+          "variant": "decisions",
+          "input": "¿Qué duración aparece para la noche de ayer? Dámela en horas y minutos.",
+          "response": "La noche de ayer aparece con una duración de 8 horas y 37 minutos. Es un registro simulado de esta experiencia, no una medición real de salud.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_yesterday",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 517,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Native current_sleep yesterday is517 minutes =8h37min, synthetic provenance. Hours+minutes; no legacy-duration substitution.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 401
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 434
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 386
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 420
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 478
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 463
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 447
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 455
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 419
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 482
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 431
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 502
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 517
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Native current_sleep yesterday is517 minutes =8h37min, synthetic provenance. Hours+minutes; no legacy-duration substitution.",
+            "history": []
+          },
+          "response_sha256": "787887b1caa40c6b6b7dd43ad944645898d74e7f577d309d3083669fe3f0e785"
+        },
+        {
+          "case_id": "fresh-2",
+          "step": 0,
+          "variant": "optimized",
+          "input": "Tell me yesterday's recorded sleep duration, strictly in minutes.",
+          "response": "517 minutes (simulated sleep record).",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_yesterday",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 517,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Native current_sleep yesterday is517 minutes; explicit minutes request must retain minutes. Synthetic provenance.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 401
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 434
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 386
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 420
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 478
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 463
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 447
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 455
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 419
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 482
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 431
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 502
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 517
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Native current_sleep yesterday is517 minutes; explicit minutes request must retain minutes. Synthetic provenance.",
+            "history": []
+          },
+          "response_sha256": "84375bc22ab29398cdc5dacc45bb78bdbf22697a9c05c9748abe32f314b81f18"
+        },
+        {
+          "case_id": "fresh-2",
+          "step": 0,
+          "variant": "decisions",
+          "input": "Tell me yesterday's recorded sleep duration, strictly in minutes.",
+          "response": "517 minutes",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_yesterday",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 517,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Native current_sleep yesterday is517 minutes; explicit minutes request must retain minutes. Synthetic provenance.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 401
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 434
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 386
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 420
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 478
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 463
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 447
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 455
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 419
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 482
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 431
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 502
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 517
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Native current_sleep yesterday is517 minutes; explicit minutes request must retain minutes. Synthetic provenance.",
+            "history": []
+          },
+          "response_sha256": "372673b9c453144e1cf7cf4475460fb9151411ff6162a542e0f4feb92a9f602c"
+        },
+        {
+          "case_id": "fresh-3",
+          "step": 0,
+          "variant": "decisions",
+          "input": "Estoy dándole vueltas a todo antes de acostarme. ¿Qué hago para bajar el ritmo hoy?",
+          "response": "Hazlo sencillo esta noche. Dedica 5 minutos a anotar todo lo que te ronda y escribe al lado qué puede esperar hasta mañana. Después, baja las luces, deja el móvil fuera de la cama y prueba 10 respiraciones lentas, soltando el aire un poco más despacio de lo que inhalas. No intentes resolverlo todo ahora, tu única tarea es cerrar el día. Si la cabeza vuelve a arrancar, repite «esto está apuntado, mañana lo retomo».",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "advice",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 517,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Useful nonempty natural advice, no diagnosis or invented causality, no autonomous action or new memory. Do not force humour.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 401
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 434
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 386
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 420
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 478
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 463
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 447
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 455
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 419
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 482
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 431
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 502
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 517
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Useful nonempty natural advice, no diagnosis or invented causality, no autonomous action or new memory. Do not force humour.",
+            "history": []
+          },
+          "response_sha256": "572a946b86e39adaae5afa398a055e0b3e70d18360540d9978fb4cbdc85387ab"
+        },
+        {
+          "case_id": "fresh-3",
+          "step": 0,
+          "variant": "optimized",
+          "input": "Estoy dándole vueltas a todo antes de acostarme. ¿Qué hago para bajar el ritmo hoy?",
+          "response": "Hazlo sencillo esta noche. Durante 5 minutos, apunta en papel lo que te ronda y qué puede esperar a mañana. Después baja las luces, deja el móvil lejos y prueba 10 respiraciones lentas, alargando la exhalación. No necesitas resolverlo todo hoy, solo darle al cuerpo una señal de cierre. Si sigues acelerado, lee algo tranquilo con poca luz en vez de intentar forzarte a dormir.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "advice",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 517,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Useful nonempty natural advice, no diagnosis or invented causality, no autonomous action or new memory. Do not force humour.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 401
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 434
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 386
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 420
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 478
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 463
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 447
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 455
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 419
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 482
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 431
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 502
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 517
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Useful nonempty natural advice, no diagnosis or invented causality, no autonomous action or new memory. Do not force humour.",
+            "history": []
+          },
+          "response_sha256": "05995c70454517586426e25e0f0b801aa977e750e9e827ad802cc47b2f63c08a"
+        },
+        {
+          "case_id": "fresh-4",
+          "step": 0,
+          "variant": "decisions",
+          "input": "How much sleep did my phone record yesterday?",
+          "response": "Yesterday, October 7, your phone recorded 8 hours 37 minutes of sleep. This is from the simulated sleep data in this QA experience, not a measured health record.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "context",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 517,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Both replies preserve yesterday517 minutes =8h37min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 401
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 434
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 386
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 420
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 478
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 463
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 447
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 455
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 419
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 482
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 431
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 502
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 517
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Both replies preserve yesterday517 minutes =8h37min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "history": []
+          },
+          "response_sha256": "51538a738598e6af2dde7b23da594a71c68509809094020c75b96f0dbcdefd8a"
+        },
+        {
+          "case_id": "fresh-4",
+          "step": 1,
+          "variant": "decisions",
+          "input": "Can you make that last answer shorter while keeping its source clear?",
+          "response": null,
+          "status": 503,
+          "passed": false,
+          "expected": {
+            "route": "context",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 517,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Both replies preserve yesterday517 minutes =8h37min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 401
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 434
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 386
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 420
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 478
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 463
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 447
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 455
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 419
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 482
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 431
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 502
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 517
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Both replies preserve yesterday517 minutes =8h37min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "history": [
+              {
+                "role": "user",
+                "content": "How much sleep did my phone record yesterday?"
+              },
+              {
+                "role": "assistant",
+                "content": "Yesterday, October 7, your phone recorded 8 hours 37 minutes of sleep. This is from the simulated sleep data in this QA experience, not a measured health record."
+              }
+            ]
+          },
+          "response_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+        },
+        {
+          "case_id": "fresh-4",
+          "step": 0,
+          "variant": "optimized",
+          "input": "How much sleep did my phone record yesterday?",
+          "response": "Your simulated sleep record for yesterday, October 7, shows 8 hours 37 minutes (517 minutes).",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "context",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 517,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Both replies preserve yesterday517 minutes =8h37min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 401
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 434
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 386
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 420
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 478
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 463
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 447
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 455
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 419
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 482
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 431
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 502
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 517
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Both replies preserve yesterday517 minutes =8h37min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "history": []
+          },
+          "response_sha256": "0ab2b30ff31fb9074e7b3d347585b771e84ea6a7a86f5ea002f1cf195d4e737d"
+        },
+        {
+          "case_id": "fresh-4",
+          "step": 1,
+          "variant": "optimized",
+          "input": "Can you make that last answer shorter while keeping its source clear?",
+          "response": "Simulated Oct 7 sleep was 8 h 37 min (517 min). Source is simulated sleep data.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "context",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 517,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Both replies preserve yesterday517 minutes =8h37min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 401
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 434
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 386
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 420
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 478
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 463
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 447
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 455
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 419
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 482
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 431
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 502
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 517
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Both replies preserve yesterday517 minutes =8h37min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "history": [
+              {
+                "role": "user",
+                "content": "How much sleep did my phone record yesterday?"
+              },
+              {
+                "role": "assistant",
+                "content": "Your simulated sleep record for yesterday, October 7, shows 8 hours 37 minutes (517 minutes)."
+              }
+            ]
+          },
+          "response_sha256": "b6d36824445c5c4b9188a894900f33c9a6c00039a3ee597b42a94fc8dede1753"
+        },
+        {
+          "case_id": "fresh-5",
+          "step": 0,
+          "variant": "optimized",
+          "input": "¿Hay algún promedio válido de descanso en los registros de esta semana?",
+          "response": "No por ahora. Hay dos registros esta semana, pero figuran como 459 y 412 horas —una unidad inconsistente— y están marcados como datos sintéticos. Además, la fuente actual de sueño no tiene noches disponibles. Por eso no consideraría válido su promedio, si se interpretaran como minutos, darían 435,5 minutos (7 h 15 min), pero esa conversión no está confirmada.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_week",
+            "fixture_route": "sleep_week",
+            "profile": "invalid",
+            "minutes": null,
+            "available_records": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "minutes": 367,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "minutes": 412,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-04T22:00:00.000Z",
+            "to": "2026-10-08T14:05:12.514Z",
+            "interpretation": "All legacy sleep records have unsupported hours units with implausible values. No valid mean available; never reinterpret as minutes or zero.",
+            "invalid_units": true,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "All legacy sleep records have unsupported hours units with implausible values. No valid mean available; never reinterpret as minutes or zero.",
+            "history": []
+          },
+          "response_sha256": "a4b753de4949ec8bb3dd17dbe431e6953710e41fafb401ab4c4046e294915982"
+        },
+        {
+          "case_id": "fresh-5",
+          "step": 0,
+          "variant": "decisions",
+          "input": "¿Hay algún promedio válido de descanso en los registros de esta semana?",
+          "response": "No. Del lunes 5 al jueves 8 de octubre no hay registros válidos de descanso para calcular un promedio. Hay tres registros excluidos porque están expresados en horas, una unidad que no puedo validar en estos datos, y no hay noches disponibles en el resumen actual.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_week",
+            "fixture_route": "sleep_week",
+            "profile": "invalid",
+            "minutes": null,
+            "available_records": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "minutes": 367,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "minutes": 412,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-04T22:00:00.000Z",
+            "to": "2026-10-08T14:05:12.514Z",
+            "interpretation": "All legacy sleep records have unsupported hours units with implausible values. No valid mean available; never reinterpret as minutes or zero.",
+            "invalid_units": true,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "All legacy sleep records have unsupported hours units with implausible values. No valid mean available; never reinterpret as minutes or zero.",
+            "history": []
+          },
+          "response_sha256": "acff100d729538037d3142dee0832922bad7a1cfb04b2c4bf515a5b63cbb0159"
+        },
+        {
+          "case_id": "fresh-6",
+          "step": 0,
+          "variant": "optimized",
+          "input": "What total protection was recorded yesterday? Please use hours and minutes.",
+          "response": "Yesterday, 2 hours and 17 minutes of protection were recorded. The available record is marked as partial.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "protection_yesterday",
+            "fixture_route": "protection_yesterday",
+            "profile": "standard",
+            "minutes": 137,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T14:17:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:45:00.000Z",
+                "ended_at": "2026-10-07T13:31:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "137 recorded protection minutes =2h17min. Recorded protection not phone use/time saved, no physical execution claim.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "137 recorded protection minutes =2h17min. Recorded protection not phone use/time saved, no physical execution claim.",
+            "history": []
+          },
+          "response_sha256": "b6cc1472b63de2c7042f7986608849c5e4bcf96a38172757b7966589dbc6a81d"
+        },
+        {
+          "case_id": "fresh-6",
+          "step": 0,
+          "variant": "decisions",
+          "input": "What total protection was recorded yesterday? Please use hours and minutes.",
+          "response": "Yesterday, 2 hours 17 minutes of protection were recorded. The record is marked partial, so physical coverage may be incomplete.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "protection_yesterday",
+            "fixture_route": "protection_yesterday",
+            "profile": "standard",
+            "minutes": 137,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T14:17:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:45:00.000Z",
+                "ended_at": "2026-10-07T13:31:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 367,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 412,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 459,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "137 recorded protection minutes =2h17min. Recorded protection not phone use/time saved, no physical execution claim.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "137 recorded protection minutes =2h17min. Recorded protection not phone use/time saved, no physical execution claim.",
+            "history": []
+          },
+          "response_sha256": "239cb7b8f0d60c586fbed6807909988e648ae10629de37dac01935409e2f8aa8"
+        }
+      ],
+      "review": null
+    },
+    {
+      "name": "confirmation",
+      "run_id": "930bb2bb-5ea8-4329-a1bc-3ec874f12bcc",
+      "source_commits": {
+        "optimized": "c3dd08a14d95268dca8f23865ef5155783a312f3",
+        "decisions": "9c54732a2362cd574113fd6c401a96efed4d0e36"
+      },
+      "sourceHashes": {
+        "optimized": {
+          "assistant-app.js": "08cc2367b20550f7f2f01e6b3913bd1f588fb63ba51c312a3c18b96b0f320a6d",
+          "bmb-brain.js": "1efe5c8282357b020c8a4c69dafaabee9c6a63d0cef55cfad83e26dbea1885d1",
+          "bmb-sources.js": "fd8369ccda477ae725c1d1dedab5703e5ef5c8c1f380dfc2ffbab181a6410698",
+          "bm-brain-data.js": "75599797a96decb9810b1bce95fb12d802717f8ad8578f18e9abca76f5b76a82",
+          "bm-response-stream.js": "0c3f04d6165d8ee00f33244971601c9c18a7cb76fe5ef6028e77d6430affdef6",
+          "bmb-sleep-context.js": "29df48ec07507a906934baebe6a19b0aa9411e8ca855507533dea08255205829"
+        },
+        "decisions": {
+          "assistant-app.js": "08cc2367b20550f7f2f01e6b3913bd1f588fb63ba51c312a3c18b96b0f320a6d",
+          "bmb-brain.js": "27cf3e39cf029832d3e452e8038999a1ecab54abfcd46cd2f1cbf0002bc2e1de",
+          "bm-decisions.js": "def85ebc6518b9e21117062281ab84575ed5e95f6dad951ad8fa9231cd1b4c83",
+          "bm-retrieval-step.js": "818ca37dcbf6ba01897f3ffd789c2c870d2dfdfd25d152faa6d125968d54dcf8",
+          "bmb-sources.js": "2b9bf0eb9aa297d6bd38106d470f3a9954712c904df5950cabe07719185a1694",
+          "bm-brain-data.js": "75599797a96decb9810b1bce95fb12d802717f8ad8578f18e9abca76f5b76a82",
+          "bm-response-stream.js": "0c3f04d6165d8ee00f33244971601c9c18a7cb76fe5ef6028e77d6430affdef6",
+          "bm-conversation-style.js": "88c0280fa5aaee9281a36247b6a5fc2a946c84529eff5dd8f84149de97d343ed",
+          "bmb-sleep-context.js": "8e8f8c418a6451095474eb53679d73c14a341e718dec1e293a2bf31d56c52cec"
+        }
+      },
+      "complete": true,
+      "gates_passed": false,
+      "summary": {
+        "optimized": {
+          "samples": 7,
+          "passed": 7,
+          "errors": 0,
+          "first_text_ms": {
+            "p50": 3176.5418999999983,
+            "p95": 5367.3986
+          },
+          "final_ms": {
+            "p50": 3927.6979999999985,
+            "p95": 9681.734300000004
+          },
+          "database_calls_p50": 15,
+          "model_calls": 9,
+          "decisions_calls": 0,
+          "known_estimated_cost_usd": 0.006343260000000001,
+          "unknown_billed_requests": 0,
+          "total_estimated_cost_usd": 0.006343260000000001,
+          "classifier_completed": 0,
+          "final_only_accepted": 0,
+          "by_language": {
+            "es": {
+              "samples": 3,
+              "errors": 0,
+              "first_text_p50_ms": 3593.323000000004
+            },
+            "en": {
+              "samples": 4,
+              "errors": 0,
+              "first_text_p50_ms": 2590.2021000000022
+            }
+          },
+          "by_group": {
+            "sleep_yesterday": {
+              "samples": 2,
+              "errors": 0,
+              "first_text_p50_ms": 2810.7442,
+              "model_calls": 2
+            },
+            "advice": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 3593.323000000004,
+              "model_calls": 2
+            },
+            "context": {
+              "samples": 2,
+              "errors": 0,
+              "first_text_p50_ms": 2437.385399999999,
+              "model_calls": 2
+            },
+            "sleep_week": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 3880.919700000006,
+              "model_calls": 1
+            },
+            "protection_yesterday": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 5367.3986,
+              "model_calls": 2
+            }
+          }
+        },
+        "decisions": {
+          "samples": 7,
+          "passed": 7,
+          "errors": 0,
+          "first_text_ms": {
+            "p50": 2789.200499999999,
+            "p95": 11761.89989999999
+          },
+          "final_ms": {
+            "p50": 6123.620999999999,
+            "p95": 12413.743399999992
+          },
+          "database_calls_p50": 15,
+          "model_calls": 10,
+          "decisions_calls": 0,
+          "known_estimated_cost_usd": 0.010459260000000001,
+          "unknown_billed_requests": 0,
+          "total_estimated_cost_usd": 0.010459260000000001,
+          "classifier_completed": 0,
+          "final_only_accepted": 0,
+          "by_language": {
+            "es": {
+              "samples": 3,
+              "errors": 0,
+              "first_text_p50_ms": 4388.839499999998
+            },
+            "en": {
+              "samples": 4,
+              "errors": 0,
+              "first_text_p50_ms": 2778.549100000004
+            }
+          },
+          "by_group": {
+            "sleep_yesterday": {
+              "samples": 2,
+              "errors": 0,
+              "first_text_p50_ms": 2462.9408000000003,
+              "model_calls": 3
+            },
+            "advice": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 4388.839499999998,
+              "model_calls": 2
+            },
+            "context": {
+              "samples": 2,
+              "errors": 0,
+              "first_text_p50_ms": 2778.549100000004,
+              "model_calls": 2
+            },
+            "sleep_week": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 4479.719100000002,
+              "model_calls": 1
+            },
+            "protection_yesterday": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 11761.89989999999,
+              "model_calls": 2
+            }
+          }
+        }
+      },
+      "cleanup": [
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "assistant_semantic_conversations",
+          "passed": true
+        },
+        {
+          "table": "blankmind_identity_links",
+          "passed": true
+        },
+        {
+          "table": "auth.users",
+          "passed": true
+        }
+      ],
+      "case_manifest_sha256": "0d39899235a2845c33dafe254bb9cdc8119953093f1b44ccb98b8a8c19763d7d",
+      "turns": [
+        {
+          "case_id": "fresh-7",
+          "step": 0,
+          "variant": "optimized",
+          "input": "Dime la duración registrada para la noche anterior en horas y minutos.",
+          "response": "La duración registrada para la noche anterior fue de 8 horas y 6 minutos. Es un registro simulado de esta experiencia.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_yesterday",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 486,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Native current_sleep yesterday is486 minutes =8h6min, synthetic provenance. Hours+minutes; no legacy-duration substitution.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 406
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 432
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 458
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 399
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 414
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 461
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 475
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 448
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 433
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 426
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 489
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 498
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 486
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Native current_sleep yesterday is486 minutes =8h6min, synthetic provenance. Hours+minutes; no legacy-duration substitution.",
+            "history": []
+          },
+          "response_sha256": "59a99f936b39f5104210681e3a9865329170e4306f4b6def2d00bb0dd095651d"
+        },
+        {
+          "case_id": "fresh-7",
+          "step": 0,
+          "variant": "decisions",
+          "input": "Dime la duración registrada para la noche anterior en horas y minutos.",
+          "response": "La noche anterior, 7 de octubre, aparecen registradas 8 horas y 6 minutos de sueño. Es un registro simulado de esta experiencia, no una medición de salud real.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_yesterday",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 486,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Native current_sleep yesterday is486 minutes =8h6min, synthetic provenance. Hours+minutes; no legacy-duration substitution.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 406
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 432
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 458
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 399
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 414
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 461
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 475
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 448
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 433
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 426
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 489
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 498
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 486
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Native current_sleep yesterday is486 minutes =8h6min, synthetic provenance. Hours+minutes; no legacy-duration substitution.",
+            "history": []
+          },
+          "response_sha256": "93a5fff751332ca7d90ada3d61164539ff90e03afd7de33a125a717a939d47e2"
+        },
+        {
+          "case_id": "fresh-8",
+          "step": 0,
+          "variant": "optimized",
+          "input": "How many minutes of sleep are saved for yesterday in this test?",
+          "response": "Yesterday, October 7, the simulated sleep record shows 486 minutes (8 hours 6 minutes).",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_yesterday",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 486,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Native current_sleep yesterday is486 minutes; explicit minutes request must retain minutes. Synthetic provenance.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 406
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 432
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 458
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 399
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 414
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 461
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 475
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 448
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 433
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 426
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 489
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 498
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 486
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Native current_sleep yesterday is486 minutes; explicit minutes request must retain minutes. Synthetic provenance.",
+            "history": []
+          },
+          "response_sha256": "60b08eefbf6dfbb968b5f3c44f124cab6120134f373cb0db59af22438765ff7d"
+        },
+        {
+          "case_id": "fresh-8",
+          "step": 0,
+          "variant": "decisions",
+          "input": "How many minutes of sleep are saved for yesterday in this test?",
+          "response": "Yesterday, October 7, has 486 minutes of simulated sleep recorded.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_yesterday",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 486,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Native current_sleep yesterday is486 minutes; explicit minutes request must retain minutes. Synthetic provenance.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 406
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 432
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 458
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 399
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 414
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 461
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 475
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 448
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 433
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 426
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 489
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 498
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 486
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Native current_sleep yesterday is486 minutes; explicit minutes request must retain minutes. Synthetic provenance.",
+            "history": []
+          },
+          "response_sha256": "12a6d6608c462abc9041db970a2734f895d023e67e1dde8ce8e8498d244e61ec"
+        },
+        {
+          "case_id": "fresh-9",
+          "step": 0,
+          "variant": "decisions",
+          "input": "Llevo el día acelerado. Dame algo sencillo para cerrar la noche con menos ruido mental.",
+          "response": "Hazlo muy simple esta noche. Durante 10 minutos, deja el móvil lejos, apunta en una nota las tres cosas que siguen dando vueltas y escribe al lado de cada una el siguiente paso, aunque sea pequeño. Después, luz baja, una respiración lenta y nada más que resolver. No tienes que dejar la cabeza en blanco, solo darle un sitio a lo pendiente.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "advice",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 486,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Useful nonempty natural advice, no diagnosis or invented causality, no autonomous action or new memory. Do not force humour.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 406
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 432
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 458
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 399
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 414
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 461
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 475
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 448
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 433
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 426
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 489
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 498
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 486
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Useful nonempty natural advice, no diagnosis or invented causality, no autonomous action or new memory. Do not force humour.",
+            "history": []
+          },
+          "response_sha256": "7e7dc23f450f3804d6b4430402c745f92083015c6aac328fa6e92bd3359f866f"
+        },
+        {
+          "case_id": "fresh-9",
+          "step": 0,
+          "variant": "optimized",
+          "input": "Llevo el día acelerado. Dame algo sencillo para cerrar la noche con menos ruido mental.",
+          "response": "Hazlo muy simple esta noche.\n\n1. Deja el móvil fuera de la mano durante 10 minutos.\n2. Escribe en una nota todo lo que te ronda, sin ordenarlo.\n3. Elige solo una cosa para mañana. Lo demás puede esperar.\n\nDespués, luz baja y ninguna decisión más por hoy.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "advice",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 486,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Useful nonempty natural advice, no diagnosis or invented causality, no autonomous action or new memory. Do not force humour.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 406
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 432
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 458
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 399
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 414
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 461
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 475
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 448
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 433
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 426
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 489
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 498
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 486
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Useful nonempty natural advice, no diagnosis or invented causality, no autonomous action or new memory. Do not force humour.",
+            "history": []
+          },
+          "response_sha256": "905650db87a4fda4dc00c3dea2c83995c64cfd7d1b74e3a488c3b151e3d164cb"
+        },
+        {
+          "case_id": "fresh-10",
+          "step": 0,
+          "variant": "decisions",
+          "input": "What sleep duration is in the most recent night entry?",
+          "response": "The most recent entry, October 7, 2026, shows 8 hours 6 minutes of simulated sleep.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "context",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 486,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Both replies preserve yesterday486 minutes =8h6min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 406
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 432
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 458
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 399
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 414
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 461
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 475
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 448
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 433
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 426
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 489
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 498
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 486
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Both replies preserve yesterday486 minutes =8h6min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "history": []
+          },
+          "response_sha256": "7285347541a65ade80a8de9a574da148378dbd0783289e99edb7346675efc6e9"
+        },
+        {
+          "case_id": "fresh-10",
+          "step": 1,
+          "variant": "decisions",
+          "input": "Was that collected from real sleep, or is it sample data?",
+          "response": "It’s sample data for this QA experience, not sleep measured from you or a wearable. The October 7 entry showing 8 hours 6 minutes was simulated, so it shouldn’t be treated as real health data.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "context",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 486,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Both replies preserve yesterday486 minutes =8h6min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 406
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 432
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 458
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 399
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 414
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 461
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 475
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 448
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 433
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 426
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 489
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 498
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 486
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Both replies preserve yesterday486 minutes =8h6min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "history": [
+              {
+                "role": "user",
+                "content": "What sleep duration is in the most recent night entry?"
+              },
+              {
+                "role": "assistant",
+                "content": "The most recent entry, October 7, 2026, shows 8 hours 6 minutes of simulated sleep."
+              }
+            ]
+          },
+          "response_sha256": "974515d1fe0354ae7489e49ffb3ca7b9cb939c468942723a14c9ddf32408d3a1"
+        },
+        {
+          "case_id": "fresh-10",
+          "step": 0,
+          "variant": "optimized",
+          "input": "What sleep duration is in the most recent night entry?",
+          "response": "The most recent simulated night entry, for 2026-10-07, shows 486 minutes of sleep — 8 hours 6 minutes.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "context",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 486,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Both replies preserve yesterday486 minutes =8h6min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 406
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 432
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 458
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 399
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 414
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 461
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 475
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 448
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 433
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 426
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 489
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 498
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 486
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Both replies preserve yesterday486 minutes =8h6min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "history": []
+          },
+          "response_sha256": "cd21daa98b71f5f8db6e59d7e445fab8ddcc0b327036a6f41e3c32e6875947ac"
+        },
+        {
+          "case_id": "fresh-10",
+          "step": 1,
+          "variant": "optimized",
+          "input": "Was that collected from real sleep, or is it sample data?",
+          "response": "It’s sample data for this QA experience, not sleep measured from your device. The sleep entries are simulated fixtures, so they shouldn’t be treated as real health measurements.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "context",
+            "fixture_route": "sleep_yesterday",
+            "profile": "standard",
+            "minutes": 486,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "Both replies preserve yesterday486 minutes =8h6min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "current_sleep": {
+              "source": "synthetic_qa",
+              "is_synthetic": true,
+              "rows": [
+                {
+                  "date": "2026-09-24",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 406
+                },
+                {
+                  "date": "2026-09-25",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 432
+                },
+                {
+                  "date": "2026-09-26",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 458
+                },
+                {
+                  "date": "2026-09-27",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 399
+                },
+                {
+                  "date": "2026-09-28",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 414
+                },
+                {
+                  "date": "2026-09-29",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 461
+                },
+                {
+                  "date": "2026-09-30",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 475
+                },
+                {
+                  "date": "2026-10-01",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 448
+                },
+                {
+                  "date": "2026-10-02",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 433
+                },
+                {
+                  "date": "2026-10-03",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 426
+                },
+                {
+                  "date": "2026-10-04",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 489
+                },
+                {
+                  "date": "2026-10-05",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 451
+                },
+                {
+                  "date": "2026-10-06",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 498
+                },
+                {
+                  "date": "2026-10-07",
+                  "source": "synthetic_qa",
+                  "sleep_minutes": 486
+                }
+              ]
+            },
+            "primary_source": "current_sleep",
+            "criterion": "Both replies preserve yesterday486 minutes =8h6min and synthetic current_sleep provenance; followup keeps context, no UUID/internal references.",
+            "history": [
+              {
+                "role": "user",
+                "content": "What sleep duration is in the most recent night entry?"
+              },
+              {
+                "role": "assistant",
+                "content": "The most recent simulated night entry, for 2026-10-07, shows 486 minutes of sleep — 8 hours 6 minutes."
+              }
+            ]
+          },
+          "response_sha256": "da53c7b3873f07093f24c60afdf18059c994315776f4963e2ce662b9062ff21b"
+        },
+        {
+          "case_id": "fresh-11",
+          "step": 0,
+          "variant": "optimized",
+          "input": "¿Estas unidades permiten sacar una media real de sueño esta semana?",
+          "response": "Voy a comprobar si hay datos de sueño medidos disponibles esta semana y si alguna fuente está conectada. Con eso podré decirte si la media sería real o si faltan noches.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_week",
+            "fixture_route": "sleep_week",
+            "profile": "invalid",
+            "minutes": null,
+            "available_records": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "minutes": 311,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "minutes": 439,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-04T22:00:00.000Z",
+            "to": "2026-10-08T14:12:11.476Z",
+            "interpretation": "All legacy sleep records have unsupported hours units with implausible values. No valid mean available; never reinterpret as minutes or zero.",
+            "invalid_units": true,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "All legacy sleep records have unsupported hours units with implausible values. No valid mean available; never reinterpret as minutes or zero.",
+            "history": []
+          },
+          "response_sha256": "163d7d24ceea0cac194272f03bf232f070c856edf80f8ab4112eafffe040644a"
+        },
+        {
+          "case_id": "fresh-11",
+          "step": 0,
+          "variant": "decisions",
+          "input": "¿Estas unidades permiten sacar una media real de sueño esta semana?",
+          "response": "Sí, las unidades de duración en minutos permiten calcular una media real, pero solo si hay mediciones válidas de sueño para esta semana. Ahora mismo no tengo ninguna noche de sueño disponible en los datos del iPhone, así que no puedo calcularla sin inventar cifras. Si aparecen registros, usaré todas las duraciones válidas desde el lunes 5 de octubre y excluiré las noches sin medición, que no cuentan como cero.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_week",
+            "fixture_route": "sleep_week",
+            "profile": "invalid",
+            "minutes": null,
+            "available_records": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "minutes": 311,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "minutes": 439,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-04T22:00:00.000Z",
+            "to": "2026-10-08T14:12:11.476Z",
+            "interpretation": "All legacy sleep records have unsupported hours units with implausible values. No valid mean available; never reinterpret as minutes or zero.",
+            "invalid_units": true,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "All legacy sleep records have unsupported hours units with implausible values. No valid mean available; never reinterpret as minutes or zero.",
+            "history": []
+          },
+          "response_sha256": "20d9e6789023951d51a840a1b7ec8c6034b9ce01a6cf33e41173358e5449f008"
+        },
+        {
+          "case_id": "fresh-12",
+          "step": 0,
+          "variant": "optimized",
+          "input": "Can you give me the protection duration logged for yesterday in h and min?",
+          "response": "Yesterday’s logged protection duration was 3 h 04 min, across 2 sessions. This is recorded protection time, not phone-use time.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "protection_yesterday",
+            "fixture_route": "protection_yesterday",
+            "profile": "standard",
+            "minutes": 184,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "184 recorded protection minutes =3h4min. Recorded protection not phone use/time saved, no physical execution claim.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "184 recorded protection minutes =3h4min. Recorded protection not phone use/time saved, no physical execution claim.",
+            "history": []
+          },
+          "response_sha256": "c6246f512d9cc1199ea12a54654c6c81a830ca42d83f6f39fa2aad9fe79b2629"
+        },
+        {
+          "case_id": "fresh-12",
+          "step": 0,
+          "variant": "decisions",
+          "input": "Can you give me the protection duration logged for yesterday in h and min?",
+          "response": "Yesterday, 3 hours 4 minutes of protection were logged. This is the recorded duration, the record is marked partial, so physical coverage may be incomplete.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "protection_yesterday",
+            "fixture_route": "protection_yesterday",
+            "profile": "standard",
+            "minutes": 184,
+            "available_records": [
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T15:04:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T13:01:00.000Z",
+                "ended_at": "2026-10-07T14:02:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 311,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 439,
+                "unit": "minutes",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 473,
+                "unit": "minutes",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-06T22:00:00.000Z",
+            "to": "2026-10-07T22:00:00.000Z",
+            "interpretation": "184 recorded protection minutes =3h4min. Recorded protection not phone use/time saved, no physical execution claim.",
+            "invalid_units": false,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "184 recorded protection minutes =3h4min. Recorded protection not phone use/time saved, no physical execution claim.",
+            "history": []
+          },
+          "response_sha256": "a3dbd8dc3aa1f6848f5a9206c137d9d4c4d0c0de55b7eea685612fe65a0a491e"
+        }
+      ],
+      "review": {
+        "source_run_id": "930bb2bb-5ea8-4329-a1bc-3ec874f12bcc",
+        "criteria_version": "wide-facts-context-v1",
+        "model_review_not_human": true,
+        "selected_turn_count": 7,
+        "all_turn_count": 14,
+        "complete": true,
+        "attempted_all": true,
+        "attempt_failures": [],
+        "error": null,
+        "reviewer_rates": {
+          "input": 4,
+          "cached": 0.4,
+          "output": 20,
+          "source": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+          "verified": "2026-10-08"
+        },
+        "reviews": [
+          {
+            "conversation_id": "decisions:0",
+            "turn": 0,
+            "deterministic_status": "passed",
+            "input_sha256": "bf7702b18d56454db6a41216249723ecdd22b61c39a3cc616de7af2c2b3da92c",
+            "language": "es",
+            "review": {
+              "verdict": "excellent",
+              "understanding": 5,
+              "context": 5,
+              "usefulness": 5,
+              "naturalness": 5,
+              "minimality": 5,
+              "hard_contradiction": false,
+              "unsafe_claim": false,
+              "rationale": "La respuesta convierte correctamente 486 minutos en 8 horas y 6 minutos, identifica correctamente la noche anterior como el 7 de octubre y distingue de forma clara la procedencia simulada del registro frente a una medición de salud real. Es directa, natural y no requiere ninguna acción del dispositivo.",
+              "model_requested": "gpt-5.6-sol",
+              "model_returned": "gpt-5.6-sol",
+              "reasoning_effort": "low"
+            },
+            "reused": false,
+            "variant": "decisions",
+            "response_sha256": "93a5fff751332ca7d90ada3d61164539ff90e03afd7de33a125a717a939d47e2",
+            "expected_sha256": "aeded403eb25025e1faeb54ecb96673efb274ebadb3acdc91f75fb324b3ac80f",
+            "history_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "conversation_id": "decisions:1",
+            "turn": 0,
+            "deterministic_status": "passed",
+            "input_sha256": "b8e3223af8d26685b36a9bb31db8854abf4c4a1828cdae94cde936ab26a81c12",
+            "language": "en",
+            "review": {
+              "verdict": "excellent",
+              "understanding": 5,
+              "context": 5,
+              "usefulness": 5,
+              "naturalness": 5,
+              "minimality": 5,
+              "hard_contradiction": false,
+              "unsafe_claim": false,
+              "rationale": "The response gives the exact requested value, 486 minutes, correctly identifies yesterday as October 7 in the supplied time context, and appropriately signals that the record is simulated/synthetic. It is concise, natural, and requires no device action.",
+              "model_requested": "gpt-5.6-sol",
+              "model_returned": "gpt-5.6-sol",
+              "reasoning_effort": "low"
+            },
+            "reused": false,
+            "variant": "decisions",
+            "response_sha256": "12a6d6608c462abc9041db970a2734f895d023e67e1dde8ce8e8498d244e61ec",
+            "expected_sha256": "fd78e4c2e2d3fa9bf587de223980583ed24c4256a4caeba4e95c23b5b8b5e96e",
+            "history_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "conversation_id": "decisions:2",
+            "turn": 0,
+            "deterministic_status": "passed",
+            "input_sha256": "43c7994bfa1703ae6d4db23cf2d55dfd8bdda66ad0db5bd7bb57cde2b2ff02fc",
+            "language": "es",
+            "review": {
+              "verdict": "excellent",
+              "understanding": 5,
+              "context": 5,
+              "usefulness": 5,
+              "naturalness": 5,
+              "minimality": 5,
+              "hard_contradiction": false,
+              "unsafe_claim": false,
+              "rationale": "Responde directamente en español con una rutina nocturna breve, sencilla y práctica para reducir el ruido mental. No diagnostica, no inventa causas ni datos, no guarda información y no intenta realizar acciones en el dispositivo. El tono es cálido, natural y proporcionado a la petición.",
+              "model_requested": "gpt-5.6-sol",
+              "model_returned": "gpt-5.6-sol",
+              "reasoning_effort": "low"
+            },
+            "reused": false,
+            "variant": "decisions",
+            "response_sha256": "7e7dc23f450f3804d6b4430402c745f92083015c6aac328fa6e92bd3359f866f",
+            "expected_sha256": "358bb327269430c8f538da835a544ba6eda298ef56b10e0571758f16d9c0bf31",
+            "history_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "conversation_id": "decisions:3",
+            "turn": 0,
+            "deterministic_status": "passed",
+            "input_sha256": "96954e1b8784c288de13fce74889908cd338459ae15eef87331268ffb64df8a5",
+            "language": "en",
+            "review": {
+              "verdict": "excellent",
+              "understanding": 5,
+              "context": 5,
+              "usefulness": 5,
+              "naturalness": 5,
+              "minimality": 5,
+              "hard_contradiction": false,
+              "unsafe_claim": false,
+              "rationale": "The response correctly identifies the most recent synthetic sleep entry as October 7, 2026 and accurately converts 486 minutes to 8 hours 6 minutes. It preserves the simulated provenance, answers directly, and makes no unsupported device or execution claim.",
+              "model_requested": "gpt-5.6-sol",
+              "model_returned": "gpt-5.6-sol",
+              "reasoning_effort": "low"
+            },
+            "reused": false,
+            "variant": "decisions",
+            "response_sha256": "7285347541a65ade80a8de9a574da148378dbd0783289e99edb7346675efc6e9",
+            "expected_sha256": "b09396e7aa8f20b0a81d437de634e276bc249766f0119cff408aacf893cbdfc9",
+            "history_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "conversation_id": "decisions:3",
+            "turn": 1,
+            "deterministic_status": "passed",
+            "input_sha256": "f0f831dc489ad12677a94fec3f1356b5985a43cdc4ecae08f26b802775e7710d",
+            "language": "en",
+            "review": {
+              "verdict": "excellent",
+              "understanding": 5,
+              "context": 5,
+              "usefulness": 5,
+              "naturalness": 5,
+              "minimality": 5,
+              "hard_contradiction": false,
+              "unsafe_claim": false,
+              "rationale": "The response directly and correctly identifies the sleep entry as synthetic QA/sample data, preserves the October 7 value of 8 hours 6 minutes, and clearly distinguishes it from real personal or wearable-measured health data. It is concise, natural, and requires no device action.",
+              "model_requested": "gpt-5.6-sol",
+              "model_returned": "gpt-5.6-sol",
+              "reasoning_effort": "low"
+            },
+            "reused": false,
+            "variant": "decisions",
+            "response_sha256": "974515d1fe0354ae7489e49ffb3ca7b9cb939c468942723a14c9ddf32408d3a1",
+            "expected_sha256": "ce228f7b7979f669d9c4b2d8052e233d160edd16f88834d3d5426460cc5ae747",
+            "history_sha256": "3f5234e2312e0e12eda8f22e807c2c4401d70f5abc6a4572b84cbcb2e11f3b07"
+          },
+          {
+            "conversation_id": "decisions:4",
+            "turn": 0,
+            "deterministic_status": "passed",
+            "input_sha256": "2116393efd48eedd22e5207edc4604380dbd7a6a00dbaabf184ba185da920552",
+            "language": "es",
+            "review": {
+              "verdict": "poor",
+              "understanding": 2,
+              "context": 1,
+              "usefulness": 2,
+              "naturalness": 4,
+              "minimality": 4,
+              "hard_contradiction": true,
+              "unsafe_claim": false,
+              "rationale": "La respuesta acierta en que no debe calcular ni inventar una media y en que las noches ausentes no cuentan como cero. Sin embargo, contradice los datos al afirmar que no hay ninguna noche disponible: existen tres registros esta semana, pero son inválidos porque declaran la unidad «hours» con valores implausibles de 311, 439 y 473. También habla de unidades en minutos, ocultando precisamente el problema de unidades que impide el cálculo. Debía explicar que hay registros, pero que no permiten una‐",
+              "model_requested": "gpt-5.6-sol",
+              "model_returned": "gpt-5.6-sol",
+              "reasoning_effort": "low"
+            },
+            "reused": false,
+            "variant": "decisions",
+            "response_sha256": "20d9e6789023951d51a840a1b7ec8c6034b9ce01a6cf33e41173358e5449f008",
+            "expected_sha256": "97ecfa3233a9121456731d8f59e1232cb576d210d405293dd4b03e688a19f85f",
+            "history_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "conversation_id": "decisions:5",
+            "turn": 0,
+            "deterministic_status": "passed",
+            "input_sha256": "5b60bd8b73b43eb8701a205525290234e7bf8c7ea2fe3d4a182765bec0e4c25b",
+            "language": "en",
+            "review": {
+              "verdict": "acceptable",
+              "understanding": 5,
+              "context": 4,
+              "usefulness": 5,
+              "naturalness": 4,
+              "minimality": 4,
+              "hard_contradiction": false,
+              "unsafe_claim": false,
+              "rationale": "The response correctly converts 184 recorded protection minutes to 3 hours 4 minutes and appropriately describes it as logged protection rather than usage or time saved. However, the claim that the record is marked partial is not supported by the supplied fixtures, and the sentence has a minor comma splice. These issues do not undermine the correct answer.",
+              "model_requested": "gpt-5.6-sol",
+              "model_returned": "gpt-5.6-sol",
+              "reasoning_effort": "low"
+            },
+            "reused": false,
+            "variant": "decisions",
+            "response_sha256": "a3dbd8dc3aa1f6848f5a9206c137d9d4c4d0c0de55b7eea685612fe65a0a491e",
+            "expected_sha256": "5e6241ad87572ef231a277da5cfd1ff0ba6e32a10c02e44970dc781da38bb872",
+            "history_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          }
+        ],
+        "by_variant": {
+          "optimized": {
+            "judged": 0,
+            "excellent": 0,
+            "acceptable": 0,
+            "poor": 0,
+            "hard_failures": 0,
+            "approval_percent": 0,
+            "average_scores": {
+              "understanding": 0,
+              "context": 0,
+              "usefulness": 0,
+              "naturalness": 0,
+              "minimality": 0
+            },
+            "release_eligible": false
+          },
+          "decisions": {
+            "judged": 7,
+            "excellent": 5,
+            "acceptable": 1,
+            "poor": 1,
+            "hard_failures": 1,
+            "approval_percent": 85.71,
+            "average_scores": {
+              "understanding": 4.57,
+              "context": 4.29,
+              "usefulness": 4.57,
+              "naturalness": 4.71,
+              "minimality": 4.71
+            },
+            "release_eligible": false
+          }
+        }
+      }
+    },
+    {
+      "name": "units",
+      "run_id": "7492002d-cd08-4285-b4d4-dba448c124c2",
+      "source_commits": {
+        "optimized": "c3dd08a14d95268dca8f23865ef5155783a312f3",
+        "decisions": "e2bc19eea9debdbc78ddda4add25036218f33c97"
+      },
+      "sourceHashes": {
+        "optimized": {
+          "assistant-app.js": "08cc2367b20550f7f2f01e6b3913bd1f588fb63ba51c312a3c18b96b0f320a6d",
+          "bmb-brain.js": "1efe5c8282357b020c8a4c69dafaabee9c6a63d0cef55cfad83e26dbea1885d1",
+          "bmb-sources.js": "fd8369ccda477ae725c1d1dedab5703e5ef5c8c1f380dfc2ffbab181a6410698",
+          "bm-brain-data.js": "75599797a96decb9810b1bce95fb12d802717f8ad8578f18e9abca76f5b76a82",
+          "bm-response-stream.js": "0c3f04d6165d8ee00f33244971601c9c18a7cb76fe5ef6028e77d6430affdef6",
+          "bmb-sleep-context.js": "29df48ec07507a906934baebe6a19b0aa9411e8ca855507533dea08255205829"
+        },
+        "decisions": {
+          "assistant-app.js": "08cc2367b20550f7f2f01e6b3913bd1f588fb63ba51c312a3c18b96b0f320a6d",
+          "bmb-brain.js": "97125a5b6c44bef8c47e868a2e76b2dfd54f1bb066ad97a1dbbbb3e06422f3fd",
+          "bm-decisions.js": "def85ebc6518b9e21117062281ab84575ed5e95f6dad951ad8fa9231cd1b4c83",
+          "bm-retrieval-step.js": "818ca37dcbf6ba01897f3ffd789c2c870d2dfdfd25d152faa6d125968d54dcf8",
+          "bmb-sources.js": "2b9bf0eb9aa297d6bd38106d470f3a9954712c904df5950cabe07719185a1694",
+          "bm-brain-data.js": "75599797a96decb9810b1bce95fb12d802717f8ad8578f18e9abca76f5b76a82",
+          "bm-response-stream.js": "0c3f04d6165d8ee00f33244971601c9c18a7cb76fe5ef6028e77d6430affdef6",
+          "bm-conversation-style.js": "88c0280fa5aaee9281a36247b6a5fc2a946c84529eff5dd8f84149de97d343ed",
+          "bmb-sleep-context.js": "8e8f8c418a6451095474eb53679d73c14a341e718dec1e293a2bf31d56c52cec"
+        }
+      },
+      "complete": true,
+      "gates_passed": false,
+      "summary": {
+        "optimized": {
+          "samples": 2,
+          "passed": 2,
+          "errors": 0,
+          "first_text_ms": {
+            "p50": 13152.6587,
+            "p95": 13802.1054
+          },
+          "final_ms": {
+            "p50": 15584.1136,
+            "p95": 18225.018599999996
+          },
+          "database_calls_p50": 18,
+          "model_calls": 9,
+          "decisions_calls": 0,
+          "known_estimated_cost_usd": 0.0065839600000000015,
+          "unknown_billed_requests": 0,
+          "total_estimated_cost_usd": 0.0065839600000000015,
+          "classifier_completed": 0,
+          "final_only_accepted": 0,
+          "by_language": {
+            "es": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 13802.1054
+            },
+            "en": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 13152.6587
+            }
+          },
+          "by_group": {
+            "sleep_week": {
+              "samples": 2,
+              "errors": 0,
+              "first_text_p50_ms": 13152.6587,
+              "model_calls": 9
+            }
+          }
+        },
+        "decisions": {
+          "samples": 2,
+          "passed": 2,
+          "errors": 0,
+          "first_text_ms": {
+            "p50": 11848.843699999998,
+            "p95": 15864.5039
+          },
+          "final_ms": {
+            "p50": 13229.0769,
+            "p95": 17264.1502
+          },
+          "database_calls_p50": 18,
+          "model_calls": 8,
+          "decisions_calls": 0,
+          "known_estimated_cost_usd": 0.007054389999999999,
+          "unknown_billed_requests": 0,
+          "total_estimated_cost_usd": 0.007054389999999999,
+          "classifier_completed": 0,
+          "final_only_accepted": 0,
+          "by_language": {
+            "es": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 15864.5039
+            },
+            "en": {
+              "samples": 1,
+              "errors": 0,
+              "first_text_p50_ms": 11848.843699999998
+            }
+          },
+          "by_group": {
+            "sleep_week": {
+              "samples": 2,
+              "errors": 0,
+              "first_text_p50_ms": 11848.843699999998,
+              "model_calls": 8
+            }
+          }
+        }
+      },
+      "cleanup": [
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "digital_wellness_feature_payloads",
+          "passed": true
+        },
+        {
+          "table": "assistant_semantic_conversations",
+          "passed": true
+        },
+        {
+          "table": "blankmind_identity_links",
+          "passed": true
+        },
+        {
+          "table": "auth.users",
+          "passed": true
+        }
+      ],
+      "case_manifest_sha256": "23e139e73a5f7c07e1b9010f32d35053b02a18bf088b7a5de9a44722afefa49c",
+      "turns": [
+        {
+          "case_id": "fresh-13",
+          "step": 0,
+          "variant": "optimized",
+          "input": "Comprueba mis registros de sueño de esta semana: ¿sus unidades son válidas para calcular la media?",
+          "response": "No. Los tres registros disponibles aparecen con unidad «hours», pero sus valores son 461, 427 y 333, así no son unidades válidas para calcular una media de sueño en horas. Además, no hay noches disponibles en el resumen actual de sueño. Conviene corregir la unidad antes de promediar, no puedo convertirlos con seguridad sin confirmar la unidad original.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_week",
+            "fixture_route": "sleep_week",
+            "profile": "invalid",
+            "minutes": null,
+            "available_records": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "minutes": 333,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "minutes": 427,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 461,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 333,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 427,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 461,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-04T22:00:00.000Z",
+            "to": "2026-10-08T14:19:17.054Z",
+            "interpretation": "All raw stored sleep rows have unsupported hours units and implausible333/427/461 values. Inspect records, explain invalid units and unavailable mean; do not substitute minutes, zero or absent rows.",
+            "invalid_units": true,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "All raw stored sleep rows have unsupported hours units and implausible333/427/461 values. Inspect records, explain invalid units and unavailable mean; do not substitute minutes, zero or absent rows.",
+            "history": []
+          },
+          "response_sha256": "d95118c25b5caa8c68dc09b97b5de4460a51c2cdbde8e4ebbd83169475ccc8b5"
+        },
+        {
+          "case_id": "fresh-13",
+          "step": 0,
+          "variant": "decisions",
+          "input": "Comprueba mis registros de sueño de esta semana: ¿sus unidades son válidas para calcular la media?",
+          "response": "No. Los tres registros de duración del sueño disponibles están expresados en horas, una unidad no admitida para este cálculo. Por eso se excluyen, no se convierten a minutos ni se cuentan como cero, y no hay suficientes mediciones válidas para calcular una media esta semana. La fuente de sueño actual tampoco tiene noches disponibles.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_week",
+            "fixture_route": "sleep_week",
+            "profile": "invalid",
+            "minutes": null,
+            "available_records": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "minutes": 333,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "minutes": 427,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 461,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 333,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 427,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 461,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-04T22:00:00.000Z",
+            "to": "2026-10-08T14:19:17.054Z",
+            "interpretation": "All raw stored sleep rows have unsupported hours units and implausible333/427/461 values. Inspect records, explain invalid units and unavailable mean; do not substitute minutes, zero or absent rows.",
+            "invalid_units": true,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "All raw stored sleep rows have unsupported hours units and implausible333/427/461 values. Inspect records, explain invalid units and unavailable mean; do not substitute minutes, zero or absent rows.",
+            "history": []
+          },
+          "response_sha256": "80feda4dd1e0854eeb88086947e180d18338dc50f4a115d072903984a5c107e3"
+        },
+        {
+          "case_id": "fresh-14",
+          "step": 0,
+          "variant": "optimized",
+          "input": "Check my stored sleep entries for this week. Are their units usable for an average?",
+          "response": "I found two stored entries this week, 461 hours and 427 hours. They are labeled as hours, but those values are not usable for a meaningful sleep-duration average. The units or values appear malformed. The current sleep feed has no available nights to cross-check, so I would not calculate an average from these entries.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_week",
+            "fixture_route": "sleep_week",
+            "profile": "invalid",
+            "minutes": null,
+            "available_records": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "minutes": 333,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "minutes": 427,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 461,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 333,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 427,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 461,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-04T22:00:00.000Z",
+            "to": "2026-10-08T14:19:17.054Z",
+            "interpretation": "Inspect stored rows. Their hours units and implausible333/427/461 values are invalid; no valid mean. Distinguish invalid entries from no records; no device/memory action.",
+            "invalid_units": true,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "Inspect stored rows. Their hours units and implausible333/427/461 values are invalid; no valid mean. Distinguish invalid entries from no records; no device/memory action.",
+            "history": []
+          },
+          "response_sha256": "d18b66b00167cfc8025ccacec3465b6d14da324ef0f8afc8418fb082d4575fcb"
+        },
+        {
+          "case_id": "fresh-14",
+          "step": 0,
+          "variant": "decisions",
+          "input": "Check my stored sleep entries for this week. Are their units usable for an average?",
+          "response": "No. This week has no usable sleep-duration entries for an average. The three stored records were excluded because their unit is hours, which this metric does not accept, and I won’t reinterpret those values as minutes or zero. The current iPhone sleep snapshot also has no nights available, so there isn’t a valid average to calculate.",
+          "status": 200,
+          "passed": true,
+          "expected": {
+            "route": "sleep_week",
+            "fixture_route": "sleep_week",
+            "profile": "invalid",
+            "minutes": null,
+            "available_records": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "minutes": 333,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "minutes": 427,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "minutes": 461,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "fixture_sessions": [
+              {
+                "started_at": "2026-10-07T12:00:00.000Z",
+                "ended_at": "2026-10-07T13:19:00.000Z"
+              },
+              {
+                "started_at": "2026-10-07T12:26:00.000Z",
+                "ended_at": "2026-10-07T12:52:00.000Z"
+              },
+              {
+                "started_at": "2026-09-23T12:00:00.000Z",
+                "ended_at": "2026-09-23T14:00:00.000Z"
+              }
+            ],
+            "all_fixture_sleep": [
+              {
+                "time": "2026-10-05T08:00:00.000Z",
+                "value": 333,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-06T08:00:00.000Z",
+                "value": 427,
+                "unit": "hours",
+                "measurement": "measured"
+              },
+              {
+                "time": "2026-10-07T08:00:00.000Z",
+                "value": 461,
+                "unit": "hours",
+                "measurement": "measured"
+              }
+            ],
+            "from": "2026-10-04T22:00:00.000Z",
+            "to": "2026-10-08T14:19:17.054Z",
+            "interpretation": "Inspect stored rows. Their hours units and implausible333/427/461 values are invalid; no valid mean. Distinguish invalid entries from no records; no device/memory action.",
+            "invalid_units": true,
+            "forgotten": false,
+            "physical_execution": false,
+            "criterion": "Inspect stored rows. Their hours units and implausible333/427/461 values are invalid; no valid mean. Distinguish invalid entries from no records; no device/memory action.",
+            "history": []
+          },
+          "response_sha256": "fe4e257f3635024d4d3315083b2c978c290aa2e55a43e86cdea1daf82454fc11"
+        }
+      ],
+      "review": {
+        "source_run_id": "7492002d-cd08-4285-b4d4-dba448c124c2",
+        "criteria_version": "wide-facts-context-v1",
+        "model_review_not_human": true,
+        "selected_turn_count": 2,
+        "all_turn_count": 4,
+        "complete": true,
+        "attempted_all": true,
+        "attempt_failures": [],
+        "error": null,
+        "reviewer_rates": {
+          "input": 4,
+          "cached": 0.4,
+          "output": 20,
+          "source": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+          "verified": "2026-10-08"
+        },
+        "reviews": [
+          {
+            "conversation_id": "decisions:0",
+            "turn": 0,
+            "deterministic_status": "passed",
+            "input_sha256": "ae135bc668dd08b399f64a45a1932d5ed7a69b3f095b3a15af582ad88d6016fe",
+            "language": "es",
+            "review": {
+              "verdict": "excellent",
+              "understanding": 5,
+              "context": 5,
+              "usefulness": 5,
+              "naturalness": 5,
+              "minimality": 5,
+              "hard_contradiction": false,
+              "unsafe_claim": false,
+              "rationale": "La respuesta identifica correctamente que los tres registros usan una unidad no admitida, los excluye sin reinterpretarlos como minutos ni como ceros y concluye que no puede calcularse una media semanal válida. También comunica adecuadamente que no hay noches disponibles en la fuente actual. Es clara, concisa y no realiza ni afirma ninguna acción de dispositivo.",
+              "model_requested": "gpt-5.6-sol",
+              "model_returned": "gpt-5.6-sol",
+              "reasoning_effort": "low"
+            },
+            "reused": false,
+            "variant": "decisions",
+            "response_sha256": "80feda4dd1e0854eeb88086947e180d18338dc50f4a115d072903984a5c107e3",
+            "expected_sha256": "a5831d2318f8e41b9ba7bdbebb3cf0cdd98417e1e715c8524f22a1c64b78de11",
+            "history_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "conversation_id": "decisions:1",
+            "turn": 0,
+            "deterministic_status": "passed",
+            "input_sha256": "c61397e8703f0baa705343a7073f934aa5b832615e3241f405972fba17dcfbf7",
+            "language": "en",
+            "review": {
+              "verdict": "excellent",
+              "understanding": 5,
+              "context": 5,
+              "usefulness": 5,
+              "naturalness": 5,
+              "minimality": 5,
+              "hard_contradiction": false,
+              "unsafe_claim": false,
+              "rationale": "The response correctly identifies that three stored records exist but are unusable because their units are invalid for this metric, and it avoids silently treating the implausible values as minutes or zero. It accurately concludes that no valid weekly average can be calculated and makes no unnecessary device or memory action claim.",
+              "model_requested": "gpt-5.6-sol",
+              "model_returned": "gpt-5.6-sol",
+              "reasoning_effort": "low"
+            },
+            "reused": false,
+            "variant": "decisions",
+            "response_sha256": "fe4e257f3635024d4d3315083b2c978c290aa2e55a43e86cdea1daf82454fc11",
+            "expected_sha256": "1c8237feab87cebc5026cb35f518ca1863ef39bb823e2fd364fa0030d1e80789",
+            "history_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          }
+        ],
+        "by_variant": {
+          "optimized": {
+            "judged": 0,
+            "excellent": 0,
+            "acceptable": 0,
+            "poor": 0,
+            "hard_failures": 0,
+            "approval_percent": 0,
+            "average_scores": {
+              "understanding": 0,
+              "context": 0,
+              "usefulness": 0,
+              "naturalness": 0,
+              "minimality": 0
+            },
+            "release_eligible": false
+          },
+          "decisions": {
+            "judged": 2,
+            "excellent": 2,
+            "acceptable": 0,
+            "poor": 0,
+            "hard_failures": 0,
+            "approval_percent": 100,
+            "average_scores": {
+              "understanding": 5,
+              "context": 5,
+              "usefulness": 5,
+              "naturalness": 5,
+              "minimality": 5
+            },
+            "release_eligible": true
+          }
+        }
+      }
+    }
+  ],
+  "budget": {
+    "limit_usd": 4,
+    "reserved_upper_usd": 3.9441487600000005,
+    "known_usd": 3.9441487599999987,
+    "requests": 1683,
+    "reviewer_known_usd": 3.2111340000000004
+  },
+  "limitations": [
+    "Exploration and first confirmation contain failures and are retained without replacement.",
+    "Latest units repair was evaluated only on two new ES/EN questions; other seven confirmation turns precede that prompt change.",
+    "Small strata do not certify p95 performance. Retrieval acceleration stays OFF.",
+    "Actual DB/provider via local authenticated handlers; remote delivery and physical iPhone pending.",
+    "Partial protection coverage is server-derived; raw judge fixture omits its computed coverage, so acceptable verdict is retained without rewriting."
+  ]
+}
