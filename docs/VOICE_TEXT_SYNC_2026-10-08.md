@@ -16,9 +16,9 @@ Referencia oficial: https://developers.openai.com/api/docs/guides/speech-to-text
 
 ## Validación
 
-Proveedor real ES/EN con7horas/23:30/10:30:2/2 PASS; metadatos sin audio en tmp/product-harness/live-voice-alignment.json. Tests locales de backend/alineación: PASS (ES/EN, números/horas, UTF-16/emoji, WAV, PCM acotado, orden, borrado durante alineación, mismatch). Harness78/78 y scope sin infracciones contra c3dd08a: ph_1791467380846_73474e63. Primera pasada77/78 con árbol sin commit; repetición tras snapshot limpio pasa el gate completo. La prueba física de sincronía no queda acreditada por el harness.
+Proveedor real ES/EN con7horas/23:30/10:30:2/2 PASS; metadatos sin audio en tmp/product-harness/live-voice-alignment.json. Tests locales de backend/alineación: PASS (ES/EN, números/horas, UTF-16/emoji, WAV, PCM acotado, orden, borrado durante alineación, mismatch). Harness78/78 y scope sin infracciones contra c3dd08a: ph_1791467852986_a0ff432b. Primera pasada77/78 con árbol sin commit; repetición tras snapshot limpio pasa el gate completo. CI backend/PostgreSQL/Android37788531200 completo PASS. La prueba física de sincronía no queda acreditada por el harness.
 
-Pruebas nativas añadidas: buffering sin salida prematura, silencio inicial, reloj simulado, palabras futuras ocultas, Unicode y tiempos incompletos. XCTest comprueba ausencia de Listen/altavoces/aviso y conserva micrófono/nav. CI nativo/clock tests PASS en0eb486d (37787570746); compilación/suite UI del candidato final7926cda en curso; prueba real ES/EN de sincronía/latencia/números en iPhone pendiente.
+Pruebas nativas añadidas: buffering sin salida prematura, silencio inicial, reloj simulado, palabras futuras ocultas, Unicode y tiempos incompletos. XCTest comprueba ausencia de Listen/altavoces/aviso y conserva micrófono/nav. CI nativo/clock tests y build Simulator PASS en9f9c70b (37788531134); 13XCTest de interfaz PASS; capturas en curso; prueba real ES/EN de sincronía/latencia/números en iPhone pendiente.
 
 ## Handoff Backend Cloud
 
