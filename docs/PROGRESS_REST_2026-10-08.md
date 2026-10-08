@@ -26,12 +26,14 @@ Baseline: c3dd08a (current QA109 sleep correction), dedicated branch codex/progr
 
 Native tests cover duplicate/provider reconciliation, wake dates and DST, missing awake samples, account-scoped check-ins/update/delete, non-overlapping reference windows, sparse history, protection overlaps/pauses and unknown comparison history. iOS CI includes the actual model tests, simulator build, existing navigation suite plus Progress trend/detail navigation, and native Progress screenshots on normal, active, empty, detail, accessibility and compact iPhone variants.
 
-Delivery evidence will be appended after final checks. No new archive or TestFlight upload is part of the implementation result.
+Final implementation is committed on the dedicated branch and attached as [PR31](https://github.com/guillemarcos14/BlankmindAI/pull/31). No new archive or TestFlight upload was performed.
 
-### Validation checkpoint
+### Final evidence
 
-- Final native source: d692ebd; product harness ph_1791470401563_70ec1962 passed 77/77 with baseline and scope enforcement.
-- Native rest/conversation/protection checks and simulator compilation passed on d692ebd in iOS run37794243888. The first UI pass located a context-presentation failure and a stale risk-action expectation; the final confirmation follows their correction.
-- BM Harness Gate run37794258300 passed on d692ebd (contracts, PostgreSQL, Android).
-- Shared MinimalHomeDesign, assets and global style files are unchanged against c3dd08a.
-- Apple developer clinical-record capability, updated provisioning and physical read permissions remain separate release requirements. No signed archive, deployment or TestFlight upload was performed.
+- Native source: `390c6f0`. [iOS run37804182260](https://github.com/guillemarcos14/BlankmindAI/actions/runs/37804182260) passed the native model checks, simulator compilation and all three affected XCTest flows: Progress trend/detail/back/chat, minimum touch target and native control dismissal, and edge navigation. The complete earlier suite passed twelve unaffected cases and exposed the two corrected failures; it is not represented as a complete final-source fourteen-case run.
+- [BM Harness Gate37804189035](https://github.com/guillemarcos14/BlankmindAI/actions/runs/37804189035) passed all three jobs: contracts/runtime, PostgreSQL conversation recovery and Android compilation/unit tests.
+- Product harness `ph_1791474996421_8e5e41fe` passed 77/77 with the original baseline and scope enforcement. One intermediate dirty-worktree run was rejected by the semantic replay clean-source requirement despite48/48 replay turns passing; the committed-source validation passed.
+- [Native capture run37802037961](https://github.com/guillemarcos14/BlankmindAI/actions/runs/37802037961) passed on `0bbd4df`, with eleven native PNGs (normal, empty, context detail, active, dark, accessibility text and compact iPhone). A single batched confirmation inspected normal/detail/compact/active/accessibility captures after the initial repair batch. The subsequent characteristic-reader addition keeps these fixture renders unchanged because the simulator guest has no readable characteristics; actual personal-trait rendering and permissions remain physical-device checks.
+- Captures and XCTest bundles are retained under ignored `tmp/progress-final-native`, `tmp/progress-passing-xcresult` and `tmp/progress-characteristics-xcresult`; CI retains the downloadable artifacts. Earlier failure bundles are preserved under `tmp/progress-final-xcresult`.
+- Shared MinimalHomeDesign, assets and global style files are unchanged against `c3dd08a`. All-context navigation stays within the existing scroll shell. Explicit rectangular content shapes fix taps in the otherwise transparent center of a plain HStack button, and the metric menu has a44pt label/touch target.
+- Signed distribution needs the Apple Health Records capability and matching provisioning. Simulator fixtures prove layout/navigation, not actual read permission or physiological/clinical accuracy. No backend deployment, expanded cloud/AI transmission or physical read validation is claimed.
