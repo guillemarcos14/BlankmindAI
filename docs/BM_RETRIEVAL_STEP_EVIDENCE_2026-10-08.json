@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-08T08:39:09.861Z",
+  "generated_at": "2026-10-08T08:45:25.490Z",
   "hypothesis": "The time saved by removing a generative retrieval decision exceeds classifier time, while preserving output quality.",
   "benchmark": {
     "artifact_sha256": "9a2042ca49716e11fc35188ba26e5bc94efdf70251b2b274611c048509589358",
@@ -6028,14 +6028,14 @@
     ]
   },
   "quality": {
-    "artifact_sha256": "428e154fad466a4dbec9e7baa2972adf04eaad369f5d14b6ed5a31ebc06a57aa",
+    "artifact_sha256": "55d4102ab84ba75f8caaa499a546069f9db58e7a0d12fc4ac0d46c255bf0446b",
     "schema_version": 1,
     "complete": true,
     "source_run_id": "6f12e364-68eb-490c-9733-30f2d7d40315",
-    "provenance": "Independent model judgement with exact fixture facts; not human review",
+    "provenance": "Independent model judgement with exact fixture facts and an isolated context for each reset turn; not human review",
     "reviews": [
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:0",
         "turn": 0,
         "deterministic_status": "passed",
         "input_sha256": "5924cacf2e7632d57954ac9b46cf63ecfe2f9d5f9a77f7369ba60f51699fc84e",
@@ -6054,10 +6054,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:0",
         "turn": 0,
         "deterministic_status": "passed",
         "input_sha256": "a4b2ddbf7b117f0443863de7a84f28b338e3aa25113320bcd6ced1fcb70190ed",
@@ -6076,10 +6077,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:1",
         "turn": 1,
         "deterministic_status": "passed",
         "input_sha256": "86f7a351cb65c017be82db8a3b786b91fead43e3c5820310774f8afa91b7e48e",
@@ -6098,10 +6100,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:1",
         "turn": 1,
         "deterministic_status": "passed",
         "input_sha256": "01aa7b072efcae32b57841645a82b9841585ece3667a5810224732f02fc99384",
@@ -6120,10 +6123,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:2",
         "turn": 2,
         "deterministic_status": "passed",
         "input_sha256": "e22b4c0f718d12892864c88c0b197dbd9eb1978b537f05228a7f5813008facea",
@@ -6142,10 +6146,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:2",
         "turn": 2,
         "deterministic_status": "passed",
         "input_sha256": "d8e0f6c0731f24285ccd7ffcc5aa8cf10005253d5188b0cf9bd3f13dca09cd7c",
@@ -6164,10 +6169,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:3",
         "turn": 3,
         "deterministic_status": "passed",
         "input_sha256": "ca29645f1abbad965e169d9c7eb7881b90223f52620ae4344372f3c7de0087cb",
@@ -6186,10 +6192,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:3",
         "turn": 3,
         "deterministic_status": "passed",
         "input_sha256": "ac1e2874302e343417c79edb14a80d56bc05d73dc09adfee958ad60d6aba3d7b",
@@ -6208,10 +6215,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:4",
         "turn": 4,
         "deterministic_status": "passed",
         "input_sha256": "86e788bd3981b9ccef61850ce9f2b154384aedf727e384127605c58f5cb0af73",
@@ -6230,10 +6238,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:4",
         "turn": 4,
         "deterministic_status": "passed",
         "input_sha256": "362b25c14e155eb34b8c9b65b086b865ebcaf9fce7f3f80f37542e3d96047ab3",
@@ -6252,10 +6261,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:5",
         "turn": 5,
         "deterministic_status": "passed",
         "input_sha256": "405e97642a60523c0a9133584d7398d943b1c6fd75f07e1617219d8bf42b113c",
@@ -6274,10 +6284,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:5",
         "turn": 5,
         "deterministic_status": "passed",
         "input_sha256": "2f7e2d184abc4a6ab2bcf96763e3ac2f1062225bbd6666cb0885411c95274109",
@@ -6296,10 +6307,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:6",
         "turn": 6,
         "deterministic_status": "passed",
         "input_sha256": "7cf3ea9af675fd332e2accf4638810fc3afa1f48450de58e209084d5011af3fb",
@@ -6318,10 +6330,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:6",
         "turn": 6,
         "deterministic_status": "passed",
         "input_sha256": "7cf3ea9af675fd332e2accf4638810fc3afa1f48450de58e209084d5011af3fb",
@@ -6340,10 +6353,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": true
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:7",
         "turn": 7,
         "deterministic_status": "passed",
         "input_sha256": "1f50eb4c903e9d57e5e507d1203a33bffecba75a26eb70d41f656d257be64504",
@@ -6362,10 +6376,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:7",
         "turn": 7,
         "deterministic_status": "passed",
         "input_sha256": "db1a6475ae44c3802be027398064964599ad750abbe54fe750bb71b111ff8093",
@@ -6384,10 +6399,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:8",
         "turn": 8,
         "deterministic_status": "passed",
         "input_sha256": "0dd94a6e418eb937bf69b332ce290ccdcec75c71df38e071e77dabe9c873735b",
@@ -6406,10 +6422,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:8",
         "turn": 8,
         "deterministic_status": "passed",
         "input_sha256": "33b1a7b4962c8de1f04c2eb09ca362b16ae144ba352ebcaaf4b0f38fe5712a18",
@@ -6428,10 +6445,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:9",
         "turn": 9,
         "deterministic_status": "passed",
         "input_sha256": "2651dfd0449688f4fb0e59f16d2f42ee5265f06ba18f5fe1069c562794b5652b",
@@ -6450,10 +6468,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:9",
         "turn": 9,
         "deterministic_status": "passed",
         "input_sha256": "c97d76b660884e7fcec31e0bd20b6dcc44e4cd79556c8e86167db54f33569ac3",
@@ -6472,10 +6491,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:10",
         "turn": 10,
         "deterministic_status": "passed",
         "input_sha256": "a406e98e3e18041acfc31a761f207c7b5bcb194774c0e0d71139b05ad359ae72",
@@ -6494,10 +6514,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:10",
         "turn": 10,
         "deterministic_status": "passed",
         "input_sha256": "a98efe85e73b1b445ab28b4994c15ba12fe796d829cc645ffa0044739b73f9bf",
@@ -6516,10 +6537,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:11",
         "turn": 11,
         "deterministic_status": "passed",
         "input_sha256": "2d77faee4e8741276ef491920ef93c96fce4619322a54c39cb93aa81dbd0ee1c",
@@ -6538,10 +6560,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:11",
         "turn": 11,
         "deterministic_status": "passed",
         "input_sha256": "928448b261b5df9e9355181a411fc2f29d34abd225278c323a96eee95a504cec",
@@ -6560,10 +6583,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:12",
         "turn": 12,
         "deterministic_status": "passed",
         "input_sha256": "d60cd05f8cf3fb3874f9b9060a1d3c2d8cc1846b9858d8960d1cccb70d6c337a",
@@ -6582,10 +6606,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:12",
         "turn": 12,
         "deterministic_status": "passed",
         "input_sha256": "1f33a691d1bda4cf5d7990a6c50c6464ebf0414bed4171c4c4fcb05cc0b89e96",
@@ -6604,10 +6629,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:13",
         "turn": 13,
         "deterministic_status": "passed",
         "input_sha256": "99698684e85dd16474107b112ca537ff88e934a7b1a7fdf7192dc15d2c3480f8",
@@ -6626,10 +6652,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:13",
         "turn": 13,
         "deterministic_status": "passed",
         "input_sha256": "eb9ff2bfd60f702e03f6689d1f0c38ea69b435df149d41290955cff9febebee9",
@@ -6648,10 +6675,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:14",
         "turn": 14,
         "deterministic_status": "passed",
         "input_sha256": "742991a802c7b54c296885cd3ee062a2b96bad7219618cbb92a10d56ed53203e",
@@ -6670,10 +6698,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:14",
         "turn": 14,
         "deterministic_status": "passed",
         "input_sha256": "4275c1810f90e6f147e5a7e03ffc37bfb691056eab97ca1224358a41953ce5a5",
@@ -6692,10 +6721,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:15",
         "turn": 15,
         "deterministic_status": "passed",
         "input_sha256": "af4017be20e4871023c0b4a7d51e076cb6a9a662dd43eb270684c14d19c59318",
@@ -6714,10 +6744,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:15",
         "turn": 15,
         "deterministic_status": "passed",
         "input_sha256": "028f0d2f4fbff45649a2f5fb1a0d6ed76eaab781a931247405cc2764d8a7032d",
@@ -6736,10 +6767,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:16",
         "turn": 16,
         "deterministic_status": "passed",
         "input_sha256": "4b619e9934125f1afa73e22f8aec55fb799ac147d8253d13d2bc6d6f6d4c8603",
@@ -6758,10 +6790,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:16",
         "turn": 16,
         "deterministic_status": "passed",
         "input_sha256": "e1918074dbb01a2d59fe12fd41c104ea0cf9f83164c77dc88a84b51572de8929",
@@ -6780,10 +6813,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:17",
         "turn": 17,
         "deterministic_status": "passed",
         "input_sha256": "dc1a34a074e4ae31d06ebaca26d428f150aa63ce20ce9f1a4a927c10b594b309",
@@ -6802,10 +6836,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:17",
         "turn": 17,
         "deterministic_status": "passed",
         "input_sha256": "041e5060b96854d5e8c9d74ce8fbd8c6e235d037f69a6a8f5123bd8264be69e3",
@@ -6824,10 +6859,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:18",
         "turn": 18,
         "deterministic_status": "passed",
         "input_sha256": "e6e68f816acc41af7eaf90c7cddd2eea31d447b451b254b240695211046b86ba",
@@ -6846,10 +6882,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:18",
         "turn": 18,
         "deterministic_status": "passed",
         "input_sha256": "b6617cda0f0cd360694fe09bb6cb321274360f20167088c5c9c69e0b1159da51",
@@ -6868,10 +6905,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       },
       {
-        "conversation_id": "decisions",
+        "conversation_id": "decisions:19",
         "turn": 19,
         "deterministic_status": "passed",
         "input_sha256": "f7848c84c99ac5f57626a382d0607c592d5152d069ad2942ddd47e7cf64fc838",
@@ -6890,10 +6928,11 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "decisions"
       },
       {
-        "conversation_id": "optimized",
+        "conversation_id": "optimized:19",
         "turn": 19,
         "deterministic_status": "passed",
         "input_sha256": "105e3d014c333d9b58a3aca42b99a4af96078758fe8934f1ecbf1b87ae68465e",
@@ -6912,7 +6951,8 @@
           "model_returned": "gpt-5.6-sol",
           "reasoning_effort": "low"
         },
-        "reused": false
+        "reused": true,
+        "variant": "optimized"
       }
     ],
     "by_variant": {
@@ -8079,7 +8119,7 @@
     18
   ],
   "frozen_source_verification": {
-    "checked_at": "2026-10-08T08:39:09.858Z",
+    "checked_at": "2026-10-08T08:45:25.484Z",
     "passed": true,
     "files": [
       {
