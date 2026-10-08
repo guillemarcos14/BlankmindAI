@@ -18,7 +18,8 @@ function summarize(records,rates) {
  final_ms:{p50:percentile(good.map(r=>r.elapsed_ms),.5),p95:percentile(good.map(r=>r.elapsed_ms),.95)},
  database_calls_p50:percentile(rows.map(r=>r.database_calls),.5),model_calls:rows.reduce((s,r)=>s+r.model_calls,0),decisions_calls:rows.reduce((s,r)=>s+r.decisions_calls,0),
  known_estimated_cost_usd:costs.reduce((s,c)=>s+(c||0),0),unknown_billed_requests:costs.filter(c=>c===null).length,total_estimated_cost_usd:costs.every(c=>c!==null)?costs.reduce((s,c)=>s+c,0):null,
- route_completed:rows.filter(r=>r.decisions_trace.some(t=>t.status==='completed')).length,
+ classifier_completed:rows.filter(r=>r.retrieval_trace.some(t=>t.status==='completed')).length,
+ final_only_accepted:rows.filter(r=>r.retrieval_trace.some(t=>t.accepted===true)).length,
  by_language:Object.fromEntries(['es','en'].map(l=>[l,{samples:rows.filter(r=>r.language===l).length,errors:rows.filter(r=>r.language===l&&!r.passed).length,first_text_p50_ms:percentile(good.filter(r=>r.language===l).map(r=>r.first_text_ms),.5)}])),
  by_group:Object.fromEntries([...new Set(rows.map(r=>r.group))].map(g=>[g,{samples:rows.filter(r=>r.group===g).length,errors:rows.filter(r=>r.group===g&&!r.passed).length,first_text_p50_ms:percentile(good.filter(r=>r.group===g).map(r=>r.first_text_ms),.5),model_calls:rows.filter(r=>r.group===g).reduce((s,r)=>s+r.model_calls,0)}]))}];
  }));

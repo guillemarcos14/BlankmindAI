@@ -60,6 +60,55 @@ inventada. El ensayo no habilita producción ni certifica iPhone o calidad gener
 
 ## Resultado
 
-En curso. Prototipo apagado; no deploy, migración, flags del servidor ni TestFlight.
+Prueba terminada: mejora de mediana y llamadas, calidad todavía insuficiente para
+activar. Prototipo apagado; no deploy, migración, flags del servidor ni TestFlight.
+
+| Métrica | Actual | Ruta experimental |
+| --- | ---: | ---: |
+| Primer texto p50 | 10091,04ms | 6061,01ms (-39,9%) |
+| Respuesta durable p50 | 11109,47ms | 7139,70ms (-35,7%) |
+| Primer texto p95 | 13709,36ms | 13599,36ms (-0,8%) |
+| Respuesta durable p95 | 14660,74ms | 14882,57ms (+1,5%) |
+| Llamadas generativas | 61 | 41, más20Decisions |
+| Turnos completados / fallos funcionales | 20 / 0 | 20 / 0 |
+| Respuestas aceptables por segundo modelo | 16/20 | 17/20 |
+| Coste estimado registrado | $0,03719605 | mínimo$0,02727950 |
+
+Son preguntas de recuperación deliberadamente seleccionadas; estos10s del baseline
+no representan la mediana general de Blankmind ni se comparan directamente con el
+corpus amplio del experimento anterior. Una repetición por pregunta no demuestra
+significancia, causalidad de cada diferencia individual ni rendimiento en producción.
+
+Clasificación completada18/20, dos timeouts sin usage: total candidato desconocido,
+no afirmar ahorro completo. El subtotal conocido es26,7% menor. Diez de las veinte
+preguntas usaron el recorrido final-only; cada una redactó con una sola llamada
+generativa. Las restantes conservaron el flujo normal por timeout o abstención.
+El total ahorra20generativas. Los casos descartados están incluidos en la comparación.
+
+Calidad: tres respuestas candidatas deficientes frente a cuatro baseline; un caso
+que baseline resolvió correctamente fue incorrecto en candidato. Errores candidatos:
+promedio semanal calculado con2de3mediciones (465en vez de450min, en fallback),
+retener el total computable0min de protección semanal (en recorrido acelerado) y
+retener0min de protección ayer (en fallback). Por tanto la hipótesis completa con
+calidad mantenida no pasa, aunque la calidad agregada del juez sea algo mejor.
+No contar HTTP200 o ausencia de acciones como corrección semántica.
+
+La primera revisión omitía fecha actual/conteo de sesiones y marcaba como inventados
+datos suministrados al generador. Se corrigió el contexto del revisor con reloj,
+periodos locales,2/0sesiones y cobertura parcial real del fixture. Ambas revisiones
+se conservan completas; se volvieron a evaluar las40respuestas, sin modificar ninguna
+salida ni el runtime. Es revisión automática, no validación humana independiente.
+
+Los resultados sugieren un problema de interpretación: no tener sesiones guardadas
+sí permite computar0min *registrados*, mientras que la actividad física total puede
+ser desconocida. El experimento mantiene visibles esos fallos; no se ajustaron
+umbrales ni instrucciones de generación después de observar los resultados.
+
+Fuentes congeladas9/9hashes iguales al cierre. Limpieza QA5/5. Unit tests cubren dueño,
+corte de olvido, página incompleta, cero real, DST, presupuesto recuperado ante salida
+inválida y una sola generación atravesando el planner real. Harness inicial78/78/scope.
+
+[Evidencia de todas las parejas, consumos y revisiones](BM_RETRIEVAL_STEP_EVIDENCE_2026-10-08.json)
+· [PR27](https://github.com/guillemarcos14/BlankmindAI/pull/27).
 
 Referencia: [Decisions API](https://developers.openai.com/api/docs/guides/decisions).
