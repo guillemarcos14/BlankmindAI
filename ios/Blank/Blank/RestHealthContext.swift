@@ -34,6 +34,26 @@ enum RestHealthCatalog {
         ]
         if #available(iOS 17, *) { identifiers.append(.timeInDaylight) }
         if #available(iOS 18, *) { identifiers.append(.appleSleepingBreathingDisturbances) }
+        if #available(iOS 11.2, *) { identifiers.append(.distanceDownhillSnowSports) }
+        if #available(iOS 8.0, *) { identifiers.append(.nikeFuel) }
+        if #available(iOS 14.5, *) { identifiers.append(.appleMoveTime) }
+        if #available(iOS 18.0, *) { identifiers.append(.crossCountrySkiingSpeed) }
+        if #available(iOS 17.0, *) { identifiers.append(.cyclingCadence) }
+        if #available(iOS 17.0, *) { identifiers.append(.cyclingFunctionalThresholdPower) }
+        if #available(iOS 17.0, *) { identifiers.append(.cyclingPower) }
+        if #available(iOS 17.0, *) { identifiers.append(.cyclingSpeed) }
+        if #available(iOS 18.0, *) { identifiers.append(.distanceCrossCountrySkiing) }
+        if #available(iOS 18.0, *) { identifiers.append(.distancePaddleSports) }
+        if #available(iOS 18.0, *) { identifiers.append(.distanceRowing) }
+        if #available(iOS 18.0, *) { identifiers.append(.distanceSkatingSports) }
+        if #available(iOS 18.0, *) { identifiers.append(.estimatedWorkoutEffortScore) }
+        if #available(iOS 18.0, *) { identifiers.append(.paddleSportsSpeed) }
+        if #available(iOS 17.0, *) { identifiers.append(.physicalEffort) }
+        if #available(iOS 18.0, *) { identifiers.append(.rowingSpeed) }
+        if #available(iOS 18.0, *) { identifiers.append(.workoutEffortScore) }
+        if #available(iOS 16.0, *) { identifiers.append(.environmentalSoundReduction) }
+        if #available(iOS 16.0, *) { identifiers.append(.underwaterDepth) }
+        if #available(iOS 16.0, *) { identifiers.append(.waterTemperature) }
         return identifiers.compactMap { HKObjectType.quantityType(forIdentifier: $0) }
     }
     static var categories: [HKCategoryType] {
