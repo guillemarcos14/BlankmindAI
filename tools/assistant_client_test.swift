@@ -561,22 +561,34 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
         check(payload["request_id"] as? String == id.uuidString.lowercased() && payload["text"] == nil, "Voice accepts only a durable turn and request ID")
         return .init(body: frames, contentType: "application/x-ndjson", headers: headers)
     }
-    try await client.voice(turnId: turn, requestId: id) { audio.append($0) }
+    try await client.voice(turnId: turn, requestId: id, onCue: { _ in }) { audio.append($0) }
     check(audio == Data([0,0,255,127,0,128]), "PCM transport changed samples")
+    let cueFrame = "{\"type\":\"cue\",\"turn_id\":\"\(turn)\",\"start\":0.25,\"end\":5}\n"
+    var cues: [AssistantVoiceCue] = []
+    TransportStub.respond = { request in
+        let payload = try! JSONSerialization.jsonObject(with: requestBody(request)) as! [String: Any]
+        check(payload["synchronized"] as? Bool == true, "Synchronized playback must request word times")
+        return .init(body: cueFrame + frames, contentType: "application/x-ndjson", headers: headers)
+    }
+    try await client.voice(turnId: turn, requestId: id, onCue: { cues.append($0) }) { _ in }
+    check(cues.count == 1 && cues[0].start == 0.25 && cues[0].end == 5, "Voice lost canonical word timings")
+    TransportStub.respond = { _ in .init(body: frames.replacingOccurrences(of: "{\"type\":\"end\"", with: cueFrame + "{\"type\":\"end\""), contentType: "application/x-ndjson", headers: headers) }
+    do { try await client.voice(turnId: turn, requestId: id, onCue: { _ in }) { _ in }; fatalError("Late cue accepted") }
+    catch AssistantAppError.invalidResponse {}
     for broken in [frames.components(separatedBy: "\n").first! + "\n", frames.replacingOccurrences(of: turn, with: "wrong-turn"), "{\"type\":\"audio\",\"turn_id\":\"\(turn)\",\"pcm\":\"AQ==\"}\n"] {
         TransportStub.respond = { _ in .init(body: broken, contentType: "application/x-ndjson", headers: headers) }
-        do { try await client.voice(turnId: turn, requestId: id) { _ in }; fatalError("Invalid voice accepted") }
+        do { try await client.voice(turnId: turn, requestId: id, onCue: { _ in }) { _ in }; fatalError("Invalid voice accepted") }
         catch AssistantAppError.invalidResponse {}
     }
     TransportStub.respond = { _ in .init(status: 429) }
-    do { try await client.voice(turnId: turn, requestId: id) { _ in }; fatalError("Quota accepted") }
+    do { try await client.voice(turnId: turn, requestId: id, onCue: { _ in }) { _ in }; fatalError("Quota accepted") }
     catch let error as AssistantAppError { check(error.problem == .rateLimited, "Quota loses typed error") }
     TransportStub.respond = { _ in .init(error: URLError(.cancelled)) }
-    do { try await client.voice(turnId: turn, requestId: id) { _ in }; fatalError("Cancellation ignored") }
+    do { try await client.voice(turnId: turn, requestId: id, onCue: { _ in }) { _ in }; fatalError("Cancellation ignored") }
     catch is CancellationError {}
     TransportStub.respond = { _ in .init(body: frames, contentType: "application/x-ndjson", headers: headers) }
     do {
-        try await client.voice(turnId: turn, requestId: id) { _ in AssistantAppSession.save(accessToken: "voice#B", refreshToken: "refresh-B") }
+        try await client.voice(turnId: turn, requestId: id, onCue: { _ in }) { _ in AssistantAppSession.save(accessToken: "voice#B", refreshToken: "refresh-B") }
         fatalError("Old account voice continued")
     } catch AssistantAppError.sessionChanged {}
     AssistantAppSession.save(accessToken: "expired#A", refreshToken: "refresh-A")
@@ -586,7 +598,7 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
         attempts += 1
         return request.value(forHTTPHeaderField: "Authorization") == "Bearer expired#A" ? .init(status: 401) : .init(body: frames, contentType: "application/x-ndjson", headers: headers)
     }
-    try await client.voice(turnId: turn, requestId: id) { _ in }
+    try await client.voice(turnId: turn, requestId: id, onCue: { _ in }) { _ in }
     check(attempts == 2, "Voice failed to refresh once")
     print("voice transport: PCM, final marker, format, quota, cancellation, refresh and account isolation PASS")
 }
