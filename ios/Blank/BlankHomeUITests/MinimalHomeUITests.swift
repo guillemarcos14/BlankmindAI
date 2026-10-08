@@ -1,6 +1,27 @@
 import XCTest
 
 final class MinimalHomeUITests: XCTestCase {
+    func testSleepSourceKeepsProductionScreensAndUnmetAccountGate() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["BLANK_UI_SCENARIO"] = "product-onboarding-device-empty"
+        app.launch()
+        XCTAssertTrue(app.staticTexts["onboarding-sleep-empty"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["onboarding-synthetic-demo"].exists, "Anonymous users cannot enable account-scoped sleep")
+        XCTAssertFalse(app.staticTexts["synthetic-demo-banner"].exists)
+        app.terminate()
+        let home = launch()
+        home.buttons["home-tab-control"].tap()
+        XCTAssertTrue(home.buttons["automatic protection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(home.buttons["distractions"].exists)
+        home.buttons["home-tab-progress"].tap()
+        XCTAssertTrue(home.staticTexts["Progress"].waitForExistence(timeout: 5))
+        XCTAssertFalse(home.staticTexts["synthetic-demo-banner"].exists)
+        home.buttons["home-tab-chat"].tap()
+        XCTAssertTrue(home.buttons["home-voice"].waitForExistence(timeout: 5))
+        XCTAssertFalse(home.buttons["Show my sample sleep"].exists)
+    }
+
     private func launch(_ scenario: String = "product-home", language: String = "en") -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()

@@ -336,7 +336,7 @@ struct HomeView: View {
     @State private var contextualPlanSelection = FamilyActivitySelection()
     @State private var showingRelink = false
     @State private var showingForgetConfirm = false
-    @StateObject private var healthKitStore = HealthKitStore()
+    @StateObject private var healthKitStore = HealthKitStore.shared
     @State private var unblankHoldProgress = 0.0
     @State private var unblankHapticTask: Task<Void, Never>?
     @State private var blockHapticTask: Task<Void, Never>?
@@ -372,6 +372,7 @@ struct HomeView: View {
     }
 
     private var healthPermissionLabel: String {
+        if healthKitStore.syntheticSleepEnabled { return "synthetic sleep · real activity" }
         switch healthKitStore.state {
         case .connected:
             return "connected"
@@ -2741,6 +2742,11 @@ private struct SettingsScreen: View {
                 settingsRow(title: "account", detail: "Apple sign-in and account controls", action: { showingAccount = true })
                 if screenTimeStatus != "approved" {
                     settingsRow(title: "screen time", detail: screenTimeStatus, action: onRequestScreenTimePermission)
+                }
+                if HealthKitStore.shared.canUseSyntheticSleep {
+                    settingsRow(title: "synthetic sleep", detail: HealthKitStore.shared.syntheticSleepEnabled ? "on · sleep only" : "off", action: {
+                        HealthKitStore.shared.setSyntheticSleepEnabled(!HealthKitStore.shared.syntheticSleepEnabled)
+                    })
                 }
                 if healthStatus != "connected" {
                     settingsRow(title: "health", detail: healthStatus, action: onRequestHealthAccess)

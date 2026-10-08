@@ -36,6 +36,10 @@ final class BlankBrain {
             .store(in: &subscriptions)
         NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)
             .sink { [weak self] _ in self?.sync() }.store(in: &subscriptions)
+        HealthKitStore.shared.objectWillChange
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.sync() }.store(in: &subscriptions)
+        HealthKitStore.shared.refresh()
         sync()
     }
 
@@ -134,6 +138,14 @@ final class BlankBrain {
             "adult_content_blocking_enabled": store.adultContentBlockingEnabled,
             "daily_limit_enabled": store.dailyLimitEnabled, "daily_limit_minutes": store.dailyLimitMinutes,
             "memory": ["weak_hours": BlankedAgentMemory.rememberedWeakHours(system: system), "last_plan_outcome": ""], "brain_snapshot": history]
+        let health = HealthKitStore.shared
+        health.reconcileSleepSource()
+        payload["sleep_data_available"] = health.sleepDataAvailable
+        payload["sleep_data_checked_at"] = iso.string(from: now)
+        payload["health_signal_reasons"] = health.sleepProvenance
+        payload["personal_profile"] = health.sleepContextProfile(now: now)
+        // Explicit zero plus availability=false overwrites a previous source on disable; omission would retain old context.
+        payload["sleep_minutes"] = health.summaries.last(where: { $0.sleepMinutes != nil })?.sleepMinutes ?? 0
         if let value = system.profile.strongestWindow { payload["strongest_hour"] = value }
         return payload
     }

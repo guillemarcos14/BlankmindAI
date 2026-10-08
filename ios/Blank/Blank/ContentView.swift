@@ -6,7 +6,7 @@ struct ContentView: View {
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
     @EnvironmentObject private var screenTimeBlocker: ScreenTimeBlocker
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var healthKitStore = HealthKitStore()
+    @StateObject private var healthKitStore = HealthKitStore.shared
     @AppStorage("blankHealthOnboardingVersion", store: BlankSharedState.defaults) private var healthOnboardingVersion = 0
     @State private var showingOnboardingDemo = false
     @State private var simulatorGuestHome = false
@@ -42,7 +42,7 @@ struct ContentView: View {
     private var productContent: some View {
         let _ = accountRevision
         return ZStack {
-            if showingOnboardingDemo || (!simulatorGuestHome && (!sessionStore.setupComplete || !AssistantAppSession.hasAppleIdentity || healthOnboardingVersion != 6 || !SleepAccessPolicy.canEnter(screenTimeApproved: screenTimeBlocker.authorizationStatus == .approved, sleep: healthKitStore.sleepAccess))) {
+            if showingOnboardingDemo || (!simulatorGuestHome && (!sessionStore.setupComplete || !AssistantAppSession.hasAppleIdentity || healthOnboardingVersion != 6 || !SleepAccessPolicy.canEnter(screenTimeApproved: screenTimeBlocker.authorizationStatus == .approved, sleep: healthKitStore.onboardingSleepAccess))) {
                 SetupView(healthKitStore: healthKitStore) {
                     withAnimation(.easeInOut(duration: 0.35)) {
                         showingOnboardingDemo = false

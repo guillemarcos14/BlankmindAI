@@ -7,7 +7,7 @@ struct ReportView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var usesMainBackground = false
     var onClose: (() -> Void)? = nil
-    @StateObject private var healthKitStore = HealthKitStore()
+    @StateObject private var healthKitStore = HealthKitStore.shared
     @State private var isSubmittingWellnessFeatures = false
     @State private var wellnessSyncMessage: String?
     @AppStorage("blankDigitalWellnessFeatureConsent", store: BlankSharedState.defaults) private var wellnessFeatureConsent = false
@@ -594,6 +594,7 @@ struct ReportView: View {
     }
 
     private func healthSourceStatus(context: HealthRecoveryContext) -> String {
+        if healthKitStore.syntheticSleepEnabled { return "Synthetic sleep · real activity" }
         guard case .connected = healthKitStore.state else {
             if case .failed(_) = healthKitStore.state { return "Partial" }
             return "Off"

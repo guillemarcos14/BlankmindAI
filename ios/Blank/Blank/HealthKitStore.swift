@@ -22,6 +22,69 @@ enum HealthKitConnectionState: Equatable {
 }
 
 final class HealthKitStore: ObservableObject {
+    static let shared = HealthKitStore()
+    @Published private(set) var syntheticSleepEnabled = false
+    private var sourceOwner: String?
+    private var refreshRequestID = UUID()
+    private(set) var sourceGeneration = UUID()
+    private var identityObserver: NSObjectProtocol?
+
+    var canUseSyntheticSleep: Bool { SyntheticSleepSource.allowed && AssistantAppSession.userID != nil }
+    var sleepDataAvailable: Bool { syntheticSleepEnabled || sleepAccess.hasData }
+    var onboardingSleepAccess: SleepAccessStatus { syntheticSleepEnabled ? .available : sleepAccess }
+    var sleepSource: String { syntheticSleepEnabled ? "synthetic_qa" : "apple_health" }
+    var sleepProvenance: String {
+        syntheticSleepEnabled ? "Sleep is synthetic QA data; activity, permissions and protection are real. Do not treat sleep as measured health evidence." : "Sleep source: Apple Health; read permission is opaque."
+    }
+
+    func sleepContextProfile(now: Date = Date()) -> [String: Any] {
+        reconcileSleepSource()
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = Calendar.current.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        let nights: [[String: Any]] = summaries.filter { $0.sleepMinutes != nil }.suffix(14).map { day in
+            var row: [String: Any] = ["date": formatter.string(from: day.date), "source": sleepSource]
+            for (key, value) in [("sleep_minutes", day.sleepMinutes), ("deep_minutes", day.deepSleepMinutes),
+                ("rem_minutes", day.remSleepMinutes), ("core_minutes", day.coreSleepMinutes),
+                ("awake_minutes", day.awakeMinutes), ("in_bed_minutes", day.inBedMinutes),
+                ("bedtime_minute", day.bedtimeMinute), ("wake_minute", day.wakeMinute)] {
+                if let value { row[key] = value }
+            }
+            return row
+        }
+        return ["sleep_source": sleepSource, "sleep_is_synthetic": syntheticSleepEnabled,
+            "sleep_provenance": sleepProvenance, "sleep_nights": nights,
+            "sleep_date": nights.last?["date"] as? String ?? ""]
+    }
+
+    func setSyntheticSleepEnabled(_ enabled: Bool) {
+        guard canUseSyntheticSleep else { return }
+        SyntheticSleepSource.setEnabled(enabled, owner: AssistantAppSession.userID, defaults: defaults)
+        reconcileSleepSource(force: true)
+        refresh()
+    }
+
+    func reconcileSleepSource(force: Bool = false) {
+        let owner = AssistantAppSession.userID
+        let enabled = SyntheticSleepSource.enabled(owner: owner, defaults: defaults)
+        guard force || owner != sourceOwner || enabled != syntheticSleepEnabled else { return }
+        let retained = owner == sourceOwner ? summaries : []
+        sourceOwner = owner
+        refreshRequestID = UUID()
+        sourceGeneration = UUID()
+        sleepRequestID = nil
+        sleepCheckInFlight = false
+        sleepAccess = .unchecked
+        sleepNightCount = 0
+        watchNightCount = 0
+        syntheticSleepEnabled = enabled
+        summaries = enabled ? SyntheticSleepSource.applying(to: retained) : SyntheticSleepSource.removingSleep(from: retained)
+        state = HKHealthStore.isHealthDataAvailable() ? .notRequested : .unavailable
+    }
+
+    deinit { if let identityObserver { NotificationCenter.default.removeObserver(identityObserver) } }
+
     @Published private(set) var state: HealthKitConnectionState
     @Published private(set) var summaries: [HealthDaySummary] = []
 
@@ -42,6 +105,13 @@ final class HealthKitStore: ObservableObject {
         } else {
             state = .notRequested
         }
+        reconcileSleepSource()
+        identityObserver = NotificationCenter.default.addObserver(forName: AssistantAppSession.didChangeNotification,
+            object: nil, queue: .main) { [weak self] _ in
+                guard let self else { return }
+                self.reconcileSleepSource()
+                self.refresh()
+            }
     }
 
     #if DEBUG && targetEnvironment(simulator)
@@ -52,6 +122,9 @@ final class HealthKitStore: ObservableObject {
     #endif
 
     func requestAccess() {
+        reconcileSleepSource()
+        let owner = sourceOwner
+        let generation = sourceGeneration
         guard HKHealthStore.isHealthDataAvailable() else {
             state = .unavailable
             return
@@ -65,7 +138,7 @@ final class HealthKitStore: ObservableObject {
         state = .requesting
         healthStore.requestAuthorization(toShare: [], read: types) { [weak self] success, error in
             DispatchQueue.main.async {
-                guard let self else { return }
+                guard let self, owner == AssistantAppSession.userID, self.sourceGeneration == generation else { return }
                 self.defaults.set(true, forKey: self.requestedKey)
                 if success {
                     self.verifySleepAccess()
@@ -80,6 +153,8 @@ final class HealthKitStore: ObservableObject {
     }
 
     func verifySleepAccess() {
+        reconcileSleepSource()
+        let owner = sourceOwner
         guard HKHealthStore.isHealthDataAvailable() else {
             sleepAccess = .failed("Apple Health is unavailable on this device.")
             return
@@ -106,7 +181,7 @@ final class HealthKitStore: ObservableObject {
             let nights = Set(usable.map { calendar.startOfDay(for: $0.end) }).count
             let watchNights = Set(usable.filter(\.isAppleWatch).map { calendar.startOfDay(for: $0.end) }).count
             DispatchQueue.main.async {
-                guard let self, self.sleepRequestID == requestID else { return }
+                guard let self, owner == AssistantAppSession.userID, self.sleepRequestID == requestID else { return }
                 self.sleepCheckInFlight = false
                 self.sleepNightCount = nights
                 self.watchNightCount = watchNights
@@ -120,7 +195,7 @@ final class HealthKitStore: ObservableObject {
         }
         healthStore.execute(query)
         DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
-            guard let self, self.sleepRequestID == requestID, self.sleepCheckInFlight else { return }
+            guard let self, owner == AssistantAppSession.userID, self.sleepRequestID == requestID, self.sleepCheckInFlight else { return }
             self.healthStore.stop(query)
             self.sleepRequestID = nil
             self.sleepCheckInFlight = false
@@ -129,6 +204,11 @@ final class HealthKitStore: ObservableObject {
     }
 
     func refresh(days: Int = 14) {
+        reconcileSleepSource()
+        let owner = sourceOwner
+        let requestID = UUID()
+        refreshRequestID = requestID
+        if syntheticSleepEnabled { summaries = SyntheticSleepSource.applying(to: summaries, days: days) }
         verifySleepAccess()
         guard HKHealthStore.isHealthDataAvailable() else {
             state = .unavailable
@@ -268,7 +348,7 @@ final class HealthKitStore: ObservableObject {
         }
 
         group.notify(queue: .main) { [weak self] in
-            guard let self else { return }
+            guard let self, self.refreshRequestID == requestID, owner == AssistantAppSession.userID else { return }
             let loadedSummaries = (0..<days).compactMap { offset -> HealthDaySummary? in
                 guard let date = calendar.date(byAdding: .day, value: offset, to: start) else { return nil }
                 let day = calendar.startOfDay(for: date)
@@ -313,7 +393,9 @@ final class HealthKitStore: ObservableObject {
                     )
                 )
             }
-            self.summaries = loadedSummaries.filter(\.hasSignals)
+            self.summaries = self.syntheticSleepEnabled
+                ? SyntheticSleepSource.applying(to: loadedSummaries, days: days)
+                : loadedSummaries.filter(\.hasSignals)
             if self.sleepAccess.hasData { self.state = .connected }
         }
     }
