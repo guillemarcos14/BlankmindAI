@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "scope": "New explicit record-unit questions after the separate reviewer rejected an ambiguous units reply. Focused regression, not reliability or p95 sample.",
+  "cases": [
+    {
+      "id": "fresh-13",
+      "language": "es",
+      "route": "sleep_week",
+      "profile": "invalid",
+      "eligible": true,
+      "sleep_minutes": [
+        333,
+        427,
+        461
+      ],
+      "text": "Comprueba mis registros de sueño de esta semana: ¿sus unidades son válidas para calcular la media?",
+      "expectation": "All raw stored sleep rows have unsupported hours units and implausible333/427/461 values. Inspect records, explain invalid units and unavailable mean; do not substitute minutes, zero or absent rows."
+    },
+    {
+      "id": "fresh-14",
+      "language": "en",
+      "route": "sleep_week",
+      "profile": "invalid",
+      "eligible": true,
+      "sleep_minutes": [
+        333,
+        427,
+        461
+      ],
+      "text": "Check my stored sleep entries for this week. Are their units usable for an average?",
+      "expectation": "Inspect stored rows. Their hours units and implausible333/427/461 values are invalid; no valid mean. Distinguish invalid entries from no records; no device/memory action."
+    }
+  ]
+}
