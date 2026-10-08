@@ -57,8 +57,8 @@ async function main(){
    const r=await originalFetch(c.supabase+route,{method,headers:{"content-type":"application/json",...headers},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(90000)});
    const data=await r.json().catch(()=>null);if(!r.ok)throw Error("decisions_qa_http_"+r.status);return data;
  };
- const sourceHashes=Object.fromEntries(Object.entries(roots).map(([key,root])=>[key,Object.fromEntries(["assistant-app.js","bmb-brain.js","bm-decisions.js","bm-retrieval-step.js","bmb-sources.js","bm-brain-data.js","bm-response-stream.js"].flatMap(n=>{const f=path.join(root,"netlify/functions",n);return fs.existsSync(f)?[[n,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]]:[]}))]));
- const report={schema_version:1,run_id:runId,provider_real:true,decisions_real:true,database_real:true,netlify_transport_tested:false,physical_device_tested:false,native_actions_executed:0,source_commits:{optimized:require("node:child_process").execFileSync("git",["-C",roots.optimized,"rev-parse","HEAD"],{encoding:"utf8"}).trim(),decisions:require("node:child_process").execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim()},
+ const sourceHashes=Object.fromEntries(Object.entries(roots).map(([key,root])=>[key,Object.fromEntries(["assistant-app.js","bmb-brain.js","bm-decisions.js","bm-retrieval-step.js","bmb-sources.js","bm-brain-data.js","bm-response-stream.js","bm-conversation-style.js","bmb-sleep-context.js"].flatMap(n=>{const f=path.join(root,"netlify/functions",n);return fs.existsSync(f)?[[n,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]]:[]}))]));
+ const report={schema_version:1,run_id:runId,provider_real:true,decisions_real:true,database_real:true,netlify_transport_tested:false,physical_device_tested:false,native_actions_executed:0,source_commits:{optimized:require("node:child_process").execFileSync("git",["-C",roots.optimized,"rev-parse","HEAD"],{encoding:"utf8"}).trim(),decisions:require("node:child_process").execFileSync("git",["-C",roots.decisions,"rev-parse","HEAD"],{encoding:"utf8"}).trim()},
    order:"paired AB/BA alternation by case; identical independent fixtures; same conversation context within each variant",from_pair:fromPair,pair_count:pairs,sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,complete:false,gates_passed:false};
  const save=()=>fs.writeFileSync(file,JSON.stringify({...report,summary:summarize(records,rates)},null,2));
  let user,connect,token;const fixtureNow=Date.now();report.fixture_clock=new Date(fixtureNow).toISOString();report.case_manifest=JSON.parse(fs.readFileSync(get("--cases","tools/datasets/bm_retrieval_step_cases_2026-10-08.json")));
@@ -85,12 +85,20 @@ async function main(){
      await Promise.all([...["assistant_app_turns","bmb_events","bmb_followups","bmb_observations","bm_brain_memories","bmb_sessions"].map(table=>request(`/rest/v1/${table}?auth_user_id=eq.${user}`,undefined,service,"DELETE")),...["assistant_semantic_conversations","digital_wellness_feature_payloads"].map(table=>request(`/rest/v1/${table}?anonymous_user_id=eq.${memoryIdentity("app",user)}`,undefined,service,"DELETE"))]);
      const spec=CASES[pair%CASES.length],{language}=spec,group=spec.route;
      const expected=await seed(spec,{request,user,service,now:fixtureNow});
-     process.env.BM_DECISIONS_QA_ENABLED="false";process.env.BM_RETRIEVAL_STEP_QA_ENABLED=variant==="decisions"?"true":"false";
+     process.env.BM_DECISIONS_QA_ENABLED="false";process.env.BM_RETRIEVAL_STEP_QA_ENABLED=variant==="decisions"&&!args.includes("--retrieval-off")?"true":"false";
+     let nativeContext={};
+     if(spec.native_sleep){const {dayOffset}=require('../netlify/functions/bm-brain-data'),today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).format(fixtureNow),values=report.case_manifest.native_sleep_values;
+       const nights=values.map((sleep_minutes,i)=>({date:dayOffset(today,i-values.length),source:'synthetic_qa',sleep_minutes}));
+       nativeContext={sleep_data_available:true,personal_profile:{sleep_source:'synthetic_qa',sleep_is_synthetic:true,sleep_nights:nights}};
+       expected.current_sleep={source:'synthetic_qa',is_synthetic:true,rows:nights};
+       expected.minutes=values.at(-1);expected.primary_source='current_sleep';
+     }
+     if(spec.profile==='invalid'&&report.case_manifest.version===1&&spec.id.startsWith('fresh-'))expected.minutes=null;
      const history=[];for(const [step,text]of (spec.turns||[spec.text]).entries()){const turn=crypto.randomUUID();active={pair,step,variant,group,turn_id:turn,start:performance.now(),first_text_ms:null,drafts:[],database_calls:0,model_calls:0,usage_records:0,metered_usage:{},decisions_calls:0,decisions_known_cost_usd:0,decisions_unknown_cost_upper_usd:0,provider_requests:[],decisions_trace:[],retrieval_trace:[]};
      console.info=line=>{try{const m=JSON.parse(line);if(["bm_stream_timing","bm_token_usage"].includes(m.event)&&Number.isSafeInteger(m.usage?.input_tokens)&&Number.isSafeInteger(m.usage?.output_tokens)){
        active.usage_records++;for(const [k,v]of Object.entries(m.usage))active.metered_usage[k]=(active.metered_usage[k]||0)+v;
      }if(m.event==="bm_decisions_timing")active.decisions_trace.push(m);if(m.event.startsWith("bm_retrieval_step_"))active.retrieval_trace.push(m);if(m.event==="bm_turn_timing"){active.usage=m.usage;active.stages=m.stages;active.decisions=m.decisions||[];}}catch(_){};};
-     let response;try{response=await (args.includes('--all-ndjson')||pair%8===0?invokeStream:invoke)(variant,{action:"send",turn_id:turn,text,context:{...context(),language,locale:language}});}catch(_){response={statusCode:503,body:"{}"};}
+     let response;try{response=await (args.includes('--all-ndjson')||pair%8===0?invokeStream:invoke)(variant,{action:"send",turn_id:turn,text,context:{...context(),...nativeContext,language,locale:language}});}catch(_){response={statusCode:503,body:"{}"};}
      const value=JSON.parse(response.body),t=value.turn||{},noAction=!t.action_id&&!t.auto_apply;
      const row={...active,case_id:spec.id,eligible:spec.eligible,expected:{...expected,criterion:spec.expectation,history:[...history]},transport:args.includes('--all-ndjson')||pair%8===0?"local-ndjson-handler":"local-json-handler",profile:spec.profile,language,start:undefined,status:response.statusCode,elapsed_ms:performance.now()-active.start,
        passed:response.statusCode===200&&t.status==="completed"&&typeof t.assistant_text==="string"&&Boolean(t.assistant_text.trim())&&(["action","actions_combined"].includes(group)?Boolean(t.action_id&&t.auto_apply):noAction),
