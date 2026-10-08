@@ -25,6 +25,13 @@ async function main(){
  assert.equal(r.cleanProse("450 minutes. citepartial"),"450 minutes.");
  assert.equal(r.cleanProse("7:30, 0 minutes, sueño, 🌙"),"7:30, 0 minutes, sueño, 🌙");
  assert.throws(()=>r.expandProse({response_text:"source 11111111-1111-4111-8111-111111111111"},{current_message:"question"}),/invalid_prose/);
+ const clean=require('../netlify/functions/bmb-sources').cleanCitations;
+ assert.equal(clean("0 minutes. [protection_statistics]"),"0 minutes.");
+ assert.equal(clean("45 minutos. Fuente protection_statistics."),"45 minutos.");
+ assert.equal(clean("450 minutes. c"),"450 minutes.");
+ assert.equal(clean("450 minutes. [protection_st"),"450 minutes.");
+ assert.equal(clean("450 minutes. Source protec"),"450 minutes.");
+ assert.equal(clean("7:30, 0 minutes, [minutes], sueño, 🌙"),"7:30, 0 minutes, [minutes], sueño, 🌙");
  const valid={phase:"final",message_kind:"question",decision:"respond",action:null,memory:null,accepted_proposal:null,pending_request:null,queries:[],observations:[],followup_resolution:null,longitudinal_review:null};
  assert(r.safeFinal(valid));let seen;const result=await r.answer({},async i=>{seen=i;return valid;},ready.contract);assert.equal(result,valid);assert.equal(seen.tool_budget_remaining,0);
  for(const change of [{action:{type:"start_protection"}},{memory:{operation:"set"}},{phase:"read"},{observations:[{}]},{message_kind:"action_request"},{followup_resolution:{}}])assert.equal(await r.answer({},async()=>({...valid,...change}),ready.contract),null);

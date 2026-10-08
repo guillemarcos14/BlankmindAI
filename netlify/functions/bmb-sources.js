@@ -26,6 +26,19 @@ const CATALOG={
   device_signals:["bmb_device_signals","auth_user_id","id,kind,occurred_at,threshold_minutes","occurred_at"]
 };
 const SOURCE_NAMES=[...Object.keys(CATALOG),"protection_statistics"];
+// Source references belong in cited_sources; the app cannot render opaque IDs.
+// Preserve facts and ordinary brackets; remove only closed catalog references.
+function cleanCitations(text){if(typeof text!=="string")return text;
+ let value=text.replace(/\uE200[\s\S]*?(?:\uE201|$)/gu,"");
+ value=value.replace(/\[([^\]]+)\]/g,(whole,id)=>SOURCE_NAMES.includes(id.trim())?"":whole);
+ const names=SOURCE_NAMES.join("|");
+ value=value.replace(new RegExp("\\b(?:Fuente|Source)\\s*:?\\s*(?:"+names+")(?:\\.|(?=\\s|$))","gi"),"");
+ const open=value.lastIndexOf("[");
+ if(open>=0&&!value.slice(open).includes("]")&&SOURCE_NAMES.some(id=>id.startsWith(value.slice(open+1))))value=value.slice(0,open);
+ const label=/\b(?:Fuente|Source)\s*:?\s*([a-z_]*)\.?$/i.exec(value);
+ if(label&&SOURCE_NAMES.some(id=>id.startsWith(label[1])))value=value.slice(0,label.index);
+ return value.trim();
+}
 function sanitize(value,depth=0) {
   if(depth>12)return null;
   if(typeof value==="string")return value.replace(/\b(?:sk-[A-Za-z0-9_-]{16,}|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b/g,"[credential removed]").slice(0,4000);
@@ -83,4 +96,4 @@ async function readSource(userId,identity,q,cutoff,db=supabaseFetch) {
       coverage:rows.length?"persisted_verified_account_rows":"no_consented_rows_in_range",personalization_after:personal?cutoff||null:null};
   }catch(error){if(/404|does not exist|column|relation/.test(error.message))return {source:q.source,source_id:q.source,available:false,reason:"source_schema_unavailable"};throw error;}
 }
-module.exports={SOURCE_NAMES,CATALOG,sanitize,inventory,readSource};
+module.exports={SOURCE_NAMES,CATALOG,sanitize,inventory,readSource,cleanCitations};

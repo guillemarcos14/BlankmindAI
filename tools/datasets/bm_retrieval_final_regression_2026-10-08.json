@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "authored_before_run": true,
+  "independent_human_annotation": false,
+  "description": "20 exposed regression questions, including all three visible-source defects. Both variants receive the same citation renderer fix.",
+  "cases": [
+    {
+      "id": "new-validation-01",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "text": "Quiero saber los minutos de sueño que medí ayer.",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "sleep_minutes": [
+        360,
+        450,
+        420
+      ]
+    },
+    {
+      "id": "new-validation-02",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "text": "Please check my measured sleep hours for yesterday.",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "sleep_minutes": [
+        0,
+        30,
+        60
+      ]
+    },
+    {
+      "id": "new-validation-03",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "text": "Del día de ayer, ¿qué duración de sueño guardé?",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "sleep_minutes": [
+        510,
+        480,
+        540
+      ]
+    },
+    {
+      "id": "new-validation-04",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "text": "Tell me the sleep duration available in my measurements for yesterday.",
+      "profile": "missing",
+      "exposure": "previously executed regression question",
+      "sleep_minutes": [
+        360,
+        420,
+        390
+      ]
+    },
+    {
+      "id": "new-validation-05",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "text": "¿Qué cantidad de sueño medida hay para mí ayer?",
+      "profile": "forgotten",
+      "exposure": "previously executed regression question",
+      "sleep_minutes": [
+        390,
+        450,
+        420
+      ]
+    },
+    {
+      "id": "new-validation-06",
+      "route": "sleep_week",
+      "language": "en",
+      "text": "For the current calendar week, tell me my mean recorded sleep duration.",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "sleep_minutes": [
+        360,
+        450,
+        420
+      ]
+    },
+    {
+      "id": "new-validation-07",
+      "route": "sleep_week",
+      "language": "es",
+      "text": "De las mediciones de sueño de esta semana natural, ¿cuál es la media en minutos?",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "sleep_minutes": [
+        0,
+        30,
+        60
+      ]
+    },
+    {
+      "id": "new-validation-08",
+      "route": "sleep_week",
+      "language": "en",
+      "text": "Please retrieve this week’s average recorded sleep hours.",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "sleep_minutes": [
+        510,
+        480,
+        540
+      ]
+    },
+    {
+      "id": "new-validation-09",
+      "route": "sleep_week",
+      "language": "es",
+      "text": "Quiero consultar el promedio de mi sueño medido esta semana.",
+      "profile": "missing",
+      "exposure": "previously executed regression question",
+      "sleep_minutes": [
+        360,
+        420,
+        390
+      ]
+    },
+    {
+      "id": "new-validation-10",
+      "route": "sleep_week",
+      "language": "en",
+      "text": "What mean duration do my available sleep measurements show for this calendar week?",
+      "profile": "forgotten",
+      "exposure": "previously executed regression question",
+      "sleep_minutes": [
+        390,
+        450,
+        420
+      ]
+    },
+    {
+      "id": "new-validation-11",
+      "route": "protection_yesterday",
+      "language": "es",
+      "text": "Del día de ayer, ¿qué acumulado de protección queda registrado?",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "protection_minutes": 17
+    },
+    {
+      "id": "new-validation-12",
+      "route": "protection_yesterday",
+      "language": "en",
+      "text": "Please retrieve yesterday’s recorded protection total in minutes.",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "protection_minutes": 45
+    },
+    {
+      "id": "new-validation-13",
+      "route": "protection_yesterday",
+      "language": "es",
+      "text": "Quiero conocer mis horas de protección registradas ayer.",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "protection_minutes": 120
+    },
+    {
+      "id": "new-validation-14",
+      "route": "protection_yesterday",
+      "language": "en",
+      "text": "Tell me yesterday’s total protection duration from the records.",
+      "profile": "empty",
+      "exposure": "previously executed regression question",
+      "protection_minutes": 90
+    },
+    {
+      "id": "repeat-fresh-27",
+      "route": "protection_yesterday",
+      "text": "¿Qué cantidad de protección se registró para mí ayer?",
+      "language": "es",
+      "profile": "empty",
+      "protection_minutes": 90,
+      "exposure": "previously executed regression question"
+    },
+    {
+      "id": "new-validation-16",
+      "route": "protection_week",
+      "language": "en",
+      "text": "What recorded protection total is available for this calendar week?",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "protection_minutes": 17
+    },
+    {
+      "id": "new-validation-17",
+      "route": "protection_week",
+      "language": "es",
+      "text": "Quiero consultar las horas de protección registradas en esta semana natural.",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "protection_minutes": 45
+    },
+    {
+      "id": "new-validation-18",
+      "route": "protection_week",
+      "language": "en",
+      "text": "Please check this week’s recorded protection total in minutes.",
+      "profile": "standard",
+      "exposure": "previously executed regression question",
+      "protection_minutes": 120
+    },
+    {
+      "id": "new-validation-19",
+      "route": "protection_week",
+      "language": "es",
+      "text": "¿Qué acumulado de protección registrado corresponde a esta semana?",
+      "profile": "empty",
+      "exposure": "previously executed regression question",
+      "protection_minutes": 90
+    },
+    {
+      "id": "repeat-fresh-40",
+      "route": "protection_week",
+      "text": "According to my records, how much protection did I accumulate this week?",
+      "language": "en",
+      "profile": "empty",
+      "protection_minutes": 90,
+      "exposure": "previously executed regression question"
+    }
+  ]
+}
