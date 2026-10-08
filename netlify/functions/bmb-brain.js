@@ -80,7 +80,7 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     model=options=>require("./bm-response-stream").readModelStream({...options,onDraft});
   }
   const {body}=await timing.span("model",()=>model({request:{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
-    input:[{role:"system",content:INSTRUCTIONS},{role:"user",content:JSON.stringify(input)}],
+    input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
     text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema}}},timeoutMs:18000,errorPrefix:"bmb"}));
   timing.usage(body.usage);
   if(body.status==="incomplete")throw Error("bmb_model_incomplete");
@@ -88,12 +88,13 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
 }
 async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run=input=>generate(input,{onDraft}),db=supabaseFetch,memories=null,recover=require("./bmb-proposal").recover}={}) {
   // Policy and followups are independent of the memory cutoff; history is not.
-  const [saved,policyRows,openFollowups,jevResult,decisionsResult]=await timing.span("brain_context",()=>Promise.all([
+  const [saved,policyRows,openFollowups,jevResult,decisionsResult,retrievalRoute]=await timing.span("brain_context",()=>Promise.all([
     memories||readMemories(userId),
     db(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=settings,version`,{method:"GET"}),
     longitudinal.followups(userId,db),
     proactive?null:require("./bm-jev").startPrefetch(userId),
     proactive?null:require("./bm-decisions").start(userId,prompt),
+    proactive||context.memory?.conversation_state?.bmb_state?.pending_request||context.memory?.conversation_state?.bmb_state?.proposal?null:require("./bm-retrieval-step").start(userId,prompt),
   ]));
   const cutoff=saved.filter(m=>m.value==null).map(m=>m.source_at).filter(Boolean).sort().at(-1);
   // Tombstones cut off ALL automatic historical personalization; current explicit history queries can opt in via the model read tool only after user evidence.
@@ -104,6 +105,9 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   const prior=context.memory?.conversation_state?.bmb_state||{};
   const latest=await readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
   const sources=[latest,...(proactive?.daily_review?.sources||[])];
+  const retrieval=await require("./bm-retrieval-step").prepare(retrievalRoute,{userId,identity,cutoff,
+    timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",db});
+  if(retrieval)sources.push(retrieval.source);
   sources.push(...await require("./bm-decisions").prefetch(decisionsResult,{userId,identity,cutoff,
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",existing:sources,db}));
   sources.push(...await require("./bm-jev").prefetch(jevResult,{userId,identity,cutoff,
@@ -114,8 +118,11 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     coverage:[{source_id:"snapshot",source:"native observations",observed_at:context.brain_snapshot?.generated_at||null},
       {source_id:"memory",source:"user declarations"},{source_id:"phone_usage",available:false,reason:"Apple DeviceActivityReport sandbox prevents exporting per-app usage"},
       {source_id:"policy",source:"user configured permissions"}]};
-  let result;
-  for(let pass=0;pass<4;pass++) {
+  let result=await require("./bm-retrieval-step").answer(input,run,retrieval?.contract);
+  if(retrieval)console.info(JSON.stringify({event:"bm_retrieval_step_answer",route:retrieval.contract.route,accepted:Boolean(result)}));
+  if(retrieval&&!result&&onDraft)onDraft("");
+  for(let pass=0;!result||result.phase==="read";pass++) {
+    if(pass>=4)throw Error("bmb_read_budget_exhausted");
     input.tool_budget_remaining=3-pass;
     result=await run(input);
     if(result.phase!=="read")break;
