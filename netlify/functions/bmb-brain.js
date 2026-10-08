@@ -114,8 +114,9 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   const prior=context.memory?.conversation_state?.bmb_state||{};
   const latest=await readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
 
-  const sources=[latest,...(proactive?.daily_review?.sources||[])];
-  const retrieval=await require("./bm-retrieval-step").prepare(retrievalRoute,{userId,identity,cutoff,
+  const currentSleep=sleepContext(context);
+  const sources=[latest,currentSleep,...(proactive?.daily_review?.sources||[])];
+  const retrieval=await require("./bm-retrieval-step").prepare(currentSleep.available&&retrievalRoute?.startsWith("sleep_")?null:retrievalRoute,{userId,identity,cutoff,
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",db});
   if(retrieval)sources.push(retrieval.source);
   sources.push(...await require("./bm-decisions").prefetch(decisionsResult,{userId,identity,cutoff,
