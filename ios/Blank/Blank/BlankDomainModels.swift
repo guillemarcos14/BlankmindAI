@@ -103,11 +103,17 @@ enum BlankFunnelAnalytics {
 // Private QA source: only completed sleep nights, never sessions or activity.
 enum SyntheticSleepSource {
     static var allowed: Bool {
-        #if DEBUG || BLANK_PRIVATE_STAGE_QA
-        return true
+        #if DEBUG && targetEnvironment(simulator)
+        return true // Local native tests and previews; never a distributed build.
+        #elseif BLANK_PRIVATE_STAGE_QA
+        return allowsDistributedSource(privateQA: true, receiptName: Bundle.main.appStoreReceiptURL?.lastPathComponent)
         #else
         return false
         #endif
+    }
+
+    static func allowsDistributedSource(privateQA: Bool, receiptName: String?) -> Bool {
+        privateQA && receiptName == "sandboxReceipt"
     }
 
     static func enabled(owner: String?, defaults: UserDefaults) -> Bool {

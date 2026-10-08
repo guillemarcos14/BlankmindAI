@@ -53,6 +53,12 @@ for timestamp in ["2026-10-08T10:00:00Z", "2026-10-07T22:00:01Z", "2026-10-25T00
     check(older.sleepMinutes == nil && older.deepSleepMinutes == nil && older.steps == 1234, "Old measured sleep mixed in")
 }
 let suite = "sleep-source-" + UUID().uuidString
+check(SyntheticSleepSource.allowsDistributedSource(privateQA: true, receiptName: "sandboxReceipt"), "Private TestFlight unavailable")
+for receipt in [nil, "receipt", "sandboxReceipt"] as [String?] {
+    check(!SyntheticSleepSource.allowsDistributedSource(privateQA: false, receiptName: receipt), "Public build enabled synthetic sleep")
+}
+check(!SyntheticSleepSource.allowsDistributedSource(privateQA: true, receiptName: "receipt"), "Public receipt enabled synthetic sleep")
+check(!SyntheticSleepSource.allowsDistributedSource(privateQA: true, receiptName: nil), "Missing receipt enabled synthetic sleep")
 let defaults = UserDefaults(suiteName: suite)!
 SyntheticSleepSource.setEnabled(true, owner: "A", defaults: defaults)
 check(SyntheticSleepSource.enabled(owner: "A", defaults: defaults) == SyntheticSleepSource.allowed, "Owner setting")
