@@ -11,3 +11,7 @@ The units round is the final runtime before documentation-only changes. Source a
 Confirmation final p50: reference 3.93s, candidate 6.12s; p95: reference 9.68s, candidate 12.41s. Seven turns do not establish a latency improvement. Extra safety repairs add calls; acceleration remains OFF.
 
 Release integrates onto c3dd08a14d95268dca8f23865ef5155783a312f3, preserving QA109 dated sleep support and compact-route bypass. No ios/app changes. Physical iPhone evidence remains pending. Private packaging/deploy and final validation are recorded separately at closure.
+
+## Private deployment packaging
+
+The legacy staging helper assumed six CommonJS handlers. QA already serves ten. Packaging now preserves the ten-name allowlist, ESM streaming entries with their native NFT packaging, and the existing signed background worker. Cron schedules and extra handlers remain forbidden. A read-only preflight rejects an unexpected active inventory and enabled retrieval/Decisions/Jev flags before publication. This packaging change does not change BM response runtime.

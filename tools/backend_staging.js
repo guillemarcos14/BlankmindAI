@@ -13,7 +13,7 @@ const ROOT = path.resolve(__dirname, "..");
 const SITE_ID = "2ef5a74e-af70-4893-a5f6-63fb2537720d";
 const SITE_URL = "https://blank-product-staging-20260926.netlify.app";
 const SUPABASE_REF = "njqbovsmoowkhhsqmitn";
-const ENTRIES = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-channel", "blanked-agent", "waitlist-auth"]);
+const ENTRIES = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-app-stream", "assistant-app-voice", "assistant-channel", "blanked-agent", "bmb-tick", "bmb-worker-background", "waitlist-auth"]);
 const RELEASE_BRANCH = /^codex\/backend-release-[a-z0-9][a-z0-9-]*$/;
 const DEFAULT_CLI = path.resolve(ROOT, "../../tmp/netlify-cli-runtime/node_modules/netlify-cli/bin/run.js");
 
@@ -22,7 +22,7 @@ function sha256(file) { return crypto.createHash("sha256").update(fs.readFileSyn
 function inside(parent, child) { const relative = path.relative(parent, child); return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative)); }
 function assertSite(site) { if (site !== SITE_ID) fail("Only the reserved private staging site is allowed"); }
 function assertEntries(names) {
-  if (JSON.stringify([...names].sort()) !== JSON.stringify(ENTRIES)) fail("Function allowlist must contain exactly the six private staging entries");
+  if (JSON.stringify([...names].sort()) !== JSON.stringify(ENTRIES)) fail("Function allowlist must contain exactly the ten private staging entries");
 }
 
 function parseArgs(argv) {
@@ -91,10 +91,13 @@ async function packageCandidate(args, state, bundler) {
   fs.mkdirSync(wrappers);
   fs.mkdirSync(publicDir);
   for (const name of ENTRIES) {
-    const entry = path.join(args.source, "netlify", "functions", `${name}.js`);
-    if (!state.tracked.has(`netlify/functions/${name}.js`) || !fs.existsSync(entry)) fail(`Missing tracked entry: ${name}`);
+    const extension = ["assistant-app-stream", "assistant-app-voice"].includes(name) ? "mjs" : "js";
+    const entry = path.join(args.source, "netlify", "functions", `${name}.${extension}`);
+    if (!state.tracked.has(`netlify/functions/${name}.${extension}`) || !fs.existsSync(entry)) fail(`Missing tracked entry: ${name}`);
     // Literal absolute require is traversed by esbuild; only handler is exposed.
-    fs.writeFileSync(path.join(wrappers, `${name}.js`), `exports.handler = require(${JSON.stringify(entry)}).handler;\n`);
+    fs.writeFileSync(path.join(wrappers, `${name}.${extension}`), extension === "mjs"
+      ? `export { default } from ${JSON.stringify(entry.replace(/\\/g, "/"))};\n`
+      : `exports.handler = require(${JSON.stringify(entry)}).handler;\n`);
   }
   fs.writeFileSync(path.join(publicDir, "index.html"), "<!doctype html><meta charset=utf-8><meta name=robots content=noindex><title>Blank private staging</title><p>Blank private staging</p>\n");
   fs.writeFileSync(path.join(directory, "netlify.toml"), '[build]\npublish = "public"\nfunctions = "functions"\n[functions]\nnode_bundler = "esbuild"\n');
@@ -107,15 +110,16 @@ async function packageCandidate(args, state, bundler) {
   assertEntries(archiveFiles.filter((file) => file.endsWith(".zip")).map((file) => file.replace(/\.zip$/, "")));
   const inputs = new Map();
   const functions = bundles.map((bundle) => {
-    if (bundle.schedule || bundle.invocationMode === "background" || bundle.routes?.length) fail("Scheduled, background and custom routed functions are forbidden in staging");
-    if (bundle.bundler !== "esbuild" || path.extname(bundle.path) !== ".zip") fail("Expected an esbuild ZIP artifact");
+    if (bundle.schedule || (bundle.invocationMode === "background" && bundle.name !== "bmb-worker-background") || bundle.routes?.length) fail("Scheduled, background and custom routed functions are forbidden in staging");
+    const streaming = ["assistant-app-stream", "assistant-app-voice"].includes(bundle.name);
+    if ((bundle.bundler !== "esbuild" && !(streaming && bundle.bundler === "nft")) || path.extname(bundle.path) !== ".zip") fail("Expected an approved ZIP artifact");
     for (const input of bundle.inputs || []) {
       if (inside(wrappers, input)) continue;
       const relative = path.relative(args.source, input).replace(/\\/g, "/");
       if (!inside(args.source, input) || !state.tracked.has(relative)) fail("Bundle includes an untracked or external source dependency");
       inputs.set(relative, sha256(input));
     }
-    if (!(bundle.inputs || []).some((input) => path.resolve(input) === path.join(args.source, "netlify", "functions", `${bundle.name}.js`))) {
+    if (!(bundle.inputs || []).some((input) => path.resolve(input) === path.join(args.source, "netlify", "functions", `${bundle.name}.${["assistant-app-stream", "assistant-app-voice"].includes(bundle.name) ? "mjs" : "js"}`))) {
       fail(`Source handler was not bundled: ${bundle.name}`);
     }
     return { name: bundle.name, path: bundle.path, sha256: sha256(bundle.path), bytes: fs.statSync(bundle.path).size,
@@ -160,6 +164,7 @@ function validateEnvironment(variables) {
   if (!claims && !byName.get("SUPABASE_SERVICE_ROLE_KEY")?.is_secret) fail("Unverifiable unprotected staging service key");
   if (variables.some((variable) => /^(?:TWILIO_|WHATSAPP_|APNS_)/.test(variable.key) && productionValue(variable))) fail("Transport credentials are forbidden in private API staging");
   if (/^(?:true|1|yes|on)$/i.test(productionValue(byName.get("BM_FINAL_APP_LINKED_ROUTING_ENABLED")))) fail("Public linked routing must remain disabled in staging");
+  if (variables.some(variable => /RETRIEVAL|JEV|DECISIONS/.test(variable.key) && /^(?:true|1|yes|on)$/i.test(productionValue(variable)))) fail("Retrieval acceleration must remain disabled in private QA");
   // The provider masks secret values. Host isolation is verified here; actual
   // hidden key validity is established by the authenticated cloud smoke.
   return { database_host_verified: true, service_key_ref_visible_and_verified: Boolean(claims) };
@@ -218,7 +223,7 @@ async function verifyDeployment(report, token, fetcher) {
   const deployment = await apiGet(`/deploys/${report.deploy_id}`, token, fetcher);
   if (deployment.site_id !== SITE_ID || deployment.state !== "ready" || deployment.function_schedules?.length) fail("Staging deploy is not ready or contains scheduled functions");
   const remote = productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
-  if (remote.some((fn) => fn.schedule || (fn.d || fn.sha) !== report.functions.find((item) => item.name === (fn.n || fn.name))?.sha256)) fail("Remote function digests differ from the six packaged ZIPs");
+  if (remote.some((fn) => fn.schedule || (fn.d || fn.sha) !== report.functions.find((item) => item.name === (fn.n || fn.name))?.sha256)) fail("Remote function digests differ from the ten packaged ZIPs");
   await requirePrivateSite(fetcher);
   const finalSite = await apiGet(`/sites/${SITE_ID}`, token, fetcher);
   if (finalSite.id !== SITE_ID || finalSite.published_deploy?.id !== report.deploy_id) fail("The active staging deploy changed during verification");
@@ -282,6 +287,7 @@ async function main(args, dependencies = {}) {
     if (site.id !== SITE_ID || site.ssl_url !== SITE_URL) fail("Staging site identity does not match the reserved environment");
     await requirePrivateSite(fetcher);
     report.environment_preflight = validateEnvironment(await apiGet(`/accounts/${site.account_id}/env?site_id=${SITE_ID}`, token, fetcher));
+    productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
     const current = sourceState(args.source, execute);
     requireDeployable(current);
     if (current.commit !== state.commit || packaged.inputs.some((input) => sha256(path.join(args.source, input.file)) !== input.sha256)) fail("Source changed after packaging");
