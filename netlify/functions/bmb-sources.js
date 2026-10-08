@@ -53,9 +53,11 @@ async function readSource(userId,identity,q,cutoff,db=supabaseFetch) {
     }
     const observed=rows.map(r=>r.observed_at).filter(Boolean).sort().at(-1)||null;
     const snapshot={sessions:rows,history_complete:complete,history_started_at:rows.map(r=>r.started_at).sort()[0]||null,generated_at:observed};
-    const data=statistics(snapshot,{from,to,timezone:zone(q.timezone||"UTC")},now);
+    const data=complete&&rows.length===0
+      ?{available:true,from,to,timezone:zone(q.timezone||"UTC"),protected_seconds:0,session_count:0,break_count:0,partial:true,observed_at:null,metric:"recorded_protection_duration",saved_time_available:false}
+      :statistics(snapshot,{from,to,timezone:zone(q.timezone||"UTC")},now);
     delete data.sessions;
-    return {source:q.source,source_id:q.source,available:rows.length>0,reason:rows.length?null:"no_recorded_history",rows:[{id:"protection_statistics",...data}],coverage:complete?"all_persisted_overlapping_rows":"first_10000_overlapping_rows",next_offset:null};
+    return {source:q.source,source_id:q.source,available:data.available,reason:data.available?null:"no_recorded_history",rows:[{id:"protection_statistics",...data}],coverage:complete?"all_persisted_overlapping_rows":"first_10000_overlapping_rows",next_offset:null};
   }
   const spec=CATALOG[q.source];if(!spec)throw Error("bmb_unknown_source");
   const [table,filter,select,time,personal,consent]=spec;
