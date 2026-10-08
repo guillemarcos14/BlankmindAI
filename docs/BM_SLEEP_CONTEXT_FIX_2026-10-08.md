@@ -1,0 +1,13 @@
+# Current sleep evidence in BM — 2026-10-08
+
+Build109 generated and sent 14 synthetic nights in `personal_profile`, but the actual app route (`whatsapp-agent.callBlankedAgent` → `bmb-brain.plan`) selected a restricted model context and omitted the entire sleep profile. The previous tests covered `personalContextView`, which this route does not use. A faithful reproduction received14 nights at the backend and zero in the actual model input; old account conversation history remained available.
+
+`bmb-sleep-context` now projects dated sleep from the fresh authenticated iPhone snapshot into the model's `current_sleep` source. Apple Health and synthetic QA use the same projection, with distinct provenance and stable row IDs for citations. It validates availability, source consistency, bounded metrics, duplicate/future dates and snapshot freshness. Turning the source off removes its current nights. QA sleep is analyzed as simulated data, exclusively for sleep measurements, and never converted into durable personal declarations. Existing memory and real protection actions keep their contracts.
+
+Private QA publication: source `cb460ed7bd107e40dfc1f65aa81dc2078274a97e`, deploy `6ac7738de460d6ac930c03a2`, previous `6ac65fd9c14a5012fd23f829`. Published2026-10-08 12:43 Europe/Madrid; private barrier, database isolation and all ten function hashes verified. Environment preserved; no migration or iOS rebuild. Build109 can use the correction on its existing QA endpoint.
+
+Local regression exercises the actual BMB model input after normalization/buildAgentContext, 14 dated nights, period comparison evidence, both sources, disabling, stale/invalid/mixed rows and no fixture memory. Product harness77/77 and scope pass against `tmp/product-harness/sleep-bmb-fix-baseline.json`; report `tmp/product-harness/sleep-bmb-fix-final.json`. The first run while uncommitted failed the existing clean-source semantic gate despite48/48 replay cases passing; rerun after committing passed.
+
+Real deployed handler/model QA uses an isolated temporary Apple-style account, existing sleep-related conversation, synthetic dated sleep, comparison of two seven-night periods, measured-source projection and disabling. Evidence is saved in `tmp/sleep-bmb-fix/cloud.json`; no physical device actions are executed. Deployment receipt: `tmp/sleep-bmb-fix/deploy-receipt.json`.
+
+Cloud result: five checks PASS, six scoped cleanup operations PASS. The actual model answered8h for the latest fixture night,7h versus8h for the two seven-night periods (+1h), identified simulated sleep, switched correctly to Apple Health source and reported no current records after disabling. These are isolated synthetic integration tests, not the user’s physical iPhone retest.
