@@ -124,6 +124,9 @@ function dependencies({ dirty = false, protectedSite = true, extraFunction = fal
   wrongDatabase[0].values[0].value = "https://vhiikgyyfisejjwqtxfc.supabase.co";
   assert.throws(() => staging.validateEnvironment(wrongDatabase), /isolated/);
   assert.throws(() => staging.validateEnvironment([...env, { key: "APNS_AUTH_KEY", scopes: ["functions"], values: [{ context: "all", value: "blocked" }] }]), /Transport/);
+  const apns = ["AUTH_KEY", "KEY_ID", "TEAM_ID", "TOPIC"].map(key => ({ key: "APNS_" + key, scopes: ["functions"], is_secret: key === "AUTH_KEY", values: [{ context: "production", value: key === "TOPIC" ? "com.blanknfc.app.ios" : key === "AUTH_KEY" ? "********" : "AAAAAAAAAA" }] }));
+  assert(staging.validateEnvironment([...env, ...apns]).database_host_verified);
+  assert.throws(() => staging.validateEnvironment([...env, ...apns, { key: "TWILIO_AUTH_TOKEN", scopes: ["functions"], values: [{ context: "all", value: "blocked" }] }]), /Transport/);
   const completed = await staging.main({ ...args, deploy: true }, dependencies());
   assert.equal(completed.report.status, "private_deploy_verified");
   assert.equal(completed.report.remote_function_hashes_verified, true);

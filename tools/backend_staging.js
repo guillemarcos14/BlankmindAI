@@ -162,7 +162,14 @@ function validateEnvironment(variables) {
   try { claims = JSON.parse(Buffer.from(String(serviceKey).split(".")[1], "base64url").toString("utf8")); } catch (_) { /* Fail closed below. */ }
   if (!serviceKey || (claims && (claims.ref !== SUPABASE_REF || claims.role !== "service_role"))) fail("Staging service-key identity is missing or points outside staging");
   if (!claims && !byName.get("SUPABASE_SERVICE_ROLE_KEY")?.is_secret) fail("Unverifiable unprotected staging service key");
-  if (variables.some((variable) => /^(?:TWILIO_|WHATSAPP_|APNS_)/.test(variable.key) && productionValue(variable))) fail("Transport credentials are forbidden in private API staging");
+  if (variables.some((variable) => /^(?:TWILIO_|WHATSAPP_)/.test(variable.key) && productionValue(variable))) fail("Transport credentials are forbidden in private API staging");
+  // Full iPhone QA already uses APNs. Preserve its existing configuration;
+  // staging publication does not create or write credentials.
+  if (variables.some(variable => /^APNS_/.test(variable.key) && productionValue(variable))
+      && (!byName.get("APNS_AUTH_KEY")?.is_secret
+        || productionValue(byName.get("APNS_TOPIC")) !== "com.blanknfc.app.ios"
+        || !/^[A-Z0-9]{10}$/.test(productionValue(byName.get("APNS_KEY_ID")))
+        || !/^[A-Z0-9]{10}$/.test(productionValue(byName.get("APNS_TEAM_ID"))))) fail("Transport APNs configuration must match the existing iPhone app and protected key");
   if (/^(?:true|1|yes|on)$/i.test(productionValue(byName.get("BM_FINAL_APP_LINKED_ROUTING_ENABLED")))) fail("Public linked routing must remain disabled in staging");
   if (variables.some(variable => /RETRIEVAL|JEV|DECISIONS/.test(variable.key) && /^(?:true|1|yes|on)$/i.test(productionValue(variable)))) fail("Retrieval acceleration must remain disabled in private QA");
   // The provider masks secret values. Host isolation is verified here; actual

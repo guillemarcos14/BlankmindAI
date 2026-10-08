@@ -15,3 +15,5 @@ Release integrates onto c3dd08a14d95268dca8f23865ef5155783a312f3, preserving QA1
 ## Private deployment packaging
 
 The legacy staging helper assumed six CommonJS handlers. QA already serves ten. Packaging now preserves the ten-name allowlist, ESM streaming entries with their native NFT packaging, and the existing signed background worker. Cron schedules and extra handlers remain forbidden. A read-only preflight rejects an unexpected active inventory and enabled retrieval/Decisions/Jev flags before publication. This packaging change does not change BM response runtime.
+
+The first publication attempt stopped before upload because the legacy helper forbade existing QA APNs credentials. Active deploy remained unchanged. Full iPhone QA already uses APNs; the helper now permits only a protected APNs key with the existing app topic com.blanknfc.app.ios and correctly formed key/team IDs. It does not write environment values. Twilio/WhatsApp remain forbidden.
