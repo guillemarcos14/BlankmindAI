@@ -81,8 +81,9 @@ significancia, causalidad de cada diferencia individual ni rendimiento en produc
 
 Clasificación completada18/20, dos timeouts sin usage: total candidato desconocido,
 no afirmar ahorro completo. El subtotal conocido es26,7% menor. Diez de las veinte
-preguntas usaron el recorrido final-only; cada una redactó con una sola llamada
-generativa. Las restantes conservaron el flujo normal por timeout o abstención.
+preguntas usaron el recorrido final-only: nueve necesitaron una sola generación y
+una necesitó dos por la reparación de conformidad existente. Las restantes
+conservaron el flujo normal por timeout o abstención.
 El total ahorra20generativas. Los casos descartados están incluidos en la comparación.
 
 Calidad: tres respuestas candidatas deficientes frente a cuatro baseline; un caso

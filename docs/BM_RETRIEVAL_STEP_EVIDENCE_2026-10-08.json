@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-08T08:36:18.183Z",
+  "generated_at": "2026-10-08T08:39:09.861Z",
   "hypothesis": "The time saved by removing a generative retrieval decision exceeds classifier time, while preserving output quality.",
   "benchmark": {
     "artifact_sha256": "9a2042ca49716e11fc35188ba26e5bc94efdf70251b2b274611c048509589358",
@@ -6007,7 +6007,18 @@
           }
         },
         "classifier_completed": 18,
-        "final_only_accepted": 10
+        "final_only_accepted": 10,
+        "single_generative_call_accelerated": 8,
+        "accelerated_with_additional_generation": [
+          {
+            "case_id": "retrieval-13",
+            "model_calls": 2
+          },
+          {
+            "case_id": "retrieval-20",
+            "model_calls": 2
+          }
+        ]
       }
     },
     "limitations": [
@@ -8068,7 +8079,7 @@
     18
   ],
   "frozen_source_verification": {
-    "checked_at": "2026-10-08T08:36:18.179Z",
+    "checked_at": "2026-10-08T08:39:09.858Z",
     "passed": true,
     "files": [
       {

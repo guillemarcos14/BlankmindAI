@@ -8,6 +8,9 @@ function main(){
  for(const [v,s]of Object.entries(summary)){const records=rows.filter(r=>r.variant===v);delete s.route_completed;
   s.classifier_completed=records.filter(r=>r.retrieval_trace.some(t=>t.status==="completed")).length;
   s.final_only_accepted=records.filter(r=>r.retrieval_trace.some(t=>t.accepted===true)).length;}
+ const accelerated=rows.filter(r=>r.variant==="decisions"&&r.retrieval_trace.some(t=>t.accepted===true));
+ candidate.single_generative_call_accelerated=accelerated.filter(r=>r.model_calls===1).length;
+ candidate.accelerated_with_additional_generation=accelerated.filter(r=>r.model_calls>1).map(r=>({case_id:r.case_id,model_calls:r.model_calls}));
  const reviews=quality.reviews.filter(r=>r.conversation_id==="decisions"),qualityPass=reviews.every(r=>["excellent","acceptable"].includes(r.review?.verdict)&&!r.review.hard_contradiction&&!r.review.unsafe_claim);
  const pairs=Array.from({length:20},(_,pair)=>{const a=rows.find(r=>r.pair===pair&&r.variant==="optimized"),b=rows.find(r=>r.pair===pair&&r.variant==="decisions");return {pair,case_id:a.case_id,both_functional:a.passed&&b.passed,baseline_model_calls:a.model_calls,candidate_model_calls:b.model_calls,removed_model_calls:a.model_calls-b.model_calls,first_text_delta_ms:b.first_text_ms-a.first_text_ms,final_only:b.retrieval_trace.some(t=>t.accepted===true)};});
  const qualityRegressions=quality.reviews.filter(r=>r.conversation_id==="decisions"&&r.review?.verdict==="poor"&&quality.reviews.some(a=>a.conversation_id==="optimized"&&a.turn===r.turn&&["excellent","acceptable"].includes(a.review?.verdict))).map(r=>r.turn);
