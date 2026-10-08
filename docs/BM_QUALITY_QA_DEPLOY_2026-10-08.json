@@ -1,0 +1,1083 @@
+{
+  "date": "2026-10-08T14:45:11.967Z",
+  "source_commit": "6d0a4c38fbf01eddd937d2650cf51ae3d79cdfe8",
+  "deploy_id": "6ac7abd88f678cb554a6cf66",
+  "site_id": "2ef5a74e-af70-4893-a5f6-63fb2537720d",
+  "status": "private_deploy_verified",
+  "functions": [
+    {
+      "name": "account-data",
+      "sha256": "d3ba8e16679b89ea43bb4a90498005c9ed0e7dbdee870975de8c5948ffe0bc58"
+    },
+    {
+      "name": "app-auth",
+      "sha256": "9d66bdc531ea6d3c3c1e136bce5e62fedf27708d5e04cc1cce575b2e8fe91777"
+    },
+    {
+      "name": "assistant-app",
+      "sha256": "7ee92fbc903cfa3a8c7615dcba6f2d2cb59ee2c3e42a14c28554b6cc15ace954"
+    },
+    {
+      "name": "assistant-app-stream",
+      "sha256": "27839d265e946ab3867a9339b6ce6fc95251cdcbfed3f43e6febb8dd032b1315"
+    },
+    {
+      "name": "assistant-app-voice",
+      "sha256": "b248e82b1818558ef60d5800236d182a27ec95cc8377c3d8f6722d61ee9aa810"
+    },
+    {
+      "name": "assistant-channel",
+      "sha256": "64b04cb7d2c06ff5dbc634e10c69e2d4c3e61542ac476a88db59f934849f5b16"
+    },
+    {
+      "name": "blanked-agent",
+      "sha256": "97dac51eb37e26673e1fb4e6379d5d47742f58cdec5e5536297f9fc7959287e5"
+    },
+    {
+      "name": "bmb-tick",
+      "sha256": "e92d25077b6bd72d6ca2f7f90d73760330379b63f72b58a21547d34384453a09"
+    },
+    {
+      "name": "bmb-worker-background",
+      "sha256": "3b8d5071c5618f86b89ba7b8985d826d7d75f26b7b7acd436f7dde736b6851f2"
+    },
+    {
+      "name": "waitlist-auth",
+      "sha256": "a69ca7cc23ff48a3c74f9f0deaf94bc0214d2d74d0c7a67e7f8637a843c78895"
+    }
+  ],
+  "remote_function_hashes_verified": true,
+  "source_inputs": [
+    {
+      "file": "netlify/functions/_apple_revoke.js",
+      "sha256": "876d9fce4644055c900ecd8788e0128ede148c93c39e4bb66ab63621709bcd58"
+    },
+    {
+      "file": "netlify/functions/_assistant_channel.js",
+      "sha256": "28a48df97469d80797671b8b5beab37a4c3e878516f3f900f6ef517fa7aabf8f"
+    },
+    {
+      "file": "netlify/functions/_assistant_push.js",
+      "sha256": "2c35ee6722925d669ebd370e9f3d17b3702b53b23060bd1ec3c5191f5c3e3c12"
+    },
+    {
+      "file": "netlify/functions/_assistant_reply_text.js",
+      "sha256": "a3faef9866e5da3afc8669aef9ad9993efdf3a57985c8d6b40ff7d1c324727e7"
+    },
+    {
+      "file": "netlify/functions/_assistant_reply.js",
+      "sha256": "f486b717d3c214f84ba9ec5bbcc229ccc730c82f8c6b2157dfa53c0d7f284c30"
+    },
+    {
+      "file": "netlify/functions/_bm_action_link.js",
+      "sha256": "4d103d07a5b5e841a64215a8551ea47333e593ee0f64ed0b3c0ec716c6a25eb2"
+    },
+    {
+      "file": "netlify/functions/_bm_final_qa_access.js",
+      "sha256": "aa878905493d5e0b7f86b4f6a2befb3c96f3814f00d66abd6216dd24320c3798"
+    },
+    {
+      "file": "netlify/functions/_bm_final_qa_dispatch.js",
+      "sha256": "acff17cb6e03e893362f0231dec7eb2b8cc6bfd82446f361da57f6ff6705e0c2"
+    },
+    {
+      "file": "netlify/functions/_bm_semantic_store.js",
+      "sha256": "20a6415a47691b5d5efb2622b219caeb13de266e90ebd9f740d5835665c76a25"
+    },
+    {
+      "file": "netlify/functions/_bm_tone.js",
+      "sha256": "1c9dd7d537f674ef4164fe25bb95e16e69948804ed0574f8d2feaab7c4f8d9e9"
+    },
+    {
+      "file": "netlify/functions/_bm_user_context.js",
+      "sha256": "1016dbdbc57eb2f1d545bf1107a46b68c988ec31de12d70b0eccf2269a4ac3b4"
+    },
+    {
+      "file": "netlify/functions/_identity.js",
+      "sha256": "734fe069857911b2c85716cb8b741a330be1cceb5ded2f7a142748fca950a2ae"
+    },
+    {
+      "file": "netlify/functions/_membership.js",
+      "sha256": "8acb1813fd1b7a5cbe5304db2ac4f99ec7410a44ca38c83b78d6fb4c4d8b37df"
+    },
+    {
+      "file": "netlify/functions/_onboarding_access.js",
+      "sha256": "d99fbd2506ff8819c49ef75def649a6f90f0b6f2abfcb480eaa3e62026f99e5b"
+    },
+    {
+      "file": "netlify/functions/_waitlist_ai.js",
+      "sha256": "60771a18e91b3432bb4bd8dae730775cf51e1866a8521592cd3121e517453900"
+    },
+    {
+      "file": "netlify/functions/_waitlist_store.js",
+      "sha256": "8c7127f218725ba888e35c85b1115c07e03793b0627c941e28e1fd86f009a9b7"
+    },
+    {
+      "file": "netlify/functions/_waitlist_whatsapp.js",
+      "sha256": "f8b31fb95fafaf0965831fe96d4e33dfa9b77cea64574550c26b160cf6a9b8e0"
+    },
+    {
+      "file": "netlify/functions/_wearable_oauth.js",
+      "sha256": "70d00def4653cce16809853961d1ce850186204578d82c2a11b2a801af412a2f"
+    },
+    {
+      "file": "netlify/functions/account-data.js",
+      "sha256": "f5bba8c83b0f3ed715399ea3aee82a20270742d4570e1bbad12cbc46f73511d8"
+    },
+    {
+      "file": "netlify/functions/app-auth.js",
+      "sha256": "6e9f8787254cf8468ed14bb11ba6b7e4377b9e868324813e28347535a68f1257"
+    },
+    {
+      "file": "netlify/functions/assistant-app-stream.mjs",
+      "sha256": "1080c7e546096bf6796fc203af6a0c426d8a46269084602bbfc367543828c195"
+    },
+    {
+      "file": "netlify/functions/assistant-app-voice.mjs",
+      "sha256": "51ae5c9f68dfdf03f7d5c11cc39acfe2343fc409298e40a32375c2fa92f524f2"
+    },
+    {
+      "file": "netlify/functions/assistant-app.js",
+      "sha256": "08cc2367b20550f7f2f01e6b3913bd1f588fb63ba51c312a3c18b96b0f320a6d"
+    },
+    {
+      "file": "netlify/functions/assistant-channel.js",
+      "sha256": "15565de7e354a76e7a88087e2d1c304439875136638d593f03e4bbaa9ba27651"
+    },
+    {
+      "file": "netlify/functions/blanked-agent.js",
+      "sha256": "3c265d460a4bdba315820e6a6e53519b93d7e2ff23fe775e717d0504308c61d8"
+    },
+    {
+      "file": "netlify/functions/bm-audio-input.js",
+      "sha256": "dbc3a067c963acae3da165971b9ab1041d700cc15d23ffa9b7472e4f4c14027c"
+    },
+    {
+      "file": "netlify/functions/bm-blocking-contract.js",
+      "sha256": "51e2377b3ba41b501ed58df285aa10330624ac431304dd845040f5e95e5a51dc"
+    },
+    {
+      "file": "netlify/functions/bm-brain-data.js",
+      "sha256": "75599797a96decb9810b1bce95fb12d802717f8ad8578f18e9abca76f5b76a82"
+    },
+    {
+      "file": "netlify/functions/bm-brain.js",
+      "sha256": "5ffb40698545ee64d8932b86a23b41ebb0027a73ce7ac5ee35420b9d9b1ee760"
+    },
+    {
+      "file": "netlify/functions/bm-context.js",
+      "sha256": "dbd09625c8ee6c69f01651eb010d93c7665ecb311015addda2363e132d098b0e"
+    },
+    {
+      "file": "netlify/functions/bm-contextual-response.js",
+      "sha256": "526e8c98bc2363ab73a3682b09bc92f7db42cb760127c440cf0195088dec2f70"
+    },
+    {
+      "file": "netlify/functions/bm-contracts.js",
+      "sha256": "c7fe9fce07b4d440bb9ae9b404a1fa7813fa293691971336b59a5a97bd3ca9f2"
+    },
+    {
+      "file": "netlify/functions/bm-conversation-copy.js",
+      "sha256": "825aebe9aa3c9a37c117564ea1faa97d089148e2d65bb46f021bd27936f40675"
+    },
+    {
+      "file": "netlify/functions/bm-conversation-style.js",
+      "sha256": "88c0280fa5aaee9281a36247b6a5fc2a946c84529eff5dd8f84149de97d343ed"
+    },
+    {
+      "file": "netlify/functions/bm-decisions.js",
+      "sha256": "def85ebc6518b9e21117062281ab84575ed5e95f6dad951ad8fa9231cd1b4c83"
+    },
+    {
+      "file": "netlify/functions/bm-harness.js",
+      "sha256": "78c0fbf33cdd958c169881cff254c7473bfd4fa0bc43601dd93e1707e266c8f0"
+    },
+    {
+      "file": "netlify/functions/bm-jev-activation.json",
+      "sha256": "3d850d1f85fed02e657f7ba77da7cd4962270e3b1727995c7e955368ce2ffef1"
+    },
+    {
+      "file": "netlify/functions/bm-jev-taxonomy.json",
+      "sha256": "8cda1a1b0779e84d5e10657a08d8d234a86e239de706fed30528ee11b0d2048f"
+    },
+    {
+      "file": "netlify/functions/bm-jev.js",
+      "sha256": "b61ef930321ffca617821db178b76bef6a9947b8f6afaf6a0e493b0151b3ec53"
+    },
+    {
+      "file": "netlify/functions/bm-learning.js",
+      "sha256": "5e8f3d433a501230e9b7efac281ae67967035e4830af6fc9badb968ddb9b3487"
+    },
+    {
+      "file": "netlify/functions/bm-loop-contract.json",
+      "sha256": "94b0d090a96f3abca9c5c93e140e92da73795c4f525a8da9a7e977eeb7fefe92"
+    },
+    {
+      "file": "netlify/functions/bm-loop.js",
+      "sha256": "4473f9d569736bea66254a8043925e96b50929c38c4d62e32dd89ebfe08c29b4"
+    },
+    {
+      "file": "netlify/functions/bm-model-request.js",
+      "sha256": "f47f3eaf3743806b2270faf689e5920a5b1377c97325b6f266d0f4e86d44414b"
+    },
+    {
+      "file": "netlify/functions/bm-onboarding.js",
+      "sha256": "7c0ef0840224a0f8553b491b28dea8c14ebf5ba790bb3e22b19c0c0e303d176e"
+    },
+    {
+      "file": "netlify/functions/bm-pending-action.js",
+      "sha256": "de2024bfbc57291d7ae45f077aeb8617100be23c043979b6dc73de7f7b398d73"
+    },
+    {
+      "file": "netlify/functions/bm-personal-context-view.js",
+      "sha256": "83c872b53f67ed272580b2357610c822def68be2cfc5b35644f905d0892c652d"
+    },
+    {
+      "file": "netlify/functions/bm-policy.js",
+      "sha256": "c75300af6622a610ea6daf01b2f38a3c5fe0eb7d3326a1c0398d06cb904bd773"
+    },
+    {
+      "file": "netlify/functions/bm-response-stream.js",
+      "sha256": "0c3f04d6165d8ee00f33244971601c9c18a7cb76fe5ef6028e77d6430affdef6"
+    },
+    {
+      "file": "netlify/functions/bm-retrieval-step.js",
+      "sha256": "818ca37dcbf6ba01897f3ffd789c2c870d2dfdfd25d152faa6d125968d54dcf8"
+    },
+    {
+      "file": "netlify/functions/bm-schedule-management.js",
+      "sha256": "3c3f8581de692b7f8cf39a54627dc4db827e1c26ef1bfdaada4117da16f5f038"
+    },
+    {
+      "file": "netlify/functions/bm-semantic-delivery.js",
+      "sha256": "83752a2ff9ac6c898e31b50db96add010442bf73ea417080f3a66f6dfa4f0451"
+    },
+    {
+      "file": "netlify/functions/bm-semantic-extraction.js",
+      "sha256": "ce8e3fc531d0c6946e5db4e01a4746b3a7a123c843d0fdf439540f55ecc0f545"
+    },
+    {
+      "file": "netlify/functions/bm-semantic-state.js",
+      "sha256": "cf6138a227082635941db8b5b0c8402211e8c98498b99bced692747eaaea4c7c"
+    },
+    {
+      "file": "netlify/functions/bm-turn-timing.js",
+      "sha256": "d28eee9d8473c90ac78c7965709ac45ee7e53e1e2b111bc5ced2ecb4cce91dac"
+    },
+    {
+      "file": "netlify/functions/bm-verification.js",
+      "sha256": "5b7f0a8205537534d1fe0dc360c06dae4d783b14b428253da94d47b4d475eb28"
+    },
+    {
+      "file": "netlify/functions/bm-voice-output.js",
+      "sha256": "5beb02560468db691fa19d16499be1174c014ccdb23775193aefebea49b3bd66"
+    },
+    {
+      "file": "netlify/functions/bmb-brain.js",
+      "sha256": "9c9ea65d3cf09a8b4619f4c5a18b19f49b87749009cbab5c98238de2f6ca854b"
+    },
+    {
+      "file": "netlify/functions/bmb-greeting.js",
+      "sha256": "b950dbd7c5939b88bc36b5b6eef6fda8cd8675c592be6970916f9ae9de1ccbc9"
+    },
+    {
+      "file": "netlify/functions/bmb-longitudinal.js",
+      "sha256": "1c3a33971fffe17422e4840c7c6ebfcb73e28a37ddc1670de25894c678b2b427"
+    },
+    {
+      "file": "netlify/functions/bmb-policy.js",
+      "sha256": "c780a13feeacdf380757519a295eb3d61b9ccd81acd25e08a6c5ea20a2fc9549"
+    },
+    {
+      "file": "netlify/functions/bmb-proposal.js",
+      "sha256": "6f345eafaf54cfbb64b9d2b63183af09e3c6ded0413a19fa558196f7f33841dc"
+    },
+    {
+      "file": "netlify/functions/bmb-service.js",
+      "sha256": "98762951743a69290516b87d6e156de286cc645746e6bce719eba697f2bd1b99"
+    },
+    {
+      "file": "netlify/functions/bmb-sleep-context.js",
+      "sha256": "8e8f8c418a6451095474eb53679d73c14a341e718dec1e293a2bf31d56c52cec"
+    },
+    {
+      "file": "netlify/functions/bmb-sources.js",
+      "sha256": "2b9bf0eb9aa297d6bd38106d470f3a9954712c904df5950cabe07719185a1694"
+    },
+    {
+      "file": "netlify/functions/bmb-tick.js",
+      "sha256": "5e6f4216b0adc9f0f585d0bc21b9e01f48cfdfd1b544a1e07b0d443b9376c95c"
+    },
+    {
+      "file": "netlify/functions/bmb-worker-background.js",
+      "sha256": "727470b31307ed486e8f3634cc94d86b15d6ce1bc2c69caa5ded45e3e193ff78"
+    },
+    {
+      "file": "netlify/functions/waitlist-agent.js",
+      "sha256": "4c763bf7a2db90c3ccc044a35a3912202b1fce82cddd6b6148ce01d6cc098ddf"
+    },
+    {
+      "file": "netlify/functions/waitlist-auth.js",
+      "sha256": "fa886ade236258ef948a011feda246c3afb3f3def2c2d01c2bad40540f574d95"
+    },
+    {
+      "file": "netlify/functions/whatsapp-agent.js",
+      "sha256": "ccdc190211aa3118d3dea702c492e3409abe4e55fa94432c175be293083a2aa2"
+    }
+  ],
+  "private_barrier": "page and assistant-app anonymous HTTP401 verified",
+  "database_isolated": true,
+  "environment_unchanged": true,
+  "acceleration_flags": "absent/OFF, checked before and after deploy",
+  "harness_run_id": "ph_1791470172321_6f251e5d",
+  "harness_status": "passed",
+  "harness_validation": {
+    "passed": true,
+    "attempts": [
+      {
+        "attempt": 0,
+        "commands": [
+          {
+            "label": "bmb_sleep_context",
+            "command": "node tools/bmb_sleep_context_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 399,
+            "output": "BMB sleep: actual model input, 14 dated nights, weekly comparison evidence, real/synthetic provenance, disable, stale, mixed/invalid rows and no fixture memory passed\n"
+          },
+          {
+            "label": "bm_retrieval_wide_faults",
+            "command": "node tools/bm_retrieval_wide_fault_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 239,
+            "output": "PASS 21 deterministic fault/authority/DST cases; separate from real provider run\n"
+          },
+          {
+            "label": "bmb_quality_regressions",
+            "command": "node tools/bmb_quality_regression_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 194,
+            "output": "PASS quality regressions: final/stream UUIDs, literal quotes, invalid units/zero/pagination, reactive recovery/effect authority, repaired prose and proactive silence\n"
+          },
+          {
+            "label": "bm_decisions",
+            "command": "node tools/bm_decisions_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 275,
+            "output": "PASS Decisions: typed/refusal validation, off/private/synthetic gates, fallback, privacy, owner/cutoff and duplicate source preservation\n"
+          },
+          {
+            "label": "bm_retrieval_step",
+            "command": "node tools/bm_retrieval_step_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 180,
+            "output": "PASS retrieval step: conservative routes, off gate, owner/cutoff, exact local dates/DST, complete reads, zero preservation, final-only authority and fallback\n"
+          },
+          {
+            "label": "bm_voice_output",
+            "command": "node tools/bm_voice_output_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 232,
+            "output": "bm_voice_output_timing {\"elapsed_ms\":5,\"first_audio_ms\":3,\"audio_bytes\":6,\"characters\":21}\nbm_voice_output_timing {\"elapsed_ms\":0,\"first_audio_ms\":null,\"audio_bytes\":0,\"characters\":21}\nbm_voice_output_timing {\"elapsed_ms\":1,\"first_audio_ms\":null,\"audio_bytes\":0,\"characters\":21}\nbm_voice_output_timing {\"elapsed_ms\":1,\"first_audio_ms\":null,\"audio_bytes\":0,\"characters\":21}\nbm_voice_output_timing {\"elapsed_ms\":0,\"first_audio_ms\":null,\"audio_bytes\":0,\"characters\":21}\nbm_voice_output_timing {\"elapsed_ms\":1,\"first_audio_ms\":null,\"audio_bytes\":0,\"characters\":21}\nbm_voice_output_timing {\"elapsed_ms\":5,\"first_audio_ms\":null,\"audio_bytes\":0,\"characters\":21}\nbm_voice_output_timing {\"elapsed_ms\":1,\"first_audio_ms\":1,\"audio_bytes\":6,\"characters\":21}\nVoice backend: auth/install isolation, final text, quotas/dedup, deletion, PCM, errors, cancellation and kill switch PASS\n"
+          },
+          {
+            "label": "node_syntax_voice_stream",
+            "command": "node --check netlify/functions/assistant-app-voice.mjs",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 80,
+            "output": ""
+          },
+          {
+            "label": "bm_response_stream",
+            "command": "node tools/bm_response_stream_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 280,
+            "output": "{\"event\":\"bm_stream_timing\",\"stage\":\"bmb\",\"model\":\"gpt-5.6-luna\",\"headers_ms\":2,\"first_text_ms\":2,\"elapsed_ms\":3,\"usage\":{}}\n{\"event\":\"bm_stream_timing\",\"stage\":\"bmb\",\"model\":\"gpt-5.6-luna\",\"headers_ms\":1,\"first_text_ms\":1,\"elapsed_ms\":1,\"usage\":{}}\nresponse streaming: first text before completion, byte fragmentation/Unicode/CRLF, private read phases, failures/EOF, native-free drafts and durable disconnect passed\n"
+          },
+          {
+            "label": "bm_latency",
+            "command": "node tools/bm_latency_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 143,
+            "output": "PASS latency: request isolation/privacy/failures, percentiles, current snapshot/identity, legacy sources and parallel reads with forget cutoff\n"
+          },
+          {
+            "label": "bm_jev",
+            "command": "node tools/bm_jev_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 752,
+            "output": "PASS Jev: schema/probabilities/version, disabled/privacy/identity gates, durable claim/fallback, timeout, authorized source catalog/cutoff, isolated telemetry, 300-case split and metric integrity (mock contract tests, no live performance claim)\n"
+          },
+          {
+            "label": "bmb_longitudinal",
+            "command": "node tools/bmb_longitudinal_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 237,
+            "output": "PASS longitudinal: personal baselines/midnight, sparse/conflicting data, multiple facts, grounded answers, daily evidence/leases, privacy, contextual notification and retry without actions\n"
+          },
+          {
+            "label": "bmb_greeting",
+            "command": "node tools/bmb_greeting_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 83,
+            "output": "PASS greeting: languages, bounded output, invalid and incomplete responses\n"
+          },
+          {
+            "label": "bmb_vision",
+            "command": "node tools/bmb_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 276,
+            "output": "BMB: generative output, exact acceptance, detours/cancellation, account history/pagination, memory tombstones, date/DST/overnight/continuous schedules, current grants/pauses/revocation and separate notifications passed\nbmb_acceptance_failure {\"proposal_present\":true,\"token_matches\":true,\"proposal_current\":true,\"changed_fields\":[\"minutes\"]}\nbmb_acceptance_failure {\"proposal_present\":true,\"token_matches\":true,\"proposal_current\":false,\"changed_fields\":[]}\nbmb_acceptance_failure {\"proposal_present\":false,\"token_matches\":false,\"proposal_current\":false,\"changed_fields\":[]}\n"
+          },
+          {
+            "label": "bmb_autonomy_loop",
+            "command": "node tools/bmb_loop_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 166,
+            "output": "BMB loop: contextual decision → current grant → durable reservation/retry → canonical inbox → synthetic native receipt → free-text notice → shared budget/replay/revocation passed\n"
+          },
+          {
+            "label": "bm_audio_input",
+            "command": "node tools/bm_audio_input_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 116,
+            "output": "Audio: bounded format, missing credentials, multipart transcription, silence and provider failure PASS (mock)\n"
+          },
+          {
+            "label": "bm_chat_natural",
+            "command": "node tools/bm_chat_natural_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 211,
+            "output": "bm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176367_b0163c3a\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:16.367Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176367_b0163c3a\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:16.370Z\",\"revision\":2,\"intent\":\"block\",\"status\":\"collecting\",\"pending_slots\":[\"end_or_duration\"],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176367_b0163c3a\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:16.371Z\",\"mode\":\"conversation\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176367_b0163c3a\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:16.375Z\",\"source\":\"openai:gpt-5.6-luna:conversation\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176367_b0163c3a\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:16.378Z\",\"decision\":\"no_action\",\"action_types\":[],\"action_count\":0,\"warnings\":[]}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176367_b0163c3a\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:16.379Z\",\"loop_id\":\"loop_fbe445e1e2650181c2dfdd1d\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176367_b0163c3a\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:16.379Z\",\"source\":\"openai:gpt-5.6-luna:conversation\",\"duration_ms\":12,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176381_0a6aedb9\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:16.381Z\",\"route\":\"app\",\"language\":\"es\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176381_0a6aedb9\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:16.381Z\",\"revision\":1,\"intent\":\"general\",\"status\":\"idle\",\"pending_slots\":[],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176381_0a6aedb9\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:16.382Z\",\"mode\":\"conversation\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176381_0a6aedb9\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:16.383Z\",\"source\":\"openai:gpt-5.6-luna:conversation\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176381_0a6aedb9\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:16.385Z\",\"decision\":\"no_action\",\"action_types\":[],\"action_count\":0,\"warnings\":[]}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176381_0a6aedb9\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:16.385Z\",\"loop_id\":\"loop_76f4898552b662cd00cf082d\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470176381_0a6aedb9\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:16.385Z\",\"source\":\"openai:gpt-5.6-luna:conversation\",\"duration_ms\":4,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nApp natural response: Spanish generation, immutable duration/actions, false execution rejection PASS (mock)\n"
+          },
+          {
+            "label": "node_syntax_agent",
+            "command": "node --check netlify/functions/blanked-agent.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 67,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_harness",
+            "command": "node --check netlify/functions/bm-harness.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 65,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_loop",
+            "command": "node --check netlify/functions/bm-loop.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 65,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_context",
+            "command": "node --check netlify/functions/bm-context.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 64,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_personal_context_view",
+            "command": "node --check netlify/functions/bm-personal-context-view.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 65,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_contextual_response",
+            "command": "node --check netlify/functions/bm-contextual-response.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 64,
+            "output": ""
+          },
+          {
+            "label": "bm_contextual_response",
+            "command": "node tools/bm_contextual_response_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 96,
+            "output": "BM contextual response: 16 canonical block cases, immutable priority, and 5 retained contextual model routes PASS (mock only)\n"
+          },
+          {
+            "label": "node_syntax_schedule_management",
+            "command": "node --check netlify/functions/bm-schedule-management.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 67,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_blocking",
+            "command": "node --check netlify/functions/bm-blocking-contract.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 70,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_contracts",
+            "command": "node --check netlify/functions/bm-contracts.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 70,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_policy",
+            "command": "node --check netlify/functions/bm-policy.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 64,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_verification",
+            "command": "node --check netlify/functions/bm-verification.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 66,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_learning",
+            "command": "node --check netlify/functions/bm-learning.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 63,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_assistant_push",
+            "command": "node --check netlify/functions/_assistant_push.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 65,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_waitlist_store",
+            "command": "node --check netlify/functions/_waitlist_store.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 63,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_waitlist_ai",
+            "command": "node --check netlify/functions/_waitlist_ai.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 67,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_waitlist_whatsapp",
+            "command": "node --check netlify/functions/_waitlist_whatsapp.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 70,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_waitlist_start",
+            "command": "node --check netlify/functions/waitlist-start.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 92,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_waitlist_agent",
+            "command": "node --check netlify/functions/waitlist-agent.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 66,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_bm_final_qa_access",
+            "command": "node --check netlify/functions/_bm_final_qa_access.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 63,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_bm_final_qa_dispatch",
+            "command": "node --check netlify/functions/_bm_final_qa_dispatch.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 65,
+            "output": ""
+          },
+          {
+            "label": "node_syntax_waitlist_data",
+            "command": "node --check netlify/functions/waitlist-data.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 65,
+            "output": ""
+          },
+          {
+            "label": "waitlist_early_access",
+            "command": "node tools/waitlist_early_access_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 3545,
+            "output": "waitlist early access tests passed\n"
+          },
+          {
+            "label": "bm_final_qa_router",
+            "command": "node tools/bm_final_qa_router_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 176,
+            "output": "BM Final private WhatsApp router tests passed\n"
+          },
+          {
+            "label": "production_app_activation",
+            "command": "node tools/production_app_activation_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 96,
+            "output": "production app history: fresh snapshot, prior-turn CTA, exact action and owner gates passed\nproduction app routing: WhatsApp stays in waitlist, including with old flag enabled\n"
+          },
+          {
+            "label": "assistant_app_recovery",
+            "command": "node tools/assistant_app_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 265,
+            "output": "n\":1,\"action\":\"send\",\"turn_id\":\"8a0062fc-d76c-43f1-aeb1-3670a51310be\",\"status\":200,\"first_text_ms\":null,\"elapsed_ms\":0.78,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.01},\"claim\":{\"calls\":1,\"total_ms\":0.03},\"prepare\":{\"calls\":1,\"total_ms\":0.51},\"queue\":{\"calls\":1,\"total_ms\":0.09},\"commit\":{\"calls\":1,\"total_ms\":0.06},\"presentation\":{\"calls\":1,\"total_ms\":0.04}},\"usage\":{}}\n{\"event\":\"bm_turn_timing\",\"schema_version\":1,\"action\":\"send\",\"turn_id\":\"9f6baffe-8cfd-4e89-a072-6d4f3a25737d\",\"status\":200,\"first_text_ms\":null,\"elapsed_ms\":0.59,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.01},\"claim\":{\"calls\":1,\"total_ms\":0.04},\"prepare\":{\"calls\":1,\"total_ms\":0.37},\"queue\":{\"calls\":1,\"total_ms\":0.07},\"commit\":{\"calls\":1,\"total_ms\":0.05},\"presentation\":{\"calls\":1,\"total_ms\":0.04}},\"usage\":{}}\n{\"event\":\"bm_turn_timing\",\"schema_version\":1,\"action\":\"send\",\"turn_id\":\"f72de4de-6119-4185-861f-7968a6765a94\",\"status\":503,\"first_text_ms\":null,\"elapsed_ms\":0.75,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.01},\"claim\":{\"calls\":1,\"total_ms\":0.03},\"prepare\":{\"calls\":1,\"total_ms\":0.28},\"commit\":{\"calls\":1,\"total_ms\":0.08},\"presentation\":{\"calls\":1,\"total_ms\":0.16}},\"usage\":{}}\n{\"event\":\"bm_turn_timing\",\"schema_version\":1,\"action\":\"send\",\"turn_id\":\"f72de4de-6119-4185-861f-7968a6765a94\",\"status\":200,\"first_text_ms\":null,\"elapsed_ms\":0.13,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.01},\"claim\":{\"calls\":1,\"total_ms\":0.02}},\"usage\":{}}\n{\"event\":\"bm_turn_timing\",\"schema_version\":1,\"action\":\"send\",\"turn_id\":\"f72de4de-6119-4185-861f-7968a6765a94\",\"status\":200,\"first_text_ms\":null,\"elapsed_ms\":0.09,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.01},\"claim\":{\"calls\":1,\"total_ms\":0.02}},\"usage\":{}}\n{\"event\":\"bm_turn_timing\",\"schema_version\":1,\"action\":\"send\",\"turn_id\":\"219ccecf-db69-4fc5-a2aa-f832bddf375b\",\"status\":200,\"first_text_ms\":null,\"elapsed_ms\":0.6,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.01},\"claim\":{\"calls\":1,\"total_ms\":0.03},\"prepare\":{\"calls\":1,\"total_ms\":0.36},\"queue\":{\"calls\":1,\"total_ms\":0.06},\"commit\":{\"calls\":1,\"total_ms\":0.07},\"presentation\":{\"calls\":1,\"total_ms\":0.05}},\"usage\":{}}\n{\"event\":\"bm_turn_timing\",\"schema_version\":1,\"action\":\"send\",\"turn_id\":\"2ba3ef34-2659-4dea-90fc-1efa3133db08\",\"status\":200,\"first_text_ms\":null,\"elapsed_ms\":0.61,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.01},\"claim\":{\"calls\":1,\"total_ms\":0.03},\"prepare\":{\"calls\":1,\"total_ms\":0.36},\"queue\":{\"calls\":1,\"total_ms\":0.09},\"commit\":{\"calls\":1,\"total_ms\":0.05},\"presentation\":{\"calls\":1,\"total_ms\":0.04}},\"usage\":{}}\n{\"event\":\"bm_turn_timing\",\"schema_version\":1,\"action\":\"send\",\"turn_id\":\"e310904d-53f8-4765-a7b8-d658c081b162\",\"status\":200,\"first_text_ms\":null,\"elapsed_ms\":0.59,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.01},\"claim\":{\"calls\":1,\"total_ms\":0.03},\"prepare\":{\"calls\":1,\"total_ms\":0.37},\"queue\":{\"calls\":1,\"total_ms\":0.06},\"commit\":{\"calls\":1,\"total_ms\":0.05},\"presentation\":{\"calls\":1,\"total_ms\":0.04}},\"usage\":{}}\n{\"event\":\"bm_turn_timing\",\"schema_version\":1,\"action\":\"send\",\"turn_id\":\"d95ef8b6-bf34-4264-8a73-8377ec41f07e\",\"status\":200,\"first_text_ms\":1.35,\"elapsed_ms\":2.19,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.91},\"claim\":{\"calls\":1,\"total_ms\":0.2},\"prepare\":{\"calls\":1,\"total_ms\":0.79},\"commit\":{\"calls\":1,\"total_ms\":0.1},\"presentation\":{\"calls\":1,\"total_ms\":0.08}},\"usage\":{}}\n{\"event\":\"bm_turn_timing\",\"schema_version\":1,\"action\":\"send\",\"turn_id\":\"d95ef8b6-bf34-4264-8a73-8377ec41f07e\",\"status\":200,\"first_text_ms\":null,\"elapsed_ms\":0.33,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.2},\"claim\":{\"calls\":1,\"total_ms\":0.03}},\"usage\":{}}\n{\"event\":\"bm_turn_timing\",\"schema_version\":1,\"action\":\"send\",\"turn_id\":\"9ee606c1-940a-4cca-a5c1-1ee7824fd50c\",\"status\":401,\"first_text_ms\":null,\"elapsed_ms\":0.16,\"stages\":{\"authentication\":{\"calls\":1,\"total_ms\":0.13}},\"usage\":{}}\nassistant app: auth isolation, immutable retries, leases, atomic checkpoints, CAS conflicts, canonical actions, durable receipts, failure recovery and 125 tied history timestamps passed\nassistant_app_failure {\"action\":\"send\",\"code\":\"assistant_model_unavailable\",\"location\":\"assistant-app.js:241:57\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"assistant_model_unavailable\",\"location\":\"assistant-app.js:241:57\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"assistant_model_unavailable\",\"location\":\"assistant-app.js:241:57\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"assistant_model_unavailable\",\"location\":\"assistant-app.js:241:57\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"assistant_model_unavailable\",\"location\":\"assistant-app.js:241:57\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"assistant_model_unavailable\",\"location\":\"assistant-app.js:241:57\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"assistant_model_unavailable\",\"location\":\"assistant-app.js:241:57\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"unexpected_failure\",\"location\":\"assistant-app.js:306:22\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"unexpected_failure\",\"location\":\"assistant-app.js:234:53\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"unexpected_failure\",\"location\":\"assistant-app.js:269:24\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"unexpected_failure\",\"location\":\"assistant-app.js:269:24\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"unexpected_failure\",\"location\":\"assistant-app.js:306:22\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"unexpected_failure\",\"location\":\"assistant-app.js:306:22\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"unexpected_failure\",\"location\":\"assistant-app.js:322:52\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"assistant_prepare_conflict\",\"location\":\"assistant-app.js:275:70\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"unexpected_failure\",\"location\":\"assistant-app.js:306:22\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"unexpected_failure\",\"location\":\"assistant-app.js:306:22\"}\nassistant_app_failure {\"action\":\"send\",\"code\":\"unexpected_failure\",\"location\":\"assistant-app.js:106:100\"}\n"
+          },
+          {
+            "label": "bm_central_brain",
+            "command": "node tools/bm_brain_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 119,
+            "output": "Brain: interval union, pauses, DST, coverage, dates, schema/evidence, stale controls, account-scoped retrieval and commit boundaries passed\n"
+          },
+          {
+            "label": "assistant_cloud_test_safety",
+            "command": "node tools/assistant_app_cloud_test.js --self-test",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 73,
+            "output": "PASS local_target_allowlist_header_safety_and_identity_tests (no network)\n"
+          },
+          {
+            "label": "app_auth_refresh",
+            "command": "node tools/app_auth_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 77,
+            "output": "app auth: Apple token sign-in/linking, refresh rotation, legacy OTP removal, rate limits and private error redaction passed\n"
+          },
+          {
+            "label": "bm_legacy_context_recovery",
+            "command": "node tools/bm_legacy_context_recovery_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 104,
+            "output": "BM legacy context recovery: durable routing, account isolation, profile preservation and queued-only invalidation passed\n"
+          },
+          {
+            "label": "bm_app_receipts",
+            "command": "node tools/bm_app_receipt_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 98,
+            "output": "App native receipts: durable before channel advancement, account/action scoped, retryable on write failure and legacy compatible\n"
+          },
+          {
+            "label": "assistant_channel_identity",
+            "command": "node tools/assistant_channel_identity_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 95,
+            "output": "Assistant inbox identity: phone-only requests rejected before lookup; linked identity consistency and legacy CONNECT compatibility passed\n"
+          },
+          {
+            "label": "assistant_action_concurrency",
+            "command": "node tools/assistant_action_concurrency_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 132,
+            "output": "Action concurrency: late WA/SMS enqueue and cancellation cannot overwrite newer app state; SQL guard, no stale pushes and explicit legacy compatibility passed\n"
+          },
+          {
+            "label": "assistant_pending_lifecycle",
+            "command": "node tools/assistant_pending_lifecycle_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 105,
+            "output": "Pending lifecycle: observed action/status CAS fences poll, ack, expiry and onboarding; late receipts persist without clearing newer actions; direct canonical writes forbidden\n"
+          },
+          {
+            "label": "backend_release_preflight",
+            "command": "node tools/backend_release_preflight_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 84,
+            "output": "backend release preflight: exact-candidate physical evidence precedes validation and every remote mutation; no bypass\n"
+          },
+          {
+            "label": "backend_staging_safety",
+            "command": "node tools/backend_staging_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 478,
+            "output": "Private staging: package/deploy guards, real object and legacy array inventories, fail-closed metadata/digest checks and read-only recovery preserving original artifacts passed\n"
+          },
+          {
+            "label": "bm_final_qa_dispatch",
+            "command": "node tools/bm_final_qa_dispatch_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 82,
+            "output": "BM Final private WhatsApp dispatch tests passed\n"
+          },
+          {
+            "label": "bm_openai_request_contract",
+            "command": "node tools/bm_openai_request_contract_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 139,
+            "output": "bm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183519_4c48e49c\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:23.520Z\",\"route\":\"conversation\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183519_4c48e49c\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:23.528Z\",\"revision\":1,\"intent\":\"general\",\"status\":\"idle\",\"pending_slots\":[],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183519_4c48e49c\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:23.529Z\",\"mode\":\"conversation\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183519_4c48e49c\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:23.533Z\",\"source\":\"openai:gpt-5.6-luna:conversation\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183519_4c48e49c\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:23.544Z\",\"decision\":\"no_action\",\"action_types\":[],\"action_count\":0,\"warnings\":[]}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183519_4c48e49c\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:23.545Z\",\"loop_id\":\"loop_b7159d109b35c10bb45f8427\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183519_4c48e49c\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:23.545Z\",\"source\":\"openai:gpt-5.6-luna:conversation\",\"duration_ms\":26,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nBM OpenAI request contract tests passed\n"
+          },
+          {
+            "label": "bm_loop_contract",
+            "command": "node tools/bm_loop_contract_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 105,
+            "output": "bm_loop_contract_test: ok\n"
+          },
+          {
+            "label": "bm_regressions",
+            "command": "node tools/bm_regression_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 141,
+            "output": "PASS ios_pending_action_lifecycle_is_durable\nPASS context_preserves_autonomy_and_native_control_fields\nPASS ios_verification_uses_device_state_not_label_count\nPASS native_clients_close_loop_with_outcome_recorded\nPASS immediate_protection_does_not_invent_duration\nPASS messaging_actions_wait_for_notification_tap\nPASS whatsapp_confirmation_redelivers_existing_action\nPASS schedule_review_preserves_native_permission_preflight\nPASS assistant_context_sync_reaches_messaging_identity\nPASS daily_limit_applies_screen_time_state\nPASS adaptive_schedule_appends_windows\nPASS why_now_layout_preserves_conversational_design\nPASS assistant_actions_reuse_canonical_selection_and_ignore_stale_timer\nPASS review_action_survives_landing_redirect\n\nBM regression suite passed: 14/14 checks\n"
+          },
+          {
+            "label": "bm_app_presence",
+            "command": "node tools/bm_app_presence_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 184,
+            "output": "equence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:23.964Z\",\"decision\":\"confirm\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183963_3c6d59f3\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:23.964Z\",\"loop_id\":\"loop_fd28b677dcb7d521e04c1fc0\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183963_3c6d59f3\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:23.964Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":1,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183965_81f69103\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:23.965Z\",\"route\":\"conversation\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183965_81f69103\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:23.966Z\",\"revision\":4,\"intent\":\"block\",\"status\":\"ready\",\"pending_slots\":[],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183965_81f69103\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:23.966Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183965_81f69103\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:23.966Z\",\"source\":\"grounded_canonical_response\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183965_81f69103\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:23.966Z\",\"decision\":\"ready\",\"action_types\":[\"apply_schedule\"],\"action_count\":1}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183965_81f69103\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:23.966Z\",\"loop_id\":\"loop_7ccdd566b950ea074e6cf578\",\"status\":\"awaiting_execution\",\"phase\":\"execute\",\"action_types\":[\"apply_schedule\"],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183965_81f69103\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:23.967Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":2,\"action_types\":[\"apply_schedule\"],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183967_07febd21\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:23.967Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183967_07febd21\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:23.968Z\",\"revision\":2,\"intent\":\"block\",\"status\":\"needs_setup\",\"pending_slots\":[\"permissions\"],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183967_07febd21\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:23.968Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183967_07febd21\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:23.968Z\",\"source\":\"grounded_canonical_response\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183967_07febd21\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:23.968Z\",\"decision\":\"setup\",\"action_types\":[\"request_screen_time_permission\"],\"action_count\":1}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183967_07febd21\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:23.968Z\",\"loop_id\":\"loop_fdba9783c975e2544b81d40b\",\"status\":\"awaiting_execution\",\"phase\":\"execute\",\"action_types\":[\"request_screen_time_permission\"],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183967_07febd21\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:23.969Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":2,\"action_types\":[\"request_screen_time_permission\"],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183969_aa3302ac\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:23.969Z\",\"route\":\"conversation\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183969_aa3302ac\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:23.969Z\",\"revision\":1,\"intent\":\"general\",\"status\":\"idle\",\"pending_slots\":[],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183969_aa3302ac\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:23.969Z\",\"mode\":\"conversation\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183969_aa3302ac\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:23.972Z\",\"source\":\"deterministic_conversation_fallback\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183969_aa3302ac\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:23.982Z\",\"decision\":\"no_action\",\"action_types\":[],\"action_count\":0,\"warnings\":[]}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183969_aa3302ac\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:23.982Z\",\"loop_id\":\"loop_f72c95a92eae12fbb9259c9a\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470183969_aa3302ac\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:23.982Z\",\"source\":\"deterministic_conversation_fallback\",\"duration_ms\":13,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nBM app presence tests passed\n"
+          },
+          {
+            "label": "bm_harness",
+            "command": "node tools/bm_harness_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 82,
+            "output": "bm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470184062_9e6ef29a\",\"sequence\":1,\"stage\":\"route_selected\",\"at\":\"2026-10-08T14:36:24.063Z\",\"route\":\"app\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470184062_9e6ef29a\",\"sequence\":2,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:24.066Z\",\"source\":\"deterministic_test\",\"duration_ms\":4,\"action_types\":[\"apply_schedule\"],\"warnings\":[],\"error_code\":null}\nbm_harness_test: ok\n"
+          },
+          {
+            "label": "bm_loop",
+            "command": "node tools/bm_loop_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 119,
+            "output": "bm_loop_test: ok\n"
+          },
+          {
+            "label": "bm_blocking_contract",
+            "command": "node tools/bm_blocking_contract_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 91,
+            "output": "bm blocking contract tests passed\n"
+          },
+          {
+            "label": "bm_excellence_gate",
+            "command": "node tools/bm_excellence_gate.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 5411,
+            "output": "bm_excellence_gate passed 22 checks\n"
+          },
+          {
+            "label": "agent_smoke",
+            "command": "node tools/blanked_agent_smoke_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 524,
+            "output": "source\":\"grounded_deterministic\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190200_2f53d26c\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:30.201Z\",\"decision\":\"ask\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190200_2f53d26c\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:30.201Z\",\"loop_id\":\"loop_55a0863cfb5d6e97b300f920\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190200_2f53d26c\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:30.202Z\",\"source\":\"semantic_state_v1+grounded_deterministic\",\"duration_ms\":2,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190202_c8f05a91\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:30.202Z\",\"route\":\"app\",\"language\":\"es\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190202_c8f05a91\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:30.206Z\",\"revision\":2,\"intent\":\"block\",\"status\":\"collecting\",\"pending_slots\":[\"schedule_horizon_days\"],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190202_c8f05a91\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:30.206Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190202_c8f05a91\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:30.206Z\",\"source\":\"grounded_canonical_response\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190202_c8f05a91\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:30.206Z\",\"decision\":\"ask\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190202_c8f05a91\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:30.206Z\",\"loop_id\":\"loop_abe7f3baf9007a3fdaed6986\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190202_c8f05a91\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:30.207Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":5,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190207_2427316f\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:30.207Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190207_2427316f\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:30.207Z\",\"revision\":1,\"intent\":\"general\",\"status\":\"idle\",\"pending_slots\":[],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190207_2427316f\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:30.208Z\",\"mode\":\"app\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190207_2427316f\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:30.208Z\",\"source\":\"deterministic_fallback\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190207_2427316f\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:30.209Z\",\"decision\":\"no_action\",\"action_types\":[],\"action_count\":0,\"warnings\":[]}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190207_2427316f\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:30.209Z\",\"loop_id\":\"loop_2f120b515aca6cbd68f44bc7\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190207_2427316f\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:30.209Z\",\"source\":\"deterministic_fallback\",\"duration_ms\":2,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190209_9aab6664\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:30.209Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190209_9aab6664\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:30.210Z\",\"revision\":2,\"intent\":\"block\",\"status\":\"collecting\",\"pending_slots\":[\"schedule_horizon_days\"],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190209_9aab6664\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:30.210Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190209_9aab6664\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:30.210Z\",\"source\":\"grounded_canonical_response\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190209_9aab6664\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:30.210Z\",\"decision\":\"ask\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190209_9aab6664\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:30.210Z\",\"loop_id\":\"loop_feb55a40a039dbb8523d6c44\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470190209_9aab6664\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:30.210Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":1,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nblanked-agent smoke tests passed (canonical semantic contract)\n"
+          },
+          {
+            "label": "assistant_conversation_memory",
+            "command": "node tools/assistant_conversation_memory_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 1490,
+            "output": "rness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191685_16eb84b8\",\"sequence\":5,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:31.689Z\",\"source\":\"grounded_canonical_response\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191685_16eb84b8\",\"sequence\":6,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:31.689Z\",\"decision\":\"ready\",\"action_types\":[\"start_protection\"],\"action_count\":1}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191685_16eb84b8\",\"sequence\":7,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:31.690Z\",\"loop_id\":\"loop_b10f2c1d4befcc16b61cbf43\",\"status\":\"awaiting_execution\",\"phase\":\"execute\",\"action_types\":[\"start_protection\"],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191685_16eb84b8\",\"sequence\":8,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:31.690Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":5,\"action_types\":[\"start_protection\"],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191692_c030ad8d\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:31.692Z\",\"route\":\"conversation\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191692_c030ad8d\",\"sequence\":2,\"stage\":\"planner_fallback\",\"at\":\"2026-10-08T14:36:31.693Z\",\"error_code\":\"semantic_model_http_429\",\"attempt_count\":1,\"attempt_errors\":[\"semantic_model_http_429\"],\"request_metrics\":{\"phase\":\"headers\",\"budget_ms\":20000,\"elapsed_ms\":0,\"headers_ms\":0,\"http_status\":429,\"error_name\":\"Error\",\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null},\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191692_c030ad8d\",\"sequence\":3,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:31.693Z\",\"revision\":2,\"intent\":\"cancelled\",\"status\":\"cancelled\",\"pending_slots\":[],\"errors\":[],\"request_metrics\":{\"phase\":\"headers\",\"budget_ms\":20000,\"elapsed_ms\":0,\"headers_ms\":0,\"http_status\":429,\"error_name\":\"Error\",\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null},\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191692_c030ad8d\",\"sequence\":4,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:31.693Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191692_c030ad8d\",\"sequence\":5,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:31.693Z\",\"source\":\"grounded_execution_boundary\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191692_c030ad8d\",\"sequence\":6,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:31.693Z\",\"decision\":\"cancelled\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191692_c030ad8d\",\"sequence\":7,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:31.693Z\",\"loop_id\":\"loop_8c7b663bf308f202e9932ae2\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191692_c030ad8d\",\"sequence\":8,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:31.693Z\",\"source\":\"semantic_state_v1+grounded_execution_boundary\",\"duration_ms\":1,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191694_8d83ce54\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:31.694Z\",\"route\":\"conversation\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191694_8d83ce54\",\"sequence\":2,\"stage\":\"planner_fallback\",\"at\":\"2026-10-08T14:36:31.695Z\",\"error_code\":\"semantic_model_http_429\",\"attempt_count\":1,\"attempt_errors\":[\"semantic_model_http_429\"],\"request_metrics\":{\"phase\":\"headers\",\"budget_ms\":20000,\"elapsed_ms\":0,\"headers_ms\":0,\"http_status\":429,\"error_name\":\"Error\",\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null},\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191694_8d83ce54\",\"sequence\":3,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:31.695Z\",\"revision\":2,\"intent\":\"cancelled\",\"status\":\"cancelled\",\"pending_slots\":[],\"errors\":[],\"request_metrics\":{\"phase\":\"headers\",\"budget_ms\":20000,\"elapsed_ms\":0,\"headers_ms\":0,\"http_status\":429,\"error_name\":\"Error\",\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null},\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191694_8d83ce54\",\"sequence\":4,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:31.695Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191694_8d83ce54\",\"sequence\":5,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:31.695Z\",\"source\":\"grounded_execution_boundary\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191694_8d83ce54\",\"sequence\":6,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:31.695Z\",\"decision\":\"cancelled\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191694_8d83ce54\",\"sequence\":7,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:31.696Z\",\"loop_id\":\"loop_ebd9f151826d27c45985b4fa\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470191694_8d83ce54\",\"sequence\":8,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:31.696Z\",\"source\":\"semantic_state_v1+grounded_execution_boundary\",\"duration_ms\":2,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nassistant conversation memory tests passed\n"
+          },
+          {
+            "label": "bm_semantic_state",
+            "command": "node tools/bm_semantic_state_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 942,
+            "output": "BM semantic state: 109/109 independent transition and invariant checks passed\n"
+          },
+          {
+            "label": "bm_semantic_delivery",
+            "command": "node tools/bm_semantic_delivery_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 283,
+            "output": "Semantic delivery: 28/28 passed (real reducer and provider queue; no model or network)\n"
+          },
+          {
+            "label": "bm_single_block_mvp",
+            "command": "node tools/bm_single_block_mvp_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 174,
+            "output": "BM single-block MVP contract passed\n"
+          },
+          {
+            "label": "bm_semantic_extraction",
+            "command": "node tools/bm_semantic_extraction_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 1849,
+            "output": "BM bounded attempts: 20/20 recovery, validation, cancellation and deadline checks passed (no provider calls)\nsemantic extraction: evidence, hostile fields, authority, duplicate/schema and API failure checks passed\n"
+          },
+          {
+            "label": "bm_response_reliability",
+            "command": "node tools/bm_response_reliability_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 560,
+            "output": "\"planner_fallback\",\"at\":\"2026-10-08T14:36:35.498Z\",\"error_code\":\"contextual_response_network_error\",\"error_name\":\"TypeError\",\"request_metrics\":{\"phase\":\"headers\",\"budget_ms\":12000,\"elapsed_ms\":0,\"error_name\":\"TypeError\",\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null}}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195497_65457e08\",\"sequence\":4,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:35.498Z\",\"decision\":\"read\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195497_65457e08\",\"sequence\":5,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:35.498Z\",\"loop_id\":\"loop_c100d86d93b6e3efa12d3a2c\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195497_65457e08\",\"sequence\":6,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:35.498Z\",\"source\":\"personal_context_v2+grounded_deterministic_after_model_error\",\"duration_ms\":1,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195499_5118c12f\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:35.499Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195499_5118c12f\",\"sequence\":2,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:35.499Z\",\"mode\":\"grounded_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195499_5118c12f\",\"sequence\":3,\"stage\":\"planner_fallback\",\"at\":\"2026-10-08T14:36:35.500Z\",\"error_code\":\"contextual_response_error\",\"error_name\":\"Error\",\"request_metrics\":{\"phase\":\"headers\",\"budget_ms\":12000,\"elapsed_ms\":0,\"error_name\":\"Error\",\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null}}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195499_5118c12f\",\"sequence\":4,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:35.500Z\",\"decision\":\"read\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195499_5118c12f\",\"sequence\":5,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:35.500Z\",\"loop_id\":\"loop_c6fa7c9a020774cada42ef1f\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195499_5118c12f\",\"sequence\":6,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:35.500Z\",\"source\":\"personal_context_v2+grounded_deterministic_after_model_error\",\"duration_ms\":1,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195501_e0ffc1f3\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:35.501Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195501_e0ffc1f3\",\"sequence\":2,\"stage\":\"planner_fallback\",\"at\":\"2026-10-08T14:36:35.503Z\",\"error_code\":\"semantic_model_timeout\",\"attempt_count\":2,\"attempt_errors\":[\"duplicate_semantic_extraction_slot\",\"semantic_model_timeout\"],\"request_metrics\":{\"phase\":\"headers\",\"budget_ms\":20000,\"elapsed_ms\":1,\"error_name\":\"TimeoutError\",\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null},\"first_attempt_metrics\":{\"phase\":\"complete\",\"budget_ms\":20000,\"elapsed_ms\":0,\"headers_ms\":0,\"http_status\":200,\"body_ms\":0,\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null}}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195501_e0ffc1f3\",\"sequence\":3,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:35.503Z\",\"revision\":2,\"intent\":\"advice\",\"status\":\"collecting\",\"pending_slots\":[\"action_type\"],\"errors\":[],\"request_metrics\":{\"phase\":\"headers\",\"budget_ms\":20000,\"elapsed_ms\":1,\"error_name\":\"TimeoutError\",\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null},\"first_attempt_metrics\":{\"phase\":\"complete\",\"budget_ms\":20000,\"elapsed_ms\":0,\"headers_ms\":0,\"http_status\":200,\"body_ms\":0,\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null}}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195501_e0ffc1f3\",\"sequence\":4,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:35.503Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195501_e0ffc1f3\",\"sequence\":5,\"stage\":\"planner_fallback\",\"at\":\"2026-10-08T14:36:35.503Z\",\"error_code\":\"contextual_response_timeout\",\"error_name\":\"TimeoutError\",\"request_metrics\":{\"phase\":\"headers\",\"budget_ms\":12000,\"elapsed_ms\":0,\"error_name\":\"TimeoutError\",\"usage_input\":null,\"usage_output\":null,\"usage_total\":null,\"usage_cached_input\":null,\"usage_reasoning\":null}}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195501_e0ffc1f3\",\"sequence\":6,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:35.503Z\",\"decision\":\"ask\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195501_e0ffc1f3\",\"sequence\":7,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:35.503Z\",\"loop_id\":\"loop_874032d60b1db754ba32aa6e\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470195501_e0ffc1f3\",\"sequence\":8,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:35.504Z\",\"source\":\"semantic_state_v1+grounded_deterministic_after_model_error\",\"duration_ms\":3,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nBM response reliability: historical live copy mutations rejected, cancellation stays closed, native setup order and daily-limit meaning preserved (mock model, real endpoint)\n"
+          },
+          {
+            "label": "bm_semantic_oracle_mutations",
+            "command": "node tools/bm_semantic_oracle_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 2420,
+            "output": "Semantic oracle: 42 mutations prevented from passing; 40 hard rejections, 2 require fresh independent text review. Batch: 200 jobs, peak concurrency 7.\n"
+          },
+          {
+            "label": "bm_evaluator_integrity",
+            "command": "node tools/bm_evaluator_integrity_gate.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 302,
+            "output": "bm_evaluator_integrity passed: 6/6 incidents, mutations 24/24\nreport: tmp\\bm-semantic\\evaluator-integrity.json\n"
+          },
+          {
+            "label": "bm_action_envelope_contract",
+            "command": "node tools/bm_action_envelope_contract_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 167,
+            "output": "bm_action_envelope_contract passed: 9 canonical fields plus legacy migration\n"
+          },
+          {
+            "label": "bm_autonomous_messaging",
+            "command": "node tools/bm_autonomous_messaging_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 178,
+            "output": "BM autonomous messaging contract passed: push, canonical selection, picker and verified acknowledgement\n"
+          },
+          {
+            "label": "bm_release_readiness",
+            "command": "node tools/bm_release_readiness_gate_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 5078,
+            "output": "bm_release_readiness_gate_test passed: complete distinct fixtures accepted; IDs, channel, mode, repeat and summary inflation rejected; semantic diversity remains a separate audit\n"
+          },
+          {
+            "label": "bm_sol_quality_judge",
+            "command": "node tools/bm_sol_quality_judge_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 146,
+            "output": "BM Sol quality judge tests passed: bounded concurrency, ordered identical results, shared in-flight cache, resumable failure checkpoints and persistence errors\n"
+          },
+          {
+            "label": "bm_semantic_store",
+            "command": "node tools/bm_semantic_store_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 179,
+            "output": "bm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203951_27a7d451\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:43.952Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203951_27a7d451\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:43.966Z\",\"revision\":2,\"intent\":\"block\",\"status\":\"collecting\",\"pending_slots\":[\"start\",\"end_or_duration\",\"recurrence\"],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203951_27a7d451\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:43.968Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203951_27a7d451\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:43.968Z\",\"source\":\"grounded_canonical_response\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203951_27a7d451\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:43.968Z\",\"decision\":\"ask\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203951_27a7d451\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:43.969Z\",\"loop_id\":\"loop_036edaea2967f2171ce17ec1\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203951_27a7d451\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:43.970Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":18,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203974_235e8c0f\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:43.974Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203974_235e8c0f\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:43.979Z\",\"revision\":2,\"intent\":\"block\",\"status\":\"collecting\",\"pending_slots\":[\"start\",\"end_or_duration\",\"recurrence\"],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203974_235e8c0f\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:43.979Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203974_235e8c0f\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:43.979Z\",\"source\":\"grounded_canonical_response\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203974_235e8c0f\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:43.979Z\",\"decision\":\"ask\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203974_235e8c0f\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:43.979Z\",\"loop_id\":\"loop_0ce22a08b37099b6b77a3e63\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470203974_235e8c0f\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:43.980Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":6,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nBM semantic store tests passed: CAS race, expiry, version fencing, event-log isolation, durable audit failure and channel fail-closed reads\n"
+          },
+          {
+            "label": "bm_channel_contract",
+            "command": "node tools/bm_channel_contract_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 128,
+            "output": "BM channel contract: review-only parity, corrections, midnight, recurrence and no-default setup passed\n"
+          },
+          {
+            "label": "onboarding_access",
+            "command": "node tools/onboarding_access_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 94,
+            "output": "Onboarding access: versioned app gate, freshness, denial and legacy channel contract passed\nAuthenticated onboarding endpoint: verified install, usable sleep and absent push passed\n"
+          },
+          {
+            "label": "bm_global_context",
+            "command": "node tools/bm_global_context_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 161,
+            "output": "BM global context: isolated identity, personal context and schedule CRUD passed\n"
+          },
+          {
+            "label": "bm_sms_pending_action",
+            "command": "node tools/bm_sms_pending_action_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 220,
+            "output": "time_permission\"],\"action_count\":1}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204570_225e2ee9\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:44.571Z\",\"loop_id\":\"loop_d60c4b35d1e8e01c0614401d\",\"status\":\"awaiting_execution\",\"phase\":\"execute\",\"action_types\":[\"request_screen_time_permission\"],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204570_225e2ee9\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:44.571Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":1,\"action_types\":[\"request_screen_time_permission\"],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204572_a2d8295d\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:44.572Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204572_a2d8295d\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:44.573Z\",\"revision\":2,\"intent\":\"block\",\"status\":\"ready\",\"pending_slots\":[],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204572_a2d8295d\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:44.574Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204572_a2d8295d\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:44.574Z\",\"source\":\"grounded_canonical_response\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204572_a2d8295d\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:44.574Z\",\"decision\":\"ready\",\"action_types\":[\"start_protection\"],\"action_count\":1}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204572_a2d8295d\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:44.574Z\",\"loop_id\":\"loop_e2bf664d6d5926c3b2dfb5c2\",\"status\":\"awaiting_execution\",\"phase\":\"execute\",\"action_types\":[\"start_protection\"],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204572_a2d8295d\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:44.574Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":2,\"action_types\":[\"start_protection\"],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204575_390a0a25\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:44.575Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204575_390a0a25\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:44.576Z\",\"revision\":2,\"intent\":\"block\",\"status\":\"ready\",\"pending_slots\":[],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204575_390a0a25\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:44.576Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204575_390a0a25\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:44.576Z\",\"source\":\"grounded_canonical_response\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204575_390a0a25\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:44.576Z\",\"decision\":\"ready\",\"action_types\":[\"start_protection\"],\"action_count\":1}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204575_390a0a25\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:44.577Z\",\"loop_id\":\"loop_91fbfef947f7dd3075ee5ed6\",\"status\":\"awaiting_execution\",\"phase\":\"execute\",\"action_types\":[\"start_protection\"],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204575_390a0a25\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:44.577Z\",\"source\":\"semantic_state_v1+grounded_canonical_response\",\"duration_ms\":2,\"action_types\":[\"start_protection\"],\"warnings\":[],\"error_code\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204578_6b6c10be\",\"sequence\":1,\"stage\":\"received\",\"at\":\"2026-10-08T14:36:44.578Z\",\"route\":\"app\",\"language\":\"en\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204578_6b6c10be\",\"sequence\":2,\"stage\":\"semantic_reduced\",\"at\":\"2026-10-08T14:36:44.579Z\",\"revision\":3,\"intent\":\"block\",\"status\":\"ready\",\"pending_slots\":[],\"errors\":[],\"request_metrics\":null,\"first_attempt_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204578_6b6c10be\",\"sequence\":3,\"stage\":\"planner_started\",\"at\":\"2026-10-08T14:36:44.579Z\",\"mode\":\"semantic_contextual_response\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204578_6b6c10be\",\"sequence\":4,\"stage\":\"planner_completed\",\"at\":\"2026-10-08T14:36:44.579Z\",\"source\":\"grounded_execution_boundary\",\"request_metrics\":null}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204578_6b6c10be\",\"sequence\":5,\"stage\":\"action_gate\",\"at\":\"2026-10-08T14:36:44.579Z\",\"decision\":\"ready\",\"action_types\":[],\"action_count\":0}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204578_6b6c10be\",\"sequence\":6,\"stage\":\"loop_planned\",\"at\":\"2026-10-08T14:36:44.579Z\",\"loop_id\":\"loop_35de350479b34e28d67363e7\",\"status\":\"awaiting_input\",\"phase\":\"understand\",\"action_types\":[],\"iteration\":0,\"event_count\":0,\"verification\":\"not_started\",\"outcome\":\"awaiting\"}\nbm_harness {\"harness_version\":\"bm-harness-v2\",\"run_id\":\"bm_1791470204578_6b6c10be\",\"sequence\":7,\"stage\":\"completed\",\"at\":\"2026-10-08T14:36:44.579Z\",\"source\":\"semantic_state_v1+grounded_execution_boundary\",\"duration_ms\":1,\"action_types\":[],\"warnings\":[],\"error_code\":null}\nSMS pending action tests passed: autonomous queue, no review link, correction/cancellation and expiry\n"
+          },
+          {
+            "label": "bm_thursday_reliability",
+            "command": "node tools/bm_thursday_reliability_test.js",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 101,
+            "output": "bm_thursday_reliability_test passed: lifecycle, retries, expiry, permission, selection and action variants\n"
+          },
+          {
+            "label": "release_gate_quick",
+            "command": "node tools/bai_release_gate.js --quick",
+            "status": "passed",
+            "exit_code": 0,
+            "duration_ms": 9854,
+            "output": "\n== Legacy compatibility contract eval ==\nDIAGNOSTIC Legacy compatibility contract eval (exit 1)\n\n== BM golden set ==\nDIAGNOSTIC BM golden set (exit 0)\n\n== BM wide synthetic suite ==\nDIAGNOSTIC BM wide synthetic suite (exit 0)\n\n== Canonical state invariants ==\nPASS Canonical state invariants (exit 0)\n\n== Model extraction evidence and hostile output ==\nPASS Model extraction evidence and hostile output (exit 0)\n\n== Independent oracle mutation checks ==\nPASS Independent oracle mutation checks (exit 0)\n\n== Durable conversation state and version conflicts ==\nPASS Durable conversation state and version conflicts (exit 0)\n\n== Channel review action contracts ==\nPASS Channel review action contracts (exit 0)\n\n== SMS stale proposal protection ==\nPASS SMS stale proposal protection (exit 0)\n\n== Cross-layer action envelope contract ==\nPASS Cross-layer action envelope contract (exit 0)\n\n== Evaluator integrity against physical regressions ==\nPASS Evaluator integrity against physical regressions (exit 0)\n\n== Reviewed multi-turn semantic replay ==\nPASS Reviewed multi-turn semantic replay (exit 0)\n\n== BM web/app smoke ==\nPASS BM web/app smoke (exit 0)\n\n== BM harness runtime ==\nPASS BM harness runtime (exit 0)\n\n== BM loop runtime ==\nPASS BM loop runtime (exit 0)\n\n== BM loop contract ==\nPASS BM loop contract (exit 0)\n\n== BM excellence architecture gate ==\nPASS BM excellence architecture gate (exit 0)\n\n== BM product harness ==\nPASS BM product harness (exit 0)\n\n== Messaging compatibility smoke ==\nPASS Messaging compatibility smoke (exit 0)\n\n== SMS/audio-input compatibility smoke ==\nPASS SMS/audio-input compatibility smoke (exit 0)\n\n== Assistant conversation memory ==\nPASS Assistant conversation memory (exit 0)\nBM check groups 18/18; semantic source 2 unique input/expectation trajectories/8 turns in those trajectories (48 executed; 2 repeats); historical incidents 6; physical release cases 0/20; production_release_verified=false. Report: C:\\Users\\Guillem\\Desktop\\Blanked\\Extra\\Codigo-bm-quality-release\\tmp\\bm-semantic\\release-gate.json\n"
+          }
+        ],
+        "passed": true
+      }
+    ],
+    "repairs_used": 0
+  },
+  "ci": {
+    "run": 37793830448,
+    "status": "completed",
+    "conclusion": "success",
+    "source_commit": "6d0a4c38fbf01eddd937d2650cf51ae3d79cdfe8"
+  },
+  "infrastructure": {
+    "scope": "infrastructure_only_no_model_calls",
+    "passed": true,
+    "checks": [
+      {
+        "name": "unauthenticated_request_rejected",
+        "passed": true
+      },
+      {
+        "name": "two_synthetic_accounts_seeded_without_delivery",
+        "passed": true
+      },
+      {
+        "name": "installation_and_account_isolation",
+        "passed": true
+      },
+      {
+        "name": "clients_cannot_read_or_execute_service_tables",
+        "passed": true
+      }
+    ],
+    "cleanup": [
+      {
+        "name": "auth_user_and_turns",
+        "passed": true
+      },
+      {
+        "name": "identity_and_snapshot",
+        "passed": true
+      },
+      {
+        "name": "semantic_state",
+        "passed": true
+      },
+      {
+        "name": "synthetic_events",
+        "passed": true
+      },
+      {
+        "name": "synthetic_events",
+        "passed": true
+      },
+      {
+        "name": "synthetic_events",
+        "passed": true
+      },
+      {
+        "name": "auth_user_and_turns",
+        "passed": true
+      },
+      {
+        "name": "identity_and_snapshot",
+        "passed": true
+      },
+      {
+        "name": "semantic_state",
+        "passed": true
+      },
+      {
+        "name": "synthetic_events",
+        "passed": true
+      },
+      {
+        "name": "synthetic_events",
+        "passed": true
+      },
+      {
+        "name": "synthetic_events",
+        "passed": true
+      }
+    ]
+  },
+  "provider_budget": {
+    "limit_usd": 4,
+    "reserved_upper_usd": 3.9441487600000005,
+    "known_usd": 3.9441487599999987,
+    "requests": 1683,
+    "reviewer_known_usd": 3.2111340000000004
+  },
+  "physical_device_tested": false,
+  "model_transport_tested": false,
+  "network_recovery": "CLI publication succeeded; transient verification fetch failure. Same deploy read-only verification passed without republishing.",
+  "native_diff": ""
+}
