@@ -1,0 +1,409 @@
+{
+  "schema_version": 1,
+  "authored_before_run": true,
+  "independent_human_annotation": false,
+  "previously_run": false,
+  "description": "Fresh authored cases frozen before first provider execution. Not an independently sealed human holdout.",
+  "cases": [
+    {
+      "id": "fresh-01",
+      "route": "sleep_yesterday",
+      "text": "Muéstrame mi duración de sueño registrada ayer, en minutos.",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        360,
+        420,
+        390
+      ]
+    },
+    {
+      "id": "fresh-02",
+      "route": "sleep_yesterday",
+      "text": "Show my measured sleep duration yesterday in minutes.",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        360,
+        420,
+        390
+      ]
+    },
+    {
+      "id": "fresh-03",
+      "route": "sleep_yesterday",
+      "text": "Según mis mediciones, ¿cuántas horas dormí ayer?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        510,
+        450,
+        480
+      ]
+    },
+    {
+      "id": "fresh-04",
+      "route": "sleep_yesterday",
+      "text": "According to my measurements, how many hours did I sleep yesterday?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        510,
+        450,
+        480
+      ]
+    },
+    {
+      "id": "fresh-05",
+      "route": "sleep_yesterday",
+      "text": "¿Qué cantidad de sueño medido figura para mí ayer?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "fresh-06",
+      "route": "sleep_yesterday",
+      "text": "What amount of measured sleep is recorded for me yesterday?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "fresh-07",
+      "route": "sleep_yesterday",
+      "text": "¿Hay una duración de sueño medida para ayer?",
+      "language": "es",
+      "profile": "missing",
+      "sleep_minutes": [
+        330,
+        390,
+        360
+      ]
+    },
+    {
+      "id": "fresh-08",
+      "route": "sleep_yesterday",
+      "text": "Is a measured sleep duration available for yesterday?",
+      "language": "en",
+      "profile": "missing",
+      "sleep_minutes": [
+        330,
+        390,
+        360
+      ]
+    },
+    {
+      "id": "fresh-09",
+      "route": "sleep_yesterday",
+      "text": "Consulta la duración de sueño que tengo guardada de ayer.",
+      "language": "es",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        480,
+        540,
+        510
+      ]
+    },
+    {
+      "id": "fresh-10",
+      "route": "sleep_yesterday",
+      "text": "Look up my saved sleep duration for yesterday.",
+      "language": "en",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        480,
+        540,
+        510
+      ]
+    },
+    {
+      "id": "fresh-11",
+      "route": "sleep_week",
+      "text": "Dame la media de mis mediciones de duración de sueño de esta semana natural.",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        360,
+        420,
+        390
+      ]
+    },
+    {
+      "id": "fresh-12",
+      "route": "sleep_week",
+      "text": "Give the mean of my recorded sleep durations for this calendar week.",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        360,
+        420,
+        390
+      ]
+    },
+    {
+      "id": "fresh-13",
+      "route": "sleep_week",
+      "text": "¿Cuál es mi promedio de horas de sueño registradas en la semana actual?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        510,
+        450,
+        480
+      ]
+    },
+    {
+      "id": "fresh-14",
+      "route": "sleep_week",
+      "text": "What is my average recorded sleep in hours during the current week?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        510,
+        450,
+        480
+      ]
+    },
+    {
+      "id": "fresh-15",
+      "route": "sleep_week",
+      "text": "Según mis registros de esta semana, ¿cuántos minutos dormí de media?",
+      "language": "es",
+      "profile": "standard",
+      "sleep_minutes": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "fresh-16",
+      "route": "sleep_week",
+      "text": "Based on this week’s measurements, how many minutes did I sleep on average?",
+      "language": "en",
+      "profile": "standard",
+      "sleep_minutes": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "fresh-17",
+      "route": "sleep_week",
+      "text": "Consulta mi promedio de duración de sueño medido esta semana.",
+      "language": "es",
+      "profile": "missing",
+      "sleep_minutes": [
+        330,
+        390,
+        360
+      ]
+    },
+    {
+      "id": "fresh-18",
+      "route": "sleep_week",
+      "text": "Look up my average measured sleep duration this week.",
+      "language": "en",
+      "profile": "missing",
+      "sleep_minutes": [
+        330,
+        390,
+        360
+      ]
+    },
+    {
+      "id": "fresh-19",
+      "route": "sleep_week",
+      "text": "¿Qué media de duración de sueño tengo registrada esta semana?",
+      "language": "es",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        480,
+        540,
+        510
+      ]
+    },
+    {
+      "id": "fresh-20",
+      "route": "sleep_week",
+      "text": "What mean sleep duration is recorded for me this week?",
+      "language": "en",
+      "profile": "forgotten",
+      "sleep_minutes": [
+        480,
+        540,
+        510
+      ]
+    },
+    {
+      "id": "fresh-21",
+      "route": "protection_yesterday",
+      "text": "Dame el total de protección registrado ayer en minutos.",
+      "language": "es",
+      "profile": "standard",
+      "protection_minutes": 15
+    },
+    {
+      "id": "fresh-22",
+      "route": "protection_yesterday",
+      "text": "Give my total recorded protection yesterday in minutes.",
+      "language": "en",
+      "profile": "standard",
+      "protection_minutes": 15
+    },
+    {
+      "id": "fresh-23",
+      "route": "protection_yesterday",
+      "text": "¿Cuántas horas de protección figuran en mis registros de ayer?",
+      "language": "es",
+      "profile": "standard",
+      "protection_minutes": 75
+    },
+    {
+      "id": "fresh-24",
+      "route": "protection_yesterday",
+      "text": "How many hours of protection appear in my records for yesterday?",
+      "language": "en",
+      "profile": "standard",
+      "protection_minutes": 75
+    },
+    {
+      "id": "fresh-25",
+      "route": "protection_yesterday",
+      "text": "Consulta los minutos totales de protección registrados ayer.",
+      "language": "es",
+      "profile": "standard",
+      "protection_minutes": 135
+    },
+    {
+      "id": "fresh-26",
+      "route": "protection_yesterday",
+      "text": "Look up the total protection minutes recorded yesterday.",
+      "language": "en",
+      "profile": "standard",
+      "protection_minutes": 135
+    },
+    {
+      "id": "fresh-27",
+      "route": "protection_yesterday",
+      "text": "¿Qué cantidad de protección se registró para mí ayer?",
+      "language": "es",
+      "profile": "empty",
+      "protection_minutes": 90
+    },
+    {
+      "id": "fresh-28",
+      "route": "protection_yesterday",
+      "text": "What amount of protection was recorded for me yesterday?",
+      "language": "en",
+      "profile": "empty",
+      "protection_minutes": 90
+    },
+    {
+      "id": "fresh-29",
+      "route": "protection_yesterday",
+      "text": "Según los registros, ¿cuánta protección acumulé ayer?",
+      "language": "es",
+      "profile": "empty",
+      "protection_minutes": 90
+    },
+    {
+      "id": "fresh-30",
+      "route": "protection_yesterday",
+      "text": "According to the records, how much protection did I accumulate yesterday?",
+      "language": "en",
+      "profile": "empty",
+      "protection_minutes": 90
+    },
+    {
+      "id": "fresh-31",
+      "route": "protection_week",
+      "text": "Dame los minutos totales de protección registrados esta semana natural.",
+      "language": "es",
+      "profile": "standard",
+      "protection_minutes": 15
+    },
+    {
+      "id": "fresh-32",
+      "route": "protection_week",
+      "text": "Give the total protection minutes recorded for me this calendar week.",
+      "language": "en",
+      "profile": "standard",
+      "protection_minutes": 15
+    },
+    {
+      "id": "fresh-33",
+      "route": "protection_week",
+      "text": "¿Cuántas horas de protección constan esta semana en mis registros?",
+      "language": "es",
+      "profile": "standard",
+      "protection_minutes": 75
+    },
+    {
+      "id": "fresh-34",
+      "route": "protection_week",
+      "text": "How many hours of protection are recorded for me this week?",
+      "language": "en",
+      "profile": "standard",
+      "protection_minutes": 75
+    },
+    {
+      "id": "fresh-35",
+      "route": "protection_week",
+      "text": "Consulta el total de protección que tengo registrado esta semana.",
+      "language": "es",
+      "profile": "standard",
+      "protection_minutes": 135
+    },
+    {
+      "id": "fresh-36",
+      "route": "protection_week",
+      "text": "Look up my total recorded protection for this week.",
+      "language": "en",
+      "profile": "standard",
+      "protection_minutes": 135
+    },
+    {
+      "id": "fresh-37",
+      "route": "protection_week",
+      "text": "¿Qué cantidad de protección figura para mí en la semana actual?",
+      "language": "es",
+      "profile": "empty",
+      "protection_minutes": 90
+    },
+    {
+      "id": "fresh-38",
+      "route": "protection_week",
+      "text": "What amount of protection appears for me in the current week?",
+      "language": "en",
+      "profile": "empty",
+      "protection_minutes": 90
+    },
+    {
+      "id": "fresh-39",
+      "route": "protection_week",
+      "text": "Según mis registros, ¿cuánta protección acumulé esta semana?",
+      "language": "es",
+      "profile": "empty",
+      "protection_minutes": 90
+    },
+    {
+      "id": "fresh-40",
+      "route": "protection_week",
+      "text": "According to my records, how much protection did I accumulate this week?",
+      "language": "en",
+      "profile": "empty",
+      "protection_minutes": 90
+    }
+  ]
+}

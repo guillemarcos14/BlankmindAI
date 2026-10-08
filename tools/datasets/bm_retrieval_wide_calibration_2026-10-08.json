@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "authored_before_run": true,
+  "previously_run": false,
+  "independent_human_annotation": false,
+  "split": "calibration",
+  "description": "160 new authored cases, 80 closed factual and 80 outside scope; ES/EN balanced; 24 multi-turn conversations. No runtime adjustment after final execution starts.",
+  "cases": [
+    {
+      "id": "cal-0-es",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "standard",
+      "text": "Muéstrame el sueño de ayer registrado."
+    },
+    {
+      "id": "cal-0-en",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "standard",
+      "text": "Show recorded sleep yesterday."
+    },
+    {
+      "id": "cal-1-es",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "standard",
+      "text": "Muéstrame el sueño de esta semana registrado."
+    },
+    {
+      "id": "cal-1-en",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "standard",
+      "text": "Show recorded sleep this week."
+    },
+    {
+      "id": "cal-2-es",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "standard",
+      "text": "Muéstrame la protección de ayer registrado."
+    },
+    {
+      "id": "cal-2-en",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "standard",
+      "text": "Show recorded protection yesterday."
+    },
+    {
+      "id": "cal-3-es",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "standard",
+      "text": "Muéstrame la protección de esta semana registrado."
+    },
+    {
+      "id": "cal-3-en",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "standard",
+      "text": "Show recorded protection this week."
+    },
+    {
+      "id": "cal-neg-es-0",
+      "route": "general",
+      "fixture_route": "sleep_week",
+      "language": "es",
+      "profile": "standard",
+      "text": "Hola.",
+      "eligible": false,
+      "expectation": "No action; ordinary conversation."
+    },
+    {
+      "id": "cal-neg-es-1",
+      "route": "general",
+      "fixture_route": "sleep_week",
+      "language": "es",
+      "profile": "standard",
+      "text": "No hagas nada.",
+      "eligible": false,
+      "expectation": "No action; ordinary conversation."
+    },
+    {
+      "id": "cal-neg-es-2",
+      "route": "general",
+      "fixture_route": "sleep_week",
+      "language": "es",
+      "profile": "standard",
+      "text": "¿Qué es el descanso?",
+      "eligible": false,
+      "expectation": "No action; ordinary conversation."
+    },
+    {
+      "id": "cal-neg-es-3",
+      "route": "general",
+      "fixture_route": "sleep_week",
+      "language": "es",
+      "profile": "standard",
+      "text": "Repite la palabra ayer.",
+      "eligible": false,
+      "expectation": "No action; ordinary conversation."
+    },
+    {
+      "id": "cal-neg-en-0",
+      "route": "general",
+      "fixture_route": "sleep_week",
+      "language": "en",
+      "profile": "standard",
+      "text": "Hola.",
+      "eligible": false,
+      "expectation": "No action; ordinary conversation."
+    },
+    {
+      "id": "cal-neg-en-1",
+      "route": "general",
+      "fixture_route": "sleep_week",
+      "language": "en",
+      "profile": "standard",
+      "text": "No hagas nada.",
+      "eligible": false,
+      "expectation": "No action; ordinary conversation."
+    },
+    {
+      "id": "cal-neg-en-2",
+      "route": "general",
+      "fixture_route": "sleep_week",
+      "language": "en",
+      "profile": "standard",
+      "text": "¿Qué es el descanso?",
+      "eligible": false,
+      "expectation": "No action; ordinary conversation."
+    },
+    {
+      "id": "cal-neg-en-3",
+      "route": "general",
+      "fixture_route": "sleep_week",
+      "language": "en",
+      "profile": "standard",
+      "text": "Repite la palabra ayer.",
+      "eligible": false,
+      "expectation": "No action; ordinary conversation."
+    }
+  ]
+}
