@@ -143,3 +143,7 @@ Shared synthetic ceiling 4 USD; ledger known estimate $3.76498337, reserved cons
 Frozen criteria/corpus: [protocol](BM_RETRIEVAL_WIDE_PROTOCOL_2026-10-08.md); post-discovery instrumentation correction: [timing amendment](BM_RETRIEVAL_TIMING_AMENDMENT_2026-10-08.md). [Full evidence](BM_RETRIEVAL_WIDE_EVIDENCE_2026-10-08.json) retains original/calibration/replay requests, outputs, review and cleanup. Budget includes synthetic paid calls only; no purchases. Harness/CI closure is recorded after clean-source validation.
 
 Keep both private experiment flags off and retain the synthetic allowlist/normal fallback for reversal. The frozen ≥20% p95 gain and zero poor/critical-regression requirements are not satisfied by faster medians alone; do not apply this to the whole app. Human review is pending, and a fresh future corpus would be needed after any runtime correction.
+
+## Validation closure
+
+Clean evidence/tool source `bff047b`: harness **79/79**, `ph_1791463747482_8edd8915`, baseline `baseline-wide.json`, enforced full commit scope against frozen `3e8362c` (24 paths, zero violations). The earlier dirty-tree release-gate failure is preserved as an intermediate validation, not a runtime regression. [CI37779447701](https://github.com/guillemarcos14/BlankmindAI/actions/runs/37779447701) passes PostgreSQL recovery, runtime/contracts and Android compile/unit tests. This final closure only records documentation; source runtime and measured answers remain frozen. Latest draft-PR checks show any subsequent documentation-head validation separately.
