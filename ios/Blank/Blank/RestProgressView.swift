@@ -89,6 +89,9 @@ struct RestProgressContent: View {
         }
         .foregroundStyle(ink)
         .onAppear { reload(); health.refresh(); sleep.refresh(days: 35) }
+        .onChange(of: sleep.state) { state in
+            if state == .connected { health.refresh(force: true) }
+        }
         .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
             reload(); health.refresh()
         }

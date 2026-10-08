@@ -89,7 +89,7 @@ struct RestNight: Identifiable {
             for episode in episodes {
                 guard let start = episode.map(\.start).min(), let end = episode.map(\.end).max() else { continue }
                 let intervals = RestInterval.merged(episode.map { RestInterval(start: $0.start, end: $0.end) })
-                guard RestInterval.minutes(intervals) >= 90, end.timeIntervalSince(start) <= 20 * 3600 else { continue }
+                guard RestInterval.minutes(intervals) > 0, end.timeIntervalSince(start) <= 20 * 3600 else { continue }
                 let related = rows.filter { $0.end > start && $0.start < end }
                 func intervalsFor(_ value: Int) -> [RestInterval] {
                     related.filter { $0.value == value }.map { RestInterval(start: max(start, $0.start), end: min(end, $0.end)) }
