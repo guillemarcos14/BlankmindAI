@@ -2628,7 +2628,9 @@ struct HomeSectionScreen: View {
                 onRequestHealthAccess: onRequestHealthAccess,
                 screenTimeStatus: screenTimeStatus,
                 healthStatus: healthStatus,
-                onApplyHistoryAction: onApplyHistoryAction
+                onApplyHistoryAction: onApplyHistoryAction,
+                onOpenDistractions: { onOpenSection(.distractions) },
+                onOpenSchedule: { onOpenSection(.schedule) }
             )
         }
     }
