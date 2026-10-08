@@ -77,7 +77,7 @@ function actionIdentity(a) {
 async function generate(input,{model=readModelJson,onDraft}={}) {
   if(onDraft) {
     onDraft(""); // Discard a prior read, repair or restored-offer draft.
-    model=options=>require("./bm-response-stream").readModelStream({...options,onDraft});
+    model=options=>require("./bm-response-stream").readModelStream({...options,onDraft:text=>onDraft(input.retrieval_contract?require("./bm-retrieval-step").cleanProse(text):text)});
   }
   const request=input.retrieval_contract?require("./bm-retrieval-step").proseRequest(input):{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
     input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
