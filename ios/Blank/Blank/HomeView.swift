@@ -712,8 +712,7 @@ struct HomeView: View {
                 screenTimeStatus: screenTimeBlocker.authorizationStatusLabel,
                 healthStatus: healthPermissionLabel,
                 onClose: closeSection,
-                onApplyHistoryAction: applyHistoryAction,
-                protectionControl: AnyView(homeProtectionControl)
+                onApplyHistoryAction: applyHistoryAction
             )
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
             .offset(x: reduceMotion ? 0 : edgeDrag * 0.18)
@@ -856,66 +855,6 @@ struct HomeView: View {
                           horizontal: value.translation.width, vertical: value.translation.height) else { return }
                 selectHomeTab(destination)
             }
-    }
-
-    // Holds belong to Control: speaking and selecting text in Chat cannot block.
-    private var homeProtectionControl: some View {
-        VStack(spacing: 12) {
-            Text(cooldownText ?? (sessionStore.hardBlankActive ? "Hard protection active"
-                 : (sessionStore.isBlankActive ? "Hold 20 seconds to unblank" : "Hold 3 seconds to blank")))
-                .font(MinimalHomeDesign.font(22, relativeTo: .title3))
-                .multilineTextAlignment(.center)
-            if let countdown = timerCountdownText {
-                Text(countdown).font(MinimalHomeDesign.font(16)).monospacedDigit()
-            }
-            if isHomePressing && sessionStore.isBlankActive {
-                ProgressView(value: unblankHoldProgress)
-                    .tint(BlankColors.foreground)
-            }
-        }
-        .foregroundStyle(BlankColors.foreground)
-        .frame(maxWidth: .infinity, minHeight: 120)
-        .padding(.vertical, 16)
-        .contentShape(Rectangle())
-        .gesture(LongPressGesture(minimumDuration: sessionStore.isBlankActive ? 20 : 3, maximumDistance: 22)
-            .updating($isHomePressing) { pressing, state, _ in state = pressing }
-            .onEnded { _ in
-                if sessionStore.isBlankActive {
-                    guard !sessionStore.hardBlankActive, delayedManualUnlockAt == nil else { return }
-                    scheduleDelayedManualUnlock(cooldownSeconds: 60)
-                } else { handleHomeOrb(.block) }
-            })
-        .onChange(of: isHomePressing) { pressing in
-            if !sessionStore.isBlankActive {
-                if pressing { startBlockHoldHaptics() } else { stopBlockHoldHaptics() }
-            } else if pressing && !sessionStore.hardBlankActive && delayedManualUnlockAt == nil {
-                isHoldingToUnblank = true
-                isAnimatingUnblankHold = true
-                startUnblankHoldHaptics()
-                withAnimation(.linear(duration: 20)) { unblankHoldProgress = 1 }
-            } else {
-                isHoldingToUnblank = false
-                isAnimatingUnblankHold = false
-                stopUnblankHoldHaptics()
-                unblankHoldProgress = 0
-            }
-        }
-        .onDisappear {
-            stopBlockHoldHaptics(); stopUnblankHoldHaptics(); unblankHoldProgress = 0
-            isHoldingToUnblank = false; isAnimatingUnblankHold = false
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction(named: Text("Block distractions")) {
-            if !sessionStore.isBlankActive { handleHomeOrb(.block) }
-        }
-        .accessibilityAction(named: Text("Unblank")) {
-            guard sessionStore.isBlankActive, !sessionStore.hardBlankActive, delayedManualUnlockAt == nil else { return }
-            openSection(.emergency)
-        }
-        .alert("Couldn't start protection", isPresented: $showingHomeBlockError) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(message ?? "Check Screen Time permissions and selected distractions.") }
     }
 
     private func unlockAdvancedSettings(onSuccess: @escaping () -> Void) {
@@ -2562,7 +2501,6 @@ struct HomeSectionScreen: View {
     let healthStatus: String
     let onClose: () -> Void
     var onApplyHistoryAction: (String) -> Void = { _ in }
-    var protectionControl: AnyView? = nil
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
 
     var body: some View {
@@ -2601,8 +2539,7 @@ struct HomeSectionScreen: View {
                 onApplyHistoryAction: onApplyHistoryAction,
                 isControl: true,
                 onOpenDistractions: { onOpenSection(.distractions) },
-                onOpenSchedule: { onOpenSection(.schedule) },
-                protectionControl: protectionControl
+                onOpenSchedule: { onOpenSection(.schedule) }
             )
         case .distractions:
             DistractionsScreen(showingPicker: $showingPicker) {
@@ -2730,7 +2667,6 @@ private struct SettingsScreen: View {
     var isControl = false
     var onOpenDistractions: () -> Void = {}
     var onOpenSchedule: () -> Void = {}
-    var protectionControl: AnyView? = nil
 
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
     private var secondaryColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.70) : BlankColors.mutedInk }
@@ -2754,7 +2690,6 @@ private struct SettingsScreen: View {
                 case nil:
                     settingsRow(title: "emergency", detail: "unlock access while blanked", action: onOpenEmergency)
                     if isControl {
-                        if let protectionControl { protectionControl }
                         settingsRow(title: "distractions", detail: "choose apps and review your blocks", action: onOpenDistractions)
                     }
                     settingsRow(title: "protection", detail: "routines and automatic protection", action: { selectedGroup = .protection })

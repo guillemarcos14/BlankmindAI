@@ -38,3 +38,11 @@ GitHub artifact ios-conversation-visuals on CI 37792063971.
 
 No archive, signing, TestFlight upload or physical blocking validation was performed.
 The existing installed TestFlight build remains unchanged until a new distribution.
+
+## Follow-up: remove the manual hold block
+
+Guillem approves removing the Control hold block entirely. Emergency is followed
+by Distractions with the existing 12pt row spacing; there is no spacer or replacement
+Blank now entry. Widget and voice remain the existing blocking entry points.
+The private unused hold view and its AnyView plumbing are removed. Emergency,
+row styles, permissions and protection settings are preserved.
