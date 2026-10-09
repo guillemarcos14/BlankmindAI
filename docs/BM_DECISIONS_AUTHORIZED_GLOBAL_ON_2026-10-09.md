@@ -12,4 +12,14 @@ Recibos operativos nuevos: `tmp/decisions-production/production-live-preflight-a
 
 Rollback: configurar BM_RETRIEVAL_STEP_ENABLED=false en functions/production, crear un nuevo deploy desde el mismo paquete compatible y el inventario conservado, verificar hashes, autenticación/aislamiento y publicar. Mantener tablas y datos; sin down SQL. Una restauración de flags sin republish no basta.
 
-Resultado final se registra al verificar el deploy publicado; preparar este documento no acredita activación.
+## Resultado real: activación bloqueada
+
+SQL 026–028 aplicado en una transacción: ocho tablas con RLS, sin SELECT de authenticated y con acceso service_role; funciones SECURITY DEFINER restringidas al servidor. Historial 020 intacto, 024/029–033 no aplicado. Antes de pruebas había 9 usuarios auth, 8 turnos y 0 cuentas BMB; no se han eliminado ni modificado datos existentes.
+
+El primer preflight rechazó metadata histórica `is_secret=false`: las claves vivas se verificaron por identidad JWT de producción y formato del proveedor sin escribirlas, copiarlas a informes ni cambiar scopes. No produjo mutaciones. El segundo intento creó draft 6ac93e96875ca3d8c36b84d6, pero Netlify exigió los ZIP de funciones anteriores. Se recuperaron 29 hashes del inventario de 73; quedan 43 funciones que deben conservarse y cuyos artefactos exactos no aparecen en 11.502 ZIP locales inspeccionados. El índice histórico apunta a `C:/Users/Guillem/AppData/Local/Temp/dqdv4U`, que ya no existe. No se sustituyen esas funciones por código distinto para cerrar el despliegue.
+
+Draft cancelado (estado error). Flag global vuelto a false. Publicado sigue 6abe94a92bf201769389c075: 73 hashes y 17 archivos iguales al preflight. Decisions/Jev OFF. Recibo `production-safe-stop-authorized.json`. No nuevas llamadas pagadas: conocido23,40453732/reserva23,93839122/techo24 USD. La autorización ON se mantiene, pero no se informa como ejecutada.
+
+Herramienta endurecida: ahora exige todos los artefactos anteriores con SHA correcto antes de tocar flags, y reutiliza cada nombre/metadata incluso cuando comparten digest. Normal gate intacto. Harness de fuente limpia 7970bbf:88/88/scope; primer intento con fuente dirty:87/88, replay48/48 pero release_eligible=false por dirty, conservado. Tests de identidad/artefactos añadidos tras el bloqueo; validación final en el recibo de cierre.
+
+Reanudar: recuperar los 43 ZIP exactos (lista de nombres/SHA en `production-safe-stop-authorized.json`), completar el índice con paths existentes, crear NUEVO snapshot de autorización conservando los anteriores y hacer draft/auth-BMB smoke/publish/hashes/flags. No repetir SQL, no reconstruir corpus ni añadir presupuesto. Rollback de este intento ya completado sin down.

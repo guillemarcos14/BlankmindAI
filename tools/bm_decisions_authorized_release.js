@@ -52,6 +52,11 @@ function deploymentBody(snapshot, packaged) {
     function_schedules: [...(snapshot.deploy.function_schedules || []).filter(f => f.name !== "bmb-tick"), { name: "bmb-tick", cron: "*/5 * * * *" }],
     title: "Decisions GLOBAL ON; explicit Guillem exception; runtime 5c / package b993" };
 }
+function validatePreservedArtifacts(snapshot, packaged, artifacts) {
+  const missing = snapshot.functions.functions.filter(f => !packaged.functions.some(p => p.name === f.n)
+    && (!artifacts[f.d] || !fs.existsSync(artifacts[f.d]) || digest(artifacts[f.d]) !== f.d));
+  if (missing.length) fail("preserved_artifacts_missing_" + missing.length);
+}
 async function release(args) {
   const authorizationPath = path.resolve(args.authorization);
   const a = JSON.parse(fs.readFileSync(authorizationPath));
@@ -64,6 +69,9 @@ async function release(args) {
   if (digest(a.preflight_report) !== a.preflight_report_sha256 || digest(a.migration_receipt) !== a.migration_receipt_sha256) fail("infrastructure_snapshot_changed");
   const migration = JSON.parse(fs.readFileSync(a.migration_receipt));
   if (!migration.passed || migration.project !== REF || migration.applied.map(m => m.version).join(",") !== "026,027,028") fail("migration_not_verified");
+  if (!a.preserved_artifact_map) fail("preserved_artifact_map_required_before_flags");
+  const originalArtifacts = JSON.parse(fs.readFileSync(a.preserved_artifact_map));
+  validatePreservedArtifacts(JSON.parse(fs.readFileSync(a.preflight_report)), packaged, originalArtifacts);
   for (const f of packaged.functions) if (digest(f.path) !== f.sha256) fail("artifact_changed");
   for (const input of packaged.source_inputs) if (digest(path.join(ROOT, input.file)) !== input.sha256) fail("runtime_input_changed");
   const state = spawnSync("git", ["status", "--porcelain=v1"], { cwd: ROOT, encoding: "utf8" });
@@ -114,13 +122,20 @@ async function release(args) {
     report.deploy_id = d.id; report.status = "draft_created"; save();
     if (d.required?.length) fail("preserved_static_cache_missing");
     for (const hash of d.required_functions || []) {
-      const f = packaged.functions.find(f => f.sha256 === hash);
-      if (!f) fail("preserved_function_cache_missing");
-      const m = JSON.parse(fs.readFileSync(path.join(packaged.package_directory, ".netlify/functions/manifest.json"))).functions.find(x => x.name === f.name);
-      const query = new URLSearchParams({ runtime: m.runtimeVersion });
-      if (m.invocationMode) query.set("invocation_mode", m.invocationMode);
-      await call("/deploys/" + d.id + "/functions/" + f.name + "?" + query, "PUT", fs.readFileSync(f.path), true);
-      report.steps.push({ uploaded: f.name, sha256: f.sha256 }); save();
+      // A digest may be shared by multiple legacy names. Upload each name once.
+      for (const [name, expected] of Object.entries(report.body.functions).filter(([name, expected]) => expected === hash
+          && !report.steps.some(s => s.uploaded === name))) {
+        const f = packaged.functions.find(f => f.name === name);
+        const previous = snapshot.functions.functions.find(f => f.n === name);
+        const file = f?.path || originalArtifacts[expected];
+        if (!file || digest(file) !== expected) fail("function_artifact_changed");
+        const m = f ? JSON.parse(fs.readFileSync(path.join(packaged.package_directory, ".netlify/functions/manifest.json"))).functions.find(x => x.name === name) : null;
+        const query = new URLSearchParams({ runtime: m?.runtimeVersion || previous.r });
+        const mode = m?.invocationMode || previous?.im;
+        if (mode) query.set("invocation_mode", mode);
+        await call("/deploys/" + d.id + "/functions/" + name + "?" + query, "PUT", fs.readFileSync(file), true);
+        report.steps.push({ uploaded: name, sha256: expected }); save();
+      }
     }
     let ready;
     for (let i = 0; i < 60; i++) {
@@ -138,4 +153,4 @@ if (require.main === module) {
   const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, all) => i % 2 ? a : [...a, [v.replace(/^--/, ""), all[i + 1]]], []));
   release(args).catch(e => { console.error(e.message); process.exitCode = 1; });
 }
-module.exports = { validateAuthorization, deploymentBody, validateLiveKeys, FLAGS };
+module.exports = { validateAuthorization, deploymentBody, validateLiveKeys, validatePreservedArtifacts, FLAGS };
