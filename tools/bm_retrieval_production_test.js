@@ -30,6 +30,11 @@ async function main(){
  for(const response_text of ['Ayer quedaron medidos 8 horas y 5 minutos, según una medición declarada.','You measured 8 hours of sleep according to your declared record.','You slept 8 hours.','Not declared but measured, 8 hours.','No fue declarado, fue medido.'])assert.throws(()=>r.expandProse({response_text},declaredInput),/retrieval_invalid_provenance/);
  assert(r.safeFinal(r.expandProse({response_text:'El registro disponible es declarado, con 8 horas y 5 minutos de sueño.'},declaredInput)));
  for(const response_text of ['No measured record is available; your self-reported entry is 8 hours.','El registro declarado es de 8 horas. No es un dato medido.'])assert(r.safeFinal(r.expandProse({response_text},declaredInput)));
+ const minuteInput={current_message:'Consulta los minutos de protección registrados esta semana.',retrieval_contract:{facts:{measurement_types:[]}}};
+ for(const response_text of ['Esta semana constan 2 horas de protección registrada.','You have 2 hours 1 minute of recorded protection.','2h of recorded protection.'])assert.throws(()=>r.expandProse({response_text},minuteInput),/retrieval_invalid_requested_unit/);
+ assert(r.safeFinal(r.expandProse({response_text:'Esta semana constan 120 minutos de protección registrada.'},minuteInput)));
+ for(const response_text of ['You logged 508 minutes of simulated sleep. This is a QA fixture.','508 minutes from current_sleep.'])assert.throws(()=>r.expandProse({response_text},minuteInput),/retrieval_internal_prose/);
+ assert.equal(JSON.parse(r.proseRequest({retrieval_contract:week.contract,sources:[week.source],current_message:'Show my sleep mean this week in minutes.'}).input[1].content).requested_unit,'minutes');
  // Run the actual authenticated planner path with owner-scoped source reads.
  const envBefore={...process.env},fetchBefore=global.fetch,infoBefore=console.info;
  Object.assign(process.env,env,{BM_RETRIEVAL_STEP_QA_ENABLED:"false",BM_DECISIONS_QA_ENABLED:"false",BM_JEV_SHADOW_ENABLED:"false",BM_JEV_PREFETCH_EXPERIMENT:"false"});global.fetch=fetcher;console.info=()=>{};
@@ -38,6 +43,11 @@ async function main(){
   const db=async p=>{assert(p.includes(encodeURIComponent(user))||p.startsWith('rpc/'));return p.startsWith('bmb_observations?')?[{id:'owned-sleep',metric:'sleep_duration',unit:'minutes',value_number:487,measurement:'measured'}]:[];};
   const result=await plan({prompt,context:{language:'en',brain_snapshot:{timezone:'Europe/Madrid'}},userId:user,identity:{anonymous_user_id:'verified'}},{db,memories:Promise.resolve([]),run:async input=>{assert(input.retrieval_contract);assert.equal(input.retrieval_contract.facts.minutes,487);return r.expandProse({response_language:'en',response_text:'You recorded 8 hours 7 minutes of sleep yesterday.',cited_sources:['owned-sleep']},input);}});
   assert.deepEqual(result.plan.actions,[]);assert.equal(result.context.brain_memory_effect,undefined);
+  let unitPasses=0;const resets=[];
+  const unitResult=await plan({prompt:'How much sleep did I record yesterday in minutes?',context:{language:'en',brain_snapshot:{timezone:'Europe/Madrid'}},userId:user,identity:{anonymous_user_id:'verified'},onDraft:text=>resets.push(text)},{db,memories:[],run:async input=>{
+    unitPasses++;if(input.retrieval_contract)return r.expandProse({response_text:'You recorded 8 hours 7 minutes.'},input);
+    assert.equal(input.tool_budget_remaining,3);return r.expandProse({response_language:'en',response_text:'You recorded 487 minutes of sleep yesterday.',cited_sources:['owned-sleep']},input);
+  }});assert.equal(unitPasses,2);assert.deepEqual(resets,['']);assert.deepEqual(unitResult.plan.actions,[]);
   // A rejected accelerated reply must restore the full native source and budget.
   const {dayOffset}=require('../netlify/functions/bm-brain-data'),today=new Date().toISOString().slice(0,10);
   const nights=Array.from({length:14},(_,i)=>({date:dayOffset(today,i-14),source:'apple_health',sleep_minutes:400+i}));
