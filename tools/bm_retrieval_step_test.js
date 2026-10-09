@@ -1,9 +1,12 @@
 "use strict";
 const assert=require("node:assert/strict"),r=require("../netlify/functions/bm-retrieval-step");
 async function main(){
- const probabilities={eligible:1,sleep_yesterday:1,sleep_week:0,protection_yesterday:0,protection_week:0};
+ const probabilities={eligible:1,sleep:1,protection:0,yesterday:1,this_week:0};
  assert.equal(r.selected({answers:probabilities}),"sleep_yesterday");
- for(const answers of [{...probabilities,eligible:null},{...probabilities,sleep_week:.95},{...probabilities,protection_week:null},{...probabilities,sleep_yesterday:.89}])assert.equal(r.selected({answers}),null);
+ for(const answers of [{...probabilities,eligible:null},{...probabilities,this_week:.95},{...probabilities,protection:null},{...probabilities,sleep:.89},{...probabilities,yesterday:.89},{...probabilities,protection:.11}])assert.equal(r.selected({answers}),null);
+ assert.equal(r.selected({answers:{...probabilities,yesterday:0,this_week:1}}),'sleep_week');
+ assert.equal(r.selected({answers:{...probabilities,sleep:0,protection:1}}),'protection_yesterday');
+ assert.equal(r.selected({answers:{eligible:1,sleep:0,protection:1,yesterday:0,this_week:1}}),'protection_week');
  assert.equal(r.enabled("11111111-1111-4111-8111-111111111111",{}),false);
  let calls=0;assert.equal(await r.start("11111111-1111-4111-8111-111111111111","x",{env:{},fetcher:async()=>calls++}),null);assert.equal(calls,0);
  const options={userId:"owner",identity:{anonymous_user_id:"verified-link"},cutoff:"2026-10-07T08:00:00Z",timezone:"Europe/Madrid",now:Date.parse("2026-10-08T10:00:00Z"),db:()=>{}};
