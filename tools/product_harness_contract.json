@@ -67,6 +67,7 @@
       { "name": "bm_shared_budget", "run": "node tools/bm_shared_budget_test.js" },
       { "name": "bmb_release_corpus", "run": "node tools/bmb_decisions_release_corpus_test.js" },
       { "name": "bm_recorded_reviews", "run": "node tools/bm_apply_recorded_reviews_test.js" },
+      { "name": "bm_recorded_release_gate", "run": "node tools/bm_recorded_release_gate_test.js" },
       { "name": "bm_retrieval_production", "run": "node tools/bm_retrieval_production_test.js" },
       { "name": "bmb_sleep_context", "run": "node tools/bmb_sleep_context_test.js" },
       { "name": "bm_retrieval_wide_faults", "run": "node tools/bm_retrieval_wide_fault_test.js" },
