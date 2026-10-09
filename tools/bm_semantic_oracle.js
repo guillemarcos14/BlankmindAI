@@ -90,6 +90,8 @@ function validateExpectation(expectation) {
   if (!expectation.decision || !Object.hasOwn(expectation.decision, "slot") || !expectation.decision.type) throw new Error("oracle_decision_missing");
   if (!Array.isArray(expectation.actions)) throw new Error("oracle_actions_missing");
   if (!["en", "es"].includes(expectation.language)) throw new Error("oracle_language_missing");
+  if(expectation.factual_expectation){const f=expectation.factual_expectation;
+    if(expectation.state.intent!=='general'||expectation.state.duration_minutes!==null||expectation.actions.length||!['sleep_duration','recorded_protection_duration'].includes(f.metric)||(f.expected_minutes!==null&&(!Number.isFinite(f.expected_minutes)||f.expected_minutes<0)))throw Error('oracle_invalid_factual_expectation');}
 }
 
 // These checks only REJECT obvious contradictions. Their absence never proves
@@ -189,7 +191,17 @@ function surfaceContradictions(plan, expected, context = {}, inputs = []) {
     const clock = match[3] ? (hour % 12 + (match[3].toLowerCase() === "p" ? 12 : 0)) * 60 + minute : hour * 60 + minute;
     if (!allowedClocks.has(clock)) failures.push({ code: "visible_clock_contradiction", actual: clock, expected: [...allowedClocks] });
   }
-  for (const match of claimText.matchAll(/\b(\d+(?:[.,]\d+)?)\s*(minutes?|mins?|minutos?|hours?|horas?)\b/gi)) {
+  if(expected.factual_expectation){
+    // Measured sleep/protection duration is a fact, not an authorized block slot.
+    // Check complete hour+minute values independently against authored gold.
+    const values=[],combined=/\b(\d+(?:[.,]\d+)?)\s*(?:hours?|horas?|h)\s*(?:and|y)?\s*(\d+(?:[.,]\d+)?)\s*(?:minutes?|minutos?|min)\b/gi;
+    const remainder=claimText.replace(combined,(_,h,m)=>{values.push(Number(h.replace(',','.'))*60+Number(m.replace(',','.')));return '';});
+    for(const match of remainder.matchAll(/\b(\d+(?:[.,]\d+)?)\s*(minutes?|mins?|minutos?|hours?|horas?|h)\b/gi))values.push(Number(match[1].replace(',','.'))*(/^h/i.test(match[2])?60:1));
+    const f=expected.factual_expectation,allowed=f.expected_minutes;
+    if(allowed===null&&values.length)failures.push({code:'visible_unknown_fact_duration',actual:values,expected:null});
+    if(allowed!==null&&values.some(v=>Math.abs(v-allowed)>1))failures.push({code:'visible_factual_duration_contradiction',actual:values,expected:allowed});
+    // Lack of a numeric fact remains subject to exact independent meaning review.
+  }else for (const match of claimText.matchAll(/\b(\d+(?:[.,]\d+)?)\s*(minutes?|mins?|minutos?|hours?|horas?)\b/gi)) {
     const value = Number(match[1].replace(",", ".")) * (/^(hour|hora)/i.test(match[2]) ? 60 : 1);
     const allowed = expected.state.duration_minutes;
     const span = expected.state.start?.type === "time" && Number.isInteger(expected.state.end)

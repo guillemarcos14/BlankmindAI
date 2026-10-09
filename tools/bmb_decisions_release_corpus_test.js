@@ -3,7 +3,10 @@ const assert=require('node:assert/strict'),{build}=require('./bmb_decisions_rele
 const d=build();assert.equal(d.conversations.length,200);
 const runs=d.conversations.map(c=>({turns:c.turns.map((t,i)=>({turn:i+1,input:t.input,source:'openai:fixture',status:'unverified',expected:t.expect}))}));
 const r={runs,summary:{conversations:200,turns:200,passed:0,failed:0,unverified:200,active_model_turns:200}};assert.equal(measureConversationCoverage(r).unique_conversations,200);
-const expected=d.conversations[0].turns[0].expect,body={plan:{semantic_state:emptyState('es'),actions:[],message_text:'7 horas y 1 minuto.'},semantic_decision:{type:'none',slot:null}};
+const expected=d.conversations[0].turns[0].expect,body={plan:{semantic_state:emptyState('es'),actions:[],message_text:'9 horas y 3 minutos.'},semantic_decision:{type:'none',slot:null}};
 const evaluated=evaluateTurn({expected,body});assert.deepEqual(evaluated.expected.factual_expectation,expected.factual_expectation);assert(!evaluated.issues.some(i=>i.dimension!=='visible_equivalence'));
 const wrong=evaluateTurn({expected,body:{...body,plan:{...body.plan,actions:[{type:'start_protection',minutes:30}]}}});assert.equal(wrong.status,'failed');
+const wrongFact=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'8 horas y 1 minuto.'}}});assert(wrongFact.issues.some(i=>i.code==='visible_factual_duration_contradiction'));
+const missing=d.conversations.find(c=>c.context.bmb_release_fixture.profile==='missing').turns[0].expect;
+assert(evaluateTurn({expected:missing,body}).issues.some(i=>i.code==='visible_unknown_fact_duration'));
 console.log('PASS BMB corpus: 200 measured unique input/expectation sequences, preserved factual gold for independent judge, unchanged rejection of unexpected actions');

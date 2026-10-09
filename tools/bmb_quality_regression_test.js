@@ -25,6 +25,9 @@ async function main(){
  await brain.generate({current_message:'rest',mode:'reactive'},{model:async x=>{request=x.request;return {body:{status:'completed',output_text:'{}'}};}});assert(!request.text.format.schema.properties.decision.enum.includes('silent'));
  await brain.generate({current_message:'',mode:'proactive'},{model:async x=>{request=x.request;return {body:{status:'completed',output_text:'{}'}};}});assert(request.text.format.schema.properties.decision.enum.includes('silent'));
  const silent=await brain.plan({prompt:'',proactive:{kind:'daily_review'},context:context(),userId:'owner',identity:{}},{db,memories:[],run:async()=>({...final(),response_text:'',decision:'silent',evidence:''})});assert.equal(silent.plan.proactive_decision,'silent');
+ let invalidCalls=0;const retried=await brain.generate({current_message:'rest',mode:'reactive'},{model:async()=>({body:{status:'completed',output_text:++invalidCalls===1?'broken':JSON.stringify(final()),usage:{input_tokens:10,output_tokens:10}}})});assert.equal(invalidCalls,2);assert.equal(retried.response_text,final().response_text);assert.equal(retried.action,null);
+ invalidCalls=0;await assert.rejects(()=>brain.generate({current_message:'rest',mode:'reactive'},{model:async()=>{invalidCalls++;return {body:{status:'completed',output_text:'broken'}};}}),/invalid_model_json/);assert.equal(invalidCalls,2);
+ invalidCalls=0;await assert.rejects(()=>brain.generate({current_message:'rest',mode:'reactive'},{model:async()=>{invalidCalls++;return {body:{status:'completed',output:[{content:[{type:'refusal',refusal:'Refused'}]}]}};}}),/model_refusal/);assert.equal(invalidCalls,1);
  console.log('PASS quality regressions: final/stream UUIDs, literal quotes, invalid units/zero/pagination, reactive recovery/effect authority, repaired prose and proactive silence');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

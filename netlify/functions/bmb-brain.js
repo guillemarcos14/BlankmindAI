@@ -96,11 +96,23 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
   const request=input.retrieval_contract?require("./bm-retrieval-step").proseRequest(input):{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
     input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
     text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema:boundedSchema}}};
-  const {body}=await timing.span("model",()=>model({request,timeoutMs:18000,errorPrefix:"bmb"}));
-  timing.usage(body.usage);
-  if(body.status==="incomplete")throw Error("bmb_model_incomplete");
-  const result=JSON.parse(body.output_text||(body.output||[]).flatMap(o=>o.content||[]).filter(o=>o.type==="output_text").map(o=>o.text).join(""));
-  return input.retrieval_contract?require("./bm-retrieval-step").expandProse(result,input):result;
+  for(let attempt=0;attempt<2;attempt++){
+    const {body}=await timing.span("model",()=>model({request,timeoutMs:18000,errorPrefix:"bmb"}));
+    timing.usage(body.usage);
+    if(body.status==="incomplete")throw Error("bmb_model_incomplete");
+    const content=(body.output||[]).flatMap(o=>o.content||[]);
+    if(content.some(o=>o.type==='refusal'))throw Error('bmb_model_refusal');
+    const raw=body.output_text||content.filter(o=>o.type==="output_text").map(o=>o.text).join("");
+    let result;try{result=JSON.parse(raw);}catch(error){
+      if(!(error instanceof SyntaxError)||attempt)throw Error('bmb_invalid_model_json');
+      // Nothing from an unparseable result is trusted or committed. Reissue the
+      // same bounded schema/input once; normal authority checks still follow.
+      console.info(JSON.stringify({event:'bmb_json_conformance_retry',characters:raw.length,attempt:1}));
+      if(onDraft)onDraft('');
+      continue;
+    }
+    return input.retrieval_contract?require("./bm-retrieval-step").expandProse(result,input):result;
+  }
 }
 async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run=input=>generate(input,{onDraft}),db=supabaseFetch,memories=null,recover=require("./bmb-proposal").recover}={}) {
   // Policy and followups are independent of the memory cutoff; history is not.
