@@ -210,7 +210,7 @@ function visibleReply(plan, context, action) {
   }
   // Preparation is the only result known before the native acknowledgement.
   // Preserve a combined factual answer while changing only premature start copy.
-  if(action)answer=answer.replace(/\bI(?:['’]m| am) starting\b/gi,"I've prepared").replace(/\bHe iniciado\b/gi,'He preparado');
+  if(action)answer=require('./bmb-factual-copy').preparedCopy(answer);
   if (plan.bmb_generated || hasValidatedCopy(plan)) return answer;
   const copy = actionCopy(action, spanish);
   if (copy) return chatText(copy.text);

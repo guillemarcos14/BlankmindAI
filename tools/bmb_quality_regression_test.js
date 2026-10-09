@@ -8,6 +8,29 @@ async function main(){
  const app=require('../netlify/functions/assistant-app'),action={type:'start_protection',minutes:30};
  assert.equal(app.visibleReply({bmb_generated:true,response_language:'en',response_text:'You slept 9 hours. I’m starting a 30-minute block now.',actions:[action]},{},action),"You slept 9 hours. I've prepared a 30-minute block now.");
  assert.equal(app.visibleReply({bmb_generated:true,response_language:'es',response_text:'Dormiste 9 horas. He iniciado un bloqueo de 30 minutos.',actions:[action]},{},action),'Dormiste 9 horas. He preparado un bloqueo de 30 minutos.');
+ assert.equal(app.visibleReply({bmb_generated:true,response_language:'es',response_text:'Dormiste 9 horas. Bloqueando tus aplicaciones seleccionadas durante 30 minutos.',actions:[action]},{},action),'Dormiste 9 horas. He preparado el bloqueo de tus aplicaciones seleccionadas durante 30 minutos.');
+ assert.equal(app.visibleReply({bmb_generated:true,response_language:'en',response_text:'Blocking your selected apps for 30 minutes.',actions:[action]},{},action),"I've prepared the block for your selected apps for 30 minutes.");
+ for(const text of ['No estoy bloqueando tus apps.','I am not blocking your apps.','La protección está preparada.'])assert.equal(app.visibleReply({bmb_generated:true,response_text:text,actions:[action]},{},action),text);
+ const factual=require('../netlify/functions/bmb-factual-copy'),sleepRows=[462,517,548].map((n,i)=>({id:'night-'+i,metric:'sleep_duration',unit:'minutes',value_number:n,measured_at:'2026-10-0'+(6+i)+'T08:00:00Z'}));
+ const sleepPrompt='Muéstrame mi media de sueño durante los siete días anteriores a hoy.';
+ const sleepResult={...final(),response_language:'es',evidence:sleepPrompt,response_text:'8 h 28 min el 6, 8 h 37 min el 7 y 9 h 8 min el 8. Media de 8 h 29 min (509 minutos).'};
+ const facts=factual.sleepCopyFacts(sleepPrompt,[{rows:sleepRows}],sleepResult);
+ assert.deepEqual(factual.unsupportedDurations(sleepResult.response_text,facts),[508]);
+ assert.deepEqual(factual.unsupportedDurations('7 h 42 min el 6, 8 h 37 min el 7 y 9 h 8 min el 8. Media 509 minutos.',facts),[]);
+ assert.equal(factual.sleepCopyFacts('Quiero consejos para dormir.',[{rows:sleepRows}],sleepResult),null);
+ const sleepDb=async path=>path.startsWith('bmb_observations')?sleepRows:db(path);
+ for(const mutation of ['correct','new_action','still_wrong']) {
+   let steps=0;
+   const job=()=>brain.plan({prompt:sleepPrompt,context:context(),userId:'owner',identity:{}},{db:sleepDb,memories:[],run:async input=>{
+     steps++;
+     if(steps===1)return {...sleepResult,phase:'read',queries:[{source:'observations',term:'sleep_duration',offset:0}]};
+     if(steps===2)return sleepResult;
+     assert.equal(input.tool_budget_remaining,0);assert.equal(input.sleep_copy_facts.rows[0].remaining_minutes,42);
+     return {...sleepResult,response_text:mutation==='still_wrong'?sleepResult.response_text:'Media 8 h 29 min, con 7 h 42 min el 6.',...(mutation==='new_action'?{action}:{})};
+   }});
+   if(mutation==='correct'){const value=await job();assert.equal(value.plan.response_text,'Media 8 h 29 min, con 7 h 42 min el 6.');assert.equal(steps,3);assert.deepEqual(value.plan.actions,[]);}
+   else await assert.rejects(job,mutation==='new_action'?/factual_repair_changed_authority/:/unsupported_sleep_duration/);
+ }
  assert.equal(sources.cleanCitations('Recorded 6 h. ['+uuid+', '+uuid+']'),'Recorded 6 h.');
  assert.equal(sources.cleanCitations('Recorded 6 h. '+uuid),'Recorded 6 h.');
  assert.equal(sources.cleanCitations('Keep ['+uuid+']',{quotedIn:'Repeat ['+uuid+']'}),'Keep ['+uuid+']');

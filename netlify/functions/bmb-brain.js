@@ -88,7 +88,7 @@ function actionIdentity(a) {
 async function generate(input,{model=readModelJson,onDraft}={}) {
   if(onDraft) {
     onDraft(""); // Discard a prior read, repair or restored-offer draft.
-    model=options=>require("./bm-response-stream").readModelStream({...options,onDraft:text=>onDraft(cleanCitations(input.retrieval_contract?require("./bm-retrieval-step").cleanProse(text):text,{quotedIn:input.current_message,partial:true}))});
+    model=options=>require("./bm-response-stream").readModelStream({...options,onDraft:text=>onDraft(require('./bmb-factual-copy').preparedCopy(cleanCitations(input.retrieval_contract?require("./bm-retrieval-step").cleanProse(text):text,{quotedIn:input.current_message,partial:true})))});
   }
   const availableCitations=[...new Set([...(input.coverage||[]).map(s=>s.source_id),...(input.memories||[]).map(m=>m.id),...(input.sources||[]).flatMap(s=>[s.source_id,...(s.rows||[]).map(r=>r.id)])].filter(id=>typeof id==='string'&&id))];
   const citationSchema=availableCitations.length?{...schema.properties.cited_sources,items:{type:'string',enum:availableCitations}}:{...schema.properties.cited_sources,maxItems:0};
@@ -204,6 +204,15 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
       (result.action?fingerprint(result.action):null)!==control.action)throw Error("bmb_repair_changed_authority");
   }
   if(!result||result.phase!=="final")throw Error("bmb_invalid_phase");
+  const factualCopy=require('./bmb-factual-copy'),copyFacts=proactive?null:factualCopy.sleepCopyFacts(prompt,sources,result);
+  if(factualCopy.unsupportedDurations(result.response_text,copyFacts).length) {
+    const before={...result,response_text:null};
+    const repaired=await run({...input,tool_budget_remaining:0,previous_generated_result:result,sleep_copy_facts:copyFacts,
+      conformance_error:'Repair only response_text: a stated sleep duration is unsupported by the supplied dated account rows. Preserve the requested period, source provenance and exact minutes; canonical hours and remaining minutes are supplied. Do not invent nightly values. Keep every other result field exactly unchanged. No reads or new effects.'});
+    if(!require('node:util').isDeepStrictEqual({...repaired,response_text:null},before))throw Error('bmb_factual_repair_changed_authority');
+    if(!repaired.response_text?.trim()||factualCopy.unsupportedDurations(repaired.response_text,copyFacts).length)throw Error('bmb_unsupported_sleep_duration');
+    result={...repaired,response_text:cleanProse(cleanCitations(repaired.response_text,{quotedIn:prompt}))};
+  }
   if(!proactive && (!result.evidence?.trim()||!prompt.includes(result.evidence)))throw Error("bmb_ungrounded_intent");
   if(!["en","es"].includes(result.response_language))throw Error("bmb_invalid_language");
   if(result.cited_sources?.some(id=>!input.coverage.some(s=>s.source_id===id)&&!input.memories.some(m=>m.id===id)&&!sources.some(s=>s.source_id===id||s.rows?.some(r=>r.id===id))))throw Error("bmb_unknown_citation");
