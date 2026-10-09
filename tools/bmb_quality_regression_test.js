@@ -40,6 +40,30 @@ async function main(){
  for(let i=1;i<=uuid.length;i++)assert.equal(sources.cleanCitations('Recorded sleep. ['+uuid.slice(0,i),{partial:true}),'Recorded sleep.','bracket prefix leaked at '+i);
  const invalid=[{id:'bad-unit',metric:'sleep_duration',value_number:510,unit:'hours'},{id:'bad-type',metric:'sleep_duration',value_number:'510',unit:'minutes'},{id:'bad-range',metric:'sleep_duration',value_number:1500,unit:'minutes'}];
  const q={source:'observations',offset:0};let pathSeen;
+ const queryPeriod=require('../netlify/functions/bmb-query-period'),fixedNow=Date.parse('2026-10-09T12:00:00Z');
+ for(const text of ['Muéstrame en minutos mi media de sueño durante los siete días anteriores a hoy.','Show my sleep average for the seven days before today.']){
+  const period=queryPeriod.previousDays(text,'Europe/Madrid',fixedNow);
+  assert.equal(period.from,'2026-10-01T22:00:00.000Z');assert.equal(period.to,'2026-10-08T22:00:00.000Z');
+  assert.equal(queryPeriod.boundQuery(q,period,{message_kind:'question'}).to,period.to);
+  for(const source of ['history','protection_statistics'])assert.deepEqual(queryPeriod.boundQuery({...q,source},period,{message_kind:'question'}),{...q,source});
+  assert.deepEqual(queryPeriod.boundQuery(q,period,{message_kind:'statement'}),q);
+  let stages=0,queried=[],requested;
+  const value=await brain.plan({prompt:text,context:context(),userId:'owner',identity:{}},{memories:[],db:async path=>{
+   if(!path.startsWith('bmb_observations'))return db(path);
+   const bounds=new URLSearchParams(path.split('?')[1]).getAll('measured_at');queried=bounds;
+   assert.deepEqual(bounds,['gte.'+requested.from,'lt.'+requested.to]);assert.equal(requested.timezone,'Europe/Madrid');
+   return [421,482,543].map((n,i)=>({id:'range-'+i,metric:'sleep_duration',unit:'minutes',value_number:n,measured_at:new Date(Date.parse(bounds.find(v=>v.startsWith('lt.')).slice(3))-(3-i)*86400000+3600000).toISOString()}));
+  },run:async input=>{
+   if(++stages===1){requested=input.requested_observation_period;return {...final(),evidence:text,message_kind:'question',phase:'read',queries:[{...q,to:'2026-10-08',timezone:'UTC'}]};}
+   assert.equal(input.sources.at(-1).rows.length,3);
+   return {...final(),evidence:text,message_kind:'question',response_text:'482 minutes across three records.'};
+  }});
+  assert.equal(stages,2);assert.equal(queried.length,2);assert.equal(value.plan.response_text,'482 minutes across three records.');assert.deepEqual(value.plan.actions,[]);assert.equal(value.context.brain_memory_effect,undefined);
+ }
+ assert.equal(queryPeriod.previousDays('Translate "my sleep over seven days before today".','UTC',fixedNow),null);
+ assert.equal(queryPeriod.previousDays('My sleep this week.','UTC',fixedNow),null);
+ assert.equal(queryPeriod.previousDays('Compare my sleep yesterday and seven days before today.','UTC',fixedNow),null);
+ for(const [clock,hours]of [['2026-03-30T12:00:00Z',167],['2026-10-26T12:00:00Z',169]]){const p=queryPeriod.previousDays('My sleep seven days before today.','Europe/Madrid',Date.parse(clock));assert.equal((Date.parse(p.to)-Date.parse(p.from))/3600000,hours);}
  await sources.readSource('owner',{}, {...q,timezone:'Europe/Madrid',from:'2026-10-08',to:'2026-10-09'},null,async path=>{pathSeen=path;return [];});
  assert.deepEqual(new URLSearchParams(pathSeen.split('?')[1]).getAll('measured_at'),['gte.2026-10-07T22:00:00.000Z','lt.2026-10-08T22:00:00.000Z']);
  const timestamp='2026-10-07T23:00:00.000Z';

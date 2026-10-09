@@ -155,6 +155,10 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
       {source_id:"policy",source:"user configured permissions"}]};
   if(continuing&&latest.rows?.length)input.immediately_previous_answer={user_text:latest.rows[0].user_text,assistant_text:latest.rows[0].assistant_text,
     instruction:'This is the most recent completed account turn. Resolve this followup against this answer. Translate this answer for a language-only request. A provenance question refers to its datum/date, not an earlier weekly average. Validate facts using the freshly supplied records.'};
+  const queryPeriod=require('./bmb-query-period');
+  const explicitPeriod=proactive?null:queryPeriod.previousDays(prompt,input.timezone,Date.parse(input.now));
+  input.query_date_boundaries='All query from boundaries are inclusive and to boundaries are exclusive instants. A requested end day must be included through midnight of the following local day. Days before today exclude today and end at local midnight today. Use the supplied requested_observation_period when present; never omit its last day.';
+  if(explicitPeriod)input.requested_observation_period=explicitPeriod;
   let result=await require("./bm-retrieval-step").answer(input,run,retrieval?.contract);
   if(retrieval)console.info(JSON.stringify({event:"bm_retrieval_step_answer",route:retrieval.contract.route,accepted:Boolean(result)}));
   if(retrieval&&!result&&retrieval.source.source_id===currentSleep.source_id){
@@ -169,7 +173,8 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     if(!result.queries?.length||pass===3)throw Error("bmb_read_budget_exhausted");
     const readResults=await timing.span("source_reads",()=>Promise.all(result.queries.map(q=>{
       const historical=q.source==="history"&&q.history_evidence?.trim()&&prompt.includes(q.history_evidence)&&result.message_kind==="question";
-      return readSource(userId,identity,{...q,timezone:q.timezone||input.timezone},historical?null:cutoff,db);
+      const bounded=queryPeriod.boundQuery(q,explicitPeriod,result);
+      return readSource(userId,identity,{...bounded,timezone:bounded.timezone||input.timezone},historical?null:cutoff,db);
     })));
     sources.push(...readResults);
   }
