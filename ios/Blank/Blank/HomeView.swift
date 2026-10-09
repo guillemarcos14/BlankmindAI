@@ -2738,6 +2738,17 @@ private struct SettingsScreen: View {
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
     private var secondaryColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.70) : BlankColors.mutedInk }
 
+    private var exposesRestControls: Bool {
+        #if DEBUG && targetEnvironment(simulator)
+        // Full-rest fixtures keep their original control coverage. The dedicated
+        // basic fixture exercises the production gate with no recorded sleep.
+        if PostOnboardingPreviewScene.enabled && AssistantAppPreview.scenario != "product-basic-home" {
+            return true
+        }
+        #endif
+        return healthKitStore.restAIAvailable
+    }
+
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 12) {
@@ -2760,18 +2771,18 @@ private struct SettingsScreen: View {
                         settingsRow(title: "distractions", detail: "choose apps and review your blocks", action: onOpenDistractions)
                     }
                     settingsRow(title: "protection", detail: "routines and automatic protection", action: { selectedGroup = .protection })
-                    if healthKitStore.restAIAvailable {
+                    if exposesRestControls {
                     settingsRow(title: "notifications", detail: "choose which notices you receive and when", action: { selectedBMBSettings = .notifications })
                     }
                     settingsRow(title: "Data & Permissions", detail: "connected data, permissions and conversation history", action: { selectedGroup = .data })
                     settingsRow(title: "account", detail: "account controls, privacy and terms", action: { selectedGroup = .account })
                 case .protection:
                     settingsRow(title: "schedule", detail: "manage your protection routines", action: onOpenSchedule)
-                    if healthKitStore.restAIAvailable {
+                    if exposesRestControls {
                     settingsRow(title: "automatic protection", detail: "choose when and how Blankmind may act", action: { selectedBMBSettings = .automaticProtection })
                     }
                 case .data:
-                    if healthKitStore.restAIAvailable {
+                    if exposesRestControls {
                     settingsRow(title: "conversation history", detail: "review previous conversations", action: { showingHistory = true })
                     }
                     settingsRow(title: "health", detail: healthStatus, symbol: healthStatus == "connected" ? "checkmark" : "chevron.right", secondary: healthStatus == "connected", action: onRequestHealthAccess)
