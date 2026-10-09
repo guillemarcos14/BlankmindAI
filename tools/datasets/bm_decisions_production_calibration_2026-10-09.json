@@ -1,0 +1,219 @@
+{
+  "version": 2,
+  "authored_at": "2026-10-09",
+  "split": "calibration",
+  "native_sleep_values": [
+    397,
+    423,
+    468,
+    411,
+    502,
+    449,
+    486,
+    401,
+    478,
+    431,
+    493,
+    447,
+    465,
+    489
+  ],
+  "cases": [
+    {
+      "id": "cal09-001",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Qué duración de sueño quedó registrada ayer para mí?",
+      "eligible": true,
+      "sleep_minutes": [
+        413,
+        461,
+        487
+      ],
+      "protection_minutes": 83,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "cal09-002",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "measured",
+      "text": "What sleep duration is on record for me yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        413,
+        461,
+        487
+      ],
+      "protection_minutes": 83,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "cal09-003",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Qué promedio de sueño consta para esta semana natural?",
+      "eligible": true,
+      "sleep_minutes": [
+        420,
+        466,
+        490
+      ],
+      "protection_minutes": 94,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "cal09-004",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "measured",
+      "text": "What is my recorded sleep mean for this calendar week?",
+      "eligible": true,
+      "sleep_minutes": [
+        420,
+        466,
+        490
+      ],
+      "protection_minutes": 94,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "cal09-005",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Qué duración total de protección registré ayer?",
+      "eligible": true,
+      "sleep_minutes": [
+        427,
+        471,
+        493
+      ],
+      "protection_minutes": 105,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "cal09-006",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "measured",
+      "text": "What total protection duration did I record yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        427,
+        471,
+        493
+      ],
+      "protection_minutes": 105,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "cal09-007",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Cuánto tiempo de protección consta para mí esta semana?",
+      "eligible": true,
+      "sleep_minutes": [
+        434,
+        476,
+        496
+      ],
+      "protection_minutes": 116,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "cal09-008",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "measured",
+      "text": "How much protection time is recorded for me this calendar week?",
+      "eligible": true,
+      "sleep_minutes": [
+        434,
+        476,
+        496
+      ],
+      "protection_minutes": 116,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "cal09-009",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Cuánto sueño registré ayer?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health"
+    },
+    {
+      "id": "cal09-010",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "How much sleep did I record yesterday?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health"
+    },
+    {
+      "id": "cal09-011",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Cuánto sueño registré ayer?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa"
+    },
+    {
+      "id": "cal09-012",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "How much sleep did I record yesterday?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa"
+    },
+    {
+      "id": "cal09-013",
+      "route": "wording",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Traduce al italiano «¿cuánto dormí ayer?» sin consultar datos.",
+      "eligible": false
+    },
+    {
+      "id": "cal09-014",
+      "route": "wording",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Translate “how much sleep did I record yesterday?” into Italian without looking up records.",
+      "eligible": false
+    },
+    {
+      "id": "cal09-015",
+      "route": "advice",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Qué cambio puedo probar esta noche para dormir mejor?",
+      "eligible": false
+    },
+    {
+      "id": "cal09-016",
+      "route": "advice",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "What small change could I try tonight to sleep better?",
+      "eligible": false
+    }
+  ]
+}

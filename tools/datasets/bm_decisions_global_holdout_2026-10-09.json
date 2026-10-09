@@ -1,0 +1,1059 @@
+{
+  "version": 3,
+  "authored_at": "2026-10-09",
+  "split": "fresh-matched-global-on-off",
+  "native_sleep_values": [
+    402,
+    438,
+    459,
+    417,
+    506,
+    441,
+    481,
+    409,
+    472,
+    426,
+    498,
+    453,
+    462,
+    491
+  ],
+  "cases": [
+    {
+      "id": "global09-001",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "measured",
+      "text": "Muéstrame cuánto dormí ayer según mis registros.",
+      "eligible": true,
+      "sleep_minutes": [
+        408,
+        457,
+        481
+      ],
+      "protection_minutes": 67,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-002",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "measured",
+      "text": "Show my recorded sleep duration for yesterday.",
+      "eligible": true,
+      "sleep_minutes": [
+        409,
+        458,
+        482
+      ],
+      "protection_minutes": 68,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-003",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "sparse",
+      "text": "¿Qué duración de sueño tengo guardada para ayer?",
+      "eligible": true,
+      "sleep_minutes": [
+        410,
+        459,
+        483
+      ],
+      "protection_minutes": 69,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-004",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "sparse",
+      "text": "How long did I sleep yesterday according to my records?",
+      "eligible": true,
+      "sleep_minutes": [
+        411,
+        460,
+        484
+      ],
+      "protection_minutes": 70,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-005",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "missing",
+      "text": "Dime cuánto sueño registré ayer, en minutos.",
+      "eligible": true,
+      "sleep_minutes": [
+        412,
+        461,
+        485
+      ],
+      "protection_minutes": 71,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-006",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "missing",
+      "text": "Tell me yesterday’s stored sleep duration in minutes.",
+      "eligible": true,
+      "sleep_minutes": [
+        413,
+        462,
+        486
+      ],
+      "protection_minutes": 72,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-007",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "declared",
+      "text": "Muéstrame cuánto dormí ayer según mis registros.",
+      "eligible": true,
+      "sleep_minutes": [
+        414,
+        463,
+        487
+      ],
+      "protection_minutes": 73,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-008",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "declared",
+      "text": "Show my recorded sleep duration for yesterday.",
+      "eligible": true,
+      "sleep_minutes": [
+        415,
+        464,
+        488
+      ],
+      "protection_minutes": 74,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-009",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "measured",
+      "text": "Consulta mi promedio de sueño de esta semana con lo disponible.",
+      "eligible": true,
+      "sleep_minutes": [
+        416,
+        465,
+        489
+      ],
+      "protection_minutes": 75,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-010",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "measured",
+      "text": "Show the mean of my available sleep entries for this calendar week.",
+      "eligible": true,
+      "sleep_minutes": [
+        417,
+        466,
+        490
+      ],
+      "protection_minutes": 76,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-011",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "sparse",
+      "text": "Dime el promedio de sueño de esta semana en minutos.",
+      "eligible": true,
+      "sleep_minutes": [
+        418,
+        467,
+        491
+      ],
+      "protection_minutes": 77,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-012",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "sparse",
+      "text": "How many minutes is my average recorded sleep this week?",
+      "eligible": true,
+      "sleep_minutes": [
+        419,
+        468,
+        492
+      ],
+      "protection_minutes": 78,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-013",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "missing",
+      "text": "¿Cuál es mi media de sueño registrada esta semana?",
+      "eligible": true,
+      "sleep_minutes": [
+        420,
+        469,
+        493
+      ],
+      "protection_minutes": 79,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-014",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "missing",
+      "text": "What is my recorded sleep mean this week?",
+      "eligible": true,
+      "sleep_minutes": [
+        421,
+        470,
+        494
+      ],
+      "protection_minutes": 80,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-015",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "declared",
+      "text": "Consulta mi promedio de sueño de esta semana con lo disponible.",
+      "eligible": true,
+      "sleep_minutes": [
+        422,
+        471,
+        495
+      ],
+      "protection_minutes": 81,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-016",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "declared",
+      "text": "Show the mean of my available sleep entries for this calendar week.",
+      "eligible": true,
+      "sleep_minutes": [
+        423,
+        472,
+        496
+      ],
+      "protection_minutes": 82,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-017",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "measured",
+      "text": "Dime el total de protección que quedó registrado ayer.",
+      "eligible": true,
+      "sleep_minutes": [
+        424,
+        473,
+        497
+      ],
+      "protection_minutes": 83,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-018",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "measured",
+      "text": "Show my total recorded protection yesterday.",
+      "eligible": true,
+      "sleep_minutes": [
+        425,
+        474,
+        498
+      ],
+      "protection_minutes": 84,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-019",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "sparse",
+      "text": "¿Cuánta protección registraron mis sesiones de ayer?",
+      "eligible": true,
+      "sleep_minutes": [
+        426,
+        475,
+        499
+      ],
+      "protection_minutes": 85,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-020",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "sparse",
+      "text": "How much protection do my saved sessions show for yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        427,
+        476,
+        500
+      ],
+      "protection_minutes": 86,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-021",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "missing",
+      "text": "Dime el total de protección que quedó registrado ayer.",
+      "eligible": true,
+      "sleep_minutes": [
+        428,
+        477,
+        501
+      ],
+      "protection_minutes": 87,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-022",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "missing",
+      "text": "Show my total recorded protection yesterday.",
+      "eligible": true,
+      "sleep_minutes": [
+        429,
+        478,
+        502
+      ],
+      "protection_minutes": 88,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-023",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "declared",
+      "text": "¿Cuánta protección registraron mis sesiones de ayer?",
+      "eligible": true,
+      "sleep_minutes": [
+        430,
+        479,
+        503
+      ],
+      "protection_minutes": 89,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-024",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "declared",
+      "text": "How much protection do my saved sessions show for yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        431,
+        480,
+        504
+      ],
+      "protection_minutes": 90,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-025",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Qué total de protección consta en mis registros esta semana?",
+      "eligible": true,
+      "sleep_minutes": [
+        432,
+        481,
+        505
+      ],
+      "protection_minutes": 91,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-026",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "measured",
+      "text": "How much protection is recorded for me this calendar week?",
+      "eligible": true,
+      "sleep_minutes": [
+        433,
+        482,
+        506
+      ],
+      "protection_minutes": 92,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-027",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "sparse",
+      "text": "Muéstrame la protección acumulada que registré esta semana.",
+      "eligible": true,
+      "sleep_minutes": [
+        434,
+        483,
+        507
+      ],
+      "protection_minutes": 93,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-028",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "sparse",
+      "text": "Show the protection total in my records this week.",
+      "eligible": true,
+      "sleep_minutes": [
+        435,
+        484,
+        508
+      ],
+      "protection_minutes": 94,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-029",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "missing",
+      "text": "¿Qué total de protección consta en mis registros esta semana?",
+      "eligible": true,
+      "sleep_minutes": [
+        436,
+        485,
+        509
+      ],
+      "protection_minutes": 95,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-030",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "missing",
+      "text": "How much protection is recorded for me this calendar week?",
+      "eligible": true,
+      "sleep_minutes": [
+        437,
+        486,
+        510
+      ],
+      "protection_minutes": 96,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-031",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "declared",
+      "text": "Muéstrame la protección acumulada que registré esta semana.",
+      "eligible": true,
+      "sleep_minutes": [
+        438,
+        487,
+        511
+      ],
+      "protection_minutes": 97,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-032",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "declared",
+      "text": "Show the protection total in my records this week.",
+      "eligible": true,
+      "sleep_minutes": [
+        439,
+        488,
+        512
+      ],
+      "protection_minutes": 98,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-033",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Qué duración de sueño tengo guardada para ayer?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health",
+      "sleep_minutes": [
+        440,
+        489,
+        513
+      ],
+      "protection_minutes": 99,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-034",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "How long did I sleep yesterday according to my records?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health",
+      "sleep_minutes": [
+        441,
+        490,
+        514
+      ],
+      "protection_minutes": 100,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-035",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Dime cuánto sueño registré ayer, en minutos.",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa",
+      "sleep_minutes": [
+        442,
+        491,
+        515
+      ],
+      "protection_minutes": 101,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-036",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Tell me yesterday’s stored sleep duration in minutes.",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa",
+      "sleep_minutes": [
+        443,
+        492,
+        516
+      ],
+      "protection_minutes": 102,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-037",
+      "route": "sleep_week",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Cuál es mi media de sueño registrada esta semana?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health",
+      "sleep_minutes": [
+        444,
+        493,
+        517
+      ],
+      "protection_minutes": 103,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-038",
+      "route": "sleep_week",
+      "profile": "measured",
+      "language": "en",
+      "text": "What is my recorded sleep mean this week?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health",
+      "sleep_minutes": [
+        445,
+        494,
+        518
+      ],
+      "protection_minutes": 104,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-039",
+      "route": "sleep_week",
+      "profile": "measured",
+      "language": "es",
+      "text": "Consulta mi promedio de sueño de esta semana con lo disponible.",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa",
+      "sleep_minutes": [
+        446,
+        495,
+        519
+      ],
+      "protection_minutes": 105,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-040",
+      "route": "sleep_week",
+      "profile": "measured",
+      "language": "en",
+      "text": "Show the mean of my available sleep entries for this calendar week.",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa",
+      "sleep_minutes": [
+        447,
+        496,
+        520
+      ],
+      "protection_minutes": 106,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-041",
+      "route": "wording",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Corrige la frase «cuánto sueño registré ayer» sin consultar mis datos.",
+      "eligible": false,
+      "sleep_minutes": [
+        448,
+        497,
+        521
+      ],
+      "protection_minutes": 107,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-042",
+      "route": "wording",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Proofread “what was my sleep yesterday” without retrieving my data.",
+      "eligible": false,
+      "sleep_minutes": [
+        449,
+        498,
+        522
+      ],
+      "protection_minutes": 108,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-043",
+      "route": "advice",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Qué puedo cambiar hoy para dormir mejor esta noche?",
+      "eligible": false,
+      "sleep_minutes": [
+        450,
+        499,
+        523
+      ],
+      "protection_minutes": 109,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-044",
+      "route": "advice",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "What can I change today to sleep better tonight?",
+      "eligible": false,
+      "sleep_minutes": [
+        451,
+        500,
+        524
+      ],
+      "protection_minutes": 110,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-045",
+      "route": "action",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Bloquea las aplicaciones seleccionadas 30 minutos ahora, solo esta vez.",
+      "eligible": false,
+      "sleep_minutes": [
+        452,
+        501,
+        525
+      ],
+      "protection_minutes": 111,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-046",
+      "route": "action",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Block my selected apps right now for 30 minutes, one time.",
+      "eligible": false,
+      "sleep_minutes": [
+        453,
+        502,
+        526
+      ],
+      "protection_minutes": 112,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-047",
+      "route": "actions_combined",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Dime cuánto dormí ayer y bloquea mis apps seleccionadas ahora durante 30 minutos, una vez.",
+      "eligible": false,
+      "sleep_minutes": [
+        454,
+        503,
+        527
+      ],
+      "protection_minutes": 113,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-048",
+      "route": "actions_combined",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Show my recorded sleep yesterday and block my selected apps now for 30 minutes, once.",
+      "eligible": false,
+      "sleep_minutes": [
+        455,
+        504,
+        528
+      ],
+      "protection_minutes": 114,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-049",
+      "route": "incomplete",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Y ese promedio?",
+      "eligible": false,
+      "sleep_minutes": [
+        456,
+        505,
+        529
+      ],
+      "protection_minutes": 115,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-050",
+      "route": "incomplete",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "And that average?",
+      "eligible": false,
+      "sleep_minutes": [
+        457,
+        506,
+        530
+      ],
+      "protection_minutes": 116,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-051",
+      "route": "third_party",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Cuánto sueño registró mi padre ayer?",
+      "eligible": false,
+      "sleep_minutes": [
+        458,
+        507,
+        531
+      ],
+      "protection_minutes": 117,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-052",
+      "route": "third_party",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "How much sleep did my father record yesterday?",
+      "eligible": false,
+      "sleep_minutes": [
+        459,
+        508,
+        532
+      ],
+      "protection_minutes": 118,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-053",
+      "route": "hypothetical",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Si preguntase «cuánto dormí ayer», ¿cómo interpretarías esa frase?",
+      "eligible": false,
+      "sleep_minutes": [
+        460,
+        509,
+        533
+      ],
+      "protection_minutes": 119,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-054",
+      "route": "hypothetical",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "If I asked “how long did I sleep yesterday”, how would you interpret that sentence?",
+      "eligible": false,
+      "sleep_minutes": [
+        461,
+        510,
+        534
+      ],
+      "protection_minutes": 120,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-055",
+      "route": "screen_time",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Consulta cuántos minutos usé el móvil ayer.",
+      "eligible": false,
+      "sleep_minutes": [
+        462,
+        511,
+        535
+      ],
+      "protection_minutes": 121,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-056",
+      "route": "screen_time",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Show how many minutes I used my phone yesterday.",
+      "eligible": false,
+      "sleep_minutes": [
+        463,
+        512,
+        536
+      ],
+      "protection_minutes": 122,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-057",
+      "route": "other_period",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Cuánto dormí de media durante los últimos siete días, incluidos hoy?",
+      "eligible": false,
+      "sleep_minutes": [
+        464,
+        513,
+        537
+      ],
+      "protection_minutes": 123,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-058",
+      "route": "other_period",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "What was my average sleep over the past seven days including today?",
+      "eligible": false,
+      "sleep_minutes": [
+        465,
+        514,
+        538
+      ],
+      "protection_minutes": 124,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-059",
+      "route": "forget",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Borra todo lo que recuerdas sobre mí.",
+      "eligible": false,
+      "sleep_minutes": [
+        466,
+        515,
+        539
+      ],
+      "protection_minutes": 125,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-060",
+      "route": "forget",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Delete everything you remember about me.",
+      "eligible": false,
+      "sleep_minutes": [
+        467,
+        516,
+        540
+      ],
+      "protection_minutes": 126,
+      "expectation": "undefined Same corrected runtime OFF/ON, global account-records policy; preserve all original errors."
+    },
+    {
+      "id": "global09-061",
+      "route": "sleep_week",
+      "profile": "invalid",
+      "language": "es",
+      "text": "¿Cuál es mi media de sueño registrada esta semana?",
+      "eligible": false,
+      "expectation": "Invalid units and duplicate measurements require normal authority; explain ambiguity without reinterpreting invalid units. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors.",
+      "sleep_minutes": [
+        468,
+        517,
+        541
+      ],
+      "protection_minutes": 127
+    },
+    {
+      "id": "global09-062",
+      "route": "sleep_week",
+      "profile": "invalid",
+      "language": "en",
+      "text": "What is my recorded sleep mean this week?",
+      "eligible": false,
+      "expectation": "Invalid units and duplicate measurements require normal authority; explain ambiguity without reinterpreting invalid units. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors.",
+      "sleep_minutes": [
+        469,
+        518,
+        542
+      ],
+      "protection_minutes": 128
+    },
+    {
+      "id": "global09-063",
+      "route": "sleep_week",
+      "profile": "duplicate",
+      "language": "es",
+      "text": "Consulta mi promedio de sueño de esta semana con lo disponible.",
+      "eligible": false,
+      "expectation": "Invalid units and duplicate measurements require normal authority; explain ambiguity without reinterpreting invalid units. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors.",
+      "sleep_minutes": [
+        470,
+        519,
+        543
+      ],
+      "protection_minutes": 129
+    },
+    {
+      "id": "global09-064",
+      "route": "sleep_week",
+      "profile": "duplicate",
+      "language": "en",
+      "text": "Show the mean of my available sleep entries for this calendar week.",
+      "eligible": false,
+      "expectation": "Invalid units and duplicate measurements require normal authority; explain ambiguity without reinterpreting invalid units. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors.",
+      "sleep_minutes": [
+        471,
+        520,
+        544
+      ],
+      "protection_minutes": 130
+    },
+    {
+      "id": "global09-065",
+      "route": "contextual",
+      "fixture_route": "sleep_week",
+      "profile": "measured",
+      "language": "es",
+      "eligible": false,
+      "turns": [
+        "¿Cuál es mi media de sueño registrada esta semana?",
+        "¿Esos registros son medidos o declarados?",
+        "Repite ese resultado en inglés, por favor."
+      ],
+      "expectation": "Resolve contextual followups against exact preceding history, no new action or memory. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors.",
+      "sleep_minutes": [
+        472,
+        521,
+        545
+      ],
+      "protection_minutes": 131
+    },
+    {
+      "id": "global09-066",
+      "route": "contextual",
+      "fixture_route": "sleep_week",
+      "profile": "measured",
+      "language": "en",
+      "eligible": false,
+      "turns": [
+        "What is my mean recorded sleep this week?",
+        "Are those entries measured or declared?",
+        "Repeat that result in Spanish, please."
+      ],
+      "expectation": "Resolve contextual followups against exact preceding history, no new action or memory. Same corrected runtime OFF/ON, global account-records policy; preserve all original errors.",
+      "sleep_minutes": [
+        473,
+        522,
+        546
+      ],
+      "protection_minutes": 132
+    }
+  ]
+}

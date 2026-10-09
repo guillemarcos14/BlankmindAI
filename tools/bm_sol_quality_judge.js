@@ -305,6 +305,7 @@ async function main() {
   };
   let result = null;
   await reviewTurns(turns, { model, concurrency, previousReviews: previous?.reviews,
+    judgeOptions:{maxAttempts:Number(option(args,'--max-attempts','3'))},
     onCheckpoint: (reviews, error) => { result = checkpoint(reviews, error); } });
   console.log(JSON.stringify({ report: out, summary: result.summary }, null, 2));
   process.exitCode = result.summary.release_eligible ? 0 : 1;

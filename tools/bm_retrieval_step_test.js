@@ -1,15 +1,20 @@
 "use strict";
 const assert=require("node:assert/strict"),r=require("../netlify/functions/bm-retrieval-step");
 async function main(){
- const probabilities={eligible:1,sleep_yesterday:1,sleep_week:0,protection_yesterday:0,protection_week:0};
+ for(const text of ['How long did my partner sleep yesterday?','¿Cuánto durmió mi pareja ayer?','What protection did my friend record this week?'])assert(!r.candidate(text));
+ const probabilities={eligible:1,sleep:1,protection:0,yesterday:1,this_week:0};
  assert.equal(r.selected({answers:probabilities}),"sleep_yesterday");
- for(const answers of [{...probabilities,eligible:null},{...probabilities,sleep_week:.95},{...probabilities,protection_week:null},{...probabilities,sleep_yesterday:.89}])assert.equal(r.selected({answers}),null);
+ for(const answers of [{...probabilities,eligible:null},{...probabilities,this_week:.95},{...probabilities,protection:null},{...probabilities,sleep:.89},{...probabilities,yesterday:.89},{...probabilities,protection:.11}])assert.equal(r.selected({answers}),null);
+ assert.equal(r.selected({answers:{...probabilities,yesterday:0,this_week:1}}),'sleep_week');
+ assert.equal(r.selected({answers:{...probabilities,sleep:0,protection:1}}),'protection_yesterday');
+ assert.equal(r.selected({answers:{eligible:1,sleep:0,protection:1,yesterday:0,this_week:1}}),'protection_week');
  assert.equal(r.enabled("11111111-1111-4111-8111-111111111111",{}),false);
  let calls=0;assert.equal(await r.start("11111111-1111-4111-8111-111111111111","x",{env:{},fetcher:async()=>calls++}),null);assert.equal(calls,0);
  const options={userId:"owner",identity:{anonymous_user_id:"verified-link"},cutoff:"2026-10-07T08:00:00Z",timezone:"Europe/Madrid",now:Date.parse("2026-10-08T10:00:00Z"),db:()=>{}};
  let qSeen;const read=async(u,i,q,cutoff)=>{assert.equal(u,"owner");assert.equal(i.anonymous_user_id,"verified-link");assert.equal(cutoff,options.cutoff);qSeen=q;return {source:q.source,available:true,rows:[{id:"s",metric:"sleep_duration",value_number:0,unit:"minutes"},{metric:"energy",value_number:8,unit:"score_0_10"}],next_offset:null};};
  const ready=await r.prepare("sleep_yesterday",{...options,read});assert.equal(ready.source.rows.length,1);assert.equal(ready.source.rows[0].value_number,0);assert.equal(qSeen.from,"2026-10-06T22:00:00.000Z");assert.equal(qSeen.to,"2026-10-07T22:00:00.000Z");
  assert.equal(await r.prepare("sleep_yesterday",{...options,read:async()=>({available:true,rows:[],next_offset:40})}),null);
+ assert.equal(await r.prepare('sleep_week',{...options,read:async()=>({available:true,rows:[],conflicting_sleep_measurements:[{id:'conflict'}],next_offset:null})}),null);
  assert.equal(await r.prepare("protection_week",{...options,read:async()=>({rows:[],coverage:"first_10000_overlapping_rows"})}),null);
  const week=await r.prepare("sleep_week",{...options,read:async()=>({source:"observations",source_id:"observations",available:true,rows:[420,480,450].map((v,i)=>({id:String(i),metric:"sleep_duration",unit:"minutes",value_number:v,measurement:"measured"})),next_offset:null})});
  assert.equal(week.contract.facts.minutes,450);assert.equal(week.contract.facts.measurement_count,3);

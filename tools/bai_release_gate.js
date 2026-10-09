@@ -18,6 +18,10 @@ const forceModel = args.has("--model");
 const quick = args.has("--quick");
 const production = args.has("--production");
 const qualityJudge = args.has("--quality-judge");
+const recordedModel=argValue('--recorded-model'),recordedQuality=argValue('--recorded-quality');
+const recorded=Boolean(recordedModel||recordedQuality);
+if(recorded&&(!recordedModel||!recordedQuality||!argValue('--dataset')||forceModel||qualityJudge||production))throw Error('recorded_release_requires_model_quality_dataset_and_no_live_mode');
+let recordedCheck=null;
 const save = args.has("--save");
 const wideCount = argValue("--count", "125");
 const seed = argValue("--seed", "20260910");
@@ -115,8 +119,9 @@ const replayArgs = [
   ...replayArgsBase,
   "--reviews", argValue("--reviews", "tools/datasets/bm_semantic_development_reviews.json"),
 ];
-if (!qualityJudge) run("Reviewed multi-turn semantic replay", [...replayArgs, "--out", "tmp/bm-semantic/development-gate.json"]);
-if (forceModel || (hasApiKey && !quick && !qualityJudge)) run("Active model repeated semantic replay", [...replayArgs, "--model", "--out", "tmp/bm-semantic/active-model-gate.json"]);
+if (!qualityJudge&&!recorded) run("Reviewed multi-turn semantic replay", [...replayArgs, "--out", "tmp/bm-semantic/development-gate.json"]);
+if (!recorded&&(forceModel || (hasApiKey && !quick && !qualityJudge))) run("Active model repeated semantic replay", [...replayArgs, "--model", "--out", "tmp/bm-semantic/active-model-gate.json"]);
+if(recorded){recordedCheck=run('Exact recorded provider outputs and independent reviews',['tools/bm_recorded_release_gate.js','--model',recordedModel,'--quality',recordedQuality,'--dataset',argValue('--dataset')]);report.recorded_evidence={model:recordedModel,quality:recordedQuality,dataset:argValue('--dataset'),new_provider_calls:0};}
 if (qualityJudge) {
   run("Active model semantic replay pending independent review", [
     ...replayArgsBase,
@@ -165,9 +170,9 @@ if (releaseEvidence) {
 report.finished_at = new Date().toISOString();
 report.revision = spawnSync("git", ["rev-parse", "HEAD"], { cwd: rootDir, encoding: "utf8", windowsHide: true }).stdout.trim();
 report.automated_checks_passed = report.checks.length > 0 && report.checks.every(check => check.passed);
-report.active_model_checked = forceModel || qualityJudge || (hasApiKey && !quick);
-report.independent_quality_judge_checked = qualityJudge;
-const developmentReplay = readJson("tmp/bm-semantic/development-gate.json");
+report.active_model_checked = recorded?recordedCheck.passed:forceModel || qualityJudge || (hasApiKey && !quick);
+report.independent_quality_judge_checked = recorded?recordedCheck.passed:qualityJudge;
+const developmentReplay = readJson(recorded?recordedModel:"tmp/bm-semantic/development-gate.json");
 const developmentRepeats = Math.max(1, Number(developmentReplay?.execution?.repeats) || 1);
 const developmentCoverage = measureConversationCoverage(developmentReplay);
 const integrityReport = readJson("tmp/bm-semantic/evaluator-integrity.json");

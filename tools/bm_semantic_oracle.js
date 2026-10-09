@@ -90,6 +90,8 @@ function validateExpectation(expectation) {
   if (!expectation.decision || !Object.hasOwn(expectation.decision, "slot") || !expectation.decision.type) throw new Error("oracle_decision_missing");
   if (!Array.isArray(expectation.actions)) throw new Error("oracle_actions_missing");
   if (!["en", "es"].includes(expectation.language)) throw new Error("oracle_language_missing");
+  if(expectation.factual_expectation){const f=expectation.factual_expectation;
+    if(expectation.state.intent!=='general'||expectation.state.duration_minutes!==null||expectation.actions.length||!['sleep_duration','recorded_protection_duration'].includes(f.metric)||(f.expected_minutes!==null&&(!Number.isFinite(f.expected_minutes)||f.expected_minutes<0)))throw Error('oracle_invalid_factual_expectation');}
 }
 
 // These checks only REJECT obvious contradictions. Their absence never proves
@@ -137,6 +139,10 @@ function surfaceContradictions(plan, expected, context = {}, inputs = []) {
   const currentInput = String(inputs.at(-1) || "");
   claimText = claimText.replace(/\b(?:not|no)\s+(\d+(?:[.,]\d+)?)[\s-]*(minutes?|mins?|minutos?|hours?|horas?)\b/gi, (clause, raw, unit) => {
     const value = Number(raw.replace(",", ".")) * (/^(hour|hora)/i.test(unit) ? 60 : 1);
+    if(expected.factual_expectation){
+      if(value===expected.factual_expectation.expected_minutes)failures.push({code:'visible_factual_duration_negated',actual:value,expected:value});
+      return '[negated duration, requires independent meaning review]';
+    }
     const grounded = [...currentInput.matchAll(/\b(?:not|no)\s+(\d+(?:[.,]\d+)?)[\s-]*(minutes?|mins?|minutos?|hours?|horas?)\b/gi)]
       .some(match => Number(match[1].replace(",", ".")) * (/^(hour|hora)/i.test(match[2]) ? 60 : 1) === value);
     if (!grounded) return clause;
@@ -182,14 +188,36 @@ function surfaceContradictions(plan, expected, context = {}, inputs = []) {
       if (!Number.isInteger(context.weekly_break_count) || Number(match[1]) !== context.weekly_break_count) failures.push({ code: "visible_observed_break_count_mismatch", actual: Number(match[1]), expected: context.weekly_break_count ?? null });
     }
   }
-  const allowedClocks = new Set([expected.state.start?.minute, expected.state.end].filter(Number.isInteger));
+  const allowedClocks = new Set([expected.state.start?.minute, expected.state.end,...(expected.factual_expectation?.source_fixture?.allowed_observation_clocks||[])].filter(Number.isInteger));
+  const sourceFixture=expected.factual_expectation?.source_fixture;
+  for(const boundary of Object.values(sourceFixture?.queried_period||{}))if(Number.isFinite(Date.parse(boundary))){
+    const parts=new Intl.DateTimeFormat('en-GB',{timeZone:sourceFixture.timezone||'UTC',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(boundary));
+    allowedClocks.add(Number(parts.find(p=>p.type==='hour').value)*60+Number(parts.find(p=>p.type==='minute').value));
+  }
   for (const match of claimText.matchAll(/\b(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?\b|\b(\d{1,2}):(\d{2})\b/gi)) {
     const hour = Number(match[1] ?? match[4]);
     const minute = Number(match[2] ?? match[5] ?? 0);
     const clock = match[3] ? (hour % 12 + (match[3].toLowerCase() === "p" ? 12 : 0)) * 60 + minute : hour * 60 + minute;
     if (!allowedClocks.has(clock)) failures.push({ code: "visible_clock_contradiction", actual: clock, expected: [...allowedClocks] });
   }
-  for (const match of claimText.matchAll(/\b(\d+(?:[.,]\d+)?)\s*(minutes?|mins?|minutos?|hours?|horas?)\b/gi)) {
+  if(expected.factual_expectation){
+    // Measured sleep/protection duration is a fact, not an authorized block slot.
+    // Check complete hour+minute values independently against authored gold.
+    const values=[],combined=/\b(\d+(?:[.,]\d+)?)\s*(?:hours?|horas?|h)\s*(?:and|y)?\s*(\d+(?:[.,]\d+)?)\s*(?:minutes?|minutos?|min)\b/gi;
+    const remainder=claimText.replace(combined,(_,h,m)=>{values.push(Number(h.replace(',','.'))*60+Number(m.replace(',','.')));return '';});
+    for(const match of remainder.matchAll(/\b(\d+(?:[.,]\d+)?)\s*(minutes?|mins?|minutos?|hours?|horas?|h)\b/gi))values.push(Number(match[1].replace(',','.'))*(/^h/i.test(match[2])?60:1));
+    const f=expected.factual_expectation,allowed=f.expected_minutes;
+    const supported=[allowed];
+    if(f.metric==='sleep_duration'&&allowed!==null)for(const row of sourceFixture?.sleep_rows||[]){
+      if(row.unit!=='minutes'||!Number.isFinite(row.value_number)||!row.date)continue;
+      const at=require('../netlify/functions/bm-brain-data').midnight(row.date,sourceFixture.timezone||'UTC'),bounds=sourceFixture.queried_period;
+      if(bounds&&(at<Date.parse(bounds.from)||at>=Date.parse(bounds.to)))continue;
+      supported.push(row.value_number);
+    }
+    if(allowed===null&&values.length)failures.push({code:'visible_unknown_fact_duration',actual:values,expected:null});
+    if(allowed!==null&&values.some(v=>!supported.some(n=>Math.abs(v-n)<=1)))failures.push({code:'visible_factual_duration_contradiction',actual:values,expected:supported});
+    // Lack of a numeric fact remains subject to exact independent meaning review.
+  }else for (const match of claimText.matchAll(/\b(\d+(?:[.,]\d+)?)\s*(minutes?|mins?|minutos?|hours?|horas?)\b/gi)) {
     const value = Number(match[1].replace(",", ".")) * (/^(hour|hora)/i.test(match[2]) ? 60 : 1);
     const allowed = expected.state.duration_minutes;
     const span = expected.state.start?.type === "time" && Number.isInteger(expected.state.end)
@@ -207,7 +235,8 @@ function surfaceContradictions(plan, expected, context = {}, inputs = []) {
   }
   if (/\b(?:I(?:'ve| have)? (?:already )?(?:blocked|scheduled|activated|created|started)|(?:ya )?(?:he bloqueado|he programado|he activado)|(?:is|are) now blocked)\b/i.test(text)
       && context.execution_verified !== true) failures.push({ code: "unverified_execution_claim" });
-  if (/\b(?:every day|daily|cada d[ií]a|todos los d[ií]as)\b/i.test(claimText) && !["daily"].includes(expected.state.recurrence?.type) && expected.state.action_type !== "daily_limit") {
+  const recurrenceText=expected.factual_expectation?.metric==='sleep_duration'?claimText.replace(/\bdaily sleep(?:-duration)? (?:summar(?:y|ies)|measurements?|records?)\b/gi,'[dated sleep source]').replace(/\b(?:not (?:an? )?(?:average|mean) (?:across|over|for) every day(?: of (?:the|this) week)?|no (?:es )?(?:una? )?(?:media|promedio) (?:de|sobre) todos los d[ií]as(?: de (?:la|esta) semana)?|not every day(?: of (?:the|this) week)?|no todos los d[ií]as(?: de (?:la|esta) semana)?)\b/gi,'[mean over available records only]'):claimText;
+  if (/\b(?:every day|daily|cada d[ií]a|todos los d[ií]as)\b/i.test(recurrenceText) && !["daily"].includes(expected.state.recurrence?.type) && expected.state.action_type !== "daily_limit") {
     failures.push({ code: "visible_recurrence_contradiction", expected: expected.state.recurrence });
   }
   return failures;
@@ -320,7 +349,8 @@ function evaluateTurn({ expected, body, inputs = [], context = {}, previousState
   const message = String(plan.message_text || plan.response_text || "");
   return {
     status, release_eligible: status === "passed", dimensions, issues,
-    expected: { state: wantedState, decision: expected.decision, actions: wantedActions, language: expected.language },
+    expected: { state: wantedState, decision: expected.decision, actions: wantedActions, language: expected.language,
+      ...(expected.factual_expectation?{factual_expectation:expected.factual_expectation}:{}) },
     actual: { state: actualState, decision: actualDecision, actions: actualActions, visible: surfaces },
     review_binding: { response_sha256: responseHash, expectation_sha256: expectationHash },
     soft: { measured_only: true, characters: message.length, sentences: message.split(/[.!?]+/).filter(text => text.trim()).length, duplicate_surface_sentences: message.split(/(?<=[.!?])\s+/).length - new Set(message.split(/(?<=[.!?])\s+/)).size },

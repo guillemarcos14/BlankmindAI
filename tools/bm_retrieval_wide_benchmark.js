@@ -42,7 +42,7 @@ async function main(){
  global.fetch=async(url,options)=>{
    const endpoint=String(url)==='https://api.openai.com/v1/decisions'?'decisions':String(url)==='https://api.openai.com/v1/responses'?'responses':null;
    if(!endpoint)return originalFetch(url,options); const reserved=reserve(options.body,endpoint); if(!active)return originalFetch(url,options);
-   const local=active,row={endpoint,reserved_upper_usd:reserved,request_sha256:crypto.createHash('sha256').update(String(options?.body||'')).digest('hex')};local.provider_requests.push(row);
+   const local=active,row={endpoint,reserved_upper_usd:reserved,request_sha256:crypto.createHash('sha256').update(String(options?.body||'')).digest('hex'),...(args.includes('--retain-synthetic-requests')?{synthetic_request:JSON.parse(options.body)}:{})};local.provider_requests.push(row);
    if(endpoint==='responses')local.model_calls++;else local.decisions_calls++;
    try{const result=await meter.meterResponse(await originalFetch(url,options),row);return result;}catch(e){row.error=e.name;throw e;}
  };
@@ -59,24 +59,24 @@ async function main(){
  };
  const sourceHashes=Object.fromEntries(Object.entries(roots).map(([key,root])=>[key,Object.fromEntries(["assistant-app.js","bmb-brain.js","bm-decisions.js","bm-retrieval-step.js","bmb-sources.js","bm-brain-data.js","bm-response-stream.js","bm-conversation-style.js","bmb-sleep-context.js"].flatMap(n=>{const f=path.join(root,"netlify/functions",n);return fs.existsSync(f)?[[n,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]]:[]}))]));
  const report={schema_version:1,run_id:runId,provider_real:true,decisions_real:true,database_real:true,netlify_transport_tested:false,physical_device_tested:false,native_actions_executed:0,source_commits:{optimized:require("node:child_process").execFileSync("git",["-C",roots.optimized,"rev-parse","HEAD"],{encoding:"utf8"}).trim(),decisions:require("node:child_process").execFileSync("git",["-C",roots.decisions,"rev-parse","HEAD"],{encoding:"utf8"}).trim()},
-   order:"paired AB/BA alternation by case; identical independent fixtures; same conversation context within each variant",from_pair:fromPair,pair_count:pairs,sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,complete:false,gates_passed:false};
+   first_text_definition:'First retained draft after any reset; raw first emitted draft is separately retained.',personal_record_verification_requested:args.includes('--verify-personal-records'),order:"paired AB/BA alternation by case; identical independent fixtures; same conversation context within each variant",data_policy:args.includes('--account-policy')?'authenticated-account-records':'synthetic-private-qa',from_pair:fromPair,pair_count:pairs,sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,complete:false,gates_passed:false};
  const save=()=>fs.writeFileSync(file,JSON.stringify({...report,summary:summarize(records,rates)},null,2));
  let user,connect,token;const fixtureNow=Date.now();report.fixture_clock=new Date(fixtureNow).toISOString();report.case_manifest=JSON.parse(fs.readFileSync(get("--cases","tools/datasets/bm_retrieval_step_cases_2026-10-08.json")));
  const context=()=>({context_revision:Date.now()*1000,language:"en",locale:"en",timezone:"Europe/Madrid",has_selected_apps:true,selection_count:2,
    screen_time_authorized:true,is_blank_active:false,protection_target:"selected_distractions",device_execution_ready:true,schedule:{windows:[]},
    brain_snapshot:{schema_version:1,generated_at:new Date().toISOString(),timezone:"Europe/Madrid",sessions:[],history_complete:true,account:{signed_in:true,premium_access:true}}});
  const invoke=(variant,body)=>handlers[variant]({httpMethod:"POST",headers:{authorization:"Bearer "+token},body:JSON.stringify({app_install_id:install,...body})},null,
-   {onDraft:text=>{if(active&&text==="")active.first_text_ms=null;if(active&&text.trim()){active.drafts.push(text);if(active.first_text_ms===null)active.first_text_ms=performance.now()-active.start;}}});
+   {onDraft:text=>{if(active&&text==="")active.first_text_ms=null;if(active&&text.trim()){active.drafts.push(text);if(active.first_emitted_text_ms===null)active.first_emitted_text_ms=performance.now()-active.start;if(active.first_text_ms===null)active.first_text_ms=performance.now()-active.start;}}});
  const streams={};for(const [key,root]of Object.entries(roots))streams[key]=(await import(require('url').pathToFileURL(path.join(root,'netlify/functions/assistant-app-stream.mjs')))).default;
- const invokeStream=async(variant,body)=>{const r=await streams[variant](new Request('http://localhost/assistant-app-stream',{method:'POST',headers:{authorization:'Bearer '+token},body:JSON.stringify({app_install_id:install,...body})}),{});let buffer='',result;const reader=r.body.getReader(),decoder=new TextDecoder();const frames=[];while(true){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let i;while((i=buffer.indexOf('\n'))>=0){const frame=JSON.parse(buffer.slice(0,i));buffer=buffer.slice(i+1);frames.push(frame.type);if(frame.type==='draft'&&frame.text.trim()){active.drafts.push(frame.text);if(active.first_text_ms===null)active.first_text_ms=performance.now()-active.start;}if(frame.type==='result')result=frame;}}active.transport_frames=frames;return {statusCode:result?.status||503,body:JSON.stringify(result?.body||{})};};
- const envBefore=Object.fromEntries(["BM_RETRIEVAL_STEP_QA_ENABLED","BM_DECISIONS_QA_ENABLED","BM_DECISIONS_DATA_POLICY","BM_DECISIONS_QA_USERS","BM_JEV_SHADOW_ENABLED","BM_JEV_PREFETCH_EXPERIMENT"].map(k=>[k,process.env[k]]));
+ const invokeStream=async(variant,body)=>{const r=await streams[variant](new Request('http://localhost/assistant-app-stream',{method:'POST',headers:{authorization:'Bearer '+token},body:JSON.stringify({app_install_id:install,...body})}),{});let buffer='',result;const reader=r.body.getReader(),decoder=new TextDecoder();const frames=[];while(true){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let i;while((i=buffer.indexOf('\n'))>=0){const frame=JSON.parse(buffer.slice(0,i));buffer=buffer.slice(i+1);frames.push(frame.type);if(frame.type==='draft'){if(frame.text==='')active.first_text_ms=null;else if(frame.text.trim()){active.drafts.push(frame.text);if(active.first_emitted_text_ms===null)active.first_emitted_text_ms=performance.now()-active.start;if(active.first_text_ms===null)active.first_text_ms=performance.now()-active.start;}}if(frame.type==='result')result=frame;}}active.transport_frames=frames;return {statusCode:result?.status||503,body:JSON.stringify(result?.body||{})};};
+ const envBefore=Object.fromEntries(["BM_RETRIEVAL_STEP_ENABLED","BM_RETRIEVAL_STEP_QA_ENABLED","BM_DECISIONS_QA_ENABLED","BM_DECISIONS_DATA_POLICY","BM_DECISIONS_QA_USERS","BM_JEV_SHADOW_ENABLED","BM_JEV_PREFETCH_EXPERIMENT"].map(k=>[k,process.env[k]]));
  const originalInfo=console.info;
  try{
    const password=crypto.randomBytes(28).toString("base64url"),email="decisions-"+runId+"@example.invalid";
    user=(await request("/auth/v1/admin/users",{email,password,email_confirm:true,app_metadata:{provider:"apple",providers:["apple"],synthetic_staging_run:runId}})).id;
    token=(await request("/auth/v1/token?grant_type=password",{email,password},{apikey:c.anonKey})).access_token;
    const activated=await invoke("optimized",{action:"activate"});if(activated.statusCode!==200)throw Error("decisions_activation_failed");connect=JSON.parse(activated.body).assistant_connect_code;
-   Object.assign(process.env,{BM_DECISIONS_DATA_POLICY:"synthetic-private-qa",BM_DECISIONS_QA_USERS:user,BM_JEV_SHADOW_ENABLED:"false",BM_JEV_PREFETCH_EXPERIMENT:"false"});
+   Object.assign(process.env,{BM_RETRIEVAL_STEP_ENABLED:"false",BM_DECISIONS_DATA_POLICY:args.includes('--account-policy')?"authenticated-account-records":"synthetic-private-qa",BM_DECISIONS_QA_USERS:user,BM_JEV_SHADOW_ENABLED:"false",BM_JEV_PREFETCH_EXPERIMENT:"false"});
    for(let pair=fromPair;pair<fromPair+pairs;pair++){
     // Long paired runs can exceed the one-hour access-token lifetime. Renew
     // before each pair; keep authentication failures as explicit failures.
@@ -85,16 +85,19 @@ async function main(){
      await Promise.all([...["assistant_app_turns","bmb_events","bmb_followups","bmb_observations","bm_brain_memories","bmb_sessions"].map(table=>request(`/rest/v1/${table}?auth_user_id=eq.${user}`,undefined,service,"DELETE")),...["assistant_semantic_conversations","digital_wellness_feature_payloads"].map(table=>request(`/rest/v1/${table}?anonymous_user_id=eq.${memoryIdentity("app",user)}`,undefined,service,"DELETE"))]);
      const spec=CASES[pair%CASES.length],{language}=spec,group=spec.route;
      const expected=await seed(spec,{request,user,service,now:fixtureNow});
-     process.env.BM_DECISIONS_QA_ENABLED="false";process.env.BM_RETRIEVAL_STEP_QA_ENABLED=variant==="decisions"&&!args.includes("--retrieval-off")?"true":"false";
+     process.env.BM_DECISIONS_QA_ENABLED="false";process.env.BM_RETRIEVAL_STEP_QA_ENABLED=!args.includes('--account-policy')&&variant==="decisions"&&!args.includes("--retrieval-off")?"true":"false";
+     process.env.BM_RETRIEVAL_STEP_ENABLED=args.includes('--account-policy')&&variant==="decisions"&&!args.includes('--retrieval-off')?'true':'false';
      let nativeContext={};
      if(spec.native_sleep){const {dayOffset}=require('../netlify/functions/bm-brain-data'),today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).format(fixtureNow),values=report.case_manifest.native_sleep_values;
-       const nights=values.map((sleep_minutes,i)=>({date:dayOffset(today,i-values.length),source:'synthetic_qa',sleep_minutes}));
-       nativeContext={sleep_data_available:true,personal_profile:{sleep_source:'synthetic_qa',sleep_is_synthetic:true,sleep_nights:nights}};
-       expected.current_sleep={source:'synthetic_qa',is_synthetic:true,rows:nights};
-       expected.minutes=values.at(-1);expected.primary_source='current_sleep';
+       const source=spec.native_sleep_source||'synthetic_qa',nights=values.map((sleep_minutes,i)=>({date:dayOffset(today,i-values.length),source,sleep_minutes,offset:i-values.length})).filter(n=>!(spec.native_skip_offsets||[]).includes(n.offset)).map(({offset,...n})=>n);
+       nativeContext={sleep_data_available:true,personal_profile:{sleep_source:source,sleep_is_synthetic:source==='synthetic_qa',sleep_nights:nights}};
+       expected.current_sleep={source,is_synthetic:source==='synthetic_qa',rows:nights};
+       const {periodBounds,midnight}=require('../netlify/functions/bm-brain-data'),bounds=periodBounds({period:spec.route==='sleep_week'?'this_week':'yesterday'},{timezone:'Europe/Madrid',week_starts_on:2},fixtureNow),eligible=nights.filter(n=>{const t=midnight(n.date,'Europe/Madrid');return t>=bounds.from&&t<bounds.to;});
+       if(eligible.length||source==='synthetic_qa'){expected.minutes=eligible.length?eligible.reduce((s,n)=>s+n.sleep_minutes,0)/eligible.length:null;expected.primary_source='current_sleep';}
+       else expected.primary_source='observations';
      }
      if(spec.profile==='invalid'&&report.case_manifest.version===1&&spec.id.startsWith('fresh-'))expected.minutes=null;
-     const history=[];for(const [step,text]of (spec.turns||[spec.text]).entries()){const turn=crypto.randomUUID();active={pair,step,variant,group,turn_id:turn,start:performance.now(),first_text_ms:null,drafts:[],database_calls:0,model_calls:0,usage_records:0,metered_usage:{},decisions_calls:0,decisions_known_cost_usd:0,decisions_unknown_cost_upper_usd:0,provider_requests:[],decisions_trace:[],retrieval_trace:[]};
+     const history=[];for(const [step,text]of (spec.turns||[spec.text]).entries()){const turn=crypto.randomUUID();active={pair,step,variant,group,turn_id:turn,start:performance.now(),first_text_ms:null,first_emitted_text_ms:null,drafts:[],database_calls:0,model_calls:0,usage_records:0,metered_usage:{},decisions_calls:0,decisions_known_cost_usd:0,decisions_unknown_cost_upper_usd:0,provider_requests:[],decisions_trace:[],retrieval_trace:[]};
      console.info=line=>{try{const m=JSON.parse(line);if(["bm_stream_timing","bm_token_usage"].includes(m.event)&&Number.isSafeInteger(m.usage?.input_tokens)&&Number.isSafeInteger(m.usage?.output_tokens)){
        active.usage_records++;for(const [k,v]of Object.entries(m.usage))active.metered_usage[k]=(active.metered_usage[k]||0)+v;
      }if(m.event==="bm_decisions_timing")active.decisions_trace.push(m);if(m.event.startsWith("bm_retrieval_step_"))active.retrieval_trace.push(m);if(m.event==="bm_turn_timing"){active.usage=m.usage;active.stages=m.stages;active.decisions=m.decisions||[];}}catch(_){};};
@@ -116,6 +119,16 @@ async function main(){
      if(group==="forget"&&response.statusCode===200){
        const memories=await request(`/rest/v1/bm_brain_memories?auth_user_id=eq.${user}&select=value`,undefined,service,"GET");
        row.forgetting_committed=memories.some(m=>m.value===null);row.passed=row.passed&&row.forgetting_committed;
+     }
+     if(args.includes('--verify-personal-records')&&!['action','actions_combined','forget','advice'].includes(group)){
+       const [observations,memories]=await Promise.all([
+         request(`/rest/v1/bmb_observations?auth_user_id=eq.${user}&select=metric,value_number,unit,measured_at,measurement&limit=100`,undefined,service,'GET'),
+         request(`/rest/v1/bm_brain_memories?auth_user_id=eq.${user}&select=key,value&limit=100`,undefined,service,'GET')]);
+       const tuples=observations.map(o=>JSON.stringify([o.metric,Number(o.value_number),o.unit,Date.parse(o.measured_at),o.measurement])).sort();
+       const seeded=expected.all_fixture_sleep.map(o=>JSON.stringify(['sleep_duration',o.value,o.unit,Date.parse(o.time),o.measurement])).sort();
+       const memoryCount=spec.profile==='forgotten'?1:0,unchanged=JSON.stringify(tuples)===JSON.stringify(seeded)&&memories.length===memoryCount&&memories.every(m=>m.value===null);
+       row.personal_record_integrity={passed:unchanged,observations_count:observations.length,expected_observations_count:seeded.length,memory_count:memories.length,expected_memory_count:memoryCount,...(!unchanged?{unexpected_state:{observations,memories}}:{})};
+       row.passed=row.passed&&unchanged;
      }
      history.push({role:"user",content:text},{role:"assistant",content:t.assistant_text||""}); records.push(row);for(const req of row.provider_requests){const measured=meter.estimate(req,rates);if(measured!==null){budget.known_usd+=measured;budget.reserved_upper_usd-=req.reserved_upper_usd-measured;}}saveBudget();active=null;console.info=originalInfo;save();
      if(records.length%20===0)console.log(JSON.stringify({turns:records.length,pairs:pair+1,errors:records.filter(r=>!r.passed).length}));

@@ -62,7 +62,7 @@ async function main() {
   const modelResult = text => ({ phase: "final", response_language: "en", message_kind: "statement",
     decision: "respond", evidence: "hello", accepted_proposal: null, pending_request: null,
     action: null, queries: [], memory: null, cited_sources: [], response_text: text });
-  const candidates = [modelResult("Unrepaired: text"), modelResult("Corrected text.")];
+  const candidates = [{...modelResult("Unrepaired: text"),evidence:'absent'}, modelResult("Corrected text.")];
   const realFetch = global.fetch, repairedDrafts = [];
   try {
     global.fetch = async (_url, options) => {
