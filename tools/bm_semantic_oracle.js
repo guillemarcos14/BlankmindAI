@@ -320,7 +320,8 @@ function evaluateTurn({ expected, body, inputs = [], context = {}, previousState
   const message = String(plan.message_text || plan.response_text || "");
   return {
     status, release_eligible: status === "passed", dimensions, issues,
-    expected: { state: wantedState, decision: expected.decision, actions: wantedActions, language: expected.language },
+    expected: { state: wantedState, decision: expected.decision, actions: wantedActions, language: expected.language,
+      ...(expected.factual_expectation?{factual_expectation:expected.factual_expectation}:{}) },
     actual: { state: actualState, decision: actualDecision, actions: actualActions, visible: surfaces },
     review_binding: { response_sha256: responseHash, expectation_sha256: expectationHash },
     soft: { measured_only: true, characters: message.length, sentences: message.split(/[.!?]+/).filter(text => text.trim()).length, duplicate_surface_sentences: message.split(/(?<=[.!?])\s+/).length - new Set(message.split(/(?<=[.!?])\s+/)).size },
