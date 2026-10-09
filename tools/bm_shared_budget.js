@@ -18,8 +18,14 @@ function install({budgetFile,requestsFile,fetcher=global.fetch,rates}){
   let settled=false;
   const settle=()=>{if(settled)return;settled=true;const measured=meter.estimate(row,price);if(measured!==null){const fresh=JSON.parse(fs.readFileSync(budgetFile));fresh.known_usd+=measured;fresh.reserved_upper_usd-=upper-measured;if(request.model==='gpt-5.6-sol')fresh.reviewer_known_usd=(fresh.reviewer_known_usd||0)+measured;fs.writeFileSync(budgetFile,JSON.stringify(fresh,null,2));}save();};
   try{
-   const response=await meter.meterResponse(await fetcher(url,options),row);
-   if(!response.headers.get('content-type')?.includes('text/event-stream')){settle();return response;}
+   const original=await fetcher(url,options);row.status=original.status;
+   if(!original.headers.get('content-type')?.includes('text/event-stream')){
+    // One network-body reader. Return an independent buffered body to the caller
+    // so metering cannot race a consumer or leave it with a disturbed body.
+    const bytes=await original.arrayBuffer();try{meter.capture(row,JSON.parse(new TextDecoder().decode(bytes)));}catch(_){}
+    settle();return new Response(bytes,{status:original.status,statusText:original.statusText,headers:original.headers});
+   }
+   const response=await meter.meterResponse(original,row);
    const stream=response.body.pipeThrough(new TransformStream({transform(chunk,c){c.enqueue(chunk);},flush(){settle();}}));
    return new Response(stream,{status:response.status,statusText:response.statusText,headers:response.headers});
   }catch(error){row.error=error.name;save();throw error;}

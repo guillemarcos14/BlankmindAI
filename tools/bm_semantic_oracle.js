@@ -184,7 +184,7 @@ function surfaceContradictions(plan, expected, context = {}, inputs = []) {
       if (!Number.isInteger(context.weekly_break_count) || Number(match[1]) !== context.weekly_break_count) failures.push({ code: "visible_observed_break_count_mismatch", actual: Number(match[1]), expected: context.weekly_break_count ?? null });
     }
   }
-  const allowedClocks = new Set([expected.state.start?.minute, expected.state.end].filter(Number.isInteger));
+  const allowedClocks = new Set([expected.state.start?.minute, expected.state.end,...(expected.factual_expectation?.source_fixture?.allowed_observation_clocks||[])].filter(Number.isInteger));
   for (const match of claimText.matchAll(/\b(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?\b|\b(\d{1,2}):(\d{2})\b/gi)) {
     const hour = Number(match[1] ?? match[4]);
     const minute = Number(match[2] ?? match[5] ?? 0);
@@ -219,7 +219,8 @@ function surfaceContradictions(plan, expected, context = {}, inputs = []) {
   }
   if (/\b(?:I(?:'ve| have)? (?:already )?(?:blocked|scheduled|activated|created|started)|(?:ya )?(?:he bloqueado|he programado|he activado)|(?:is|are) now blocked)\b/i.test(text)
       && context.execution_verified !== true) failures.push({ code: "unverified_execution_claim" });
-  if (/\b(?:every day|daily|cada d[ií]a|todos los d[ií]as)\b/i.test(claimText) && !["daily"].includes(expected.state.recurrence?.type) && expected.state.action_type !== "daily_limit") {
+  const recurrenceText=expected.factual_expectation?.metric==='sleep_duration'?claimText.replace(/\bdaily sleep(?:-duration)? (?:summar(?:y|ies)|measurements?|records?)\b/gi,'[dated sleep source]'):claimText;
+  if (/\b(?:every day|daily|cada d[ií]a|todos los d[ií]as)\b/i.test(recurrenceText) && !["daily"].includes(expected.state.recurrence?.type) && expected.state.action_type !== "daily_limit") {
     failures.push({ code: "visible_recurrence_contradiction", expected: expected.state.recurrence });
   }
   return failures;

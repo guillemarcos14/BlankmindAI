@@ -9,4 +9,6 @@ const wrong=evaluateTurn({expected,body:{...body,plan:{...body.plan,actions:[{ty
 const wrongFact=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'8 horas y 1 minuto.'}}});assert(wrongFact.issues.some(i=>i.code==='visible_factual_duration_contradiction'));
 const missing=d.conversations.find(c=>c.context.bmb_release_fixture.profile==='missing').turns[0].expect;
 assert(evaluateTurn({expected:missing,body}).issues.some(i=>i.code==='visible_unknown_fact_duration'));
+ const daily=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'9 hours 3 minutes from one daily sleep summary.'}}});assert(!daily.issues.some(i=>i.code==='visible_recurrence_contradiction'));
+ const invented=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'Daily blocking is scheduled.'}}});assert(invented.issues.some(i=>i.code==='visible_recurrence_contradiction'));
 console.log('PASS BMB corpus: 200 measured unique input/expectation sequences, preserved factual gold for independent judge, unchanged rejection of unexpected actions');
