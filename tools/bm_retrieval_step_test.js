@@ -1,6 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict"),r=require("../netlify/functions/bm-retrieval-step");
 async function main(){
+ for(const text of ['How long did my partner sleep yesterday?','¿Cuánto durmió mi pareja ayer?','What protection did my friend record this week?'])assert(!r.candidate(text));
  const probabilities={eligible:1,sleep:1,protection:0,yesterday:1,this_week:0};
  assert.equal(r.selected({answers:probabilities}),"sleep_yesterday");
  for(const answers of [{...probabilities,eligible:null},{...probabilities,this_week:.95},{...probabilities,protection:null},{...probabilities,sleep:.89},{...probabilities,yesterday:.89},{...probabilities,protection:.11}])assert.equal(r.selected({answers}),null);

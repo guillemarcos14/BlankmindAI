@@ -29,7 +29,7 @@ function enabled(userId,env=process.env){return (accountRecords(env)&&/^[0-9a-f]
 // It never selects a route or authorizes a source, memory change or device action.
 const words=expression=>new RegExp("(?<![\\p{L}\\p{N}_])(?:"+expression+")(?![\\p{L}\\p{N}_])","iu");
 const question=words("how|what|show|tell|retrieve|cu[aá]nt[oa]s?|qu[eé]|dime|mu[eé]strame|consulta"),period=words("yesterday|ayer|this (?:calendar )?week|esta semana"),metric=words("sleep|slept|sueño|dorm[ií]|dormir|protection|protected|protecci[oó]n|proteg[ií]"),excluded=words("block|bloquea|programa|schedule|forget|olvida|borra|delete|translate|traduce|repeat|repite|echo|quote|cita|grammar|gram[aá]tica|rewrite|reformula|fiction|fictici[a-záéíóú]*|hypothetical|hipot[eé]tic[a-záéíóú]*|compare|compara|advice|consejo|should|deber[ií]a|cause|caus[oó]|why|por qu[eé]");
-function candidate(text){return (/\?/u.test(text)||question.test(text))&&period.test(text)&&metric.test(text)&&!excluded.test(text);}
+function candidate(text){return (/\?/u.test(text)||question.test(text))&&period.test(text)&&metric.test(text)&&!excluded.test(text)&&!words("partner|pareja|friend|amig[oa]|wife|husband|espos[oa]|novi[oa]|child|hij[oa]|mother|father|madre|padre").test(text);}
 async function start(userId,text,{fetcher=fetch,env=process.env}={}){
  if(!enabled(userId,env)||String(text).length>1500||!candidate(String(text)))return null;
  const begin=performance.now(),signal=AbortSignal.timeout(1000);let result=null;
