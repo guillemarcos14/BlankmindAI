@@ -37,3 +37,17 @@ assert.notEqual(checkText(week,'Media 482 minutos.').status,'passed','lexical co
  const daily=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'9 hours 3 minutes from one daily sleep summary.'}}});assert(!daily.issues.some(i=>i.code==='visible_recurrence_contradiction'));
  const invented=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'Daily blocking is scheduled.'}}});assert(invented.issues.some(i=>i.code==='visible_recurrence_contradiction'));
 console.log('PASS BMB corpus: 200 measured unique input/expectation sequences, preserved factual gold for independent judge, unchanged rejection of unexpected actions');
+async function verifyV3(){
+ const {readSource}=require('../netlify/functions/bmb-sources'),v3=build({clock:'2026-10-09T12:00:00.000Z',version:3});
+ for(const c of v3.conversations){
+  const fixture=c.context.bmb_release_fixture,{observations,sessions}=materializeFixture(fixture),f=c.turns[0].expect.factual_expectation,src=f.source_fixture;
+  for(const row of src.sleep_rows){assert(observations.some(r=>r.measured_at===row.measured_at&&r.value_number===row.value_number));assert.equal(row.date,row.local_date);assert.equal(row.local_date_timezone,'Europe/Madrid');}
+  if(f.metric!=='recorded_protection_duration')continue;
+  const db=async path=>{assert(path.includes('auth_user_id=eq.owner'));const query=new URLSearchParams(path.split('?')[1]),to=Date.parse(query.get('started_at').slice(3)),from=Date.parse(query.get('or').match(/ended_at\.gte\.([^,]+)/)[1]);return sessions.filter(r=>Date.parse(r.started_at)<to&&Date.parse(r.ended_at)>=from);};
+  const actual=await readSource('owner',{}, {source:'protection_statistics',offset:0,timezone:src.timezone,...src.queried_period},null,db),gold=src.returned_protection_statistics;
+  for(const key of ['available','protected_seconds','session_count','break_count','partial','metric','saved_time_available'])assert.deepEqual(actual.rows[0][key],gold[key],c.id+':'+key);
+  assert.equal(actual.coverage,gold.coverage);
+ }
+ console.log('PASS V3 gold: actual UTC/local-day fields and all100protection flags/counts compared with the real server read; no provider calls');
+}
+verifyV3().catch(e=>{console.error(e);process.exitCode=1;});
