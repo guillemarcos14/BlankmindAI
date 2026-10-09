@@ -35,6 +35,8 @@ assert(checkText(zero,'0 minutos registrados desde las 12:34.').issues.some(i=>i
  assert(checkText(zero,'Not 0 minutes.').issues.some(i=>i.code==='visible_factual_duration_negated'));
  for(const text of ['Your sleep records average 8 hours 2 minutes this week, based on 3 available self-reported sleep-duration records. Missing days are unknown, so this is not an average across every day of the week.','Media482minutos, no es una media de todos los días de la semana.'])assert(!checkText(week,text).issues.some(i=>i.code==='visible_recurrence_contradiction'));
  assert(checkText(week,'Every day blocking is scheduled.').issues.some(i=>i.code==='visible_recurrence_contradiction'));
+ assert(!checkText(week,'La media es de 8 horas y 2 minutos, calculada a partir de 3 registros de sueño declarados por ti. Solo incluye esos registros disponibles, no todos los días de la semana.').issues.some(i=>i.code==='visible_recurrence_contradiction'));
+ assert(checkText(week,'Todos los días se programa un bloqueo.').issues.some(i=>i.code==='visible_recurrence_contradiction'));
 assert.notEqual(checkText(week,'Media 482 minutos.').status,'passed','lexical consistency never proves equivalence without a bound independent review');
  const daily=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'9 hours 3 minutes from one daily sleep summary.'}}});assert(!daily.issues.some(i=>i.code==='visible_recurrence_contradiction'));
  const invented=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'Daily blocking is scheduled.'}}});assert(invented.issues.some(i=>i.code==='visible_recurrence_contradiction'));
