@@ -12,7 +12,7 @@ struct ReportView: View {
     private var headerSecondary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk }
     private var canShowRest: Bool {
         #if DEBUG && targetEnvironment(simulator)
-        if AssistantAppPreview.scenario.contains("progress") { return true }
+        if PostOnboardingPreviewScene.enabled && AssistantAppPreview.scenario != "product-basic-home" { return true }
         #endif
         return healthKitStore.sleepDataAvailable
     }
