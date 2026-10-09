@@ -1,7 +1,7 @@
 "use strict";
 const {supabaseFetch}=require("./_membership");
 const {zone}=require("./bmb-policy");
-const {statistics}=require("./bm-brain-data");
+const {statistics,midnight}=require("./bm-brain-data");
 // A closed catalog, explicit columns and a server-verified identity. Never accept
 // a table, owner or SQL supplied by the model or device.
 const CATALOG={
@@ -102,7 +102,9 @@ async function readSource(userId,identity,q,cutoff,db=supabaseFetch) {
   }
   if(q.source==="learning_changes")path+="&scope=eq.user";
   for(const [key,op] of [["from","gte"],["to","lt"]])if(q[key]) {
-    if(!Number.isFinite(Date.parse(q[key])))throw Error("bmb_invalid_query_date");path+=`&${time}=${op}.${enc(new Date(q[key]).toISOString())}`;
+    if(!Number.isFinite(Date.parse(q[key])))throw Error("bmb_invalid_query_date");
+    const bound=/^\d{4}-\d{2}-\d{2}$/.test(q[key])?midnight(q[key],zone(q.timezone||'UTC')):Date.parse(q[key]);
+    path+=`&${time}=${op}.${enc(new Date(bound).toISOString())}`;
   }
   try {
     const rows=await db(path,{method:"GET"});
@@ -115,7 +117,11 @@ async function readSource(userId,identity,q,cutoff,db=supabaseFetch) {
     });
     const byDate=new Map();for(const row of usable.filter(r=>r.metric==='sleep_duration'&&r.measured_at)){const key=Date.parse(row.measured_at);if(!byDate.has(key))byDate.set(key,[]);byDate.get(key).push(row);}
     const conflicts=[...byDate.values()].filter(group=>new Set(group.map(r=>JSON.stringify([r.value_number,r.unit,r.measurement]))).size>1).flat();
-    const safe=conflicts.length?usable.filter(row=>!conflicts.includes(row)):usable;
+    const safe=(conflicts.length?usable.filter(row=>!conflicts.includes(row)):usable).map(row=>{
+      if(q.source!=='observations'||row.metric!=='sleep_duration'||!Number.isFinite(Date.parse(row.measured_at)))return row;
+      const local_date_timezone=zone(q.timezone||row.timezone||'UTC');
+      return {...row,local_date:new Intl.DateTimeFormat('en-CA',{timeZone:local_date_timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(row.measured_at)),local_date_timezone};
+    });
     return {source:q.source,source_id:q.source,available:true,rows:sanitize(safe),...(conflicts.length?{conflicting_sleep_measurements:conflicts.map(r=>({id:r.id,measured_at:r.measured_at,unit:r.unit})),measurement_conflict:"Incompatible sleep-duration records share the same timestamp. No reliable average/total for the requested period is available until that conflict is resolved. Do not count these as separate nights or silently average the remaining partial rows; explain the conflict and ask which record should be used."}:{}),...(rejected.length?{rejected_sleep_measurements:rejected,measurement_warning:"Excluded invalid sleep-duration records. Never reinterpret their numbers as minutes or as zero; answer only from valid rows and state relevant missing coverage."}:{}),next_offset:rows.length>40?q.offset+40:null,
       coverage:rows.length?"persisted_verified_account_rows":"no_consented_rows_in_range",personalization_after:personal?cutoff||null:null};
   }catch(error){if(/404|does not exist|column|relation/.test(error.message))return {source:q.source,source_id:q.source,available:false,reason:"source_schema_unavailable"};throw error;}

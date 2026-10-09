@@ -139,6 +139,10 @@ function surfaceContradictions(plan, expected, context = {}, inputs = []) {
   const currentInput = String(inputs.at(-1) || "");
   claimText = claimText.replace(/\b(?:not|no)\s+(\d+(?:[.,]\d+)?)[\s-]*(minutes?|mins?|minutos?|hours?|horas?)\b/gi, (clause, raw, unit) => {
     const value = Number(raw.replace(",", ".")) * (/^(hour|hora)/i.test(unit) ? 60 : 1);
+    if(expected.factual_expectation){
+      if(value===expected.factual_expectation.expected_minutes)failures.push({code:'visible_factual_duration_negated',actual:value,expected:value});
+      return '[negated duration, requires independent meaning review]';
+    }
     const grounded = [...currentInput.matchAll(/\b(?:not|no)\s+(\d+(?:[.,]\d+)?)[\s-]*(minutes?|mins?|minutos?|hours?|horas?)\b/gi)]
       .some(match => Number(match[1].replace(",", ".")) * (/^(hour|hora)/i.test(match[2]) ? 60 : 1) === value);
     if (!grounded) return clause;
@@ -185,6 +189,11 @@ function surfaceContradictions(plan, expected, context = {}, inputs = []) {
     }
   }
   const allowedClocks = new Set([expected.state.start?.minute, expected.state.end,...(expected.factual_expectation?.source_fixture?.allowed_observation_clocks||[])].filter(Number.isInteger));
+  const sourceFixture=expected.factual_expectation?.source_fixture;
+  for(const boundary of Object.values(sourceFixture?.queried_period||{}))if(Number.isFinite(Date.parse(boundary))){
+    const parts=new Intl.DateTimeFormat('en-GB',{timeZone:sourceFixture.timezone||'UTC',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(boundary));
+    allowedClocks.add(Number(parts.find(p=>p.type==='hour').value)*60+Number(parts.find(p=>p.type==='minute').value));
+  }
   for (const match of claimText.matchAll(/\b(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?\b|\b(\d{1,2}):(\d{2})\b/gi)) {
     const hour = Number(match[1] ?? match[4]);
     const minute = Number(match[2] ?? match[5] ?? 0);
@@ -198,8 +207,15 @@ function surfaceContradictions(plan, expected, context = {}, inputs = []) {
     const remainder=claimText.replace(combined,(_,h,m)=>{values.push(Number(h.replace(',','.'))*60+Number(m.replace(',','.')));return '';});
     for(const match of remainder.matchAll(/\b(\d+(?:[.,]\d+)?)\s*(minutes?|mins?|minutos?|hours?|horas?|h)\b/gi))values.push(Number(match[1].replace(',','.'))*(/^h/i.test(match[2])?60:1));
     const f=expected.factual_expectation,allowed=f.expected_minutes;
+    const supported=[allowed];
+    if(f.metric==='sleep_duration'&&allowed!==null)for(const row of sourceFixture?.sleep_rows||[]){
+      if(row.unit!=='minutes'||!Number.isFinite(row.value_number)||!row.date)continue;
+      const at=require('../netlify/functions/bm-brain-data').midnight(row.date,sourceFixture.timezone||'UTC'),bounds=sourceFixture.queried_period;
+      if(bounds&&(at<Date.parse(bounds.from)||at>=Date.parse(bounds.to)))continue;
+      supported.push(row.value_number);
+    }
     if(allowed===null&&values.length)failures.push({code:'visible_unknown_fact_duration',actual:values,expected:null});
-    if(allowed!==null&&values.some(v=>Math.abs(v-allowed)>1))failures.push({code:'visible_factual_duration_contradiction',actual:values,expected:allowed});
+    if(allowed!==null&&values.some(v=>!supported.some(n=>Math.abs(v-n)<=1)))failures.push({code:'visible_factual_duration_contradiction',actual:values,expected:supported});
     // Lack of a numeric fact remains subject to exact independent meaning review.
   }else for (const match of claimText.matchAll(/\b(\d+(?:[.,]\d+)?)\s*(minutes?|mins?|minutos?|hours?|horas?)\b/gi)) {
     const value = Number(match[1].replace(",", ".")) * (/^(hour|hora)/i.test(match[2]) ? 60 : 1);

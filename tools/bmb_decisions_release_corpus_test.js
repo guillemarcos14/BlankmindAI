@@ -12,6 +12,7 @@ for(const c of d.conversations){
 const scrub=value=>JSON.parse(JSON.stringify(value,(key,v)=>['profile','clock','interpretation'].includes(key)?undefined:v));
 assert.equal(new Set(d.conversations.map(c=>digest(c.turns.map(t=>({input:t.input,expected:scrub(t.expect)}))))).size,200);
 const monday=build({clock:'2026-10-12T12:00:00.000Z'});
+for(const c of d.conversations)for(const row of require('./bmb_decisions_release_adapter').materializeFixture(c.context.bmb_release_fixture).observations)assert.match(row.id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 assert.equal(monday.conversations.find(c=>c.id==='bmb-sleep_week-measured-es-1').turns[0].expect.factual_expectation.expected_minutes,null);
 assert.equal(monday.conversations.find(c=>c.id==='bmb-protection_week-recorded-es-1').turns[0].expect.factual_expectation.expected_minutes,0);
 const runs=d.conversations.map(c=>({turns:c.turns.map((t,i)=>({turn:i+1,input:t.input,source:'openai:fixture',status:'unverified',expected:t.expect}))}));
@@ -22,6 +23,17 @@ const wrong=evaluateTurn({expected,body:{...body,plan:{...body.plan,actions:[{ty
 const wrongFact=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'8 horas y 1 minuto.'}}});assert(wrongFact.issues.some(i=>i.code==='visible_factual_duration_contradiction'));
 const missing=d.conversations.find(c=>c.context.bmb_release_fixture.profile==='missing').turns[0].expect;
 assert(evaluateTurn({expected:missing,body}).issues.some(i=>i.code==='visible_unknown_fact_duration'));
+const week=d.conversations.find(c=>c.id==='bmb-sleep_week-measured-es-1').turns[0].expect;
+const checkText=(expect,text)=>evaluateTurn({expected:expect,body:{...body,plan:{...body.plan,message_text:text}}});
+assert(!checkText(week,'Media 482 minutos. Noches de 421, 482 y 543 minutos.').issues.some(i=>i.code==='visible_factual_duration_contradiction'));
+assert(checkText(week,'Media 482 minutos. Una noche de 500 minutos.').issues.some(i=>i.code==='visible_factual_duration_contradiction'));
+assert(!checkText(missing,'No duration is available, not 0 minutes.').issues.some(i=>i.code==='visible_unknown_fact_duration'));
+assert(checkText(missing,'Your sleep was 0 minutes.').issues.some(i=>i.code==='visible_unknown_fact_duration'));
+const zero=d.conversations.find(c=>c.id==='bmb-protection_week-zero-es-1').turns[0].expect;
+assert(!checkText(zero,'0 minutos registrados desde el lunes a las 00:00.').issues.some(i=>i.code==='visible_clock_contradiction'));
+assert(checkText(zero,'0 minutos registrados desde las 12:34.').issues.some(i=>i.code==='visible_clock_contradiction'));
+assert(checkText(zero,'Not 0 minutes.').issues.some(i=>i.code==='visible_factual_duration_negated'));
+assert.notEqual(checkText(week,'Media 482 minutos.').status,'passed','lexical consistency never proves equivalence without a bound independent review');
  const daily=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'9 hours 3 minutes from one daily sleep summary.'}}});assert(!daily.issues.some(i=>i.code==='visible_recurrence_contradiction'));
  const invented=evaluateTurn({expected,body:{...body,plan:{...body.plan,message_text:'Daily blocking is scheduled.'}}});assert(invented.issues.some(i=>i.code==='visible_recurrence_contradiction'));
 console.log('PASS BMB corpus: 200 measured unique input/expectation sequences, preserved factual gold for independent judge, unchanged rejection of unexpected actions');

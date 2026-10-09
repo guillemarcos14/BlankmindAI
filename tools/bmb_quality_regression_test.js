@@ -40,6 +40,16 @@ async function main(){
  for(let i=1;i<=uuid.length;i++)assert.equal(sources.cleanCitations('Recorded sleep. ['+uuid.slice(0,i),{partial:true}),'Recorded sleep.','bracket prefix leaked at '+i);
  const invalid=[{id:'bad-unit',metric:'sleep_duration',value_number:510,unit:'hours'},{id:'bad-type',metric:'sleep_duration',value_number:'510',unit:'minutes'},{id:'bad-range',metric:'sleep_duration',value_number:1500,unit:'minutes'}];
  const q={source:'observations',offset:0};let pathSeen;
+ await sources.readSource('owner',{}, {...q,timezone:'Europe/Madrid',from:'2026-10-08',to:'2026-10-09'},null,async path=>{pathSeen=path;return [];});
+ assert.deepEqual(new URLSearchParams(pathSeen.split('?')[1]).getAll('measured_at'),['gte.2026-10-07T22:00:00.000Z','lt.2026-10-08T22:00:00.000Z']);
+ const timestamp='2026-10-07T23:00:00.000Z';
+ for(const [tz,date]of [['Europe/Madrid','2026-10-08'],['UTC','2026-10-07']]){
+   const dated=await sources.readSource('owner',{}, {...q,timezone:tz},null,async()=>[{id:'local-day',metric:'sleep_duration',value_number:543,unit:'minutes',measured_at:timestamp,timezone:'Europe/Madrid'}]);
+   assert.equal(dated.rows[0].local_date,date);assert.equal(dated.rows[0].local_date_timezone,tz);assert.equal(dated.rows[0].measured_at,timestamp);
+ }
+ for(const [at,date]of [['2026-03-28T23:00:00Z','2026-03-29'],['2026-10-24T22:30:00Z','2026-10-25']]){
+   const dated=await sources.readSource('owner',{}, {...q,timezone:'Europe/Madrid'},null,async()=>[{id:'dst',metric:'sleep_duration',value_number:543,unit:'minutes',measured_at:at}]);assert.equal(dated.rows[0].local_date,date);
+ }
  const read=await sources.readSource('owner',{},q,null,async path=>{pathSeen=path;return [...invalid,{id:'zero',metric:'sleep_duration',value_number:0,unit:'minutes'},{id:'valid',metric:'sleep_duration',value_number:402,unit:'minutes'},{id:'other',metric:'energy',value_number:5,unit:'score_0_10'}];});
  assert(pathSeen.includes('auth_user_id=eq.owner'));assert.deepEqual(read.rows.map(r=>r.id),['zero','valid','other']);assert.equal(read.rejected_sleep_measurements.length,3);
  const page=await sources.readSource('owner',{},q,null,async()=>Array.from({length:41},(_,i)=>({...invalid[0],id:String(i)})));assert.equal(page.next_offset,40);assert.equal(page.rows.length,0);

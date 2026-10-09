@@ -146,7 +146,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",existing:sources,db}));
   sources.push(...await require("./bm-jev").prefetch(jevResult,{userId,identity,cutoff,
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",existing:sources,db}));
-  const input={current_message:prompt,mode:proactive?"proactive":"reactive",proactive,now:new Date().toISOString(),
+  const input={sleep_record_dates:'For account sleep observations, local_date in local_date_timezone is the authoritative record day. measured_at is a transport timestamp: its UTC calendar day may differ. Never replace the supplied local day with its UTC day.',current_message:prompt,mode:proactive?"proactive":"reactive",proactive,now:new Date().toISOString(),
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",previous_language:context.language||"en",
     open_followups:openFollowups,context:sanitize(safeContext),memories:saved.filter(m=>m.value!=null).map(m=>({...m,id:"memory:"+m.key})),pending:prior,settings:policyRows[0]||null,sources,source_catalog:inventory(identity),
     coverage:[{source_id:"snapshot",source:"native observations",observed_at:context.brain_snapshot?.generated_at||null},
