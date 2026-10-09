@@ -484,6 +484,10 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .blankAssistantFollowupRequested).receive(on: RunLoop.main)) { _ in
             activeSection = nil
         }
+        .onChange(of: healthKitStore.restAIAvailable) { available in
+            if available { Task { await activateAppChannel() } }
+            else { clearPendingAssistantIdentityState(); showingAssistantChat = false }
+        }
         .onChange(of: assistantConnectCode) { _ in
             clearPendingAssistantIdentityState()
             Task { await activateAppChannel() }
@@ -936,6 +940,7 @@ struct HomeView: View {
     }
 
     private func prepareAssistantAction(_ actionId: String) async throws {
+        guard simulatorGuest || healthKitStore.restAIAvailable else { throw AssistantAppError.sessionChanged }
         let owner = AssistantAppSession.userID
         let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
         let remote = try await AssistantActionInboxClient().actionForApplication(
@@ -2287,6 +2292,7 @@ struct HomeView: View {
     }
 
     private func activateAppChannel() async {
+        guard healthKitStore.restAIAvailable else { return }
         let activatedCode: String
         do { activatedCode = try await AssistantAppClient().activate() } catch { return }
         assistantConnectCode = activatedCode
