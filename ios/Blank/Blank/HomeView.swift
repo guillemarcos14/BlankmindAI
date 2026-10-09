@@ -398,6 +398,7 @@ struct HomeView: View {
                     .offset(x: reduceMotion ? 0 : (activeSection == nil ? edgeDrag * 0.18 : (selectedHomeTab == .control ? viewportWidth : -viewportWidth)))
                     .ignoresSafeArea()
 
+                if simulatorGuest || healthKitStore.restAIAvailable {
                 AssistantAppView(simulatorGuest: simulatorGuest, usesHomePresentation: true,
                     isHomeVisible: activeSection == nil,
                     offersFirstUseSetup: BlankSharedState.defaults.integer(forKey: "blankHealthOnboardingVersion") == 6,
@@ -414,6 +415,13 @@ struct HomeView: View {
                     .allowsHitTesting(activeSection == nil)
                     .accessibilityHidden(activeSection != nil)
 
+                } else {
+                    basicBlockingHome
+                        .frame(width: viewportWidth, height: viewportHeight)
+                        .opacity(activeSection == nil ? 1 : 0)
+                        .allowsHitTesting(activeSection == nil)
+                        .accessibilityHidden(activeSection != nil)
+                }
                 homeSectionScreen(viewportWidth: viewportWidth, viewportHeight: viewportHeight)
 
                 MinimalHomeNavigation(selected: selectedHomeTab,
@@ -796,6 +804,53 @@ struct HomeView: View {
         }
         .fixedSize(horizontal: true, vertical: false)
         .frame(width: 291, height: 47)
+    }
+
+    @State private var showingRestSetup = false
+
+    private var basicBlockingHome: some View {
+        MinimalOnboardingPanel {
+            Text("Your distractions. Your choice.")
+                .font(.blankOnboardingEditorial(size: 30, relativeTo: .title))
+                .padding(.bottom, 24)
+            Button("Choose distractions") { openSection(.distractions) }
+                .buttonStyle(OnboardingButtonStyle()).padding(.bottom, 12)
+            if sessionStore.isBlankActive {
+                bottomAction(width: 320).padding(.vertical, 12)
+                Button("Emergency unlock") { openSection(.emergency) }
+                    .buttonStyle(OnboardingButtonStyle())
+            } else {
+                Button("Block apps") {
+                    if sessionStore.hasSelectedApps { handleHomeOrb(.block) }
+                    else { showingPicker = true }
+                }
+                .buttonStyle(OnboardingButtonStyle())
+                .accessibilityIdentifier("basic-block-apps")
+            }
+            if let message { Text(message).font(.blankBody).padding(.top, 16) }
+            if !healthKitStore.sleepDataAvailable {
+                Text("Connect measured sleep records to unlock personalised rest statistics and rest content.")
+                    .font(.blankBody).padding(.top, 24)
+                Button("Connect Apple Health") { healthKitStore.requestAccess() }
+                    .buttonStyle(OnboardingButtonStyle()).padding(.top, 16)
+            } else if !healthKitStore.aiSharingAllowed {
+                Text("Blankmind AI shares your messages, protection history and selected sleep summaries with our backend and OpenAI. Broad Health context and clinical documents stay on this iPhone. Spoken replies are AI-generated.")
+                    .font(.blankBody).padding(.top, 24)
+                Link("Privacy Policy", destination: URL(string: "https://blankmind.ai/privacy")!)
+                    .padding(.vertical, 12)
+                Button("Allow sharing with OpenAI") { healthKitStore.enableAISharing(); showingRestSetup = true }
+                    .buttonStyle(OnboardingButtonStyle())
+                    .accessibilityIdentifier("basic-ai-consent")
+            } else if !healthKitStore.restAIAvailable {
+                Button("Finish rest setup") { showingRestSetup = true }
+                    .buttonStyle(OnboardingButtonStyle())
+            }
+        }
+        .accessibilityIdentifier("basic-blocking-home")
+        .sheet(isPresented: $showingRestSetup) {
+            SetupView(healthKitStore: healthKitStore) { showingRestSetup = false }
+                .environmentObject(sessionStore)
+        }
     }
 
     private func topNavButton(_ title: String, action: @escaping () -> Void) -> some View {
@@ -1394,6 +1449,7 @@ struct HomeView: View {
     }
 
     private func openAssistantChat() {
+        guard simulatorGuest || healthKitStore.restAIAvailable else { activeSection = nil; return }
         homeChatFocused = false
         acceptingHomeSpeech = false
         homeSpeech.stop()
@@ -1565,6 +1621,7 @@ struct HomeView: View {
     }
 
     private func evaluateBAIProactiveSignals() {
+        guard healthKitStore.restAIAvailable else { return }
         let system = aiSystem
         let summaries = healthKitStore.summaries
         let selectionCount = sessionStore.selectionCount
@@ -1717,6 +1774,7 @@ struct HomeView: View {
     }
 
     private func presentRelapseReview() {
+        guard healthKitStore.restAIAvailable else { return }
         withAnimation(.easeInOut(duration: 0.35)) {
             showingRelapseReview = true
         }
@@ -2120,6 +2178,7 @@ struct HomeView: View {
     }
 
     private func syncAssistantContext() {
+        guard healthKitStore.restAIAvailable else { return }
         BlankBrain.shared.sync()
     }
 
@@ -2152,6 +2211,7 @@ struct HomeView: View {
     }
 
     private func pollPendingAssistantActionIfNeeded(force: Bool = false, now: Date = Date()) {
+        guard healthKitStore.restAIAvailable else { return }
         guard force || now.timeIntervalSince(lastAssistantActionPollAt) >= 5 else { return }
         guard !assistantActionPollInFlight,
               !homeConversationBusy,
@@ -2648,6 +2708,7 @@ private enum ControlSettingsGroup: String {
 }
 
 private struct SettingsScreen: View {
+    @StateObject private var healthKitStore = HealthKitStore.shared
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.openURL) private var openURL
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
@@ -2693,14 +2754,20 @@ private struct SettingsScreen: View {
                         settingsRow(title: "distractions", detail: "choose apps and review your blocks", action: onOpenDistractions)
                     }
                     settingsRow(title: "protection", detail: "routines and automatic protection", action: { selectedGroup = .protection })
+                    if healthKitStore.restAIAvailable {
                     settingsRow(title: "notifications", detail: "choose which notices you receive and when", action: { selectedBMBSettings = .notifications })
+                    }
                     settingsRow(title: "Data & Permissions", detail: "connected data, permissions and conversation history", action: { selectedGroup = .data })
                     settingsRow(title: "account", detail: "account controls, privacy and terms", action: { selectedGroup = .account })
                 case .protection:
                     settingsRow(title: "schedule", detail: "manage your protection routines", action: onOpenSchedule)
+                    if healthKitStore.restAIAvailable {
                     settingsRow(title: "automatic protection", detail: "choose when and how Blankmind may act", action: { selectedBMBSettings = .automaticProtection })
+                    }
                 case .data:
+                    if healthKitStore.restAIAvailable {
                     settingsRow(title: "conversation history", detail: "review previous conversations", action: { showingHistory = true })
+                    }
                     settingsRow(title: "health", detail: healthStatus, symbol: healthStatus == "connected" ? "checkmark" : "chevron.right", secondary: healthStatus == "connected", action: onRequestHealthAccess)
                     settingsRow(title: "screen time", detail: screenTimeStatus, symbol: screenTimeStatus == "approved" ? "checkmark" : "chevron.right", secondary: screenTimeStatus == "approved", action: onRequestScreenTimePermission)
                     if HealthKitStore.shared.canUseSyntheticSleep {

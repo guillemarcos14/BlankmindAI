@@ -9,7 +9,7 @@
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Blankmind</string>
+	<string>Blankmind AI</string>
 	<key>BlankMembershipAPIBaseURL</key>
 	<string>$(BLANK_MEMBERSHIP_API_BASE_URL)</string>
 	<key>BlankPrivateQAAuthenticationCookie</key>

@@ -25,7 +25,15 @@ struct ReportView: View {
                         .padding(.top, 16).padding(.bottom, 24)
                 }
             }
-            RestProgressContent(showContext: $showContext)
+            if healthKitStore.sleepDataAvailable {
+                RestProgressContent(showContext: $showContext)
+            } else {
+                Text("Personalised rest statistics require measured sleep records. Blocking and unlocking remain available.")
+                    .font(.blankBody)
+                    .accessibilityIdentifier("progress-sleep-required")
+                Button("Connect Apple Health") { healthKitStore.requestAccess() }
+                    .buttonStyle(.plain).padding(.top, 16)
+            }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 

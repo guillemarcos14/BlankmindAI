@@ -196,6 +196,26 @@ struct SetupView: View {
                 Text("Sleep records are available. We'll keep gathering context to understand your patterns.")
                     .font(.blankBody).accessibilityIdentifier("onboarding-sleep-available")
             }
+            if healthKitStore.sleepDataAvailable && !healthKitStore.aiSharingAllowed {
+                Text("To use Blankmind AI, your messages, protection history and selected sleep summaries are sent to our backend and OpenAI. This is separate from Apple Health read access. Broad Health context and clinical documents stay on this iPhone. Spoken replies are AI-generated.")
+                    .font(.blankBody).fixedSize(horizontal: false, vertical: true)
+                Link("Privacy Policy", destination: URL(string: "https://blankmind.ai/privacy")!)
+                    .padding(.vertical, 12)
+                Button("Allow sharing with OpenAI") { healthKitStore.enableAISharing() }
+                    .buttonStyle(OnboardingButtonStyle())
+                    .accessibilityIdentifier("onboarding-ai-consent")
+            }
+            if !completionInFlight && screenTimeBlocker.authorizationStatus == .approved {
+                Button("Continue with basic blocking") {
+                    healthOnboardingVersion = 6
+                    sessionStore.finishSetup()
+                    onFinishForQA?()
+                }
+                .buttonStyle(OnboardingButtonStyle())
+                .accessibilityIdentifier("onboarding-basic-blocking")
+                Text("Blocking and unlocking are available without sleep data. Personalised rest statistics and rest content unlock when measured sleep records are available.")
+                    .font(.blankInter(size: 13, relativeTo: .caption)).padding(.top, 12)
+            }
             if healthKitStore.canUseSyntheticSleep {
                 Button(healthKitStore.syntheticSleepEnabled ? "Use Apple Health sleep" : "Use synthetic sleep") {
                     healthKitStore.setSyntheticSleepEnabled(!healthKitStore.syntheticSleepEnabled)
@@ -253,7 +273,7 @@ struct SetupView: View {
     }
 
     private var canAutomaticallyComplete: Bool {
-        currentStep == .device && deviceReady
+        currentStep == .device && deviceReady && healthKitStore.aiSharingAllowed
             && scenePhase == .active
     }
 
@@ -312,7 +332,7 @@ struct SetupView: View {
         message = nil
         defer { completionInFlight = false }
         await refreshDeviceState()
-        guard deviceReady else {
+        guard deviceReady && healthKitStore.aiSharingAllowed else {
             message = "Allow Screen Time and connect sleep records to continue."
             return
         }
@@ -333,6 +353,7 @@ struct SetupView: View {
             savedStepRaw = OnboardingStep.account.rawValue
             await purchaseStore.registerReferredActivation(referredUserId: currentAnonymousUserId())
             guard deviceReady, AssistantAppSession.userID == setupOwner else { return }
+            if let setupOwner { healthKitStore.completeRestSetup(owner: setupOwner) }
             healthOnboardingVersion = 6
             sessionStore.finishSetup()
             onFinishForQA?()
