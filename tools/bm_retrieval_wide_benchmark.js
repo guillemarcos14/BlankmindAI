@@ -59,7 +59,7 @@ async function main(){
  };
  const sourceHashes=Object.fromEntries(Object.entries(roots).map(([key,root])=>[key,Object.fromEntries(["assistant-app.js","bmb-brain.js","bm-decisions.js","bm-retrieval-step.js","bmb-sources.js","bm-brain-data.js","bm-response-stream.js","bm-conversation-style.js","bmb-sleep-context.js"].flatMap(n=>{const f=path.join(root,"netlify/functions",n);return fs.existsSync(f)?[[n,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]]:[]}))]));
  const report={schema_version:1,run_id:runId,provider_real:true,decisions_real:true,database_real:true,netlify_transport_tested:false,physical_device_tested:false,native_actions_executed:0,source_commits:{optimized:require("node:child_process").execFileSync("git",["-C",roots.optimized,"rev-parse","HEAD"],{encoding:"utf8"}).trim(),decisions:require("node:child_process").execFileSync("git",["-C",roots.decisions,"rev-parse","HEAD"],{encoding:"utf8"}).trim()},
-   order:"paired AB/BA alternation by case; identical independent fixtures; same conversation context within each variant",from_pair:fromPair,pair_count:pairs,sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,complete:false,gates_passed:false};
+   order:"paired AB/BA alternation by case; identical independent fixtures; same conversation context within each variant",data_policy:args.includes('--account-policy')?'authenticated-account-records':'synthetic-private-qa',from_pair:fromPair,pair_count:pairs,sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,complete:false,gates_passed:false};
  const save=()=>fs.writeFileSync(file,JSON.stringify({...report,summary:summarize(records,rates)},null,2));
  let user,connect,token;const fixtureNow=Date.now();report.fixture_clock=new Date(fixtureNow).toISOString();report.case_manifest=JSON.parse(fs.readFileSync(get("--cases","tools/datasets/bm_retrieval_step_cases_2026-10-08.json")));
  const context=()=>({context_revision:Date.now()*1000,language:"en",locale:"en",timezone:"Europe/Madrid",has_selected_apps:true,selection_count:2,
@@ -69,14 +69,14 @@ async function main(){
    {onDraft:text=>{if(active&&text==="")active.first_text_ms=null;if(active&&text.trim()){active.drafts.push(text);if(active.first_text_ms===null)active.first_text_ms=performance.now()-active.start;}}});
  const streams={};for(const [key,root]of Object.entries(roots))streams[key]=(await import(require('url').pathToFileURL(path.join(root,'netlify/functions/assistant-app-stream.mjs')))).default;
  const invokeStream=async(variant,body)=>{const r=await streams[variant](new Request('http://localhost/assistant-app-stream',{method:'POST',headers:{authorization:'Bearer '+token},body:JSON.stringify({app_install_id:install,...body})}),{});let buffer='',result;const reader=r.body.getReader(),decoder=new TextDecoder();const frames=[];while(true){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let i;while((i=buffer.indexOf('\n'))>=0){const frame=JSON.parse(buffer.slice(0,i));buffer=buffer.slice(i+1);frames.push(frame.type);if(frame.type==='draft'&&frame.text.trim()){active.drafts.push(frame.text);if(active.first_text_ms===null)active.first_text_ms=performance.now()-active.start;}if(frame.type==='result')result=frame;}}active.transport_frames=frames;return {statusCode:result?.status||503,body:JSON.stringify(result?.body||{})};};
- const envBefore=Object.fromEntries(["BM_RETRIEVAL_STEP_QA_ENABLED","BM_DECISIONS_QA_ENABLED","BM_DECISIONS_DATA_POLICY","BM_DECISIONS_QA_USERS","BM_JEV_SHADOW_ENABLED","BM_JEV_PREFETCH_EXPERIMENT"].map(k=>[k,process.env[k]]));
+ const envBefore=Object.fromEntries(["BM_RETRIEVAL_STEP_ENABLED","BM_RETRIEVAL_STEP_QA_ENABLED","BM_DECISIONS_QA_ENABLED","BM_DECISIONS_DATA_POLICY","BM_DECISIONS_QA_USERS","BM_JEV_SHADOW_ENABLED","BM_JEV_PREFETCH_EXPERIMENT"].map(k=>[k,process.env[k]]));
  const originalInfo=console.info;
  try{
    const password=crypto.randomBytes(28).toString("base64url"),email="decisions-"+runId+"@example.invalid";
    user=(await request("/auth/v1/admin/users",{email,password,email_confirm:true,app_metadata:{provider:"apple",providers:["apple"],synthetic_staging_run:runId}})).id;
    token=(await request("/auth/v1/token?grant_type=password",{email,password},{apikey:c.anonKey})).access_token;
    const activated=await invoke("optimized",{action:"activate"});if(activated.statusCode!==200)throw Error("decisions_activation_failed");connect=JSON.parse(activated.body).assistant_connect_code;
-   Object.assign(process.env,{BM_DECISIONS_DATA_POLICY:"synthetic-private-qa",BM_DECISIONS_QA_USERS:user,BM_JEV_SHADOW_ENABLED:"false",BM_JEV_PREFETCH_EXPERIMENT:"false"});
+   Object.assign(process.env,{BM_RETRIEVAL_STEP_ENABLED:"false",BM_DECISIONS_DATA_POLICY:args.includes('--account-policy')?"authenticated-account-records":"synthetic-private-qa",BM_DECISIONS_QA_USERS:user,BM_JEV_SHADOW_ENABLED:"false",BM_JEV_PREFETCH_EXPERIMENT:"false"});
    for(let pair=fromPair;pair<fromPair+pairs;pair++){
     // Long paired runs can exceed the one-hour access-token lifetime. Renew
     // before each pair; keep authentication failures as explicit failures.
@@ -85,7 +85,8 @@ async function main(){
      await Promise.all([...["assistant_app_turns","bmb_events","bmb_followups","bmb_observations","bm_brain_memories","bmb_sessions"].map(table=>request(`/rest/v1/${table}?auth_user_id=eq.${user}`,undefined,service,"DELETE")),...["assistant_semantic_conversations","digital_wellness_feature_payloads"].map(table=>request(`/rest/v1/${table}?anonymous_user_id=eq.${memoryIdentity("app",user)}`,undefined,service,"DELETE"))]);
      const spec=CASES[pair%CASES.length],{language}=spec,group=spec.route;
      const expected=await seed(spec,{request,user,service,now:fixtureNow});
-     process.env.BM_DECISIONS_QA_ENABLED="false";process.env.BM_RETRIEVAL_STEP_QA_ENABLED=variant==="decisions"&&!args.includes("--retrieval-off")?"true":"false";
+     process.env.BM_DECISIONS_QA_ENABLED="false";process.env.BM_RETRIEVAL_STEP_QA_ENABLED=!args.includes('--account-policy')&&variant==="decisions"&&!args.includes("--retrieval-off")?"true":"false";
+     process.env.BM_RETRIEVAL_STEP_ENABLED=args.includes('--account-policy')&&variant==="decisions"&&!args.includes('--retrieval-off')?'true':'false';
      let nativeContext={};
      if(spec.native_sleep){const {dayOffset}=require('../netlify/functions/bm-brain-data'),today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).format(fixtureNow),values=report.case_manifest.native_sleep_values;
        const source=spec.native_sleep_source||'synthetic_qa',nights=values.map((sleep_minutes,i)=>({date:dayOffset(today,i-values.length),source,sleep_minutes}));

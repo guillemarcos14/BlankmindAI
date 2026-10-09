@@ -136,6 +136,9 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
       {source_id:"policy",source:"user configured permissions"}]};
   let result=await require("./bm-retrieval-step").answer(input,run,retrieval?.contract);
   if(retrieval)console.info(JSON.stringify({event:"bm_retrieval_step_answer",route:retrieval.contract.route,accepted:Boolean(result)}));
+  if(retrieval&&!result&&retrieval.source.source_id===currentSleep.source_id){
+    const i=sources.findIndex(s=>s.source_id===currentSleep.source_id);if(i>=0)sources[i]=currentSleep;
+  }
   if(retrieval&&!result&&onDraft)onDraft("");
   for(let pass=0;!result||result.phase==="read";pass++) {
     if(pass>=4)throw Error("bmb_read_budget_exhausted");

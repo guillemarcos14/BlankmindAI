@@ -15,18 +15,22 @@ function request(text){return {model:decisions.MODEL,input:JSON.stringify({curre
 function selected(result){if(!result||typeof result.answers.eligible!=="number"||result.answers.eligible<.9)return null;const chosen=Object.keys(ROUTES).filter(k=>result.answers[k]>=.9);
  return chosen.length===1&&Object.keys(ROUTES).filter(k=>k!==chosen[0]).every(k=>result.answers[k]!=null&&result.answers[k]<.1)?chosen[0]:null;}
 const PRODUCTION="https://vhiikgyyfisejjwqtxfc.supabase.co";
-function production(env){return env.BM_RETRIEVAL_STEP_ENABLED==="true"&&env.BM_DECISIONS_DATA_POLICY==="authenticated-account-records"&&env.SUPABASE_URL===PRODUCTION;}
-function enabled(userId,env=process.env){return (production(env)&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId||"")&&Boolean(env.OPENAI_API_KEY)&&Boolean(env.SUPABASE_SERVICE_ROLE_KEY))||decisions.enabled(userId,{...env,BM_DECISIONS_QA_ENABLED:env.BM_RETRIEVAL_STEP_QA_ENABLED});}
+const PRIVATE_QA="https://njqbovsmoowkhhsqmitn.supabase.co";
+function accountRecords(env){return env.BM_RETRIEVAL_STEP_ENABLED==="true"&&env.BM_DECISIONS_DATA_POLICY==="authenticated-account-records"&&[PRODUCTION,PRIVATE_QA].includes(env.SUPABASE_URL);}
+function production(env){return accountRecords(env)&&env.SUPABASE_URL===PRODUCTION;}
+function enabled(userId,env=process.env){return (accountRecords(env)&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId||"")&&Boolean(env.OPENAI_API_KEY)&&Boolean(env.SUPABASE_SERVICE_ROLE_KEY))||decisions.enabled(userId,{...env,BM_DECISIONS_QA_ENABLED:env.BM_RETRIEVAL_STEP_QA_ENABLED});}
 // A rejection-only filter avoids adding provider latency to unrelated requests.
 // It never selects a route or authorizes a source, memory change or device action.
-function candidate(text){return /\?|\b(?:how|what|show|tell|cu[aá]nt[oa]s?|qu[eé]|dime|mu[eé]strame|consulta)\b/iu.test(text)&&/\b(?:yesterday|ayer|this (?:calendar )?week|esta semana)\b/iu.test(text)&&/\b(?:sleep|slept|sueño|dorm[ií]|dormir|protection|protected|protecci[oó]n|proteg[ií])\b/iu.test(text)&&! /\b(?:block|bloquea|programa|schedule|forget|olvida|borra|delete|translate|traduce|repeat|repite|echo|quote|cita|grammar|gram[aá]tica|rewrite|reformula|fiction|fictici|hypothetical|hipot[eé]tic|compare|compara|advice|consejo|should|deber[ií]a|cause|caus[oó]|why|por qu[eé])\b/iu.test(text);}
+const words=expression=>new RegExp("(?<![\\p{L}\\p{N}_])(?:"+expression+")(?![\\p{L}\\p{N}_])","iu");
+const question=words("how|what|show|tell|cu[aá]nt[oa]s?|qu[eé]|dime|mu[eé]strame|consulta"),period=words("yesterday|ayer|this (?:calendar )?week|esta semana"),metric=words("sleep|slept|sueño|dorm[ií]|dormir|protection|protected|protecci[oó]n|proteg[ií]"),excluded=words("block|bloquea|programa|schedule|forget|olvida|borra|delete|translate|traduce|repeat|repite|echo|quote|cita|grammar|gram[aá]tica|rewrite|reformula|fiction|fictici[a-záéíóú]*|hypothetical|hipot[eé]tic[a-záéíóú]*|compare|compara|advice|consejo|should|deber[ií]a|cause|caus[oó]|why|por qu[eé]");
+function candidate(text){return (/\?/u.test(text)||question.test(text))&&period.test(text)&&metric.test(text)&&!excluded.test(text);}
 async function start(userId,text,{fetcher=fetch,env=process.env}={}){
  if(!enabled(userId,env)||String(text).length>1500||!candidate(String(text)))return null;
  const begin=performance.now(),signal=AbortSignal.timeout(1000);let result=null;
  try{
-  // Production userId comes only from assistant-app's verified JWT/install
-  // identity. QA still requires server-owned synthetic metadata and allowlist.
-  if(!production(env)){
+  // Account-records userId comes only from the verified JWT/install identity.
+  // The legacy synthetic QA mode additionally checks server-owned metadata.
+  if(!accountRecords(env)){
    const r=await fetcher(env.SUPABASE_URL+"/auth/v1/admin/users/"+userId,{method:"GET",redirect:"error",signal,headers:{apikey:env.SUPABASE_SERVICE_ROLE_KEY,authorization:"Bearer "+env.SUPABASE_SERVICE_ROLE_KEY}});
    if(!r.ok)throw Error("synthetic_check");const user=await r.json();
    if(user.id?.toLowerCase()!==userId.toLowerCase()||! /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.app_metadata?.synthetic_staging_run||""))throw Error("synthetic_required");
@@ -75,4 +79,4 @@ function proseRequest(input){const c=input.retrieval_contract,source=input.sourc
 function cleanProse(text){return typeof text==="string"?text.replace(/\uE200cite[\s\S]*?(?:\uE201|$)/gu,"").trim():text;}
 function expandProse(r,input){const response_text=cleanProse(r.response_text);if(!response_text?.trim()||/[\uE200-\uE202]/u.test(response_text)||/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i.test(response_text))throw Error("retrieval_invalid_prose");
  return {...r,response_text,phase:"final",message_kind:"question",decision:"respond",evidence:input.current_message,action:null,memory:null,accepted_proposal:null,pending_request:null,queries:[],observations:[],followup_resolution:null,longitudinal_review:null};}
-module.exports={ROUTES,INSTRUCTIONS,PROSE_INSTRUCTIONS,proseRequest,cleanProse,expandProse,request,selected,enabled,production,candidate,start,prepare,safeFinal,answer};
+module.exports={ROUTES,INSTRUCTIONS,PROSE_INSTRUCTIONS,proseRequest,cleanProse,expandProse,request,selected,enabled,production,accountRecords,candidate,start,prepare,safeFinal,answer};
