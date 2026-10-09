@@ -112,7 +112,11 @@ async function readSource(userId,identity,q,cutoff,db=supabaseFetch) {
     const usable=rows.slice(0,40).filter(row=>{
       if(q.source!=="observations"||row.metric!=="sleep_duration")return true;
       const reason=row.unit!=="minutes"?"unsupported_duration_unit":!Number.isFinite(row.value_number)||row.value_number<0||row.value_number>1440?"invalid_sleep_duration":null;
-      if(reason)rejected.push({id:row.id,unit:row.unit,reason});
+      if(reason){
+        const local_date_timezone=zone(q.timezone||row.timezone||'UTC');
+        const dated=Number.isFinite(Date.parse(row.measured_at))?{measured_at:row.measured_at,local_date:new Intl.DateTimeFormat('en-CA',{timeZone:local_date_timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(row.measured_at)),local_date_timezone}:{};
+        rejected.push({id:row.id,unit:row.unit,reason,...dated});
+      }
       return !reason;
     });
     const byDate=new Map();for(const row of usable.filter(r=>r.metric==='sleep_duration'&&r.measured_at)){const key=Date.parse(row.measured_at);if(!byDate.has(key))byDate.set(key,[]);byDate.get(key).push(row);}
@@ -122,7 +126,7 @@ async function readSource(userId,identity,q,cutoff,db=supabaseFetch) {
       const local_date_timezone=zone(q.timezone||row.timezone||'UTC');
       return {...row,local_date:new Intl.DateTimeFormat('en-CA',{timeZone:local_date_timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(row.measured_at)),local_date_timezone};
     });
-    return {source:q.source,source_id:q.source,available:true,rows:sanitize(safe),...(conflicts.length?{conflicting_sleep_measurements:conflicts.map(r=>({id:r.id,measured_at:r.measured_at,unit:r.unit})),measurement_conflict:"Incompatible sleep-duration records share the same timestamp. No reliable average/total for the requested period is available until that conflict is resolved. Do not count these as separate nights or silently average the remaining partial rows; explain the conflict and ask which record should be used."}:{}),...(rejected.length?{rejected_sleep_measurements:rejected,measurement_warning:"Excluded invalid sleep-duration records. Never reinterpret their numbers as minutes or as zero; answer only from valid rows and state relevant missing coverage."}:{}),next_offset:rows.length>40?q.offset+40:null,
+    return {source:q.source,source_id:q.source,available:true,rows:sanitize(safe),...(conflicts.length?{conflicting_sleep_measurements:conflicts.map(r=>({id:r.id,measured_at:r.measured_at,unit:r.unit})),measurement_conflict:"Incompatible sleep-duration records share the same timestamp. No reliable average/total for the requested period is available until that conflict is resolved. Do not count these as separate nights or silently average the remaining partial rows; explain the conflict and ask which record should be used."}:{}),...(rejected.length?{rejected_sleep_measurements:rejected,measurement_warning:"Excluded invalid sleep-duration records. Their supplied local dates remain the actual record days; invalid units do not make the records older or outside the requested period. Never reinterpret their numbers as minutes or as zero; answer only from valid rows and state relevant missing coverage."}:{}),next_offset:rows.length>40?q.offset+40:null,
       coverage:rows.length?"persisted_verified_account_rows":"no_consented_rows_in_range",personalization_after:personal?cutoff||null:null};
   }catch(error){if(/404|does not exist|column|relation/.test(error.message))return {source:q.source,source_id:q.source,available:false,reason:"source_schema_unavailable"};throw error;}
 }

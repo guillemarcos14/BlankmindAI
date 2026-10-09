@@ -235,7 +235,7 @@ function surfaceContradictions(plan, expected, context = {}, inputs = []) {
   }
   if (/\b(?:I(?:'ve| have)? (?:already )?(?:blocked|scheduled|activated|created|started)|(?:ya )?(?:he bloqueado|he programado|he activado)|(?:is|are) now blocked)\b/i.test(text)
       && context.execution_verified !== true) failures.push({ code: "unverified_execution_claim" });
-  const recurrenceText=expected.factual_expectation?.metric==='sleep_duration'?claimText.replace(/\bdaily sleep(?:-duration)? (?:summar(?:y|ies)|measurements?|records?)\b/gi,'[dated sleep source]'):claimText;
+  const recurrenceText=expected.factual_expectation?.metric==='sleep_duration'?claimText.replace(/\bdaily sleep(?:-duration)? (?:summar(?:y|ies)|measurements?|records?)\b/gi,'[dated sleep source]').replace(/\b(?:not (?:an? )?(?:average|mean) (?:across|over|for) every day(?: of (?:the|this) week)?|no (?:es )?(?:una? )?(?:media|promedio) (?:de|sobre) todos los d[ií]as(?: de (?:la|esta) semana)?)\b/gi,'[mean over available records only]'):claimText;
   if (/\b(?:every day|daily|cada d[ií]a|todos los d[ií]as)\b/i.test(recurrenceText) && !["daily"].includes(expected.state.recurrence?.type) && expected.state.action_type !== "daily_limit") {
     failures.push({ code: "visible_recurrence_contradiction", expected: expected.state.recurrence });
   }
