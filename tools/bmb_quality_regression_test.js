@@ -5,6 +5,9 @@ const final=()=>({phase:'final',response_language:'en',message_kind:'question',d
 const context=()=>({language:'en',memory:{},brain_snapshot:{generated_at:new Date().toISOString(),timezone:'Europe/Madrid',sessions:[]}});
 const db=async path=>{if(path.startsWith('bmb_accounts')||path.startsWith('bmb_followups')||path.startsWith('assistant_app_turns'))return [];throw Error(path);};
 async function main(){
+ const app=require('../netlify/functions/assistant-app'),action={type:'start_protection',minutes:30};
+ assert.equal(app.visibleReply({bmb_generated:true,response_language:'en',response_text:'You slept 9 hours. I’m starting a 30-minute block now.',actions:[action]},{},action),"You slept 9 hours. I've prepared a 30-minute block now.");
+ assert.equal(app.visibleReply({bmb_generated:true,response_language:'es',response_text:'Dormiste 9 horas. He iniciado un bloqueo de 30 minutos.',actions:[action]},{},action),'Dormiste 9 horas. He preparado un bloqueo de 30 minutos.');
  assert.equal(sources.cleanCitations('Recorded 6 h. ['+uuid+', '+uuid+']'),'Recorded 6 h.');
  assert.equal(sources.cleanCitations('Recorded 6 h. '+uuid),'Recorded 6 h.');
  assert.equal(sources.cleanCitations('Keep ['+uuid+']',{quotedIn:'Repeat ['+uuid+']'}),'Keep ['+uuid+']');
@@ -17,6 +20,7 @@ async function main(){
  const read=await sources.readSource('owner',{},q,null,async path=>{pathSeen=path;return [...invalid,{id:'zero',metric:'sleep_duration',value_number:0,unit:'minutes'},{id:'valid',metric:'sleep_duration',value_number:402,unit:'minutes'},{id:'other',metric:'energy',value_number:5,unit:'score_0_10'}];});
  assert(pathSeen.includes('auth_user_id=eq.owner'));assert.deepEqual(read.rows.map(r=>r.id),['zero','valid','other']);assert.equal(read.rejected_sleep_measurements.length,3);
  const page=await sources.readSource('owner',{},q,null,async()=>Array.from({length:41},(_,i)=>({...invalid[0],id:String(i)})));assert.equal(page.next_offset,40);assert.equal(page.rows.length,0);
+ const conflicted=await sources.readSource('owner',{},q,null,async()=>[{id:'a',metric:'sleep_duration',value_number:420,unit:'minutes',measurement:'measured',measured_at:'2026-10-08T08:00:00Z'},{id:'b',metric:'sleep_duration',value_number:123,unit:'minutes',measurement:'measured',measured_at:'2026-10-08T08:00:00Z'}]);assert.equal(conflicted.rows.length,0);assert.equal(conflicted.conflicting_sleep_measurements.length,2);
  let calls=0;const repaired=await brain.plan({prompt:'rest',context:context(),userId:'owner',identity:{}},{db,memories:[],run:async input=>{calls++;if(calls===1)return {...final(),response_text:'',decision:'silent'};assert.equal(input.tool_budget_remaining,0);return final();}});assert.equal(calls,2);assert.equal(repaired.plan.response_text,'A quieter evening may help.');assert.deepEqual(repaired.plan.actions,[]);
  calls=0;await assert.rejects(()=>brain.plan({prompt:'rest',context:context(),userId:'owner',identity:{}},{db,memories:[],run:async()=>++calls===1?{...final(),response_text:'',decision:'silent'}:{...final(),pending_request:'changed'}}),/repair_changed_effects/);
  calls=0;const citationRepair=await brain.plan({prompt:'rest',context:context(),userId:'owner',identity:{}},{db,memories:[],run:async()=>{calls++;return {...final(),response_text:'Recorded sleep: 6 h at 22:30. ['+uuid+']'};}});assert.equal(citationRepair.plan.response_text,'Recorded sleep, 6 h at 22:30.');assert.equal(calls,1);

@@ -199,7 +199,7 @@ function actionCopy(action, spanish) {
 }
 
 function visibleReply(plan, context, action) {
-  const answer = plainAssistantText(chatText(String(plan.message_text || plan.response_text || "").trim().slice(0, 4000)));
+  let answer = plainAssistantText(chatText(String(plan.message_text || plan.response_text || "").trim().slice(0, 4000)));
   if (!answer) throw new Error("assistant_empty_reply");
   const spanish = String(plan.response_language || context.language || "").startsWith("es");
   const proposedAction = Array.isArray(plan.actions) && plan.actions.length > 0;
@@ -208,6 +208,9 @@ function visibleReply(plan, context, action) {
       ? "No he podido preparar esta acción. No se ha aplicado ningún cambio. Puedes volver a pedírmela."
       : "I couldn't prepare this action. No change was applied. You can ask me to try again.";
   }
+  // Preparation is the only result known before the native acknowledgement.
+  // Preserve a combined factual answer while changing only premature start copy.
+  if(action)answer=answer.replace(/\bI(?:['’]m| am) starting\b/gi,"I've prepared").replace(/\bHe iniciado\b/gi,'He preparado');
   if (plan.bmb_generated || hasValidatedCopy(plan)) return answer;
   const copy = actionCopy(action, spanish);
   if (copy) return chatText(copy.text);

@@ -64,7 +64,7 @@ async function prepare(route,{userId,identity,cutoff,timezone,now=Date.now(),db,
  if(!source||source.next_offset!=null||!Array.isArray(source.rows)||source.reason==="source_schema_unavailable")return null;
  if(spec.source==="protection_statistics"&&source.coverage!=="all_persisted_overlapping_rows")return null;
  if(spec.source==="observations"){
-  if(!source.available||source.rejected_sleep_measurements?.length)return null;
+  if(!source.available||source.rejected_sleep_measurements?.length||source.conflicting_sleep_measurements?.length)return null;
   // Never treat a zero sleep duration as absence; preserve measured/declared provenance.
   source={...source,rows:source.rows.filter(r=>r.metric==="sleep_duration")};
   if(source.rows.some(r=>r.unit!=="minutes"||!Number.isFinite(r.value_number)||r.value_number<0||r.value_number>1440))return null;

@@ -14,6 +14,7 @@ async function main(){
  let qSeen;const read=async(u,i,q,cutoff)=>{assert.equal(u,"owner");assert.equal(i.anonymous_user_id,"verified-link");assert.equal(cutoff,options.cutoff);qSeen=q;return {source:q.source,available:true,rows:[{id:"s",metric:"sleep_duration",value_number:0,unit:"minutes"},{metric:"energy",value_number:8,unit:"score_0_10"}],next_offset:null};};
  const ready=await r.prepare("sleep_yesterday",{...options,read});assert.equal(ready.source.rows.length,1);assert.equal(ready.source.rows[0].value_number,0);assert.equal(qSeen.from,"2026-10-06T22:00:00.000Z");assert.equal(qSeen.to,"2026-10-07T22:00:00.000Z");
  assert.equal(await r.prepare("sleep_yesterday",{...options,read:async()=>({available:true,rows:[],next_offset:40})}),null);
+ assert.equal(await r.prepare('sleep_week',{...options,read:async()=>({available:true,rows:[],conflicting_sleep_measurements:[{id:'conflict'}],next_offset:null})}),null);
  assert.equal(await r.prepare("protection_week",{...options,read:async()=>({rows:[],coverage:"first_10000_overlapping_rows"})}),null);
  const week=await r.prepare("sleep_week",{...options,read:async()=>({source:"observations",source_id:"observations",available:true,rows:[420,480,450].map((v,i)=>({id:String(i),metric:"sleep_duration",unit:"minutes",value_number:v,measurement:"measured"})),next_offset:null})});
  assert.equal(week.contract.facts.minutes,450);assert.equal(week.contract.facts.measurement_count,3);
