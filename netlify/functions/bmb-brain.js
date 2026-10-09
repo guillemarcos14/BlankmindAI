@@ -162,7 +162,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   if(result?.phase==="final")result.response_text=cleanCitations(result.response_text,{quotedIn:prompt});
   const m=result?.memory;
   const simulatedSleep=input.sources.find(s=>s.source_id==="current_sleep"&&s.available&&s.is_synthetic);
-  const syntheticCopy=simulatedSleep&&result?.phase==="final"&&result.cited_sources?.some(id=>id==="current_sleep"||id.startsWith("current_sleep:"))&&!/simulat|sint[eé]tic|demo|fictici/i.test(result.response_text||"");
+  const syntheticCopy=simulatedSleep&&result?.phase==="final"&&result.cited_sources?.some(id=>id==="current_sleep"||id.startsWith("current_sleep:"))&&!/simulat|simulad|sint[eé]tic|demo|fictici/i.test(result.response_text||"");
   const reactiveEmpty=!proactive&&result?.phase==="final"&&(result.decision==="silent"||!result.response_text?.trim());
   const needsRepair=result?.phase==="final"&&(reactiveEmpty||syntheticCopy||
     /:(?!\d{2}\b)/.test(result.response_text||"")||(!proactive&&(!result.evidence?.trim()||!prompt.includes(result.evidence)))||
