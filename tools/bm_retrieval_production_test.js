@@ -5,7 +5,7 @@ async function main(){
  const env={SUPABASE_URL:"https://vhiikgyyfisejjwqtxfc.supabase.co",OPENAI_API_KEY:"fixture",SUPABASE_SERVICE_ROLE_KEY:"fixture",BM_RETRIEVAL_STEP_ENABLED:"true",BM_DECISIONS_DATA_POLICY:"authenticated-account-records"};
  assert(r.enabled(user,env));assert(r.enabled(other,env));assert(!r.enabled("anonymous",env));
  assert(r.enabled(other,{...env,SUPABASE_URL:'https://njqbovsmoowkhhsqmitn.supabase.co'}));
- for(const text of ['Consulta cuánto dormí ayer según mis datos, por favor.','¿Cuánta protección registré ayer?'])assert(r.candidate(text));
+ for(const text of ['Retrieve my recorded sleep yesterday in minutes.','Consulta cuánto dormí ayer según mis datos, por favor.','¿Cuánta protección registré ayer?'])assert(r.candidate(text));
  for(const text of ['¿Por qué dormí mal ayer?','Consulta cuánto dormí ayer en este ejemplo hipotético.','¿Qué protección tuve ayer en un caso ficticio?'])assert(!r.candidate(text));
  for(const change of [{BM_RETRIEVAL_STEP_ENABLED:"false"},{BM_DECISIONS_DATA_POLICY:"synthetic-private-qa"},{SUPABASE_URL:"https://untrusted.invalid"},{OPENAI_API_KEY:""}])assert(!r.enabled(user,{...env,...change}));
  let calls=0;const fetcher=async(url,options)=>{calls++;assert.equal(url,"https://api.openai.com/v1/decisions");const payload=JSON.parse(options.body);assert(!options.body.includes(user));return {ok:true,json:async()=>({model:"gpt-6-luna",answers:payload.questions.map(q=>({name:q.name,type:"predicate",probability:["eligible","sleep","yesterday"].includes(q.name)?1:0})),usage:{input_tokens:50,output_tokens:0}})};};
@@ -21,6 +21,9 @@ async function main(){
  const simulated=await r.prepare("sleep_yesterday",{...options,currentSleep:{...options.currentSleep,is_synthetic:true,measurement:"synthetic_qa_fixture"}});assert(simulated.contract.facts.is_synthetic);
  assert.equal(await r.prepare("sleep_week",{...options,currentSleep:null,read:async()=>({available:true,source:"observations",rows:[],rejected_sleep_measurements:[{reason:"unsupported_duration_unit"}]})}),null);
  assert.equal(await r.prepare("sleep_week",{...options,currentSleep:{...options.currentSleep,timezone:"UTC"}}),null);
+ const declaredInput={current_message:'How much measured sleep yesterday?',retrieval_contract:{facts:{measurement_types:['declared']}}};
+ for(const response_text of ['Ayer quedaron medidos 8 horas y 5 minutos, según una medición declarada.','You measured 8 hours of sleep according to your declared record.','You slept 8 hours.'])assert.throws(()=>r.expandProse({response_text},declaredInput),/retrieval_invalid_provenance/);
+ assert(r.safeFinal(r.expandProse({response_text:'El registro disponible es declarado, con 8 horas y 5 minutos de sueño.'},declaredInput)));
  // Run the actual authenticated planner path with owner-scoped source reads.
  const envBefore={...process.env},fetchBefore=global.fetch,infoBefore=console.info;
  Object.assign(process.env,env,{BM_RETRIEVAL_STEP_QA_ENABLED:"false",BM_DECISIONS_QA_ENABLED:"false",BM_JEV_SHADOW_ENABLED:"false",BM_JEV_PREFETCH_EXPERIMENT:"false"});global.fetch=fetcher;console.info=()=>{};
