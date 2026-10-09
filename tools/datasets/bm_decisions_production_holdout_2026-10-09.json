@@ -1,0 +1,827 @@
+{
+  "version": 2,
+  "authored_at": "2026-10-09",
+  "split": "holdout",
+  "native_sleep_values": [
+    397,
+    423,
+    468,
+    411,
+    502,
+    449,
+    486,
+    401,
+    478,
+    431,
+    493,
+    447,
+    465,
+    489
+  ],
+  "cases": [
+    {
+      "id": "hold09-001",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Qué duración de sueño quedó registrada ayer para mí?",
+      "eligible": true,
+      "sleep_minutes": [
+        413,
+        461,
+        487
+      ],
+      "protection_minutes": 83,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-002",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "measured",
+      "text": "What sleep duration is on record for me yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        413,
+        461,
+        487
+      ],
+      "protection_minutes": 83,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-003",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "sparse",
+      "text": "Consulta cuánto dormí ayer según mis datos, por favor.",
+      "eligible": true,
+      "sleep_minutes": [
+        416,
+        463,
+        488
+      ],
+      "protection_minutes": 90,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-004",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "sparse",
+      "text": "Could you retrieve yesterday’s recorded sleep length for me?",
+      "eligible": true,
+      "sleep_minutes": [
+        416,
+        463,
+        488
+      ],
+      "protection_minutes": 90,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-005",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "missing",
+      "text": "¿Me dices las horas de sueño que constan de ayer?",
+      "eligible": true,
+      "sleep_minutes": [
+        419,
+        465,
+        489
+      ],
+      "protection_minutes": 97,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-006",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "missing",
+      "text": "How long did my records say I slept yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        419,
+        465,
+        489
+      ],
+      "protection_minutes": 97,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-007",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "declared",
+      "text": "¿Qué duración de sueño quedó registrada ayer para mí?",
+      "eligible": true,
+      "sleep_minutes": [
+        422,
+        467,
+        490
+      ],
+      "protection_minutes": 104,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-008",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "declared",
+      "text": "What sleep duration is on record for me yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        422,
+        467,
+        490
+      ],
+      "protection_minutes": 104,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-009",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Qué promedio de sueño consta para esta semana natural?",
+      "eligible": true,
+      "sleep_minutes": [
+        420,
+        466,
+        490
+      ],
+      "protection_minutes": 94,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-010",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "measured",
+      "text": "What is my recorded sleep mean for this calendar week?",
+      "eligible": true,
+      "sleep_minutes": [
+        420,
+        466,
+        490
+      ],
+      "protection_minutes": 94,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-011",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "sparse",
+      "text": "Consulta mi media de sueño registrada esta semana.",
+      "eligible": true,
+      "sleep_minutes": [
+        423,
+        468,
+        491
+      ],
+      "protection_minutes": 101,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-012",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "sparse",
+      "text": "Please show my average sleep duration recorded this week.",
+      "eligible": true,
+      "sleep_minutes": [
+        423,
+        468,
+        491
+      ],
+      "protection_minutes": 101,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-013",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "missing",
+      "text": "¿Cuánto he dormido de media esta semana según los registros?",
+      "eligible": true,
+      "sleep_minutes": [
+        426,
+        470,
+        492
+      ],
+      "protection_minutes": 108,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-014",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "missing",
+      "text": "How much sleep have I averaged this week in my records?",
+      "eligible": true,
+      "sleep_minutes": [
+        426,
+        470,
+        492
+      ],
+      "protection_minutes": 108,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-015",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "declared",
+      "text": "¿Qué promedio de sueño consta para esta semana natural?",
+      "eligible": true,
+      "sleep_minutes": [
+        429,
+        472,
+        493
+      ],
+      "protection_minutes": 115,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-016",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "declared",
+      "text": "What is my recorded sleep mean for this calendar week?",
+      "eligible": true,
+      "sleep_minutes": [
+        429,
+        472,
+        493
+      ],
+      "protection_minutes": 115,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-017",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Qué duración total de protección registré ayer?",
+      "eligible": true,
+      "sleep_minutes": [
+        427,
+        471,
+        493
+      ],
+      "protection_minutes": 105,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-018",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "measured",
+      "text": "What total protection duration did I record yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        427,
+        471,
+        493
+      ],
+      "protection_minutes": 105,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-019",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "sparse",
+      "text": "Consulta cuánto tiempo protegido consta de ayer para mí.",
+      "eligible": true,
+      "sleep_minutes": [
+        430,
+        473,
+        494
+      ],
+      "protection_minutes": 112,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-020",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "sparse",
+      "text": "How much recorded protection time do I have from yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        430,
+        473,
+        494
+      ],
+      "protection_minutes": 112,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-021",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "missing",
+      "text": "¿Cuánto suman mis registros de protección de ayer?",
+      "eligible": true,
+      "sleep_minutes": [
+        433,
+        475,
+        495
+      ],
+      "protection_minutes": 119,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-022",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "missing",
+      "text": "Please retrieve my protection total on record for yesterday.",
+      "eligible": true,
+      "sleep_minutes": [
+        433,
+        475,
+        495
+      ],
+      "protection_minutes": 119,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-023",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "declared",
+      "text": "¿Qué duración total de protección registré ayer?",
+      "eligible": true,
+      "sleep_minutes": [
+        436,
+        477,
+        496
+      ],
+      "protection_minutes": 126,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-024",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "declared",
+      "text": "What total protection duration did I record yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        436,
+        477,
+        496
+      ],
+      "protection_minutes": 126,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-025",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Cuánto tiempo de protección consta para mí esta semana?",
+      "eligible": true,
+      "sleep_minutes": [
+        434,
+        476,
+        496
+      ],
+      "protection_minutes": 116,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-026",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "measured",
+      "text": "How much protection time is recorded for me this calendar week?",
+      "eligible": true,
+      "sleep_minutes": [
+        434,
+        476,
+        496
+      ],
+      "protection_minutes": 116,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-027",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "sparse",
+      "text": "Consulta el total de mi protección registrada esta semana natural.",
+      "eligible": true,
+      "sleep_minutes": [
+        437,
+        478,
+        497
+      ],
+      "protection_minutes": 123,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-028",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "sparse",
+      "text": "Please show my recorded protection total for this week.",
+      "eligible": true,
+      "sleep_minutes": [
+        437,
+        478,
+        497
+      ],
+      "protection_minutes": 123,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-029",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "missing",
+      "text": "¿Qué duración suman mis registros de protección de esta semana?",
+      "eligible": true,
+      "sleep_minutes": [
+        440,
+        480,
+        498
+      ],
+      "protection_minutes": 130,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-030",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "missing",
+      "text": "What duration do my protection records add up to this week?",
+      "eligible": true,
+      "sleep_minutes": [
+        440,
+        480,
+        498
+      ],
+      "protection_minutes": 130,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-031",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "declared",
+      "text": "¿Cuánto tiempo de protección consta para mí esta semana?",
+      "eligible": true,
+      "sleep_minutes": [
+        443,
+        482,
+        499
+      ],
+      "protection_minutes": 137,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-032",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "declared",
+      "text": "How much protection time is recorded for me this calendar week?",
+      "eligible": true,
+      "sleep_minutes": [
+        443,
+        482,
+        499
+      ],
+      "protection_minutes": 137,
+      "expectation": "Exact bounded account fact; preserve measured/declared/simulated provenance, missing coverage, local calendar dates and requested units. Invalid or duplicate sleep data must retain normal flow."
+    },
+    {
+      "id": "hold09-033",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Me dices las horas de sueño que constan de ayer?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health"
+    },
+    {
+      "id": "hold09-034",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "How long did my records say I slept yesterday?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health"
+    },
+    {
+      "id": "hold09-035",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Me dices las horas de sueño que constan de ayer?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa"
+    },
+    {
+      "id": "hold09-036",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "How long did my records say I slept yesterday?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa"
+    },
+    {
+      "id": "hold09-037",
+      "route": "sleep_week",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Cuánto he dormido de media esta semana según los registros?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health"
+    },
+    {
+      "id": "hold09-038",
+      "route": "sleep_week",
+      "profile": "measured",
+      "language": "en",
+      "text": "How much sleep have I averaged this week in my records?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health"
+    },
+    {
+      "id": "hold09-039",
+      "route": "sleep_week",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Cuánto he dormido de media esta semana según los registros?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa"
+    },
+    {
+      "id": "hold09-040",
+      "route": "sleep_week",
+      "profile": "measured",
+      "language": "en",
+      "text": "How much sleep have I averaged this week in my records?",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa"
+    },
+    {
+      "id": "hold09-041",
+      "route": "wording",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Traduce al italiano «¿cuánto dormí ayer?» sin consultar datos.",
+      "eligible": false
+    },
+    {
+      "id": "hold09-042",
+      "route": "wording",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Translate “how much sleep did I record yesterday?” into Italian without looking up records.",
+      "eligible": false
+    },
+    {
+      "id": "hold09-043",
+      "route": "advice",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Qué cambio puedo probar esta noche para dormir mejor?",
+      "eligible": false
+    },
+    {
+      "id": "hold09-044",
+      "route": "advice",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "What small change could I try tonight to sleep better?",
+      "eligible": false
+    },
+    {
+      "id": "hold09-045",
+      "route": "action",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Bloquea mis distracciones ahora durante 30 minutos, una vez.",
+      "eligible": false
+    },
+    {
+      "id": "hold09-046",
+      "route": "action",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Block my distractions now for 30 minutes, once.",
+      "eligible": false
+    },
+    {
+      "id": "hold09-047",
+      "route": "actions_combined",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Consulta mi protección de ayer y bloquea ahora 30 minutos, una vez.",
+      "eligible": false
+    },
+    {
+      "id": "hold09-048",
+      "route": "actions_combined",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Retrieve yesterday’s recorded protection and block my apps now for 30 minutes, once.",
+      "eligible": false
+    },
+    {
+      "id": "hold09-049",
+      "route": "incomplete",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Programa protección esta noche.",
+      "eligible": false
+    },
+    {
+      "id": "hold09-050",
+      "route": "incomplete",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Schedule protection for tonight.",
+      "eligible": false
+    },
+    {
+      "id": "hold09-051",
+      "route": "third_party",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Qué promedio de sueño tiene mi hermana esta semana?",
+      "eligible": false
+    },
+    {
+      "id": "hold09-052",
+      "route": "third_party",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "What is my sister’s recorded sleep average this week?",
+      "eligible": false
+    },
+    {
+      "id": "hold09-053",
+      "route": "hypothetical",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Si durmiera 8 horas cada noche, ¿cuál sería mi media esta semana?",
+      "eligible": false
+    },
+    {
+      "id": "hold09-054",
+      "route": "hypothetical",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "If I slept 8 hours each night, what would my average be this week?",
+      "eligible": false
+    },
+    {
+      "id": "hold09-055",
+      "route": "screen_time",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Cuánto tiempo usé Instagram ayer?",
+      "eligible": false
+    },
+    {
+      "id": "hold09-056",
+      "route": "screen_time",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "How much time did I spend on Instagram yesterday?",
+      "eligible": false
+    },
+    {
+      "id": "hold09-057",
+      "route": "other_period",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Qué media de sueño registré los últimos siete días?",
+      "eligible": false
+    },
+    {
+      "id": "hold09-058",
+      "route": "other_period",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "What was my recorded sleep average over the last seven days?",
+      "eligible": false
+    },
+    {
+      "id": "hold09-059",
+      "route": "forget",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Olvida todos mis datos personales.",
+      "eligible": false
+    },
+    {
+      "id": "hold09-060",
+      "route": "forget",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Forget all my personal data.",
+      "eligible": false
+    },
+    {
+      "id": "hold09-061",
+      "route": "sleep_week",
+      "profile": "invalid",
+      "language": "es",
+      "text": "Consulta mi media de sueño registrada esta semana.",
+      "eligible": false,
+      "expectation": "Invalid units and duplicate measurements require normal authority; explain ambiguity without reinterpreting invalid units."
+    },
+    {
+      "id": "hold09-062",
+      "route": "sleep_week",
+      "profile": "invalid",
+      "language": "en",
+      "text": "Please show my average sleep duration recorded this week.",
+      "eligible": false,
+      "expectation": "Invalid units and duplicate measurements require normal authority; explain ambiguity without reinterpreting invalid units."
+    },
+    {
+      "id": "hold09-063",
+      "route": "sleep_week",
+      "profile": "duplicate",
+      "language": "es",
+      "text": "Consulta mi media de sueño registrada esta semana.",
+      "eligible": false,
+      "expectation": "Invalid units and duplicate measurements require normal authority; explain ambiguity without reinterpreting invalid units."
+    },
+    {
+      "id": "hold09-064",
+      "route": "sleep_week",
+      "profile": "duplicate",
+      "language": "en",
+      "text": "Please show my average sleep duration recorded this week.",
+      "eligible": false,
+      "expectation": "Invalid units and duplicate measurements require normal authority; explain ambiguity without reinterpreting invalid units."
+    },
+    {
+      "id": "hold09-065",
+      "route": "contextual",
+      "fixture_route": "sleep_week",
+      "profile": "measured",
+      "language": "es",
+      "eligible": false,
+      "turns": [
+        "¿Cuál es mi media de sueño registrada esta semana?",
+        "¿Y ayer?",
+        "¿De dónde sale ese dato?"
+      ],
+      "expectation": "Resolve contextual followups against exact preceding history, no new action or memory."
+    },
+    {
+      "id": "hold09-066",
+      "route": "contextual",
+      "fixture_route": "sleep_week",
+      "profile": "measured",
+      "language": "en",
+      "eligible": false,
+      "turns": [
+        "What is my recorded sleep average this week?",
+        "And yesterday?",
+        "Where did that number come from?"
+      ],
+      "expectation": "Resolve contextual followups against exact preceding history, no new action or memory."
+    }
+  ]
+}

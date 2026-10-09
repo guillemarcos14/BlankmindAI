@@ -120,9 +120,9 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
 
   const currentSleep=sleepContext(context);
   const sources=[latest,currentSleep,...(proactive?.daily_review?.sources||[])];
-  const retrieval=await require("./bm-retrieval-step").prepare(currentSleep.available&&retrievalRoute?.startsWith("sleep_")?null:retrievalRoute,{userId,identity,cutoff,
+  const retrieval=await require("./bm-retrieval-step").prepare(retrievalRoute,{userId,identity,cutoff,currentSleep,
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",db});
-  if(retrieval)sources.push(retrieval.source);
+  if(retrieval){const i=sources.findIndex(s=>s.source_id===retrieval.source.source_id);if(i>=0)sources[i]=retrieval.source;else sources.push(retrieval.source);}
   sources.push(...await require("./bm-decisions").prefetch(decisionsResult,{userId,identity,cutoff,
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",existing:sources,db}));
   sources.push(...await require("./bm-jev").prefetch(jevResult,{userId,identity,cutoff,

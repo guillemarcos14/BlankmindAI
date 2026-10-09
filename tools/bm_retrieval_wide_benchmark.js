@@ -42,7 +42,7 @@ async function main(){
  global.fetch=async(url,options)=>{
    const endpoint=String(url)==='https://api.openai.com/v1/decisions'?'decisions':String(url)==='https://api.openai.com/v1/responses'?'responses':null;
    if(!endpoint)return originalFetch(url,options); const reserved=reserve(options.body,endpoint); if(!active)return originalFetch(url,options);
-   const local=active,row={endpoint,reserved_upper_usd:reserved,request_sha256:crypto.createHash('sha256').update(String(options?.body||'')).digest('hex')};local.provider_requests.push(row);
+   const local=active,row={endpoint,reserved_upper_usd:reserved,request_sha256:crypto.createHash('sha256').update(String(options?.body||'')).digest('hex'),...(args.includes('--retain-synthetic-requests')?{synthetic_request:JSON.parse(options.body)}:{})};local.provider_requests.push(row);
    if(endpoint==='responses')local.model_calls++;else local.decisions_calls++;
    try{const result=await meter.meterResponse(await originalFetch(url,options),row);return result;}catch(e){row.error=e.name;throw e;}
  };
@@ -88,10 +88,11 @@ async function main(){
      process.env.BM_DECISIONS_QA_ENABLED="false";process.env.BM_RETRIEVAL_STEP_QA_ENABLED=variant==="decisions"&&!args.includes("--retrieval-off")?"true":"false";
      let nativeContext={};
      if(spec.native_sleep){const {dayOffset}=require('../netlify/functions/bm-brain-data'),today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).format(fixtureNow),values=report.case_manifest.native_sleep_values;
-       const nights=values.map((sleep_minutes,i)=>({date:dayOffset(today,i-values.length),source:'synthetic_qa',sleep_minutes}));
-       nativeContext={sleep_data_available:true,personal_profile:{sleep_source:'synthetic_qa',sleep_is_synthetic:true,sleep_nights:nights}};
-       expected.current_sleep={source:'synthetic_qa',is_synthetic:true,rows:nights};
-       expected.minutes=values.at(-1);expected.primary_source='current_sleep';
+       const source=spec.native_sleep_source||'synthetic_qa',nights=values.map((sleep_minutes,i)=>({date:dayOffset(today,i-values.length),source,sleep_minutes}));
+       nativeContext={sleep_data_available:true,personal_profile:{sleep_source:source,sleep_is_synthetic:source==='synthetic_qa',sleep_nights:nights}};
+       expected.current_sleep={source,is_synthetic:source==='synthetic_qa',rows:nights};
+       const {periodBounds,midnight}=require('../netlify/functions/bm-brain-data'),bounds=periodBounds({period:spec.route==='sleep_week'?'this_week':'yesterday'},{timezone:'Europe/Madrid',week_starts_on:2},fixtureNow),eligible=nights.filter(n=>{const t=midnight(n.date,'Europe/Madrid');return t>=bounds.from&&t<bounds.to;});
+       expected.minutes=eligible.length?eligible.reduce((s,n)=>s+n.sleep_minutes,0)/eligible.length:null;expected.primary_source='current_sleep';
      }
      if(spec.profile==='invalid'&&report.case_manifest.version===1&&spec.id.startsWith('fresh-'))expected.minutes=null;
      const history=[];for(const [step,text]of (spec.turns||[spec.text]).entries()){const turn=crypto.randomUUID();active={pair,step,variant,group,turn_id:turn,start:performance.now(),first_text_ms:null,drafts:[],database_calls:0,model_calls:0,usage_records:0,metered_usage:{},decisions_calls:0,decisions_known_cost_usd:0,decisions_unknown_cost_upper_usd:0,provider_requests:[],decisions_trace:[],retrieval_trace:[]};
