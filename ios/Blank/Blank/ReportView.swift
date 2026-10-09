@@ -10,6 +10,12 @@ struct ReportView: View {
 
     private var headerPrimary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.charcoal }
     private var headerSecondary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk }
+    private var canShowRest: Bool {
+        #if DEBUG && targetEnvironment(simulator)
+        if AssistantAppPreview.scenario.contains("progress") { return true }
+        #endif
+        return healthKitStore.sleepDataAvailable
+    }
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
             Group {
@@ -25,7 +31,7 @@ struct ReportView: View {
                         .padding(.top, 16).padding(.bottom, 24)
                 }
             }
-            if healthKitStore.sleepDataAvailable {
+            if canShowRest {
                 RestProgressContent(showContext: $showContext)
             } else {
                 Text("Personalised rest statistics require measured sleep records. Blocking and unlocking remain available.")

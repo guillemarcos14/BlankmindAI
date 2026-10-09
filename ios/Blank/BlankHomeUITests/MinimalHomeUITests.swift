@@ -1,6 +1,19 @@
 import XCTest
 
 final class MinimalHomeUITests: XCTestCase {
+    func testBasicBlockingWithoutSleepKeepsRestClosed() {
+        let app = launch("product-basic-home")
+        XCTAssertTrue(app.buttons["basic-block-apps"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Choose distractions"].exists)
+        XCTAssertFalse(app.buttons["home-voice"].exists)
+        app.buttons["home-tab-progress"].tap()
+        XCTAssertTrue(app.staticTexts["progress-sleep-required"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["progress-metric"].exists)
+        XCTAssertFalse(app.buttons["progress-all-context"].exists)
+        app.buttons["home-tab-chat"].tap()
+        XCTAssertTrue(app.buttons["basic-block-apps"].waitForExistence(timeout: 5))
+    }
+
     func testProgressShowsRestContextAndPreservesNavigation() {
         let app = launch("product-shell-progress")
         XCTAssertTrue(app.staticTexts["Progress"].waitForExistence(timeout: 5))
@@ -44,7 +57,7 @@ final class MinimalHomeUITests: XCTestCase {
         capture("control-root")
         app.buttons["protection"].tap()
         XCTAssertTrue(app.buttons["schedule"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["automatic protection"].exists)
+        XCTAssertFalse(app.buttons["automatic protection"].exists, "Rest automation stays closed without sleep and consent")
         capture("control-protection")
         app.buttons["schedule"].tap()
         XCTAssertTrue(app.buttons["back"].waitForExistence(timeout: 5))
@@ -52,7 +65,7 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
         reveal(app.buttons["Data & Permissions"])
         app.buttons["Data & Permissions"].tap()
-        XCTAssertTrue(app.buttons["conversation history"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["conversation history"].exists, "Basic access must not expose rest conversations")
         XCTAssertTrue(app.buttons["health"].exists)
         XCTAssertTrue(app.buttons["screen time"].exists)
         XCTAssertFalse(app.buttons["synthetic sleep"].exists, "Guest cannot enable QA sleep")

@@ -2780,7 +2780,7 @@ private struct SettingsScreen: View {
                     settingsRow(title: "privacy policy", detail: "how Blankmind handles your data", symbol: "arrow.up.right", secondary: true,
                                 action: { openURL(URL(string: "https://blankmind.ai/privacy")!) })
                     settingsRow(title: "terms of service", detail: "terms for using Blankmind", symbol: "arrow.up.right", secondary: true,
-                                action: { openURL(URL(string: "https://blankmind.ai/terms")!) })
+                                action: { openURL(URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!) })
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -4340,7 +4340,7 @@ private struct HomePreviewScene: View {
 @MainActor
 struct PostOnboardingPreviewScene: View {
     static var enabled: Bool {
-        ["product-home-first-use-notifications", "product-home-first-use", "product-onboarding-device-empty", "product-onboarding-device-error", "product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-shell-progress-empty", "product-shell-progress-detail", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-emergency-confirm-active", "product-automatic", "product-automatic-active", "product-automatic-error", "product-notifications", "product-notifications-active", "product-schedule", "product-schedule-active", "product-account", "product-onboarding-account", "product-onboarding-device"]
+        ["product-basic-home", "product-home-first-use-notifications", "product-home-first-use", "product-onboarding-device-empty", "product-onboarding-device-error", "product-home", "product-home-active", "product-home-response", "product-home-error", "product-home-long", "product-control", "product-control-active", "product-shell-progress", "product-shell-progress-empty", "product-shell-progress-detail", "product-menu", "product-menu-active", "product-progress", "product-progress-active", "product-settings", "product-settings-active", "product-distractions", "product-distractions-active", "product-emergency", "product-emergency-active", "product-emergency-confirm-active", "product-automatic", "product-automatic-active", "product-automatic-error", "product-notifications", "product-notifications-active", "product-schedule", "product-schedule-active", "product-account", "product-onboarding-account", "product-onboarding-device"]
             .contains(AssistantAppPreview.scenario)
     }
 
@@ -4365,6 +4365,8 @@ struct PostOnboardingPreviewScene: View {
         GeometryReader { proxy in
             if AssistantAppPreview.scenario.hasPrefix("product-onboarding") && !simulatorHome {
                 SetupView { simulatorHome = true }
+            } else if AssistantAppPreview.scenario == "product-basic-home" {
+                HomeView(simulatorGuest: false)
             } else if AssistantAppPreview.scenario == "product-account" {
                 AccountSettingsSheet()
             } else if AssistantAppPreview.scenario.hasPrefix("product-control") {
