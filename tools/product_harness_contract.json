@@ -63,6 +63,7 @@
     "max_repair_attempts": 0,
     "repair_commands": [],
     "commands": [
+      { "name": "bm_retrieval_context", "run": "node tools/bm_retrieval_context_test.js" },
       { "name": "bm_retrieval_production", "run": "node tools/bm_retrieval_production_test.js" },
       { "name": "bmb_sleep_context", "run": "node tools/bmb_sleep_context_test.js" },
       { "name": "bm_retrieval_wide_faults", "run": "node tools/bm_retrieval_wide_fault_test.js" },
