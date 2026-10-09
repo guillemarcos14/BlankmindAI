@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict"), fs = require("node:fs"), os = require("node:os"), path = require("node:path");
-const { validateAuthorization, deploymentBody } = require("./bm_decisions_authorized_release");
+const { validateAuthorization, deploymentBody, validateLiveKeys } = require("./bm_decisions_authorized_release");
 const a = { id: "guillem-decisions-global-on-2026-10-09-b993", authorizer: "Guillem", instruction: "Ponlo ON, implementa autónomo", site_id: "59955668-9a9b-4979-a283-63fbf3115fe5", source_commit: "b9935d976bce6821ce23044505cfaac46041e352", global: true, budget_ceiling_usd: 24, quality_certified: false, human_pairs_reviewed: 0, physical_cases_executed: 0, pending_reviews: 92, normal_release_gate_changed: false, allow_migrations: ["026", "027", "028"] };
 const p = { source_commit: a.source_commit, source_tree_clean: true, remote_function_hashes_verified: true, functions: Array.from({length:10},(_,i)=>({name:"candidate"+i,sha256:"new"+i})), status: "private_deploy_verified" };
 const b = { limit_usd:24, reserved_upper_usd:23.93839122, known_usd:23.40453732 };
@@ -9,6 +9,11 @@ for(const patch of [{quality_certified:true},{physical_cases_executed:20},{sourc
 assert.throws(()=>validateAuthorization(a,p,{...b,limit_usd:26}));
 assert.throws(()=>validateAuthorization(a,p,{...b,reserved_upper_usd:24.01}));
 assert.throws(()=>validateAuthorization(a,{...p,source_tree_clean:false},b));
+const jwt=claims=>"header."+Buffer.from(JSON.stringify(claims)).toString("base64url")+".signature";
+const keys=[{key:"SUPABASE_SERVICE_ROLE_KEY",is_secret:false,value:jwt({ref:"vhiikgyyfisejjwqtxfc",role:"service_role"})},{key:"OPENAI_API_KEY",is_secret:false,value:"sk-fixture"}];
+validateLiveKeys(keys,x=>x?.value);
+assert.throws(()=>validateLiveKeys([{...keys[0],value:jwt({ref:"qa",role:"service_role"})},keys[1]],x=>x?.value));
+assert.throws(()=>validateLiveKeys([keys[0],{...keys[1],value:""}],x=>x?.value));
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),"blank-preservation-test-"));
 fs.mkdirSync(path.join(dir,".netlify/functions"),{recursive:true});
 fs.writeFileSync(path.join(dir,".netlify/functions/manifest.json"),JSON.stringify({functions:p.functions.map(f=>({name:f.name,buildData:{runtimeAPIVersion:2}}))}));

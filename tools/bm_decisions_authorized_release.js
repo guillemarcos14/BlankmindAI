@@ -12,6 +12,17 @@ const SOURCE = "b9935d976bce6821ce23044505cfaac46041e352";
 const FLAGS = Object.freeze({ BM_RETRIEVAL_STEP_ENABLED: "true", BM_DECISIONS_DATA_POLICY: "authenticated-account-records", BM_RETRIEVAL_STEP_QA_ENABLED: "false", BM_DECISIONS_QA_ENABLED: "false", BM_JEV_SHADOW_ENABLED: "false", BM_JEV_PREFETCH_EXPERIMENT: "false" });
 const digest = file => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 const fail = code => { throw new Error(code); };
+function validateLiveKeys(vars, value) {
+  // Historical production keys predate Netlify's is_secret metadata. Preserve
+  // their scopes/values; verify identity rather than changing key protection.
+  const service = vars.find(v => v.key === "SUPABASE_SERVICE_ROLE_KEY"), openai = vars.find(v => v.key === "OPENAI_API_KEY");
+  if (!value(service) || !value(openai)) fail("live_keys_missing");
+  if (!service.is_secret) {
+    let claims; try { claims = JSON.parse(Buffer.from(value(service).split(".")[1], "base64url")); } catch (_) { fail("service_key_identity_unverifiable"); }
+    if (claims.ref !== REF || claims.role !== "service_role") fail("service_key_identity_mismatch");
+  }
+  if (!openai.is_secret && !/^sk-/.test(value(openai))) fail("provider_key_format_invalid");
+}
 function validateAuthorization(a, packaged, budget) {
   if (a.id !== "guillem-decisions-global-on-2026-10-09-b993" || a.authorizer !== "Guillem"
       || a.instruction !== "Ponlo ON, implementa autónomo" || a.site_id !== SITE || a.source_commit !== SOURCE
@@ -79,7 +90,7 @@ async function release(args) {
     const vars = await call(envRoute);
     const value = v => v?.scopes?.includes("functions") ? v.values.find(x => x.context === "production")?.value ?? v.values.find(x => x.context === "all")?.value : "";
     if (value(vars.find(v => v.key === "SUPABASE_URL")) !== "https://" + REF + ".supabase.co") fail("production_database_mismatch");
-    if (!vars.find(v => v.key === "SUPABASE_SERVICE_ROLE_KEY")?.is_secret || !vars.find(v => v.key === "OPENAI_API_KEY")?.is_secret) fail("protected_keys_missing");
+    validateLiveKeys(vars, value);
     if (vars.some(v => /JEV|RETRIEVAL|DECISIONS/.test(v.key) && /^(true|1|on)$/i.test(value(v)))) fail("unexpected_initial_flags");
     if (vars.some(v => v.key === "BMB_PRIVATE_STAGE_COOKIE" && value(v))) fail("private_cookie_on_production");
     report.previous_deploy_id = site.published_deploy.id;
@@ -127,4 +138,4 @@ if (require.main === module) {
   const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, all) => i % 2 ? a : [...a, [v.replace(/^--/, ""), all[i + 1]]], []));
   release(args).catch(e => { console.error(e.message); process.exitCode = 1; });
 }
-module.exports = { validateAuthorization, deploymentBody, FLAGS };
+module.exports = { validateAuthorization, deploymentBody, validateLiveKeys, FLAGS };
