@@ -8,7 +8,7 @@ function main(){const input=arg('--input','tmp/decisions-production/holdout.json
  const factual=x=>['sleep_yesterday','sleep_week','protection_yesterday','protection_week'].includes(x.group)||(x.group==='contextual'&&x.step===0);
  const accelerated=x=>x.retrieval_trace.some(t=>t.event==='bm_retrieval_step_answer'&&t.accepted),summary=Object.fromEntries(['optimized','decisions'].map(v=>{const rows=r.records.filter(x=>x.variant===v);return [v,{all:stats(rows,r.rates),factual:stats(rows.filter(factual),r.rates),outside_scope:stats(rows.filter(x=>!factual(x)),r.rates),accelerated:stats(rows.filter(accelerated),r.rates)}];}));
  const reviews=quality?.source_run_id===r.run_id?quality.reviews:[];
- const turns=require('./bm_retrieval_wide_quality').buildTurns(r),reviewDigest=require('./bm_sol_quality_judge').reviewDigest;
+ const turns=require('./bm_retrieval_wide_quality').reviewInputs(r,quality?.review_input_version||'v1'),reviewDigest=require('./bm_sol_quality_judge').reviewDigest;
  const reviewComplete=quality?.complete===true&&reviews.length===r.records.length&&turns.every(t=>reviews.some(v=>v.conversation_id===t.conversation_id&&v.turn===t.turn&&v.input_sha256===reviewDigest(t,t.history||[])));
  const checks=r.records.map((x,i)=>{const text=x.synthetic_response||'',review=reviews.find(v=>v.conversation_id===x.variant+':'+x.pair&&v.turn===x.step&&v.input_sha256===reviewDigest(turns[i],turns[i].history||[])),issues=presentation(text,x.synthetic_input);if(/--|[\u2013\u2014]/u.test(text))issues.push('dash_punctuation');
   const values=numericValues(text),expected=x.expected.minutes,knownFact=x.eligible&&expected!==null&&!x.expected.invalid_units;

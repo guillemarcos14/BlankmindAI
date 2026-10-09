@@ -1,0 +1,167 @@
+{
+  "created_at": "2026-10-09T13:59:03.542Z",
+  "reviewed_source": "88d6992b10263c8d2acfed1a20b88e92c161315a",
+  "author": "Codex source inspection, not independent human review",
+  "raw_model_verdicts_preserved": true,
+  "raw_model_summary": {
+    "optimized": {
+      "judged": 80,
+      "excellent": 53,
+      "acceptable": 12,
+      "poor": 15,
+      "hard_failures": 11,
+      "approval_percent": 81.25,
+      "average_scores": {
+        "understanding": 4.5,
+        "context": 4.35,
+        "usefulness": 4.28,
+        "naturalness": 4.79,
+        "minimality": 4.74
+      },
+      "release_eligible": false
+    },
+    "decisions": {
+      "judged": 80,
+      "excellent": 65,
+      "acceptable": 2,
+      "poor": 13,
+      "hard_failures": 10,
+      "approval_percent": 83.75,
+      "average_scores": {
+        "understanding": 4.61,
+        "context": 4.54,
+        "usefulness": 4.46,
+        "naturalness": 4.95,
+        "minimality": 4.86
+      },
+      "release_eligible": false
+    }
+  },
+  "confirmed_accelerated_copy_defects": [
+    {
+      "case_id": "source09-031",
+      "step": 0,
+      "reason": "Asked for minutes; accepted compact reply gave hours.",
+      "response": "Esta semana constan 2 horas de protección registrada, correspondientes a 2 sesiones. Los registros pueden omitir actividad, así que este total solo refleja lo registrado.",
+      "raw_model_verdict": "excellent",
+      "fixed_by_source": "fa0cbd8",
+      "independent_human_review": false
+    },
+    {
+      "case_id": "source09-032",
+      "step": 0,
+      "reason": "Asked for minutes; accepted compact reply gave hours.",
+      "response": "You have 2 hours 1 minute of recorded protection this week across 2 sessions. Records may omit activity, so this is the known recorded total only.",
+      "raw_model_verdict": "excellent",
+      "fixed_by_source": "fa0cbd8",
+      "independent_human_review": false
+    },
+    {
+      "case_id": "source09-036",
+      "step": 0,
+      "reason": "Unrequested QA fixture implementation label in visible prose.",
+      "response": "You logged 508 minutes of simulated sleep yesterday. This is a QA fixture, not measured health evidence.",
+      "raw_model_verdict": "excellent",
+      "fixed_by_source": "fa0cbd8",
+      "independent_human_review": false
+    }
+  ],
+  "evaluator_disagreements": [
+    {
+      "case_id": "source09-049",
+      "reason": "No prior conversation exists. Asking which figure the user means is appropriate; stored sleep records do not resolve a contextless referent."
+    },
+    {
+      "case_id": "source09-055",
+      "reason": "The oracle fixture number is explicitly sleep_duration, not phone screen time. It cannot justify answering phone usage with sleep minutes."
+    },
+    {
+      "case_id": "source09-059",
+      "reason": "The actual report has forgetting_committed=true, verified against the durable memory tombstone. The model received only the prior fixture forgotten=false, not the new commit proof."
+    },
+    {
+      "case_id": "source09-060",
+      "reason": "The actual report has forgetting_committed=true, verified against the durable memory tombstone. The model received only the prior fixture forgotten=false, not the new commit proof."
+    }
+  ],
+  "confirmed_normal_flow_context_defects": [
+    {
+      "case_id": "source09-065",
+      "step": 2,
+      "reason": "Immediately preceding answer was yesterday; an unnecessary referent clarification loses context."
+    },
+    {
+      "case_id": "source09-066",
+      "step": 1,
+      "reason": "Says no yesterday sleep despite the supplied owner-scoped measured record."
+    },
+    {
+      "case_id": "source09-066",
+      "step": 3,
+      "reason": "Acknowledges a future language preference rather than rendering the preceding answer in Spanish."
+    }
+  ],
+  "new_review_input_version": "v2 labels the fixture metric and prior tombstone explicitly, sends actual post-turn integrity/forget proof, and identifies requested minutes. Original v1 review and digest bindings remain unchanged.",
+  "activation_approved": false,
+  "limitations": "No adjusted aggregate quality score is claimed. No raw verdict is removed. Copy checks apply to the compact path; normal-flow failures remain blockers. Runtime fa0cbd8 receives a separate 24-case regression check, not certification by the older broad run.",
+  "final_regression": {
+    "source": "fa0cbd8ded698d10abdad435e25f3805d7fe67c3",
+    "split": "requested-units-and-provenance-regression-only",
+    "independent_holdout": false,
+    "complete": true,
+    "all_turns": 60,
+    "compact_review": {
+      "judged": 24,
+      "excellent": 24,
+      "acceptable": 0,
+      "poor": 0,
+      "hard_failures": 0,
+      "approval_percent": 100,
+      "average_scores": {
+        "understanding": 5,
+        "context": 5,
+        "usefulness": 5,
+        "naturalness": 4.96,
+        "minimality": 5
+      },
+      "release_eligible": true
+    },
+    "requested_unit_defects": 0,
+    "internal_label_defects": 0,
+    "personal_record_integrity_failures": 0,
+    "raw_model_summary": {
+      "optimized": {
+        "judged": 30,
+        "excellent": 20,
+        "acceptable": 3,
+        "poor": 7,
+        "hard_failures": 4,
+        "approval_percent": 76.67,
+        "average_scores": {
+          "understanding": 4.3,
+          "context": 4.13,
+          "usefulness": 4.13,
+          "naturalness": 4.73,
+          "minimality": 4.67
+        },
+        "release_eligible": false
+      },
+      "decisions": {
+        "judged": 30,
+        "excellent": 26,
+        "acceptable": 1,
+        "poor": 3,
+        "hard_failures": 1,
+        "approval_percent": 90,
+        "average_scores": {
+          "understanding": 4.7,
+          "context": 4.7,
+          "usefulness": 4.6,
+          "naturalness": 4.9,
+          "minimality": 4.93
+        },
+        "release_eligible": false
+      }
+    }
+  }
+}
