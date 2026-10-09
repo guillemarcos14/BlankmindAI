@@ -17,6 +17,15 @@ async function main(){
  const simulated=await r.prepare("sleep_yesterday",{...options,currentSleep:{...options.currentSleep,is_synthetic:true,measurement:"synthetic_qa_fixture"}});assert(simulated.contract.facts.is_synthetic);
  assert.equal(await r.prepare("sleep_week",{...options,currentSleep:null,read:async()=>({available:true,source:"observations",rows:[],rejected_sleep_measurements:[{reason:"unsupported_duration_unit"}]})}),null);
  assert.equal(await r.prepare("sleep_week",{...options,currentSleep:{...options.currentSleep,timezone:"UTC"}}),null);
+ // Run the actual authenticated planner path with owner-scoped source reads.
+ const envBefore={...process.env},fetchBefore=global.fetch,infoBefore=console.info;
+ Object.assign(process.env,env,{BM_RETRIEVAL_STEP_QA_ENABLED:"false",BM_DECISIONS_QA_ENABLED:"false",BM_JEV_SHADOW_ENABLED:"false",BM_JEV_PREFETCH_EXPERIMENT:"false"});global.fetch=fetcher;console.info=()=>{};
+ try{
+  const plan=require('../netlify/functions/bmb-brain').plan,prompt="How much sleep did I record yesterday?";
+  const db=async p=>{assert(p.includes(encodeURIComponent(user))||p.startsWith('rpc/'));return p.startsWith('bmb_observations?')?[{id:'owned-sleep',metric:'sleep_duration',unit:'minutes',value_number:487,measurement:'measured'}]:[];};
+  const result=await plan({prompt,context:{language:'en',brain_snapshot:{timezone:'Europe/Madrid'}},userId:user,identity:{anonymous_user_id:'verified'}},{db,memories:Promise.resolve([]),run:async input=>{assert(input.retrieval_contract);assert.equal(input.retrieval_contract.facts.minutes,487);return r.expandProse({response_language:'en',response_text:'You recorded 8 hours 7 minutes of sleep yesterday.',cited_sources:['owned-sleep']},input);}});
+  assert.deepEqual(result.plan.actions,[]);assert.equal(result.context.brain_memory_effect,undefined);
+ }finally{global.fetch=fetchBefore;console.info=infoBefore;for(const k of Object.keys(process.env))if(!(k in envBefore))delete process.env[k];Object.assign(process.env,envBefore);}
  console.log("PASS production global/off gates, no cohort, rejection-only filter, bounded native sleep, provenance, cutoff and invalid-unit fallback");
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
