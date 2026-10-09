@@ -64,6 +64,11 @@
 		8A0000050000000000000002 /* BlankShieldConfiguration.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 8A0000050000000000000010 /* BlankShieldConfiguration.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8A0000060000000000000001 /* ShieldActionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000060000000000000011 /* ShieldActionExtension.swift */; };
 		8A0000060000000000000002 /* BlankShieldAction.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 8A0000060000000000000010 /* BlankShieldAction.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		05A19C7B2EFC426E8B5DFF06 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E129DB18F017451EB81BF9F2 /* PrivacyInfo.xcprivacy */; };
+		5AFDAD4FE6F449B08D9FC9F2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C2367044E2714502B551BAB9 /* PrivacyInfo.xcprivacy */; };
+		C633559507C74858A1CEB08D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 14345F0A317C4DB9AE276331 /* PrivacyInfo.xcprivacy */; };
+		63C68C09E7B74B4AA238F332 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3F25DC49D4674B4C8B22E955 /* PrivacyInfo.xcprivacy */; };
+		EA0C1BCB75904DD68DAA27F0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = BF1828A8E5024924A5E85517 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -166,6 +171,11 @@
 		8A0000060000000000000011 /* ShieldActionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldActionExtension.swift; sourceTree = "<group>"; };
 		8A0000060000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8A0000060000000000000013 /* BlankShieldAction.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BlankShieldAction.entitlements; sourceTree = "<group>"; };
+		E129DB18F017451EB81BF9F2 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C2367044E2714502B551BAB9 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		14345F0A317C4DB9AE276331 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		3F25DC49D4674B4C8B22E955 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		BF1828A8E5024924A5E85517 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -223,6 +233,7 @@
 		8A0000010000000000000031 /* Blank */ = {
 			isa = PBXGroup;
 			children = (
+				E129DB18F017451EB81BF9F2 /* PrivacyInfo.xcprivacy */,
 				8A0000010000000000000011 /* BlankApp.swift */,
 				8A0000010000000000000012 /* ContentView.swift */,
 				BA10000000000000000000011 /* BlankBrain.swift */,
@@ -280,6 +291,7 @@
 		8A0000020000000000000031 /* BlankDeviceActivityMonitor */ = {
 			isa = PBXGroup;
 			children = (
+				C2367044E2714502B551BAB9 /* PrivacyInfo.xcprivacy */,
 				8A0000020000000000000011 /* DeviceActivityMonitorExtension.swift */,
 				8A0000020000000000000012 /* Info.plist */,
 				8A0000020000000000000013 /* BlankDeviceActivityMonitor.entitlements */,
@@ -290,6 +302,7 @@
 		8A0000040000000000000031 /* BlankWidgetExtension */ = {
 			isa = PBXGroup;
 			children = (
+				14345F0A317C4DB9AE276331 /* PrivacyInfo.xcprivacy */,
 				8A0000040000000000000011 /* BlankWidget.swift */,
 				8A0000040000000000000012 /* Info.plist */,
 				8A0000040000000000000013 /* BlankWidgetExtension.entitlements */,
@@ -300,6 +313,7 @@
 		8A0000050000000000000031 /* BlankShieldConfiguration */ = {
 			isa = PBXGroup;
 			children = (
+				3F25DC49D4674B4C8B22E955 /* PrivacyInfo.xcprivacy */,
 				8A0000050000000000000011 /* ShieldConfigurationExtension.swift */,
 				8A0000050000000000000012 /* Info.plist */,
 				8A0000050000000000000013 /* BlankShieldConfiguration.entitlements */,
@@ -310,6 +324,7 @@
 		8A0000060000000000000031 /* BlankShieldAction */ = {
 			isa = PBXGroup;
 			children = (
+				BF1828A8E5024924A5E85517 /* PrivacyInfo.xcprivacy */,
 				8A0000060000000000000011 /* ShieldActionExtension.swift */,
 				8A0000060000000000000012 /* Info.plist */,
 				8A0000060000000000000013 /* BlankShieldAction.entitlements */,
@@ -488,6 +503,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				05A19C7B2EFC426E8B5DFF06 /* PrivacyInfo.xcprivacy in Resources */,
 				8A000001000000000000000D /* Assets.xcassets in Resources */,
 				8A000001000000000000000E /* instrument_serif_regular.ttf in Resources */,
 				8A000001000000000000000F /* inter_variable.ttf in Resources */,
@@ -499,6 +515,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5AFDAD4FE6F449B08D9FC9F2 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -506,6 +523,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C633559507C74858A1CEB08D /* PrivacyInfo.xcprivacy in Resources */,
 				8A0000040000000000000005 /* inter_variable.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -514,6 +532,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				63C68C09E7B74B4AA238F332 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -521,6 +540,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EA0C1BCB75904DD68DAA27F0 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

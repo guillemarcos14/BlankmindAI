@@ -24,6 +24,15 @@ for state in [SleepAccessStatus.unchecked, .checking, .noData, .failed("Locked")
 }
 check(!SleepAccessPolicy.canEnter(screenTimeApproved: false, sleep: .available), "Health cannot replace Screen Time")
 check(SleepAccessPolicy.canEnter(screenTimeApproved: true, sleep: .available), "Apps and notifications are not entry requirements")
+check(SleepAccessPolicy.canEnterBasic(screenTimeApproved: true), "Basic blocking needs Screen Time only")
+check(!SleepAccessPolicy.canEnterBasic(screenTimeApproved: false), "Basic blocking still needs Screen Time")
+let consentDefaults = UserDefaults(suiteName: "sleep-access-test-" + UUID().uuidString)!
+check(!RestAIConsent.allowed(owner: "a", defaults: consentDefaults), "Sharing starts disabled")
+RestAIConsent.set(true, owner: "a", defaults: consentDefaults)
+check(RestAIConsent.allowed(owner: "a", defaults: consentDefaults), "Explicit account consent")
+check(!RestAIConsent.allowed(owner: "b", defaults: consentDefaults), "Consent must not follow another account")
+RestAIConsent.set(false, owner: "a", defaults: consentDefaults)
+check(!RestAIConsent.allowed(owner: "a", defaults: consentDefaults), "Consent can be withdrawn")
 print("Sleep access: recorded data, absence, manual/stale/future intervals and both mandatory gates passed")
 
     }

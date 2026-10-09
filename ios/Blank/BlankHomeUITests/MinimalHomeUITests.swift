@@ -1,6 +1,28 @@
 import XCTest
 
 final class MinimalHomeUITests: XCTestCase {
+    func testBasicBlockingWithoutSleepKeepsRestClosed() {
+        let app = launch("product-basic-home")
+        XCTAssertTrue(app.buttons["basic-block-apps"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Choose distractions"].exists)
+        XCTAssertFalse(app.buttons["home-voice"].exists)
+        app.buttons["home-tab-control"].tap()
+        XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["notifications"].exists)
+        app.buttons["protection"].tap()
+        XCTAssertTrue(app.buttons["schedule"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["automatic protection"].exists)
+        app.buttons["back"].tap()
+        app.buttons["Data & Permissions"].tap()
+        XCTAssertFalse(app.buttons["conversation history"].exists)
+        app.buttons["home-tab-progress"].tap()
+        XCTAssertTrue(app.staticTexts["progress-sleep-required"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["progress-metric"].exists)
+        XCTAssertFalse(app.buttons["progress-all-context"].exists)
+        app.buttons["home-tab-chat"].tap()
+        XCTAssertTrue(app.buttons["basic-block-apps"].waitForExistence(timeout: 5))
+    }
+
     func testProgressShowsRestContextAndPreservesNavigation() {
         let app = launch("product-shell-progress")
         XCTAssertTrue(app.staticTexts["Progress"].waitForExistence(timeout: 5))

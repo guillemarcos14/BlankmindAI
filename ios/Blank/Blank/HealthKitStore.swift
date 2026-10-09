@@ -32,6 +32,21 @@ final class HealthKitStore: ObservableObject {
     var canUseSyntheticSleep: Bool { SyntheticSleepSource.allowed && AssistantAppSession.userID != nil }
     var sleepDataAvailable: Bool { syntheticSleepEnabled || sleepAccess.hasData }
     var onboardingSleepAccess: SleepAccessStatus { syntheticSleepEnabled ? .available : sleepAccess }
+    var aiSharingAllowed: Bool { RestAIConsent.allowed(owner: AssistantAppSession.userID, defaults: defaults) }
+    var restAIAvailable: Bool {
+        guard let owner = AssistantAppSession.userID else { return false }
+        return sleepDataAvailable && aiSharingAllowed && defaults.bool(forKey: "blankRestSetup.v1." + owner)
+    }
+    func completeRestSetup(owner: String) {
+        guard owner == AssistantAppSession.userID else { return }
+        objectWillChange.send()
+        defaults.set(true, forKey: "blankRestSetup.v1." + owner)
+    }
+    func enableAISharing() {
+        objectWillChange.send()
+        RestAIConsent.set(true, owner: AssistantAppSession.userID, defaults: defaults)
+    }
+
     var sleepSource: String { syntheticSleepEnabled ? "synthetic_qa" : "apple_health" }
     var sleepProvenance: String {
         syntheticSleepEnabled ? "Sleep is synthetic QA data; activity, permissions and protection are real. Do not treat sleep as measured health evidence." : "Sleep source: Apple Health; read permission is opaque."

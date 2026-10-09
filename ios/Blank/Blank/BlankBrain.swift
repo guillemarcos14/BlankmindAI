@@ -79,6 +79,7 @@ final class BlankBrain {
     }
 
     func snapshot(now: Date = Date()) -> [String: Any]? {
+        guard HealthKitStore.shared.restAIAvailable else { return nil }
         guard let store, let blocker, let owner = AssistantAppSession.userID else { return nil }
         let system = store.digitalWellnessV3
         let defaults = BlankSharedState.defaults
@@ -219,6 +220,7 @@ final class BlankBrain {
     }
 
     func executeAutonomous(actionID: String? = nil) async -> Bool {
+        guard HealthKitStore.shared.restAIAvailable else { return false }
         guard !executionInFlight, let owner = AssistantAppSession.userID else { return false }
         executionInFlight = true
         defer { executionInFlight = false }

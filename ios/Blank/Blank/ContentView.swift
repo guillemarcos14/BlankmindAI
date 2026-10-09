@@ -42,7 +42,7 @@ struct ContentView: View {
     private var productContent: some View {
         let _ = accountRevision
         return ZStack {
-            if showingOnboardingDemo || (!simulatorGuestHome && (!sessionStore.setupComplete || !AssistantAppSession.hasAppleIdentity || healthOnboardingVersion != 6 || !SleepAccessPolicy.canEnter(screenTimeApproved: screenTimeBlocker.authorizationStatus == .approved, sleep: healthKitStore.onboardingSleepAccess))) {
+            if showingOnboardingDemo || (!simulatorGuestHome && (!sessionStore.setupComplete || !AssistantAppSession.hasAppleIdentity || healthOnboardingVersion != 6 || !SleepAccessPolicy.canEnterBasic(screenTimeApproved: screenTimeBlocker.authorizationStatus == .approved))) {
                 SetupView(healthKitStore: healthKitStore) {
                     withAnimation(.easeInOut(duration: 0.35)) {
                         showingOnboardingDemo = false

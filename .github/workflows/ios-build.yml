@@ -11,7 +11,7 @@ on:
       ui_tests:
         description: UI coverage (targeted confirmation after full-suite diagnostics)
         type: choice
-        options: [all, onboarding, progress, control]
+        options: [all, onboarding, progress, control, basic]
         default: all
   pull_request:
     paths:
@@ -87,6 +87,10 @@ jobs:
           fi
           if [ "${{ inputs.ui_tests || 'all' }}" = control ]; then
             suite=BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear
+          fi
+          if [ "${{ inputs.ui_tests || 'all' }}" = basic ]; then
+            suite=BlankHomeUITests/MinimalHomeUITests/testBasicBlockingWithoutSleepKeepsRestClosed
+            extra_tests=(-only-testing:BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear -only-testing:BlankHomeUITests/MinimalHomeUITests/testThreeSectionsKeepAllSettingsAndReturnToChat -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlFormsKeepNativeEditingAndDismissal -only-testing:BlankHomeUITests/MinimalHomeUITests/testProgressShowsRestContextAndPreservesNavigation)
           fi
           xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank \
             -configuration Debug -destination "platform=iOS Simulator,id=$device" \

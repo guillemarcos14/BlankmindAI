@@ -9,7 +9,7 @@
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Blankmind</string>
+	<string>Blankmind AI</string>
 	<key>BlankMembershipAPIBaseURL</key>
 	<string>$(BLANK_MEMBERSHIP_API_BASE_URL)</string>
 	<key>BlankPrivateQAAuthenticationCookie</key>
@@ -44,19 +44,19 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NFCReaderUsageDescription</key>
-	<string>Blankmind may use NFC for legacy tag backup flows when enabled.</string>
+	<string>Blankmind AI may use NFC for legacy tag backup flows when enabled.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Blankmind reads health data you choose to share, including sleep, physical signals, activity, daylight, nutrition, reproductive health, symptoms and wellbeing, to put your rest and disconnection habits in context. Progress analysis stays on your device. It does not diagnose medical conditions.</string>
+	<string>Blankmind AI reads health data you choose to share, including sleep, physical signals, activity, daylight, nutrition, reproductive health, symptoms and wellbeing, to put your rest and disconnection habits in context. Progress analysis stays on your device. It does not diagnose medical conditions.</string>
 	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
-	<string>Blankmind reads the clinical records you choose to share to show available health context alongside your rest patterns. Clinical documents remain on your device and in Apple Health; Progress does not send them to AI or diagnose conditions.</string>
+	<string>Blankmind AI reads the clinical records you choose to share to show available health context alongside your rest patterns. Clinical documents remain on your device and in Apple Health; Progress does not send them to AI or diagnose conditions.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Blankmind does not write data to Apple Health.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Blankmind uses Face ID or your device passcode to protect advanced blocking settings when you enable PIN protection.</string>
+	<string>Blankmind AI uses Face ID or your device passcode to protect advanced blocking settings when you enable PIN protection.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Blankmind uses the microphone so you can dictate messages to BM.</string>
+	<string>Blankmind AI uses the microphone so you can dictate messages to Blankmind AI.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Blankmind uses speech recognition to turn your dictated messages into text for BM.</string>
+	<string>Blankmind AI uses speech recognition to turn your dictated messages into text for Blankmind AI.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>instrument_serif_regular.ttf</string>
