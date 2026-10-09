@@ -89,11 +89,12 @@ async function main(){
      process.env.BM_RETRIEVAL_STEP_ENABLED=args.includes('--account-policy')&&variant==="decisions"&&!args.includes('--retrieval-off')?'true':'false';
      let nativeContext={};
      if(spec.native_sleep){const {dayOffset}=require('../netlify/functions/bm-brain-data'),today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).format(fixtureNow),values=report.case_manifest.native_sleep_values;
-       const source=spec.native_sleep_source||'synthetic_qa',nights=values.map((sleep_minutes,i)=>({date:dayOffset(today,i-values.length),source,sleep_minutes}));
+       const source=spec.native_sleep_source||'synthetic_qa',nights=values.map((sleep_minutes,i)=>({date:dayOffset(today,i-values.length),source,sleep_minutes,offset:i-values.length})).filter(n=>!(spec.native_skip_offsets||[]).includes(n.offset)).map(({offset,...n})=>n);
        nativeContext={sleep_data_available:true,personal_profile:{sleep_source:source,sleep_is_synthetic:source==='synthetic_qa',sleep_nights:nights}};
        expected.current_sleep={source,is_synthetic:source==='synthetic_qa',rows:nights};
        const {periodBounds,midnight}=require('../netlify/functions/bm-brain-data'),bounds=periodBounds({period:spec.route==='sleep_week'?'this_week':'yesterday'},{timezone:'Europe/Madrid',week_starts_on:2},fixtureNow),eligible=nights.filter(n=>{const t=midnight(n.date,'Europe/Madrid');return t>=bounds.from&&t<bounds.to;});
-       expected.minutes=eligible.length?eligible.reduce((s,n)=>s+n.sleep_minutes,0)/eligible.length:null;expected.primary_source='current_sleep';
+       if(eligible.length||source==='synthetic_qa'){expected.minutes=eligible.length?eligible.reduce((s,n)=>s+n.sleep_minutes,0)/eligible.length:null;expected.primary_source='current_sleep';}
+       else expected.primary_source='observations';
      }
      if(spec.profile==='invalid'&&report.case_manifest.version===1&&spec.id.startsWith('fresh-'))expected.minutes=null;
      const history=[];for(const [step,text]of (spec.turns||[spec.text]).entries()){const turn=crypto.randomUUID();active={pair,step,variant,group,turn_id:turn,start:performance.now(),first_text_ms:null,first_emitted_text_ms:null,drafts:[],database_calls:0,model_calls:0,usage_records:0,metered_usage:{},decisions_calls:0,decisions_known_cost_usd:0,decisions_unknown_cost_upper_usd:0,provider_requests:[],decisions_trace:[],retrieval_trace:[]};
