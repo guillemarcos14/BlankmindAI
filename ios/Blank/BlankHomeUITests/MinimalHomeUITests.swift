@@ -225,7 +225,8 @@ final class MinimalHomeUITests: XCTestCase {
         let confirmation = app.buttons["Unlock protection"]
         XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
         confirmation.tap()
-        XCTAssertFalse(unlock.isEnabled)
+        let disabled = expectation(for: NSPredicate(format: "enabled == false"), evaluatedWith: unlock)
+        wait(for: [disabled], timeout: 5)
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "control-unlocked-cooldown"
         attachment.lifetime = .keepAlways

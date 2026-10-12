@@ -1241,6 +1241,7 @@ struct AssistantAppView: View {
                 }
                 .frame(height: panelHeight)
                 .clipShape(MinimalHomePanelShape())
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("home-chat-panel")
 
                 Button {
@@ -1849,6 +1850,8 @@ private final class SmoothReplyTextView: UITextView {
     private var fadeTimer: Timer?
     private var canonical = ""
     private var attributes: [NSAttributedString.Key: Any] = [:]
+    private var cachedFont: UIFont?
+    private var cachedLeading = false
 
     init() {
         super.init(frame: .zero, textContainer: nil)
@@ -1870,13 +1873,18 @@ private final class SmoothReplyTextView: UITextView {
         paragraph.alignment = leading ? .left : .center
         paragraph.lineSpacing = 3
         let font = UIFontMetrics(forTextStyle: .title3).scaledFont(for: UIFont(name: "NeueMontreal-Regular", size: fontSize) ?? .systemFont(ofSize: fontSize))
+        if canonical == text, shown == next, cachedFont == font, cachedLeading == leading,
+           baseColor.isEqual(color), !reduceMotion || fades.isEmpty { return }
         let nextAttributes: [NSAttributedString.Key: Any] = [.font: font, .paragraphStyle: paragraph]
+        let needsLayout = canonical != text || cachedFont != font || cachedLeading != leading
         let sameReply = !canonical.isEmpty && text.hasPrefix(canonical) && next >= shown
         if !sameReply { fades.removeAll(); shown = 0 }
         if next > shown && !reduceMotion {
             fades.append((NSRange(location: shown, length: next - shown), CACurrentMediaTime()))
         }
         canonical = text; shown = next; baseColor = color; attributes = nextAttributes
+        cachedFont = font; cachedLeading = leading
+        if needsLayout { textStorage.setAttributedString(NSAttributedString(string: text, attributes: attributes)) }
         accessibilityLabel = visible
         isSelectable = shown == text.utf16.count
         paint()
@@ -1890,15 +1898,15 @@ private final class SmoothReplyTextView: UITextView {
     private func paint() {
         let now = CACurrentMediaTime()
         fades.removeAll { now - $0.1 >= 0.18 }
-        let result = NSMutableAttributedString(string: canonical, attributes: attributes)
-        result.addAttribute(.foregroundColor, value: UIColor.clear, range: NSRange(location: 0, length: result.length))
-        if shown > 0 { result.addAttribute(.foregroundColor, value: baseColor, range: NSRange(location: 0, length: shown)) }
+        textStorage.beginEditing()
+        textStorage.addAttribute(.foregroundColor, value: UIColor.clear, range: NSRange(location: 0, length: textStorage.length))
+        if shown > 0 { textStorage.addAttribute(.foregroundColor, value: baseColor, range: NSRange(location: 0, length: shown)) }
         for (range, start) in fades {
             let progress = min(1, max(0, (now - start) / 0.18))
-            result.addAttribute(.foregroundColor, value: baseColor.withAlphaComponent(1 - pow(1 - progress, 3)), range: range)
+            textStorage.addAttribute(.foregroundColor, value: baseColor.withAlphaComponent(1 - pow(1 - progress, 3)), range: range)
         }
         // Attribute-only edits preserve TextKit's glyph positions and selection.
-        textStorage.setAttributedString(result)
+        textStorage.endEditing()
         if fades.isEmpty { fadeTimer?.invalidate(); fadeTimer = nil }
     }
 

@@ -168,6 +168,8 @@ Onboarding account and device setup share Home's full-height panel formula and l
 
 ## Elevation & Depth
 
+Replies reserve 48 points at the lower edge of the atmospheric card. Canonical TextKit layout keeps reached words in place, with a 180 ms fade for new text and immediate reveal under Reduce Motion; completed replies remain selectable.
+
 The actual `MinimalAtmosphere` image supplies atmospheric depth, scaled to fill and clipped with a black shade at 0.28 opacity on Home and interior headers. Onboarding alone shades the same full-height image at 0.44 opacity for denser scrolling copy and translucent completed controls. Source pixels and font remain the supplied Minimal Web material; PNG metadata records image provenance. Interior backgrounds reuse it in the header and place solid tonal reading/editing ground below.
 
 Minimal app surfaces are flat: no added shadows on navigation, voice, primary buttons or tonal cards. Tonal fills and fine rules establish hierarchy. Native system controls and materials retain platform treatment; historical nonminimal glass branches do not define new interior surfaces.
