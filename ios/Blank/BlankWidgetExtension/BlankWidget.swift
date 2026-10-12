@@ -1,289 +1,166 @@
 import AppIntents
+import DeviceActivity
 import FamilyControls
 import ManagedSettings
 import SwiftUI
 import WidgetKit
 
-private enum BlankWidgetPalette {
-    static let charcoal = Color(red: 41 / 255.0, green: 41 / 255.0, blue: 41 / 255.0)
-    static let powderGray = pureWhite
-    static let pureWhite = Color(red: 1, green: 1, blue: 252 / 255.0)
-}
+private let widgetKind = "BlankQuickBlockWidget"
+private let widgetUnlockActivity = DeviceActivityName("BlankWidgetUnlock")
 
 struct StartQuickBlockIntent: AppIntent {
-    static var title: LocalizedStringResource = "Start Blank"
-    static var description = IntentDescription("Starts a quick block with your current Blankmind configuration.")
+    static var title: LocalizedStringResource = "Toggle Blank protection"
+    static var description = IntentDescription("Blocks distractions or requests an unlock after a 60-second cooldown.")
 
     func perform() async throws -> some IntentResult {
         let defaults = BlankSharedState.defaults
-        guard BlankSharedState.startQuickBlock(defaults: defaults) else {
-            return .result()
-        }
-
-        if let selection = BlankSharedState.loadSelection(from: defaults) {
-            let store = ManagedSettingsStore()
+        let store = ManagedSettingsStore()
+        if BlankSharedState.finishWidgetUnlockIfDue(defaults: defaults)
+            || BlankSharedState.finishExpiredBlock(defaults: defaults) { store.clearAllSettings() }
+        guard AuthorizationCenter.shared.authorizationStatus == .approved else { return .result() }
+        if BlankSharedState.loadActiveState(defaults: defaults).isActive {
+            let previous = BlankSharedState.widgetUnlockDeadline(defaults: defaults)
+            if let deadline = BlankSharedState.requestWidgetUnlock(defaults: defaults) {
+                let callback = Date(timeIntervalSince1970: ceil(deadline.timeIntervalSince1970))
+                let components: Set<Calendar.Component> = [.calendar, .timeZone, .year, .month, .day, .hour, .minute, .second]
+                do {
+                    // Release at interval START; the span meets the native 15-minute minimum.
+                    try DeviceActivityCenter().startMonitoring(widgetUnlockActivity, during: DeviceActivitySchedule(
+                        intervalStart: Calendar.current.dateComponents(components, from: callback),
+                        intervalEnd: Calendar.current.dateComponents(components, from: callback.addingTimeInterval(15 * 60)),
+                        repeats: false))
+                } catch {
+                    if previous == nil { BlankSharedState.cancelWidgetUnlock(defaults: defaults) }
+                    WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
+                    throw error
+                }
+            }
+        } else if BlankSharedState.startQuickBlock(defaults: defaults),
+                  let selection = BlankSharedState.loadSelection(from: defaults) {
+            // Existing app-prepared timers must also expire when the app is closed.
+            if let end = BlankSharedState.loadActiveState(defaults: defaults).endsAt {
+                let minutes = max(1, Int(ceil(end.timeIntervalSinceNow / 60)))
+                guard DeviceActivityTimerScheduler.start(protectionId: BlankSharedState.canonicalProtectionId, durationMinutes: minutes) else {
+                    defaults.set(Date().timeIntervalSince1970, forKey: BlankSharedState.Keys.blankActiveUntil)
+                    BlankSharedState.finishExpiredBlock(defaults: defaults)
+                    WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
+                    throw WidgetProtectionError.monitoringUnavailable
+                }
+            }
             store.shield.applications = selection.applicationTokens
             store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : .specific(selection.categoryTokens)
             store.shield.webDomains = selection.webDomainTokens
         }
-
-        WidgetCenter.shared.reloadTimelines(ofKind: "BlankQuickBlockWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
         return .result()
     }
 }
+
+private enum WidgetProtectionError: Error { case monitoringUnavailable }
 
 struct BlankWidgetEntry: TimelineEntry {
     let date: Date
     let activeState: BlankSharedState.ActiveState
     let hasConfiguration: Bool
+    let hardProtection: Bool
+    let cooldownUntil: Date?
 }
 
 struct BlankWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> BlankWidgetEntry {
-        BlankWidgetEntry(
-            date: Date(),
-            activeState: BlankSharedState.ActiveState(
-                isActive: false,
-                startedAt: nil,
-                endsAt: nil
-            ),
-            hasConfiguration: true
-        )
+        BlankWidgetEntry(date: Date(), activeState: .init(isActive: false, startedAt: nil, endsAt: nil),
+                         hasConfiguration: true, hardProtection: false, cooldownUntil: nil)
     }
-
-    func getSnapshot(in context: Context, completion: @escaping (BlankWidgetEntry) -> Void) {
-        completion(entry())
-    }
-
+    func getSnapshot(in context: Context, completion: @escaping (BlankWidgetEntry) -> Void) { completion(entry()) }
     func getTimeline(in context: Context, completion: @escaping (Timeline<BlankWidgetEntry>) -> Void) {
         let current = entry()
-        let nextRefresh = current.activeState.endsAt ?? (current.activeState.isActive ? Date().addingTimeInterval(60) : Date().addingTimeInterval(15 * 60))
-        completion(Timeline(entries: [current], policy: .after(nextRefresh)))
+        let deadlines = [current.cooldownUntil, current.activeState.endsAt].compactMap { $0 }.filter { $0 > current.date }
+        let refresh = deadlines.min() ?? current.date.addingTimeInterval(current.activeState.isActive ? 60 : 900)
+        completion(Timeline(entries: [current], policy: .after(refresh)))
     }
-
     private func entry(date: Date = Date()) -> BlankWidgetEntry {
         let defaults = BlankSharedState.defaults
-        if BlankSharedState.finishExpiredBlock(defaults: defaults, now: date) {
-            ManagedSettingsStore().clearAllSettings()
-        }
-        return BlankWidgetEntry(
-            date: date,
-            activeState: BlankSharedState.loadActiveState(now: date, defaults: defaults),
+        if BlankSharedState.finishWidgetUnlockIfDue(defaults: defaults, now: date)
+            || BlankSharedState.finishExpiredBlock(defaults: defaults, now: date) { ManagedSettingsStore().clearAllSettings() }
+        let state = BlankSharedState.loadActiveState(now: date, defaults: defaults)
+        let reblock = defaults.double(forKey: "blankManualReblockAt")
+        let cooldown = BlankSharedState.widgetUnlockDeadline(defaults: defaults)
+            ?? (reblock > date.timeIntervalSince1970 ? Date(timeIntervalSince1970: reblock) : nil)
+        return BlankWidgetEntry(date: date, activeState: state,
             hasConfiguration: BlankSharedState.hasConfiguredBlock(in: defaults)
-        )
+                && AuthorizationCenter.shared.authorizationStatus == .approved,
+            hardProtection: defaults.bool(forKey: "blankHardBlankActive"), cooldownUntil: cooldown)
     }
 }
 
 struct BlankWidgetView: View {
     let entry: BlankWidgetEntry
-    @Environment(\.widgetFamily) private var widgetFamily
-    private var isActive: Bool { entry.activeState.isActive }
-    private var titleColor: Color { isActive ? BlankWidgetPalette.pureWhite.opacity(0.96) : BlankWidgetPalette.charcoal }
-    private let textColumnInset: CGFloat = 7
+    @Environment(\.widgetFamily) private var family
+    private let ivory = Color(red: 1, green: 254 / 255, blue: 245 / 255)
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            actionContent
-                .buttonStyle(.plain)
-        }
-            .blankWidgetBackground(isActive: entry.activeState.isActive, family: widgetFamily)
-            .animation(.easeInOut(duration: 0.45), value: isActive)
+        Group {
+            if family == .systemSmall {
+                GeometryReader { geometry in
+                    ZStack(alignment: .bottomTrailing) {
+                        Color.clear.contentShape(Rectangle()).accessibilityLabel("Open Blank Home")
+                        action
+                            .frame(width: max(44, geometry.size.width * 0.40), height: max(44, geometry.size.width * 0.40))
+                            .padding(geometry.size.width * 0.09)
+                    }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                }.blankWidgetBackground(active: entry.activeState.isActive)
+            } else {
+                action
+            }
+        }.widgetURL(URL(string: "blank://open")!)
     }
 
-    @ViewBuilder
-    private var actionContent: some View {
-        if entry.activeState.isActive {
-            Link(destination: URL(string: "blank://open")!) {
-                content
-            }
-        } else if entry.hasConfiguration {
-            if #available(iOSApplicationExtension 17.0, *) {
-                Button(intent: StartQuickBlockIntent()) {
-                    content
-                }
+    @ViewBuilder private var action: some View {
+        if #available(iOSApplicationExtension 17.0, *) {
+            if entry.cooldownUntil != nil || entry.hardProtection {
+                Button(intent: StartQuickBlockIntent()) { control }
+                    .disabled(true).buttonStyle(.plain)
+                    .accessibilityLabel(entry.hardProtection ? "Hard protection. Open Home for options." : entry.activeState.isActive ? "Unlock cooldown" : "Restart cooldown")
+            } else if entry.hasConfiguration {
+                Button(intent: StartQuickBlockIntent()) { control }.buttonStyle(.plain)
+                    .accessibilityLabel(entry.activeState.isActive ? "Unlock after 60 seconds" : "Block distractions")
             } else {
-                Link(destination: URL(string: "blank://configure-block")!) {
-                    content
-                }
+                Link(destination: URL(string: "blank://configure-block")!) { control }
+                    .accessibilityLabel("Configure distraction protection")
             }
         } else {
-            Link(destination: URL(string: "blank://configure-block")!) {
-                content
-            }
+            Link(destination: URL(string: "blank://widget-toggle")!) { control }
         }
     }
 
-    private var content: some View {
-        Group {
-            switch widgetFamily {
-            case .accessoryInline:
-                Text(isActive ? "Blankmind active" : "Start Blank")
-            case .accessoryCircular:
-                Image(systemName: isActive ? "lock.fill" : "lock.open.fill")
-                    .font(.system(size: 18, weight: .semibold))
-            case .accessoryRectangular:
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(isActive ? "Blankmind" : "Start Blank")
-                        .font(.headline.weight(.semibold))
-                    Text(isActive ? "Protected now" : entry.hasConfiguration ? "Tap to block" : "Choose apps")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            default:
-                if isActive {
-                    activeContent
-                } else {
-                    idleContent
-                }
-            }
-        }
-        .contentShape(Rectangle())
-    }
-
-    private var activeContent: some View {
-        widgetTitle
-    }
-
-    private var idleContent: some View {
-        widgetTitle
-    }
-
-    private var widgetTitle: some View {
-        Text(title)
-            .font(.custom("HelveticaNeue", size: 19.5, relativeTo: .headline).weight(.semibold))
-            .foregroundStyle(titleColor)
-            .lineLimit(1)
-            .minimumScaleFactor(0.72)
-            .contentTransition(.opacity)
-            .padding(.leading, textColumnInset)
-            .padding(.bottom, 7)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-    }
-
-    private var title: String {
-        entry.activeState.isActive ? "Blankmind" : "Start Blank"
-    }
-}
-
-private struct BlankWidgetGlassBackground: View {
-    var isActive = false
-
-    var body: some View {
-        ZStack {
-            baseFill
-
-            LinearGradient(
-                colors: [
-                    isActive ? BlankWidgetPalette.pureWhite.opacity(0.10) : BlankWidgetPalette.pureWhite.opacity(0.52),
-                    isActive ? BlankWidgetPalette.pureWhite.opacity(0.00) : BlankWidgetPalette.pureWhite.opacity(0.08)
-                ],
-                startPoint: .top,
-                endPoint: UnitPoint(x: 0.5, y: 0.48)
-            )
-
-            RadialGradient(
-                colors: [
-                    isActive ? BlankWidgetPalette.pureWhite.opacity(0.06) : BlankWidgetPalette.pureWhite.opacity(0.34),
-                    BlankWidgetPalette.pureWhite.opacity(0.00)
-                ],
-                center: UnitPoint(x: 0.12, y: 0.00),
-                startRadius: 6,
-                endRadius: 112
-            )
-
-            LinearGradient(
-                colors: [
-                    Color.clear,
-                    isActive ? BlankWidgetPalette.charcoal.opacity(0.34) : BlankWidgetPalette.charcoal.opacity(0.018)
-                ],
-                startPoint: UnitPoint(x: 0.50, y: 0.62),
-                endPoint: .bottom
-            )
-
-            if isActive {
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                BlankWidgetPalette.pureWhite.opacity(0.00),
-                                BlankWidgetPalette.pureWhite.opacity(0.045),
-                                BlankWidgetPalette.pureWhite.opacity(0.00)
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .rotationEffect(.degrees(-8))
-                    .offset(y: -22)
-            }
-
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            isActive ? BlankWidgetPalette.pureWhite.opacity(0.22) : BlankWidgetPalette.pureWhite.opacity(0.88),
-                            isActive ? BlankWidgetPalette.pureWhite.opacity(0.07) : BlankWidgetPalette.pureWhite.opacity(0.26),
-                            isActive ? BlankWidgetPalette.pureWhite.opacity(0.03) : BlankWidgetPalette.charcoal.opacity(0.045)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-                .padding(0.6)
-        }
-    }
-
-    private var baseFill: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: isActive ? [
-                        BlankWidgetPalette.charcoal,
-                        BlankWidgetPalette.charcoal.opacity(0.68)
-                    ] : [
-                        BlankWidgetPalette.pureWhite,
-                        BlankWidgetPalette.powderGray
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
+    private var control: some View {
+        BlankWidgetButtonFace(active: entry.activeState.isActive, hardProtection: entry.hardProtection,
+                              cooldownUntil: entry.cooldownUntil, date: entry.date, accessory: family != .systemSmall)
     }
 }
 
 private extension View {
-    @ViewBuilder
-    func blankWidgetBackground(isActive: Bool, family: WidgetFamily) -> some View {
-        if family == .accessoryInline || family == .accessoryCircular || family == .accessoryRectangular {
-            self
-        } else if #available(iOSApplicationExtension 17.0, *) {
-            containerBackground(for: .widget) {
-                BlankWidgetGlassBackground(isActive: isActive)
-            }
-        } else {
-            background(BlankWidgetGlassBackground(isActive: isActive))
-        }
+    @ViewBuilder func blankWidgetBackground(active: Bool) -> some View {
+        if #available(iOSApplicationExtension 17.0, *) {
+            containerBackground(for: .widget) { BlankWidgetAtmosphere(active: active) }
+        } else { background(BlankWidgetAtmosphere(active: active)) }
     }
 }
 
 struct BlankQuickBlockWidget: Widget {
-    let kind = "BlankQuickBlockWidget"
-
+    let kind = widgetKind
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: BlankWidgetProvider()) { entry in
-            BlankWidgetView(entry: entry)
-        }
-        .configurationDisplayName("Blankmind")
-        .description("Start a quick block.")
-        .supportedFamilies([.systemSmall, .accessoryInline, .accessoryCircular, .accessoryRectangular])
+        blankWidgetConfiguration().contentMarginsDisabled()
     }
 }
 
-@main
-struct BlankWidgetBundle: WidgetBundle {
-    var body: some Widget {
-        BlankQuickBlockWidget()
-    }
+private func blankWidgetConfiguration() -> some WidgetConfiguration {
+        StaticConfiguration(kind: widgetKind, provider: BlankWidgetProvider()) { entry in BlankWidgetView(entry: entry) }
+            .configurationDisplayName("Blankmind")
+            .description("Block or unlock distractions. Tap the background to open Home.")
+            .supportedFamilies([.systemSmall, .accessoryInline, .accessoryCircular, .accessoryRectangular])
+}
+
+@main struct BlankWidgetBundle: WidgetBundle {
+    var body: some Widget { BlankQuickBlockWidget() }
 }
