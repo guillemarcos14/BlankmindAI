@@ -69,6 +69,10 @@ struct ReportView: View {
                 .ignoresSafeArea()
         }
         .foregroundStyle(BlankColors.cardInk)
+        .blankBackSwipe {
+            if showContext { showContext = false }
+            else { onClose?() }
+        }
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
     }
 }

@@ -81,6 +81,8 @@ final class ManualUnlockFixture {
     enum NfcResult { case unblanked }
     enum EntryMode { case app }
     enum EndReason { case manual }
+    func syncFromSharedDefaults() { isBlankActive = defaults.bool(forKey: Keys.isBlankActive) }
+${between(store, '    @discardableResult\n    func unlockFromControl()', '    func scheduleManualUnlock(')}
     init(defaults: UserDefaults, startedAt: Date) {
         self.defaults = defaults
         blankActiveSince = startedAt

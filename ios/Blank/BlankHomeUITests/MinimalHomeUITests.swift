@@ -71,6 +71,8 @@ final class MinimalHomeUITests: XCTestCase {
         app.buttons["schedule"].tap()
         XCTAssertTrue(app.buttons["back"].waitForExistence(timeout: 5))
         app.buttons["back"].tap()
+        XCTAssertTrue(app.buttons["schedule"].waitForExistence(timeout: 5))
+        app.buttons["back"].tap()
         XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
         reveal(app.buttons["Data & Permissions"])
         app.buttons["Data & Permissions"].tap()
@@ -180,12 +182,28 @@ final class MinimalHomeUITests: XCTestCase {
             app.coordinate(withNormalizedOffset: CGVector(dx: x, dy: y))
                 .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: endX, dy: endY)))
         }
+        // Home has no prior destination; swiping cannot open another tab.
+        drag(0.02, 0.5, 0.65, 0.5)
+        XCTAssertTrue(app.buttons["home-tab-chat"].isSelected)
+        app.buttons["home-tab-control"].tap()
+        XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
+        app.buttons["protection"].tap()
+        XCTAssertTrue(app.buttons["control-unlock-protection"].exists)
+        XCTAssertFalse(app.buttons["control-unlock-protection"].isEnabled)
+        app.buttons["schedule"].tap()
+        drag(0.02, 0.5, 0.65, 0.5)
+        XCTAssertTrue(app.buttons["schedule"].waitForExistence(timeout: 5), "Back restores the Protection group")
         drag(0.02, 0.5, 0.65, 0.5)
         XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["home-tab-control"].isSelected)
-        drag(0.98, 0.5, 0.35, 0.5)
-        XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
-        drag(0.98, 0.5, 0.35, 0.5)
+        app.buttons["protection"].tap()
+        app.buttons["automatic protection"].tap()
+        XCTAssertTrue(app.switches["Allow automatic protection"].waitForExistence(timeout: 5))
+        drag(0.02, 0.5, 0.65, 0.5)
+        XCTAssertTrue(app.buttons["schedule"].waitForExistence(timeout: 5), "Back dismisses the top sheet only")
+        drag(0.02, 0.5, 0.65, 0.5)
+        drag(0.02, 0.5, 0.65, 0.5)
+        XCTAssertTrue(app.buttons["home-tab-chat"].isSelected)
+        app.buttons["home-tab-progress"].tap()
         XCTAssertTrue(app.staticTexts["Progress"].waitForExistence(timeout: 5))
         drag(0.02, 0.5, 0.65, 0.5)
         XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
@@ -193,6 +211,22 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home-tab-chat"].isSelected)
         drag(0.02, 0.7, 0.02, 0.3)
         XCTAssertTrue(app.buttons["home-tab-chat"].isSelected)
+    }
+
+    func testControlUnlockUsesNoEmergencyAndKeepsCooldown() {
+        let app = launch("product-control-active")
+        app.buttons["protection"].tap()
+        let unlock = app.buttons["control-unlock-protection"]
+        XCTAssertTrue(unlock.isEnabled)
+        unlock.tap()
+        let confirmation = app.buttons["Unlock protection"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
+        confirmation.tap()
+        XCTAssertFalse(unlock.isEnabled)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "control-unlocked-cooldown"
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     func testControlFormsKeepNativeEditingAndDismissal() {

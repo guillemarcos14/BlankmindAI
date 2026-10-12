@@ -56,6 +56,7 @@ enum BlankSharedState {
     }
 
     static func startQuickBlock(defaults: UserDefaults = Self.defaults, now: Date = Date()) -> Bool {
+        guard defaults.double(forKey: "blankManualReblockAt") <= now.timeIntervalSince1970 else { return false }
         guard hasConfiguredBlock(in: defaults) else { return false }
         let durationMinutes = pendingWidgetTimerMinutes(defaults: defaults)
         defaults.set(true, forKey: Keys.isBlankActive)

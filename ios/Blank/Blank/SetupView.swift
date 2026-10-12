@@ -67,6 +67,10 @@ struct SetupView: View {
             }
         }
         .statusBarHidden(true)
+        .blankBackSwipe(enabled: currentStep == .device && !completionInFlight) {
+            currentStep = .account
+            message = nil
+        }
         .sheet(isPresented: $showingHealthHelp) {
             NavigationStack {
                 ScrollView {
@@ -76,6 +80,7 @@ struct SetupView: View {
                 .navigationTitle("Health access")
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showingHealthHelp = false } } }
             }
+            .blankBackSwipe { showingHealthHelp = false }
         }
         #if targetEnvironment(simulator)
         .overlay(alignment: .topLeading) {

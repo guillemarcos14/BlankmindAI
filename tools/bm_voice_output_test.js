@@ -88,6 +88,32 @@ async function run() {
   fetchOverride = null; aborted = false;
   const cancelled = await voice(request(), deps);
   await cancelled.body.cancel(); assert.equal(aborted, true);
+  process.env.BM_VOICE_PROVIDER = "elevenlabs";
+  const beforeMissingKey = reserved;
+  await error(503, "voice_unavailable", await voice(request(), deps));
+  assert.equal(reserved, beforeMissingKey, "Missing ElevenLabs key must not consume quota");
+  process.env.ELEVENLABS_API_KEY = "fixture-eleven-key";
+  const text = "Tu respuesta final 👋";
+  const characters = [...text];
+  const alignment = { characters, character_start_times_seconds: characters.map((_, i) => i * 0.01),
+    character_end_times_seconds: characters.map((_, i) => (i + 1) * 0.01) };
+  const elevenDeps = { ...deps, fetch: async (url, options) => {
+    assert.match(url, /^https:\/\/api.elevenlabs.io\/v1\/text-to-speech\/JBFqnCBsd6RMkjVDRZzb\/with-timestamps\?output_format=pcm_24000$/);
+    assert.equal(options.headers["xi-api-key"], "fixture-eleven-key");
+    assert.equal(JSON.parse(options.body).text, text);
+    return Response.json({ audio_base64: Buffer.alloc(48000).toString("base64"), alignment });
+  } };
+  const elevenResponse = await voice(request({ synchronized: true }), elevenDeps);
+  assert.equal(elevenResponse.status, 200);
+  const elevenFrames = (await elevenResponse.text()).trim().split("\n").map(JSON.parse);
+  assert.equal(elevenFrames[0].type, "cue");
+  assert.equal(elevenFrames.filter(f => f.type === "cue").at(-1).end, text.length);
+  assert.equal(elevenFrames.at(-1).type, "end");
+  const mismatchDeps = { ...elevenDeps, fetch: async () => Response.json({
+    audio_base64: Buffer.alloc(48000).toString("base64"), alignment: { ...alignment, characters: ["wrong"] },
+  }) };
+  await error(503, "voice_unavailable", await voice(request({ synchronized: true }), mismatchDeps));
+  delete process.env.BM_VOICE_PROVIDER; delete process.env.ELEVENLABS_API_KEY;
   process.env.BM_VOICE_ENABLED = "false";
   await error(503, "voice_disabled", await voice(request(), deps));
   console.log("Voice backend: auth/install isolation, final text, quotas/dedup, deletion, PCM, errors, cancellation and kill switch PASS");

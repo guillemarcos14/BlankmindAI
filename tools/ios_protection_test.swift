@@ -167,6 +167,17 @@ struct ProtectionTests {
         replacement.scheduleManualUnlock(after: 60, now: startedAt)
         replacement.cancelManualUnlock()
         expect(unlockDefaults.object(forKey: "blankManualUnlockAt") == nil && !replacement.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(90)), "Cancelled cooldown survived restart")
+        let control = ManualUnlockFixture(defaults: unlockDefaults, startedAt: Date())
+        control.hardBlankActive = true
+        expect(!control.unlockFromControl() && control.unlocks == 0, "Control bypassed hard protection")
+        control.hardBlankActive = false
+        control.isBlankActive = false // stale app state; widget has started a block
+        let beforeUnlock = Date()
+        expect(control.unlockFromControl() && control.unlocks == 1, "Control failed to reconcile a widget block")
+        let reblockAt = unlockDefaults.double(forKey: "blankManualReblockAt")
+        expect(reblockAt >= beforeUnlock.addingTimeInterval(60).timeIntervalSince1970 && reblockAt <= Date().addingTimeInterval(60).timeIntervalSince1970,
+               "Control must persist exactly one minute of cooldown after unlocking")
+        expect(!control.unlockFromControl() && control.unlocks == 1, "Repeated Control unlock consumed a second session")
         print("iOS protection: schedule parity, selection locking, persistent manual unlock/restart/expiry/cancellation/session identity passed")
     }
 }

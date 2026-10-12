@@ -1,6 +1,7 @@
 import AVFoundation
 import Security
 import SwiftUI
+import UIKit
 
 enum AssistantAppSession {
     private static let service = "com.blanknfc.app.assistant.session"
@@ -968,16 +969,15 @@ struct AssistantAppView: View {
                                 .accessibilityAddTraits(.isHeader)
                         }
                         if let latest {
-                            Text(displayedReply(latest))
-                                .font(.blankInter(size: 20))
-                                .lineSpacing(4)
+                            SmoothAssistantReply(text: AssistantReplyText.plain(latest.assistantText),
+                                visibleText: displayedReply(latest), color: UIColor(foreground),
+                                leading: true, reduceMotion: reduceMotion, fontSize: 20)
                                 .fixedSize(horizontal: false, vertical: true)
-                                .textSelection(.enabled)
                                 .accessibilityLabel("Blankmind: \(displayedReply(latest))")
                         } else if isSending && !streamedText.isEmpty {
-                            Text(AssistantReplyText.plain(streamedText))
-                                .font(.blankInter(size: 20))
-                                .lineSpacing(4)
+                            SmoothAssistantReply(text: AssistantReplyText.plain(streamedText),
+                                visibleText: AssistantReplyText.plain(streamedText), color: UIColor(foreground),
+                                leading: true, reduceMotion: reduceMotion, fontSize: 20)
                                 .fixedSize(horizontal: false, vertical: true)
                         } else if isSending || (composer.pending != nil && error == nil) {
                             BlankLoadingIndicator(color: foreground)
@@ -1023,6 +1023,7 @@ struct AssistantAppView: View {
         }
         .foregroundStyle(foreground)
         .background(background.ignoresSafeArea())
+        .blankDismissSwipe(enabled: !usesHomePresentation && !isApplyingAction)
         .preferredColorScheme(dark ? .dark : .light)
         .task {
             #if DEBUG
@@ -1190,7 +1191,7 @@ struct AssistantAppView: View {
         GeometryReader { geometry in
             let panelHeight = MinimalHomeDesign.panelHeight(geometry.size.height, bottomInset: geometry.safeAreaInsets.bottom)
             let contentTop = MinimalHomeDesign.navigationTop(geometry.safeAreaInsets.top) + 68
-            let viewportHeight = max(80, panelHeight - contentTop)
+            let viewportHeight = max(80, panelHeight - contentTop - MinimalHomeDesign.replyBottomInset)
             let contentHeight = max(0, viewportHeight - 28)
             VStack(spacing: 0) {
                 ZStack(alignment: .top) {
@@ -1213,7 +1214,7 @@ struct AssistantAppView: View {
                                 AssistantAudioWaveform(audio: speech)
                                     .frame(maxWidth: 240, minHeight: 50)
                             } else if let latest {
-                                homeResponse(displayedReply(latest))
+                                homeResponse(displayedReply(latest), completeText: AssistantReplyText.plain(latest.assistantText))
                                     .accessibilityLabel("Blankmind: \(displayedReply(latest))")
                             } else if isSending && !streamedText.isEmpty {
                                 homeResponse(streamedText)
@@ -1303,20 +1304,19 @@ struct AssistantAppView: View {
                 .background(MinimalHomeDesign.base)
                 .presentationDetents([.height(200), .medium])
                 .presentationDragIndicator(.visible)
+                .blankBackSwipe { showingHomeKeyboard = false }
                 .onAppear { composerFocused = true }
             }
         }
     }
 
-    private func homeResponse(_ text: String) -> some View {
+    private func homeResponse(_ text: String, completeText: String? = nil) -> some View {
         let plain = AssistantReplyText.plain(text)
-        let leading = HomeReplyLayout.usesLeadingAlignment(plain)
-        return Text(plain)
-            .font(MinimalHomeDesign.font(26, relativeTo: .title3))
-            .lineSpacing(3)
-            .multilineTextAlignment(leading ? .leading : .center)
+        let full = completeText ?? plain
+        let leading = HomeReplyLayout.usesLeadingAlignment(full)
+        return SmoothAssistantReply(text: full, visibleText: plain, color: UIColor(foreground),
+                                    leading: leading, reduceMotion: reduceMotion)
             .fixedSize(horizontal: false, vertical: true)
-            .textSelection(.enabled)
             .frame(maxWidth: 360, alignment: leading ? .leading : .center)
             .onTapGesture { showingHomeKeyboard = true }
             .accessibilityAction(named: Text(spanish ? "Escribir un mensaje" : "Write a message")) { showingHomeKeyboard = true }
@@ -1819,6 +1819,96 @@ struct AssistantAppView: View {
         }
     }
     #endif
+}
+
+// TextKit lays out the canonical reply once. Only the reached lines contribute
+// height; future words stay hidden and never shift an already visible line.
+private struct SmoothAssistantReply: UIViewRepresentable {
+    let text: String
+    let visibleText: String
+    let color: UIColor
+    let leading: Bool
+    let reduceMotion: Bool
+    var fontSize: CGFloat = 26
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    func makeUIView(context: Context) -> SmoothReplyTextView { SmoothReplyTextView() }
+    func updateUIView(_ view: SmoothReplyTextView, context: Context) {
+        let _ = dynamicTypeSize
+        view.update(text: text, visible: visibleText, color: color, leading: leading, reduceMotion: reduceMotion, fontSize: fontSize)
+    }
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: SmoothReplyTextView, context: Context) -> CGSize? {
+        uiView.replySize(width: proposal.width ?? 360)
+    }
+}
+
+private final class SmoothReplyTextView: UITextView {
+    private var shown = 0
+    private var baseColor = UIColor.white
+    private var fades: [(NSRange, CFTimeInterval)] = []
+    private var fadeTimer: Timer?
+    private var canonical = ""
+    private var attributes: [NSAttributedString.Key: Any] = [:]
+
+    init() {
+        super.init(frame: .zero, textContainer: nil)
+        backgroundColor = .clear
+        isScrollEnabled = false
+        isEditable = false
+        textContainerInset = .zero
+        textContainer.lineFragmentPadding = 0
+        setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        accessibilityIdentifier = "assistant-smooth-reply"
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    deinit { fadeTimer?.invalidate() }
+
+    func update(text: String, visible: String, color: UIColor, leading: Bool, reduceMotion: Bool, fontSize: CGFloat) {
+        let next = text.hasPrefix(visible) ? visible.utf16.count : text.utf16.count
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = leading ? .left : .center
+        paragraph.lineSpacing = 3
+        let font = UIFontMetrics(forTextStyle: .title3).scaledFont(for: UIFont(name: "NeueMontreal-Regular", size: fontSize) ?? .systemFont(ofSize: fontSize))
+        let nextAttributes: [NSAttributedString.Key: Any] = [.font: font, .paragraphStyle: paragraph]
+        let sameReply = !canonical.isEmpty && text.hasPrefix(canonical) && next >= shown
+        if !sameReply { fades.removeAll(); shown = 0 }
+        if next > shown && !reduceMotion {
+            fades.append((NSRange(location: shown, length: next - shown), CACurrentMediaTime()))
+        }
+        canonical = text; shown = next; baseColor = color; attributes = nextAttributes
+        accessibilityLabel = visible
+        isSelectable = shown == text.utf16.count
+        paint()
+        if reduceMotion { fades.removeAll(); paint() }
+        if !fades.isEmpty && fadeTimer == nil {
+            fadeTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { [weak self] _ in self?.paint() }
+        }
+        invalidateIntrinsicContentSize()
+    }
+
+    private func paint() {
+        let now = CACurrentMediaTime()
+        fades.removeAll { now - $0.1 >= 0.18 }
+        let result = NSMutableAttributedString(string: canonical, attributes: attributes)
+        result.addAttribute(.foregroundColor, value: UIColor.clear, range: NSRange(location: 0, length: result.length))
+        if shown > 0 { result.addAttribute(.foregroundColor, value: baseColor, range: NSRange(location: 0, length: shown)) }
+        for (range, start) in fades {
+            let progress = min(1, max(0, (now - start) / 0.18))
+            result.addAttribute(.foregroundColor, value: baseColor.withAlphaComponent(1 - pow(1 - progress, 3)), range: range)
+        }
+        // Attribute-only edits preserve TextKit's glyph positions and selection.
+        textStorage.setAttributedString(result)
+        if fades.isEmpty { fadeTimer?.invalidate(); fadeTimer = nil }
+    }
+
+    func replySize(width: CGFloat) -> CGSize {
+        textContainer.size = CGSize(width: max(1, width), height: .greatestFiniteMagnitude)
+        layoutManager.ensureLayout(for: textContainer)
+        guard shown > 0 else { return CGSize(width: width, height: 1) }
+        let range = layoutManager.glyphRange(forCharacterRange: NSRange(location: 0, length: shown), actualCharacterRange: nil)
+        let rect = layoutManager.boundingRect(forGlyphRange: range, in: textContainer)
+        return CGSize(width: width, height: ceil(rect.maxY) + 2)
+    }
 }
 
 private struct HomeReplyBottomKey: PreferenceKey {
