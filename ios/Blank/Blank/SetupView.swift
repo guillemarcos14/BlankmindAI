@@ -203,11 +203,11 @@ struct SetupView: View {
                     .font(.blankBody).accessibilityIdentifier("onboarding-sleep-available")
             }
             if healthKitStore.sleepDataAvailable && !healthKitStore.aiSharingAllowed {
-                Text("To use Blankmind AI, your messages, protection history and selected sleep summaries are sent to our backend and OpenAI. This is separate from Apple Health read access. Broad Health context and clinical documents stay on this iPhone. Spoken replies are AI-generated.")
+                Text("To use Blankmind AI, your messages, protection history and selected sleep summaries are sent to our backend and OpenAI. For spoken replies, the response text is also sent to ElevenLabs to generate audio. This is separate from Apple Health read access. Broad Health context and clinical documents stay on this iPhone. Spoken replies are AI-generated.")
                     .font(.blankBody).fixedSize(horizontal: false, vertical: true)
                 Link("Privacy Policy", destination: URL(string: "https://blankmind.ai/privacy")!)
                     .padding(.vertical, 12)
-                Button("Allow sharing with OpenAI") { healthKitStore.enableAISharing() }
+                Button("Allow sharing with OpenAI and ElevenLabs") { healthKitStore.enableAISharing() }
                     .buttonStyle(OnboardingButtonStyle())
                     .accessibilityIdentifier("onboarding-ai-consent")
             }

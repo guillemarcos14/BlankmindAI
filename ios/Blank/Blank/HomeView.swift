@@ -844,11 +844,11 @@ struct HomeView: View {
                 Button("Connect Apple Health") { healthKitStore.requestAccess() }
                     .buttonStyle(OnboardingButtonStyle()).padding(.top, 16)
             } else if !healthKitStore.aiSharingAllowed {
-                Text("Blankmind AI shares your messages, protection history and selected sleep summaries with our backend and OpenAI. Broad Health context and clinical documents stay on this iPhone. Spoken replies are AI-generated.")
+                Text("Blankmind AI shares your messages, protection history and selected sleep summaries with our backend and OpenAI. For spoken replies, the response text is also sent to ElevenLabs to generate audio. Broad Health context and clinical documents stay on this iPhone. Spoken replies are AI-generated.")
                     .font(.blankBody).padding(.top, 24)
                 Link("Privacy Policy", destination: URL(string: "https://blankmind.ai/privacy")!)
                     .padding(.vertical, 12)
-                Button("Allow sharing with OpenAI") { healthKitStore.enableAISharing(); showingRestSetup = true }
+                Button("Allow sharing with OpenAI and ElevenLabs") { healthKitStore.enableAISharing(); showingRestSetup = true }
                     .buttonStyle(OnboardingButtonStyle())
                     .accessibilityIdentifier("basic-ai-consent")
             } else if !healthKitStore.restAIAvailable {

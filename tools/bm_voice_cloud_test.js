@@ -15,7 +15,7 @@ async function run() {
   const db = (route, body, method = "POST") => request(c.supabase, "/rest/v1/" + route, body, service, method);
   const check = async (name, fn) => { await fn(); checks.push({ name, passed: true }); console.log("PASS " + name); };
   const voice = (user, turn, id = crypto.randomUUID(), extra = {}) => request(c.netlify, "/.netlify/functions/assistant-app-voice",
-    { turn_id: turn, request_id: id, app_install_id: user.install, ...extra }, { ...c.extraHeaders, authorization: "Bearer " + user.token });
+    { turn_id: turn, request_id: id, app_install_id: user.install, elevenlabs_consent: true, ...extra }, { ...c.extraHeaders, authorization: "Bearer " + user.token });
   let failure;
   try {
     for (let index = 0; index < 2; index++) {
@@ -37,7 +37,7 @@ async function run() {
       ["es", "Tu móvil puede descansar ahora. Déjalo a un lado para disfrutar de una noche tranquila."]]) {
       const turn = crypto.randomUUID(); turns.push(turn);
       const inserted = await db("assistant_app_turns", { id: turn, auth_user_id: a.id, user_text: "Synthetic voice QA",
-        assistant_text: text, status: "completed", completed_at: new Date().toISOString() });
+        assistant_text: text, response_language: language, status: "completed", completed_at: new Date().toISOString() });
       ensure(inserted.ok, "fixture_turn_failed");
       const id = crypto.randomUUID();
       await check("real_pcm_stream_" + language, async () => {
