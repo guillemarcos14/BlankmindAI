@@ -113,6 +113,18 @@ async function run() {
   assert.equal(elevenFrames[0].type, "cue");
   assert.equal(elevenFrames.filter(f => f.type === "cue").at(-1).end, text.length);
   assert.equal(elevenFrames.at(-1).type, "end");
+  for (const [language, voiceID] of [["es", "dNjJKg63Fr5AXwIdkATa"], ["en", "WtA85syCrJwasGeHGH2p"]]) {
+    row.response_language = language;
+    const selected = await voice(request({ synchronized: true }), { ...elevenDeps,
+      fetch: async (url, options) => {
+        assert.ok(url.includes(`/text-to-speech/${voiceID}/with-timestamps`));
+        assert.equal(JSON.parse(options.body).text, text);
+        return Response.json({ audio_base64: Buffer.alloc(48000).toString("base64"), alignment });
+      } });
+    assert.equal(selected.status, 200);
+    await selected.text();
+  }
+  delete row.response_language;
   const mismatchDeps = { ...elevenDeps, fetch: async () => Response.json({
     audio_base64: Buffer.alloc(48000).toString("base64"), alignment: { ...alignment, characters: ["wrong"] },
   }) };

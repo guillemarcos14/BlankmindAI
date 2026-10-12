@@ -257,7 +257,7 @@ async function prepare(auth, row, leaseOwner, prompt, deviceContext, onDraft) {
     context.memory?.last_topic || "", plan.semantic_state);
   if (plan.bmb_state) state.bmb_state = plan.bmb_state;
   const payload = {
-    assistant_text: answer, action,
+    assistant_text: answer, response_language: spanish ? "es" : "en", action,
     brain_memory_effect: context.brain_memory_effect || null,
     auto_apply: autoApply,
     control_section: ["report","settings","schedule","distractions","emergency"].includes(plan.control_section) ? plan.control_section : null,
@@ -321,7 +321,9 @@ async function send(auth, body, onDraft) {
     }
     const rows = await timing.span("commit", () => supabaseFetch(ownedPath, {
       method: "PATCH", headers: { prefer: "return=representation" },
-      body: JSON.stringify({ assistant_text: payload.assistant_text, action_id: action?.id || null,
+      body: JSON.stringify({ assistant_text: payload.assistant_text,
+        ...(["es", "en"].includes(payload.response_language) ? { response_language: payload.response_language } : {}),
+        action_id: action?.id || null,
         action_label: payload.action_label,
         ...(payload.brain_memory_effect ? { brain_memory_effect: payload.brain_memory_effect } : {}),
         ...(payload.auto_apply ? { auto_apply: true } : {}),

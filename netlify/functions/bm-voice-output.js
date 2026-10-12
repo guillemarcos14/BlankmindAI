@@ -69,7 +69,8 @@ async function voice(request, deps = {}) {
     metered = true; characters = text.length;
     // A deleted/changed turn must not be spoken after the quota reservation.
     const current = await readTurn(auth.user.id, body.turn_id);
-    if (!current || current.status !== "completed" || current.assistant_text !== row.assistant_text) {
+    if (!current || current.status !== "completed" || current.assistant_text !== row.assistant_text
+        || current.response_language !== row.response_language) {
       cleanup(); return failure(409, "voice_text_unavailable");
     }
     timer = setTimeout(() => abort.abort(), 120000);
@@ -77,7 +78,7 @@ async function voice(request, deps = {}) {
     let providerCues;
     let upstream;
     if (eleven) {
-      const speech = await elevenSpeech(text, deps.fetch || fetch, abort.signal, MAX_AUDIO_BYTES);
+      const speech = await elevenSpeech(text, deps.fetch || fetch, abort.signal, MAX_AUDIO_BYTES, row.response_language);
       providerCues = speech.cues;
       upstream = new Response(speech.pcm);
     } else upstream = await (deps.fetch || fetch)("https://api.openai.com/v1/audio/speech", {
@@ -111,7 +112,8 @@ async function voice(request, deps = {}) {
         // Recheck deletion/ownership after the additional provider request.
         const final = await readTurn(auth.user.id, body.turn_id);
         if (abort.signal.aborted || !final || final.status !== "completed"
-            || final.assistant_text !== row.assistant_text) throw new Error("voice_text_unavailable");
+            || final.assistant_text !== row.assistant_text
+            || final.response_language !== row.response_language) throw new Error("voice_text_unavailable");
         let cueIndex = 0, offset = 0;
         const stream = new ReadableStream({
           pull(controller) {
