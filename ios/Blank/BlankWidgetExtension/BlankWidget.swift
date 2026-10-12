@@ -37,6 +37,16 @@ struct StartQuickBlockIntent: AppIntent {
             }
         } else if BlankSharedState.startQuickBlock(defaults: defaults),
                   let selection = BlankSharedState.loadSelection(from: defaults) {
+            // Existing app-prepared timers must also expire when the app is closed.
+            if let end = BlankSharedState.loadActiveState(defaults: defaults).endsAt {
+                let minutes = max(1, Int(ceil(end.timeIntervalSinceNow / 60)))
+                guard DeviceActivityTimerScheduler.start(protectionId: BlankSharedState.canonicalProtectionId, durationMinutes: minutes) else {
+                    defaults.set(Date().timeIntervalSince1970, forKey: BlankSharedState.Keys.blankActiveUntil)
+                    BlankSharedState.finishExpiredBlock(defaults: defaults)
+                    WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
+                    throw WidgetProtectionError.monitoringUnavailable
+                }
+            }
             store.shield.applications = selection.applicationTokens
             store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : .specific(selection.categoryTokens)
             store.shield.webDomains = selection.webDomainTokens
@@ -45,6 +55,8 @@ struct StartQuickBlockIntent: AppIntent {
         return .result()
     }
 }
+
+private enum WidgetProtectionError: Error { case monitoringUnavailable }
 
 struct BlankWidgetEntry: TimelineEntry {
     let date: Date
@@ -108,7 +120,7 @@ struct BlankWidgetView: View {
             if entry.cooldownUntil != nil || entry.hardProtection {
                 Button(intent: StartQuickBlockIntent()) { control }
                     .disabled(true).buttonStyle(.plain)
-                    .accessibilityLabel(entry.hardProtection ? "Hard protection. Open Home for options." : "Cooldown")
+                    .accessibilityLabel(entry.hardProtection ? "Hard protection. Open Home for options." : entry.activeState.isActive ? "Unlock cooldown" : "Restart cooldown")
             } else if entry.hasConfiguration {
                 Button(intent: StartQuickBlockIntent()) { control }.buttonStyle(.plain)
                     .accessibilityLabel(entry.activeState.isActive ? "Unlock after 60 seconds" : "Block distractions")
