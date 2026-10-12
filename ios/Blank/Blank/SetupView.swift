@@ -24,6 +24,7 @@ struct SetupView: View {
     @State private var showingHealthHelp = false
     @AppStorage("blankHealthOnboardingVersion", store: BlankSharedState.defaults) private var healthOnboardingVersion = 0
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -67,9 +68,9 @@ struct SetupView: View {
             }
         }
         .statusBarHidden(true)
-        .blankBackSwipe(enabled: currentStep == .device && !completionInFlight) {
-            currentStep = .account
-            message = nil
+        .blankBackSwipe(enabled: !completionInFlight) {
+            if currentStep == .device { currentStep = .account; message = nil }
+            else { dismiss() }
         }
         .sheet(isPresented: $showingHealthHelp) {
             NavigationStack {

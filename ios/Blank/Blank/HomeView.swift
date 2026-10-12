@@ -2579,7 +2579,7 @@ struct HomeSectionScreen: View {
     let screenTimeStatus: String
     let healthStatus: String
     let onClose: () -> Void
-    @Binding var controlGroup: ControlSettingsGroup? = .constant(nil)
+    @Binding var controlGroup: ControlSettingsGroup?
     var onApplyHistoryAction: (String) -> Void = { _ in }
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
 
@@ -4406,6 +4406,7 @@ struct PostOnboardingPreviewScene: View {
     @StateObject private var screenTimeBlocker = ScreenTimeBlocker.preview()
     @State private var showingPicker = false
     @State private var simulatorHome = false
+    @State private var controlGroup: ControlSettingsGroup?
 
     private var section: HomeSection? {
         switch AssistantAppPreview.scenario {
@@ -4448,7 +4449,8 @@ struct PostOnboardingPreviewScene: View {
                     onRequestHealthAccess: {},
                     screenTimeStatus: screenTimeBlocker.authorizationStatusLabel,
                     healthStatus: "not connected",
-                    onClose: {}
+                    onClose: {},
+                    controlGroup: $controlGroup
                 )
             } else {
                 HomeView(simulatorGuest: true) { simulatorHome = false }
