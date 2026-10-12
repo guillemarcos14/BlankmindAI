@@ -105,7 +105,12 @@ enum BlankSharedState {
 
     @discardableResult
     static func finishWidgetUnlockIfDue(defaults: UserDefaults = Self.defaults, now: Date = Date()) -> Bool {
-        guard let deadline = widgetUnlockDeadline(defaults: defaults), now >= deadline else { return false }
+        guard let deadline = widgetUnlockDeadline(defaults: defaults) else {
+            // An upgraded hard block or a replaced session permanently invalidates the request.
+            cancelWidgetUnlock(defaults: defaults)
+            return false
+        }
+        guard now >= deadline else { return false }
         // A timed session that ends first retains its original completion reason.
         if finishExpiredBlock(defaults: defaults, now: now) { return true }
         defaults.set(false, forKey: Keys.isBlankActive)

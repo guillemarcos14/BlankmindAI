@@ -25,7 +25,9 @@
         // Simulate a newer block while the old monitor callback is queued.
         d.set(start.addingTimeInterval(30).timeIntervalSince1970, forKey: BlankSharedState.Keys.blankActiveSince)
         expect(!BlankSharedState.finishWidgetUnlockIfDue(defaults: d, now: deadline), "Old callback cannot unlock newer block")
+        expect(d.object(forKey: BlankSharedState.Keys.widgetUnlockAt) == nil, "Stale request cannot revive later")
         d.set(start.timeIntervalSince1970, forKey: BlankSharedState.Keys.blankActiveSince)
+        _ = BlankSharedState.requestWidgetUnlock(defaults: d, now: start)
         expect(BlankSharedState.finishWidgetUnlockIfDue(defaults: d, now: deadline), "Due deadline releases original session")
         expect(!BlankSharedState.finishWidgetUnlockIfDue(defaults: d, now: deadline), "Callback replay is idempotent")
         expect(!d.bool(forKey: BlankSharedState.Keys.isBlankActive), "Shared protection becomes inactive")
