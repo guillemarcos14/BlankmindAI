@@ -985,7 +985,7 @@ struct AssistantAppView: View {
                             Text(greeting ?? (spanish ? "Hola, ¿cómo estás hoy?" : "Hey, how are you doing today?"))
                                 .font(.blankInter(size: 20))
                                 .fixedSize(horizontal: false, vertical: true)
-                            if simulatorGuest {
+                            if simulatorGuest && !AppStoreScreenshotMode.enabled {
                                 Text("Simulator navigation preview")
                                     .font(.blankInter(size: 14, relativeTo: .footnote))
                                     .foregroundStyle(foreground.opacity(0.65))

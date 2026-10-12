@@ -99,6 +99,7 @@ final class MinimalHomeUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.staticTexts["onboarding-sleep-empty"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["onboarding-synthetic-demo"].exists, "Anonymous users cannot enable account-scoped sleep")
+        XCTAssertFalse(app.buttons["onboarding-sample-sleep"].exists, "Sample sleep must require the signed-in owner")
         XCTAssertFalse(app.staticTexts["synthetic-demo-banner"].exists)
         app.terminate()
         let home = launch()
@@ -111,6 +112,21 @@ final class MinimalHomeUITests: XCTestCase {
         home.buttons["home-tab-chat"].tap()
         XCTAssertTrue(home.buttons["home-voice"].waitForExistence(timeout: 5))
         XCTAssertFalse(home.buttons["Show my sample sleep"].exists)
+    }
+
+    func testAppStoreScreenshotsLabelExamplesAndPreserveNavigation() {
+        let app = XCUIApplication()
+        app.launchEnvironment["BLANK_UI_SCENARIO"] = "product-home"
+        app.launchEnvironment["BLANK_APPSTORE_CAPTURE"] = "1"
+        app.launch()
+        XCTAssertTrue(app.staticTexts["sample-sleep-banner"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["sample-sleep-banner"].label, "Example data")
+        XCTAssertFalse(app.staticTexts["Simulator navigation preview"].exists)
+        app.buttons["home-tab-control"].tap()
+        XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["sample-sleep-banner"].exists)
+        app.buttons["home-tab-chat"].tap()
+        XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
     }
 
     private func launch(_ scenario: String = "product-home", language: String = "en") -> XCUIApplication {
