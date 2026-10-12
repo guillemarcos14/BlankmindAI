@@ -125,7 +125,6 @@ final class MinimalHomeUITests: XCTestCase {
         app.buttons["home-tab-control"].tap()
         XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["sample-sleep-banner"].exists)
-        capture("appstore-example-control")
         app.buttons["home-tab-chat"].tap()
         XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
     }

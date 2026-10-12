@@ -509,8 +509,20 @@ struct HomeView: View {
         }
         .onChange(of: healthKitStore.sourceGeneration) { _ in
             // Clears old sample nights remotely even when disabling them closes AI.
-            guard !simulatorGuest, healthKitStore.aiSharingAllowed else { return }
-            BlankBrain.shared.sync()
+            guard !simulatorGuest, healthKitStore.aiSharingAllowed,
+                  let owner = AssistantAppSession.userID else { return }
+            let code = assistantConnectCode
+            let payload: [String: Any] = [
+                "sleep_data_available": healthKitStore.sleepDataAvailable,
+                "sleep_data_checked_at": ISO8601DateFormatter().string(from: Date()),
+                "sleep_minutes": healthKitStore.summaries.last(where: { $0.sleepMinutes != nil })?.sleepMinutes ?? 0,
+                "health_signal_reasons": healthKitStore.sleepProvenance,
+                "personal_profile": healthKitStore.sleepContextProfile()
+            ]
+            Task {
+                guard owner == AssistantAppSession.userID else { return }
+                _ = await AssistantContextSyncClient().sync(connectCode: code, channel: "app", payload: payload)
+            }
         }
         .onChange(of: assistantConnectCode) { _ in
             clearPendingAssistantIdentityState()
