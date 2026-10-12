@@ -49,6 +49,7 @@ struct RestProgressContent: View {
     }
 
     private var sourceLabel: String? {
+        if AppStoreScreenshotMode.enabled { return "example data" }
         if sleep.sampleSleepEnabled { return "sample sleep · not measured" }
         if sleep.syntheticSleepEnabled { return "sample sleep · QA" }
         #if DEBUG && targetEnvironment(simulator)

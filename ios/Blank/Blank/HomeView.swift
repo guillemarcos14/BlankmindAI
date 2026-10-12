@@ -437,7 +437,7 @@ struct HomeView: View {
                 if healthKitStore.sampleSleepEnabled || AppStoreScreenshotMode.enabled {
                     Text(AppStoreScreenshotMode.enabled ? "Example data" : "Sample sleep data · not measured")
                         .font(.blankInter(size: 11, relativeTo: .caption))
-                        .foregroundStyle(MinimalHomeDesign.ink)
+                        .foregroundStyle(MinimalHomeDesign.voiceInk)
                         .padding(.horizontal, 12).padding(.vertical, 4)
                         .background(BlankColors.pureWhite.opacity(0.95), in: Capsule())
                         .frame(maxWidth: .infinity)
