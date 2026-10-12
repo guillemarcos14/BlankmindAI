@@ -23,11 +23,10 @@ function characterCues(text, alignment, duration) {
 }
 
 async function elevenSpeech(text, fetcher, signal, maxBytes, language) {
+  if (!["es", "en"].includes(language)) throw new Error("voice_language_unavailable");
   const voice = language === "es"
     ? process.env.ELEVENLABS_VOICE_ID_ES || "dNjJKg63Fr5AXwIdkATa"
-    : language === "en"
-      ? process.env.ELEVENLABS_VOICE_ID_EN || "WtA85syCrJwasGeHGH2p"
-      : process.env.ELEVENLABS_VOICE_ID || "JBFqnCBsd6RMkjVDRZzb";
+    : process.env.ELEVENLABS_VOICE_ID_EN || "WtA85syCrJwasGeHGH2p";
   if (!/^[A-Za-z0-9]{20}$/.test(voice)) throw new Error("invalid_voice");
   const response = await fetcher(`https://api.elevenlabs.io/v1/text-to-speech/${voice}/with-timestamps?output_format=pcm_24000`, {
     method: "POST", signal,
