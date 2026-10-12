@@ -6,7 +6,7 @@ on:
       capture:
         description: Native screenshot coverage
         type: choice
-        options: [uniform, onboarding, home, progress, all, none]
+        options: [uniform, onboarding, home, progress, appstore, all, none]
         default: uniform
       ui_tests:
         description: UI coverage (targeted confirmation after full-suite diagnostics)
@@ -57,6 +57,7 @@ jobs:
           swiftc -swift-version 5 -parse-as-library ios/Blank/Blank/AssistantVoicePlayback.swift tools/assistant_voice_playback_test.swift -o tmp/native-tests/voice-playback
           tmp/native-tests/voice-playback
           node tools/run_ios_protection_tests.js
+          node tools/run_widget_control_tests.js
           node tools/run_brain_native_tests.js
           node tools/run_private_stage_qa_tests.js
           swiftc ios/Blank/Blank/HomeOrbControl.swift tools/home_orb_test.swift -o tmp/native-tests/home-orb
@@ -72,6 +73,13 @@ jobs:
             -derivedDataPath tmp/ios-build \
             CODE_SIGNING_ALLOWED=NO \
             build
+      - name: Render small widget surfaces
+        run: node tools/render_widget_preview.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: small-widget-visuals
+          path: tmp/widget-preview/*.png
       - name: Test Home navigation and long responses on iPhone
         timeout-minutes: 20
         run: |
@@ -94,7 +102,7 @@ jobs:
           fi
           if [ "${{ inputs.ui_tests || 'all' }}" = basic ]; then
             suite=BlankHomeUITests/MinimalHomeUITests/testBasicBlockingWithoutSleepKeepsRestClosed
-            extra_tests=(-only-testing:BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear -only-testing:BlankHomeUITests/MinimalHomeUITests/testThreeSectionsKeepAllSettingsAndReturnToChat -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlFormsKeepNativeEditingAndDismissal -only-testing:BlankHomeUITests/MinimalHomeUITests/testProgressShowsRestContextAndPreservesNavigation)
+            extra_tests=(-only-testing:BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear -only-testing:BlankHomeUITests/MinimalHomeUITests/testThreeSectionsKeepAllSettingsAndReturnToChat -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlFormsKeepNativeEditingAndDismissal -only-testing:BlankHomeUITests/MinimalHomeUITests/testProgressShowsRestContextAndPreservesNavigation -only-testing:BlankHomeUITests/MinimalHomeUITests/testSleepSourceKeepsProductionScreensAndUnmetAccountGate -only-testing:BlankHomeUITests/MinimalHomeUITests/testAppStoreScreenshotsLabelExamplesAndPreserveNavigation)
           fi
           xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank \
             -configuration Debug -destination "platform=iOS Simulator,id=$device" \

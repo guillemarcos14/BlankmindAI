@@ -124,7 +124,7 @@ enum BlankSharedState {
     static func hasConfiguredBlock(in defaults: UserDefaults) -> Bool { true }
     static func pendingWidgetTimerMinutes(defaults: UserDefaults) -> Int? { nil }
     static func appendSession(defaults: UserDefaults, now: Date, entryMode: BlankEntryMode, plannedDurationMinutes: Int?) { widgetStarts += 1 }
-${between(read('ios/Blank/Blank/BlankSharedState.swift'), '    static func startQuickBlock(', '    static func pendingWidgetTimerMinutes(').replace('UserDefaults = Self.defaults', 'UserDefaults')}
+${between(read('ios/Blank/Blank/BlankSharedState.swift'), '    static func startQuickBlock(', '    // Session ownership').replace('UserDefaults = Self.defaults', 'UserDefaults')}
     struct ActiveState { let isActive: Bool }
     static func loadActiveState(defaults: UserDefaults) -> ActiveState { ActiveState(isActive: sharedActive) }
 }

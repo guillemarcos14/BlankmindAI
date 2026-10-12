@@ -100,6 +100,30 @@ enum BlankFunnelAnalytics {
     }
 }
 
+// Public, explicit sample data for exploration and App Review. Account-scoped and
+// separate from the private QA switch; never enables itself or writes to Health.
+enum SampleSleepSource {
+    static func enabled(owner: String?, defaults: UserDefaults) -> Bool {
+        guard let owner, !owner.isEmpty else { return false }
+        return defaults.bool(forKey: "blankSampleSleep.v1.\(owner)")
+    }
+
+    static func setEnabled(_ enabled: Bool, owner: String?, defaults: UserDefaults) {
+        guard let owner, !owner.isEmpty else { return }
+        defaults.set(enabled, forKey: "blankSampleSleep.v1.\(owner)")
+    }
+}
+
+enum AppStoreScreenshotMode {
+    static var enabled: Bool {
+        #if DEBUG && targetEnvironment(simulator)
+        return ProcessInfo.processInfo.environment["BLANK_APPSTORE_CAPTURE"] == "1"
+        #else
+        return false
+        #endif
+    }
+}
+
 // Private QA source: only completed sleep nights, never sessions or activity.
 enum SyntheticSleepSource {
     static var allowed: Bool {
