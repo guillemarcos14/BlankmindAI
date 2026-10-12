@@ -157,9 +157,12 @@ final class MinimalHomeUITests: XCTestCase {
         let reply = app.scrollViews.firstMatch
         XCTAssertTrue(reply.exists)
         for _ in 0..<10 { reply.swipeUp() }
-        let response = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "End of your evening plan.")).firstMatch
+        let response = app.textViews["assistant-smooth-reply"]
         XCTAssertTrue(response.exists)
+        XCTAssertTrue(response.label.contains("End of your evening plan.") || (response.value as? String)?.contains("End of your evening plan.") == true)
         XCTAssertLessThanOrEqual(response.frame.maxY, voice.frame.minY - 20)
+        let panel = app.otherElements["home-chat-panel"]
+        XCTAssertGreaterThanOrEqual(panel.frame.maxY - reply.frame.maxY, 47)
         XCTAssertEqual(voice.frame, original)
         XCTAssertTrue(app.buttons["home-tab-control"].isHittable)
         XCTAssertGreaterThanOrEqual(voice.frame.width, 44)
