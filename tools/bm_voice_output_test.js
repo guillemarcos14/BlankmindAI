@@ -131,8 +131,15 @@ async function run() {
   }) };
   await error(503, "voice_unavailable", await voice(request({ synchronized: true }), mismatchDeps));
   delete row.response_language;
-  const noLanguageFetch = { ...elevenDeps, fetch: async () => { throw new Error("Legacy language must not be guessed"); } };
+  let legacyCalls = 0;
+  const beforeLegacyReservation = reserved;
+  const noLanguageFetch = { ...elevenDeps, fetch: async () => {
+    legacyCalls++;
+    return Response.json({ audio_base64: Buffer.alloc(48000).toString("base64"), alignment });
+  } };
   await error(503, "voice_unavailable", await voice(request({ synchronized: true }), noLanguageFetch));
+  assert.equal(legacyCalls, 0, "Missing language must not call a provider");
+  assert.equal(reserved, beforeLegacyReservation, "Missing language must not consume quota");
   delete process.env.BM_VOICE_PROVIDER; delete process.env.ELEVENLABS_API_KEY;
   process.env.BM_VOICE_ENABLED = "false";
   await error(503, "voice_disabled", await voice(request(), deps));

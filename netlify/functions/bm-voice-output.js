@@ -55,6 +55,9 @@ async function voice(request, deps = {}) {
     if (!(eleven ? process.env.ELEVENLABS_API_KEY : process.env.OPENAI_API_KEY)) {
       cleanup(); return failure(503, "voice_unavailable");
     }
+    if (eleven && !["es", "en"].includes(row.response_language)) {
+      cleanup(); return failure(503, "voice_unavailable");
+    }
     const reserve = deps.reserve || (async args => supabaseFetch("rpc/reserve_assistant_voice", {
       method: "POST", body: JSON.stringify(args),
     }));
