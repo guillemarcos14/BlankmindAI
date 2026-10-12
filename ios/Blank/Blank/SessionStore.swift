@@ -214,7 +214,7 @@ final class SessionStore: ObservableObject {
     func unlockFromControl() -> Bool {
         syncFromSharedDefaults()
         guard isBlankActive, !hardBlankActive else { return false }
-        guard deactivateBlank(entryMode: .app, endedReason: .manual) == .unblanked else { return false }
+        guard deactivateBlank(entryMode: .app, endedReason: .control) == .unblanked else { return false }
         defaults.set(Date().addingTimeInterval(60).timeIntervalSince1970, forKey: "blankManualReblockAt")
         return true
     }
@@ -577,7 +577,7 @@ final class SessionStore: ObservableObject {
         if hardBlankActive, endedReason != .emergency, endedReason != .timer, endedReason != .expired, endedReason != .schedule {
             return .hardBlankLocked
         }
-        if endedReason == .manual || endedReason == .emergency || endedReason == .nfc {
+        if endedReason == .manual || endedReason == .control || endedReason == .emergency || endedReason == .nfc {
             pauseScheduleForUserUnlock(at: endedAt)
         }
 
