@@ -160,6 +160,8 @@ try {
   const file = path.join(temporary, 'ProtectionTests.swift');
   const binary = path.join(temporary, 'protection-tests');
   fs.writeFileSync(file, 'import Foundation\n' + between(model, 'struct BlankHabitWindow:', 'struct BlankSession:')
+    + between(model, 'enum BlankEntryMode:', 'enum BlankUsageEventKind:')
+    + between(model, 'enum BlankEndedReason:', 'struct BlankSelectionSnapshot:')
     + between(store, 'enum AssistantPendingAction:', 'struct AssistantProtectionExecution:')
     + between(home, 'struct UnblankHoldCadence {', 'struct AssistantInboxResponse:') + extensionModel + fixtures + read('tools/ios_protection_test.swift'));
   const built = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file, '-o', binary], { encoding: 'utf8' });
