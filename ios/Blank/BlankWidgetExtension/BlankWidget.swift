@@ -135,20 +135,29 @@ private extension View {
     }
 }
 
+@available(iOSApplicationExtension 17.0, *)
 struct BlankQuickBlockWidget: Widget {
     let kind = widgetKind
     var body: some WidgetConfiguration {
-        if #available(iOSApplicationExtension 17.0, *) { configuration.contentMarginsDisabled() }
-        else { configuration }
-    }
-    private var configuration: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: BlankWidgetProvider()) { entry in BlankWidgetView(entry: entry) }
-            .configurationDisplayName("Blankmind")
-            .description("Block or unlock distractions. Tap the background to open Home.")
-            .supportedFamilies([.systemSmall, .accessoryInline, .accessoryCircular, .accessoryRectangular])
+        blankWidgetConfiguration().contentMarginsDisabled()
     }
 }
 
+private struct BlankLegacyQuickBlockWidget: Widget {
+    let kind = widgetKind
+    var body: some WidgetConfiguration { blankWidgetConfiguration() }
+}
+
+private func blankWidgetConfiguration() -> some WidgetConfiguration {
+        StaticConfiguration(kind: widgetKind, provider: BlankWidgetProvider()) { entry in BlankWidgetView(entry: entry) }
+            .configurationDisplayName("Blankmind")
+            .description("Block or unlock distractions. Tap the background to open Home.")
+            .supportedFamilies([.systemSmall, .accessoryInline, .accessoryCircular, .accessoryRectangular])
+}
+
 @main struct BlankWidgetBundle: WidgetBundle {
-    var body: some Widget { BlankQuickBlockWidget() }
+    var body: some Widget {
+        if #available(iOSApplicationExtension 17.0, *) { BlankQuickBlockWidget() }
+        else { BlankLegacyQuickBlockWidget() }
+    }
 }
