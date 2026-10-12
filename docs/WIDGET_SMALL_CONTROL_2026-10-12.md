@@ -16,4 +16,6 @@ Native shared-state tests exercise missing configuration, duplicate start, hard 
 
 The macOS renderer uses the production SwiftUI material and button at 158pt @3x, the original atmosphere/font, and a fixed 00:42 countdown fixture. These images check rendering; they do not certify WidgetKit tap routing or Screen Time callbacks on a physical iPhone. Simulator compilation, native tests and physical validation are separate layers. No archive, TestFlight or App Store submission is part of this change.
 
-Final CI/build and harness results will be recorded after validation completes.
+- Runtime `dec483a`: native tests, Simulator compilation and all four widget render fixtures pass in [iOS CI](https://github.com/guillemarcos14/BlankmindAI/actions/runs/38245882926). Idle/active/cooldown were inspected; the final active rendering matches the earlier inspected surface byte-for-byte. Main-app UI regression and capture status are tracked in that workflow separately.
+- Product harness passes 82/82 with the original baseline and enforce-scope (`ph_1791806284597_d0f4e0eb`). The [complete PR gate](https://github.com/guillemarcos14/BlankmindAI/actions/runs/38246146212) passes contracts/runtime, PostgreSQL and Android.
+- [PR36](https://github.com/guillemarcos14/BlankmindAI/pull/36) is a draft stacked on PR34. No merge, archive, signed build, installation, distribution or physical WidgetKit/Screen Time validation is claimed.
