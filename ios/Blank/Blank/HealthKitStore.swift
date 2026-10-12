@@ -24,12 +24,14 @@ enum HealthKitConnectionState: Equatable {
 final class HealthKitStore: ObservableObject {
     static let shared = HealthKitStore()
     @Published private(set) var syntheticSleepEnabled = false
+    @Published private(set) var sampleSleepEnabled = false
     private var sourceOwner: String?
     private var refreshRequestID = UUID()
     private(set) var sourceGeneration = UUID()
     private var identityObserver: NSObjectProtocol?
 
     var canUseSyntheticSleep: Bool { SyntheticSleepSource.allowed && AssistantAppSession.userID != nil }
+    var canUseSampleSleep: Bool { AssistantAppSession.userID != nil }
     var sleepDataAvailable: Bool { syntheticSleepEnabled || sleepAccess.hasData }
     var onboardingSleepAccess: SleepAccessStatus { syntheticSleepEnabled ? .available : sleepAccess }
     var aiSharingAllowed: Bool { RestAIConsent.allowed(owner: AssistantAppSession.userID, defaults: defaults) }
@@ -47,9 +49,12 @@ final class HealthKitStore: ObservableObject {
         RestAIConsent.set(true, owner: AssistantAppSession.userID, defaults: defaults)
     }
 
+    // Keep the deployed wire contract; the separate provenance distinguishes
+    // explicit public samples from private QA without a backend migration.
     var sleepSource: String { syntheticSleepEnabled ? "synthetic_qa" : "apple_health" }
     var sleepProvenance: String {
-        syntheticSleepEnabled ? "Sleep is synthetic QA data; activity, permissions and protection are real. Do not treat sleep as measured health evidence." : "Sleep source: Apple Health; read permission is opaque."
+        if sampleSleepEnabled { return "Sleep is fictional sample data selected by the user for exploration or App Review, not measured Apple Health evidence. Protection and available activity remain real. Clearly identify sample sleep in replies." }
+        return syntheticSleepEnabled ? "Sleep is synthetic QA data; activity, permissions and protection are real. Do not treat sleep as measured health evidence." : "Sleep source: Apple Health; read permission is opaque."
     }
 
     func sleepContextProfile(now: Date = Date()) -> [String: Any] {
@@ -80,10 +85,18 @@ final class HealthKitStore: ObservableObject {
         refresh()
     }
 
+    func setSampleSleepEnabled(_ enabled: Bool) {
+        guard canUseSampleSleep else { return }
+        SampleSleepSource.setEnabled(enabled, owner: AssistantAppSession.userID, defaults: defaults)
+        reconcileSleepSource(force: true)
+        refresh()
+    }
+
     func reconcileSleepSource(force: Bool = false) {
         let owner = AssistantAppSession.userID
-        let enabled = SyntheticSleepSource.enabled(owner: owner, defaults: defaults)
-        guard force || owner != sourceOwner || enabled != syntheticSleepEnabled else { return }
+        let sampleEnabled = SampleSleepSource.enabled(owner: owner, defaults: defaults)
+        let enabled = sampleEnabled || SyntheticSleepSource.enabled(owner: owner, defaults: defaults)
+        guard force || owner != sourceOwner || enabled != syntheticSleepEnabled || sampleEnabled != sampleSleepEnabled else { return }
         let retained = owner == sourceOwner ? summaries : []
         sourceOwner = owner
         refreshRequestID = UUID()
@@ -94,6 +107,7 @@ final class HealthKitStore: ObservableObject {
         sleepNightCount = 0
         watchNightCount = 0
         syntheticSleepEnabled = enabled
+        sampleSleepEnabled = sampleEnabled
         summaries = enabled ? SyntheticSleepSource.applying(to: retained) : SyntheticSleepSource.removingSleep(from: retained)
         state = HKHealthStore.isHealthDataAvailable() ? .notRequested : .unavailable
     }
