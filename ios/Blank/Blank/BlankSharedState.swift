@@ -57,6 +57,7 @@ enum BlankSharedState {
 
     static func startQuickBlock(defaults: UserDefaults = Self.defaults, now: Date = Date()) -> Bool {
         guard defaults.double(forKey: "blankManualReblockAt") <= now.timeIntervalSince1970 else { return false }
+        guard !defaults.bool(forKey: Keys.isBlankActive) else { return false }
         guard hasConfiguredBlock(in: defaults) else { return false }
         let durationMinutes = pendingWidgetTimerMinutes(defaults: defaults)
         defaults.set(true, forKey: Keys.isBlankActive)
@@ -69,6 +70,53 @@ enum BlankSharedState {
         defaults.removeObject(forKey: Keys.pendingWidgetTimerMinutes)
         defaults.removeObject(forKey: "blankQuickBlockDurationMinutes")
         appendSession(defaults: defaults, now: now, entryMode: .widget, plannedDurationMinutes: durationMinutes)
+        return true
+    }
+
+    // Session ownership prevents a late extension callback from releasing a new block.
+    static func widgetUnlockDeadline(defaults: UserDefaults = Self.defaults) -> Date? {
+        guard defaults.bool(forKey: Keys.isBlankActive),
+              !defaults.bool(forKey: "blankHardBlankActive"),
+              let owner = date(forKey: Keys.widgetUnlockSessionSince, defaults: defaults),
+              owner == date(forKey: Keys.blankActiveSince, defaults: defaults) else { return nil }
+        return date(forKey: Keys.widgetUnlockAt, defaults: defaults)
+    }
+
+    @discardableResult
+    static func requestWidgetUnlock(defaults: UserDefaults = Self.defaults, now: Date = Date()) -> Date? {
+        guard loadActiveState(now: now, defaults: defaults).isActive,
+              !defaults.bool(forKey: "blankHardBlankActive"),
+              let owner = date(forKey: Keys.blankActiveSince, defaults: defaults) else { return nil }
+        if let pending = widgetUnlockDeadline(defaults: defaults) { return pending }
+        // Do not restart a countdown already requested in the app.
+        let manualOwner = defaults.double(forKey: "blankManualUnlockSessionSince")
+        let manualDeadline = date(forKey: "blankManualUnlockAt", defaults: defaults)
+        let deadline = manualOwner == owner.timeIntervalSince1970
+            ? (manualDeadline ?? now.addingTimeInterval(60)) : now.addingTimeInterval(60)
+        defaults.set(owner.timeIntervalSince1970, forKey: Keys.widgetUnlockSessionSince)
+        defaults.set(deadline.timeIntervalSince1970, forKey: Keys.widgetUnlockAt)
+        return deadline
+    }
+
+    static func cancelWidgetUnlock(defaults: UserDefaults = Self.defaults) {
+        defaults.removeObject(forKey: Keys.widgetUnlockAt)
+        defaults.removeObject(forKey: Keys.widgetUnlockSessionSince)
+    }
+
+    @discardableResult
+    static func finishWidgetUnlockIfDue(defaults: UserDefaults = Self.defaults, now: Date = Date()) -> Bool {
+        guard let deadline = widgetUnlockDeadline(defaults: defaults), now >= deadline else { return false }
+        // A timed session that ends first retains its original completion reason.
+        if finishExpiredBlock(defaults: defaults, now: now) { return true }
+        defaults.set(false, forKey: Keys.isBlankActive)
+        defaults.removeObject(forKey: Keys.blankActiveSince)
+        defaults.removeObject(forKey: Keys.blankActiveUntil)
+        defaults.removeObject(forKey: Keys.pendingWidgetTimerMinutes)
+        defaults.removeObject(forKey: "blankManualUnlockAt")
+        defaults.removeObject(forKey: "blankManualUnlockSessionSince")
+        defaults.set(now.addingTimeInterval(60).timeIntervalSince1970, forKey: "blankManualReblockAt")
+        cancelWidgetUnlock(defaults: defaults)
+        endActiveSession(defaults: defaults, now: now, endedReason: .control)
         return true
     }
 
@@ -99,6 +147,7 @@ enum BlankSharedState {
         defaults.removeObject(forKey: Keys.blankActiveSince)
         defaults.removeObject(forKey: Keys.blankActiveUntil)
         defaults.removeObject(forKey: Keys.pendingWidgetTimerMinutes)
+        cancelWidgetUnlock(defaults: defaults)
         endActiveSession(defaults: defaults, now: now, endedReason: activeExpiredReason(defaults: defaults))
         return true
     }
@@ -242,5 +291,7 @@ enum BlankSharedState {
         static let sessions = "blankSessions"
         static let usageEvents = "blankUsageEvents"
         static let pendingWidgetTimerMinutes = "blankPendingWidgetTimerMinutes"
+        static let widgetUnlockAt = "blankWidgetUnlockAt"
+        static let widgetUnlockSessionSince = "blankWidgetUnlockSessionSince"
     }
 }

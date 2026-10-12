@@ -29,6 +29,7 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>inter_variable.ttf</string>
+		<string>neue-montreal-regular.otf</string>
 	</array>
 	<key>NSExtension</key>
 	<dict>

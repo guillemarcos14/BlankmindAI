@@ -69,6 +69,12 @@
 		C633559507C74858A1CEB08D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 14345F0A317C4DB9AE276331 /* PrivacyInfo.xcprivacy */; };
 		63C68C09E7B74B4AA238F332 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3F25DC49D4674B4C8B22E955 /* PrivacyInfo.xcprivacy */; };
 		EA0C1BCB75904DD68DAA27F0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = BF1828A8E5024924A5E85517 /* PrivacyInfo.xcprivacy */; };
+		BC1212000000000000000001 /* BlankSharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000025 /* BlankSharedState.swift */; };
+		BC1212000000000000000002 /* BlankDomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000001B /* BlankDomainModels.swift */; };
+		BC1212000000000000000003 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
+		BC1212000000000000000004 /* WidgetAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BC1212000000000000000010 /* WidgetAssets.xcassets */; };
+		BC1212000000000000000005 /* neue-montreal-regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = AA1000060000000000000004 /* neue-montreal-regular.otf */; };
+		BC1212000000000000000021 /* BlankWidgetSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1212000000000000000020 /* BlankWidgetSurface.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -176,6 +182,8 @@
 		14345F0A317C4DB9AE276331 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		3F25DC49D4674B4C8B22E955 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BF1828A8E5024924A5E85517 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		BC1212000000000000000010 /* WidgetAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = WidgetAssets.xcassets; sourceTree = "<group>"; };
+		BC1212000000000000000020 /* BlankWidgetSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Blank/BlankWidgetSurface.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -302,8 +310,10 @@
 		8A0000040000000000000031 /* BlankWidgetExtension */ = {
 			isa = PBXGroup;
 			children = (
+				BC1212000000000000000010 /* WidgetAssets.xcassets */,
 				14345F0A317C4DB9AE276331 /* PrivacyInfo.xcprivacy */,
 				8A0000040000000000000011 /* BlankWidget.swift */,
+				BC1212000000000000000020 /* BlankWidgetSurface.swift */,
 				8A0000040000000000000012 /* Info.plist */,
 				8A0000040000000000000013 /* BlankWidgetExtension.entitlements */,
 			);
@@ -523,6 +533,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BC1212000000000000000004 /* WidgetAssets.xcassets in Resources */,
+				BC1212000000000000000005 /* neue-montreal-regular.otf in Resources */,
 				C633559507C74858A1CEB08D /* PrivacyInfo.xcprivacy in Resources */,
 				8A0000040000000000000005 /* inter_variable.ttf in Resources */,
 			);
@@ -586,6 +598,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BC1212000000000000000001 /* BlankSharedState.swift in Sources */,
+				BC1212000000000000000002 /* BlankDomainModels.swift in Sources */,
+				BC1212000000000000000003 /* BlankBrainMetrics.swift in Sources */,
 				8A0000020000000000000001 /* DeviceActivityMonitorExtension.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -595,6 +610,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8A0000040000000000000001 /* BlankWidget.swift in Sources */,
+				BC1212000000000000000021 /* BlankWidgetSurface.swift in Sources */,
 				8A0000040000000000000002 /* BlankSharedState.swift in Sources */,
 				8A0000040000000000000003 /* BlankDomainModels.swift in Sources */,
 				BA10000000000000000000033 /* BlankBrainMetrics.swift in Sources */,

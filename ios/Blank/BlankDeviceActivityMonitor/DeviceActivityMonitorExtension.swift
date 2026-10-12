@@ -4,6 +4,7 @@ import Foundation
 import ManagedSettings
 import OSLog
 import UserNotifications
+import WidgetKit
 
 private let log = Logger(
     subsystem: "com.blanknfc.app.ios.device-activity",
@@ -26,6 +27,11 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         super.intervalDidStart(for: activity)
         log.info("DeviceActivity interval started: \(activity.rawValue)")
 
+        if activity.rawValue == "BlankWidgetUnlock" {
+            finishWidgetUnlock()
+            return
+        }
+
         if activity.rawValue.hasPrefix(strategyExpiryPrefix) {
             releaseExpiredStrategy()
         } else if activity.rawValue == recurringExpiryActivity || activity.rawValue.hasPrefix(recurringExpiryPrefix) {
@@ -46,6 +52,11 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     override func intervalDidEnd(for activity: DeviceActivityName) {
         super.intervalDidEnd(for: activity)
         log.info("DeviceActivity interval ended: \(activity.rawValue)")
+
+        if activity.rawValue == "BlankWidgetUnlock" {
+            finishWidgetUnlock()
+            return
+        }
 
         if activity.rawValue.hasPrefix(strategyActivityPrefix) || activity.rawValue.hasPrefix(strategyExpiryPrefix) {
             releaseExpiredStrategy()
@@ -72,6 +83,13 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : .specific(selection.categoryTokens)
         store.shield.webDomains = selection.webDomainTokens
         store.webContent.blockedByFilter = Self.adultContentBlockingEnabled ? .auto() : nil
+    }
+
+    private func finishWidgetUnlock() {
+        guard BlankSharedState.finishWidgetUnlockIfDue(defaults: Self.sharedDefaults) else { return }
+        // Named recurring/daily-limit stores remain independent of this manual block.
+        strategyStore.clearAllSettings()
+        WidgetCenter.shared.reloadTimelines(ofKind: "BlankQuickBlockWidget")
     }
 
     private func releaseExpiredStrategy() {
