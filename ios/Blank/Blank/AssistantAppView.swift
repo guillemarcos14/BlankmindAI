@@ -419,7 +419,7 @@ struct AssistantAppClient {
         }
         let payload = try JSONSerialization.data(withJSONObject: ["turn_id": turnId,
             "request_id": requestId.uuidString.lowercased(), "app_install_id": BlankSharedState.appInstallId,
-            "synchronized": true])
+            "synchronized": true, "elevenlabs_consent": RestAIConsent.allowed(owner: userID)])
         do {
             try await readVoice(base: base, payload: payload, token: access, userID: userID, turnId: turnId, onCue: onCue, onAudio: onAudio)
         } catch AssistantAppError.authenticationRequired {

@@ -100,7 +100,8 @@ try {
   const file = path.join(temporary, 'AssistantClientTests.swift');
   const binary = path.join(temporary, 'assistant-client-tests');
   fs.writeFileSync(file, `import Foundation\n${notificationNames}\n${receipts}\n${source.slice(start, end)}\n${composer}\n${hapticsFixture}\n${viewFixture}\n${test}`);
-  const compiled = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file, '-o', binary], { encoding: 'utf8' });
+  const compiled = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file,
+    path.join(__dirname, '../ios/Blank/Blank/SleepAccessPolicy.swift'), '-o', binary], { encoding: 'utf8' });
   if (compiled.error) throw new Error(`Native client tests require Swift on macOS: ${compiled.error.message}`);
   if (compiled.status !== 0) throw new Error(compiled.stderr || compiled.stdout);
   const result = spawnSync(binary, [], { encoding: 'utf8', timeout: 120000 });

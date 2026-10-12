@@ -41,11 +41,11 @@ enum RestAIConsent {
     static let didChange = Notification.Name("BlankRestAIConsentDidChange")
     static func allowed(owner: String?, defaults: UserDefaults = .standard) -> Bool {
         guard let owner, !owner.isEmpty else { return false }
-        return defaults.integer(forKey: "blankRestAIConsent.v1." + owner) == 1
+        return defaults.integer(forKey: "blankRestAIConsent.v2." + owner) == 1
     }
     static func set(_ allowed: Bool, owner: String?, defaults: UserDefaults = .standard) {
         guard let owner, !owner.isEmpty else { return }
-        defaults.set(allowed ? 1 : 0, forKey: "blankRestAIConsent.v1." + owner)
+        defaults.set(allowed ? 1 : 0, forKey: "blankRestAIConsent.v2." + owner)
         NotificationCenter.default.post(name: didChange, object: nil)
     }
 }

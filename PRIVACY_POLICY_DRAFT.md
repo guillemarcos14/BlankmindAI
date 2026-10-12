@@ -33,6 +33,8 @@ Blankmind sends only aggregated wellness features after the user chooses to pers
 
 ## AI
 
+Blankmind uses OpenAI to process messages and generate responses. With the user's explicit permission, the text of a spoken response is sent to ElevenLabs to generate its audio. That text can include personal facts or sleep summaries referenced in the response. ElevenLabs receives the response text, not raw Health samples, clinical documents, Screen Time selections or the user's microphone recording. Voice playback is optional. The app asks for renewed permission when adding ElevenLabs; prior OpenAI-only permission does not authorize this sharing.
+
 Blankmind may use onboarding answers, aggregated app and habit signals, and optional Health-derived features to generate AI-powered digital wellness insights, recommendations, and plan updates. AI output must stay non-medical and must not claim diagnosis, therapy, or treatment.
 
 ## Early Access Conversations

@@ -11,7 +11,7 @@ identity.identityForAuthUser = async () => ({ auth_user_id: userID, app_install_
   assistant_connect_code: "FIXTURE" });
 const { voice, MAX_AUDIO_BYTES } = require("../netlify/functions/bm-voice-output");
 const { characterCues } = require("../netlify/functions/bm-voice-elevenlabs");
-const body = { turn_id: turnID, request_id: requestID, app_install_id: "verified" };
+const body = { turn_id: turnID, request_id: requestID, app_install_id: "verified", elevenlabs_consent: true };
 const request = (override = {}, token = "fixture") => new Request("https://blank.test/voice", {
   method: "POST", headers: { authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   body: JSON.stringify({ ...body, ...override }),
@@ -93,6 +93,13 @@ async function run() {
   const cancelled = await voice(request(), deps);
   await cancelled.body.cancel(); assert.equal(aborted, true);
   process.env.BM_VOICE_PROVIDER = "elevenlabs";
+  const beforeConsentReservation = reserved;
+  const beforeConsentGeneration = generated;
+  await error(403, "voice_consent_required", await voice(request({ elevenlabs_consent: false }), deps));
+  await error(403, "voice_consent_required", await voice(request({ elevenlabs_consent: undefined }), deps));
+  await error(400, "invalid_voice_request", await voice(request({ elevenlabs_consent: "true" }), deps));
+  assert.equal(reserved, beforeConsentReservation);
+  assert.equal(generated, beforeConsentGeneration);
   const beforeMissingKey = reserved;
   await error(503, "voice_unavailable", await voice(request(), deps));
   assert.equal(reserved, beforeMissingKey, "Missing ElevenLabs key must not consume quota");

@@ -31,6 +31,8 @@ check(!RestAIConsent.allowed(owner: "a", defaults: consentDefaults), "Sharing st
 RestAIConsent.set(true, owner: "a", defaults: consentDefaults)
 check(RestAIConsent.allowed(owner: "a", defaults: consentDefaults), "Explicit account consent")
 check(!RestAIConsent.allowed(owner: "b", defaults: consentDefaults), "Consent must not follow another account")
+consentDefaults.set(1, forKey: "blankRestAIConsent.v1.legacy")
+check(!RestAIConsent.allowed(owner: "legacy", defaults: consentDefaults), "OpenAI-only consent must not authorize ElevenLabs")
 RestAIConsent.set(false, owner: "a", defaults: consentDefaults)
 check(!RestAIConsent.allowed(owner: "a", defaults: consentDefaults), "Consent can be withdrawn")
 print("Sleep access: recorded data, absence, manual/stale/future intervals and both mandatory gates passed")

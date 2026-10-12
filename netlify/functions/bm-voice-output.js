@@ -22,8 +22,9 @@ async function voice(request, deps = {}) {
     body = JSON.parse(raw);
   } catch (_) { return failure(400, "invalid_json"); }
   if (!body || Array.isArray(body) || typeof body !== "object"
-      || Object.keys(body).some(key => !["turn_id", "request_id", "app_install_id", "synchronized"].includes(key))
+      || Object.keys(body).some(key => !["turn_id", "request_id", "app_install_id", "synchronized", "elevenlabs_consent"].includes(key))
       || (body.synchronized !== undefined && typeof body.synchronized !== "boolean")
+      || (body.elevenlabs_consent !== undefined && typeof body.elevenlabs_consent !== "boolean")
       || !UUID.test(body.turn_id || "") || !UUID.test(body.request_id || "")) {
     return failure(400, "invalid_voice_request");
   }
@@ -52,6 +53,9 @@ async function voice(request, deps = {}) {
     const text = plainAssistantText(row.assistant_text || "");
     if (!text.trim() || text.length > 4000) { cleanup(); return failure(422, "voice_text_unavailable"); }
     const eleven = process.env.BM_VOICE_PROVIDER === "elevenlabs";
+    if (eleven && body.elevenlabs_consent !== true) {
+      cleanup(); return failure(403, "voice_consent_required");
+    }
     if (!(eleven ? process.env.ELEVENLABS_API_KEY : process.env.OPENAI_API_KEY)) {
       cleanup(); return failure(503, "voice_unavailable");
     }
