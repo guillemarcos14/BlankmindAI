@@ -222,8 +222,12 @@ struct AssistantVoiceCue {
 
 private extension String {
     func prefix(utf16 count: Int) -> Substring {
-        let offset = utf16.index(utf16.startIndex, offsetBy: count)
-        guard let end = String.Index(offset, within: self) else { return self[...] }
-        return self[..<end]
+        var length = min(max(0, count), utf16.count)
+        while length > 0 {
+            let offset = utf16.index(utf16.startIndex, offsetBy: length)
+            if let end = String.Index(offset, within: self) { return self[..<end] }
+            length -= 1
+        }
+        return self[..<startIndex]
     }
 }

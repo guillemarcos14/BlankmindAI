@@ -10,6 +10,7 @@ membership.getSupabaseUser = async event => event.headers.authorization === "Bea
 identity.identityForAuthUser = async () => ({ auth_user_id: userID, app_install_id: "verified",
   assistant_connect_code: "FIXTURE" });
 const { voice, MAX_AUDIO_BYTES } = require("../netlify/functions/bm-voice-output");
+const { characterCues } = require("../netlify/functions/bm-voice-elevenlabs");
 const body = { turn_id: turnID, request_id: requestID, app_install_id: "verified" };
 const request = (override = {}, token = "fixture") => new Request("https://blank.test/voice", {
   method: "POST", headers: { authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -41,6 +42,9 @@ async function error(status, code, response) {
   assert.equal(response.headers.get("Cache-Control"), "no-store");
 }
 async function run() {
+  assert.deepEqual(characterCues("e\u0301👋", { characters: ["e", "\u0301", "\ud83d", "\udc4b"],
+    character_start_times_seconds: [0, 0.1, 0.2, 0.3], character_end_times_seconds: [0.1, 0.2, 0.3, 0.4] }, 1),
+    [{ start: 0, end: 2 }, { start: 0.2, end: 4 }], "Unicode cues must never split an accented character or emoji");
   process.env.BM_VOICE_ENABLED = "true"; process.env.OPENAI_API_KEY = "fixture-key";
   await error(401, "authentication_required", await voice(request({}, "invalid"), deps));
   await error(403, "installation_not_verified", await voice(request({ app_install_id: "other" }), deps));

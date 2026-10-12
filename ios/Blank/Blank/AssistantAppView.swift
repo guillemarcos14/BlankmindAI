@@ -1857,6 +1857,7 @@ private final class SmoothReplyTextView: UITextView {
         isEditable = false
         textContainerInset = .zero
         textContainer.lineFragmentPadding = 0
+        textContainer.widthTracksTextView = false
         setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         accessibilityIdentifier = "assistant-smooth-reply"
     }

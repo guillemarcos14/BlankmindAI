@@ -8,13 +8,18 @@ function characterCues(text, alignment, duration) {
       || !characters.every(c => typeof c === "string" && c.length > 0)
       || characters.join("") !== text || !Array.isArray(starts) || !Array.isArray(ends)
       || starts.length !== characters.length || ends.length !== characters.length) throw new Error("invalid_alignment");
-  let offset = 0, previous = 0;
-  return characters.map((character, i) => {
+  const boundaries = new Set([...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)]
+    .map(segment => segment.index + segment.segment.length));
+  const cues = [];
+  let offset = 0, previous = 0, onset = null;
+  characters.forEach((character, i) => {
     if (!Number.isFinite(starts[i]) || !Number.isFinite(ends[i]) || starts[i] < previous
         || ends[i] < starts[i] || ends[i] > duration + 0.1 || starts[i] >= duration) throw new Error("invalid_alignment");
     previous = starts[i]; offset += character.length;
-    return { start: starts[i], end: offset };
+    onset ??= starts[i];
+    if (boundaries.has(offset)) { cues.push({ start: onset, end: offset }); onset = null; }
   });
+  return cues;
 }
 
 async function elevenSpeech(text, fetcher, signal, maxBytes) {
