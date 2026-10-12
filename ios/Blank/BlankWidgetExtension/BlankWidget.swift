@@ -147,17 +147,11 @@ private extension View {
     }
 }
 
-@available(iOSApplicationExtension 17.0, *)
 struct BlankQuickBlockWidget: Widget {
     let kind = widgetKind
     var body: some WidgetConfiguration {
         blankWidgetConfiguration().contentMarginsDisabled()
     }
-}
-
-private struct BlankLegacyQuickBlockWidget: Widget {
-    let kind = widgetKind
-    var body: some WidgetConfiguration { blankWidgetConfiguration() }
 }
 
 private func blankWidgetConfiguration() -> some WidgetConfiguration {
@@ -168,8 +162,5 @@ private func blankWidgetConfiguration() -> some WidgetConfiguration {
 }
 
 @main struct BlankWidgetBundle: WidgetBundle {
-    var body: some Widget {
-        if #available(iOSApplicationExtension 17.0, *) { BlankQuickBlockWidget() }
-        else { BlankLegacyQuickBlockWidget() }
-    }
+    var body: some Widget { BlankQuickBlockWidget() }
 }
