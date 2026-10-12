@@ -6,6 +6,26 @@ set -euo pipefail
 app="${1:?built simulator app path required}"
 output="${2:-tmp/ios-visual}"
 mkdir -p "$output"
+if [ "${3:-all}" = appstore ]; then
+  runtime=$(xcrun simctl list runtimes -j | python3 -c 'import json,sys; print(next(r["identifier"] for r in json.load(sys.stdin)["runtimes"] if r.get("isAvailable") and "iOS" in r["name"]))')
+  device=$(xcrun simctl create 'Blank App Store Screenshots' com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro "$runtime")
+  trap 'xcrun simctl shutdown "$device" >/dev/null 2>&1 || true' EXIT
+  xcrun simctl boot "$device"
+  xcrun simctl bootstatus "$device" -b
+  xcrun simctl status_bar "$device" override --time '9:41' --batteryState charged --batteryLevel 100
+  xcrun simctl install "$device" "$app"
+  bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
+  for language in es en; do
+    for scenario in product-home product-home-response product-shell-progress product-control product-schedule; do
+      xcrun simctl terminate "$device" "$bundle" 2>/dev/null || true
+      SIMCTL_CHILD_BLANK_APPSTORE_CAPTURE=1 SIMCTL_CHILD_BLANK_UI_SCENARIO="$scenario" xcrun simctl launch "$device" "$bundle" -AppleLanguages "($language)" -AppleLocale "${language}_$(if [ "$language" = es ]; then echo ES; else echo US; fi)"
+      sleep 5
+      xcrun simctl io "$device" screenshot "$output/$language-$scenario.png"
+    done
+  done
+  xcrun simctl list devices -j > "$output/simulator.json"
+  exit 0
+fi
 device_id=$(xcrun simctl list devices available -j | python3 -c '
 import json,sys
 devices=[d for group in json.load(sys.stdin)["devices"].values() for d in group if d["name"].startswith("iPhone")]

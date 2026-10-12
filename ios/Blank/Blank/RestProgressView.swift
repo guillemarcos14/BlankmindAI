@@ -28,7 +28,7 @@ struct RestProgressContent: View {
                 return RestNight(date: calendar.startOfDay(for: end), start: start, end: end,
                     asleep: [RestInterval(start: end.addingTimeInterval(-Double(minutes) * 60), end: end)],
                     awakeMinutes: day.awakeMinutes.map(Double.init), stageMinutes: [:],
-                    inBedMinutes: day.inBedMinutes.map(Double.init), source: "synthetic_qa", manual: false)
+                    inBedMinutes: day.inBedMinutes.map(Double.init), source: sleep.sleepSource, manual: false)
             }
         }
         #if DEBUG && targetEnvironment(simulator)
@@ -49,6 +49,7 @@ struct RestProgressContent: View {
     }
 
     private var sourceLabel: String? {
+        if sleep.sampleSleepEnabled { return "sample sleep · not measured" }
         if sleep.syntheticSleepEnabled { return "sample sleep · QA" }
         #if DEBUG && targetEnvironment(simulator)
         if AssistantAppPreview.scenario.contains("progress") { return "sample data · simulator" }

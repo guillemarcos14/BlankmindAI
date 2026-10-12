@@ -22,6 +22,7 @@ struct SetupView: View {
     @EnvironmentObject private var purchaseStore: StoreKitPurchaseStore
     @ObservedObject private var healthKitStore: HealthKitStore
     @State private var showingHealthHelp = false
+    @State private var showingSampleSleepConfirmation = false
     @AppStorage("blankHealthOnboardingVersion", store: BlankSharedState.defaults) private var healthOnboardingVersion = 0
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
@@ -144,6 +145,12 @@ struct SetupView: View {
         .onChange(of: deviceReady) { ready in
             if !ready { automaticCompletionAttempted = false }
         }
+        .alert("Use sample sleep data?", isPresented: $showingSampleSleepConfirmation) {
+            Button("Use sample data") { healthKitStore.setSampleSleepEnabled(true) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This creates fictional sleep nights on this iPhone so you can explore rest features without recorded sleep. It does not write to Apple Health. AI still requires your separate permission to share with OpenAI. Turn it off in Control > Data & Permissions > Sample sleep.")
+        }
 
     }
 
@@ -221,6 +228,17 @@ struct SetupView: View {
                 .accessibilityIdentifier("onboarding-basic-blocking")
                 Text("Blocking and unlocking are available without sleep data. Personalised rest statistics and rest content unlock when measured sleep records are available.")
                     .font(.blankInter(size: 13, relativeTo: .caption)).padding(.top, 12)
+            }
+            if healthKitStore.canUseSampleSleep {
+                Button(healthKitStore.sampleSleepEnabled ? "Use measured sleep" : "Explore with sample sleep") {
+                    if healthKitStore.sampleSleepEnabled { healthKitStore.setSampleSleepEnabled(false) }
+                    else { showingSampleSleepConfirmation = true }
+                }
+                .buttonStyle(OnboardingButtonStyle())
+                .accessibilityIdentifier("onboarding-sample-sleep")
+                Text(healthKitStore.sampleSleepEnabled ? "Sample sleep is active. These nights are fictional, not measured health data." : "No sleep records yet? Explore rest features using clearly labelled sample nights.")
+                    .font(.blankInter(size: 13, relativeTo: .caption))
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if healthKitStore.canUseSyntheticSleep {
                 Button(healthKitStore.syntheticSleepEnabled ? "Use Apple Health sleep" : "Use synthetic sleep") {

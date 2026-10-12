@@ -374,6 +374,7 @@ struct HomeView: View {
     }
 
     private var healthPermissionLabel: String {
+        if healthKitStore.sampleSleepEnabled { return "sample sleep · not measured" }
         if healthKitStore.syntheticSleepEnabled { return "synthetic sleep · real activity" }
         switch healthKitStore.state {
         case .connected:
@@ -432,6 +433,19 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, MinimalHomeDesign.navigationTop(proxy.safeAreaInsets.top))
                     .zIndex(10)
+
+                if healthKitStore.sampleSleepEnabled || AppStoreScreenshotMode.enabled {
+                    Text(AppStoreScreenshotMode.enabled ? "Example data" : "Sample sleep data · not measured")
+                        .font(.blankInter(size: 11, relativeTo: .caption))
+                        .foregroundStyle(MinimalHomeDesign.ink)
+                        .padding(.horizontal, 12).padding(.vertical, 4)
+                        .background(BlankColors.pureWhite.opacity(0.95), in: Capsule())
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, MinimalHomeDesign.navigationTop(proxy.safeAreaInsets.top) + 40)
+                        .allowsHitTesting(false)
+                        .accessibilityIdentifier("sample-sleep-banner")
+                        .zIndex(11)
+                }
 
                 if showingRelapseReview {
                     RelapseReviewSheet(
@@ -492,6 +506,11 @@ struct HomeView: View {
         .onChange(of: healthKitStore.restAIAvailable) { available in
             if available { Task { await activateAppChannel() } }
             else { clearPendingAssistantIdentityState(); showingAssistantChat = false }
+        }
+        .onChange(of: healthKitStore.sourceGeneration) { _ in
+            // Clears old sample nights remotely even when disabling them closes AI.
+            guard !simulatorGuest, healthKitStore.aiSharingAllowed else { return }
+            BlankBrain.shared.sync()
         }
         .onChange(of: assistantConnectCode) { _ in
             clearPendingAssistantIdentityState()
@@ -843,6 +862,9 @@ struct HomeView: View {
                     .font(.blankBody).padding(.top, 24)
                 Button("Connect Apple Health") { healthKitStore.requestAccess() }
                     .buttonStyle(OnboardingButtonStyle()).padding(.top, 16)
+                Button("Explore with sample sleep") { showingRestSetup = true }
+                    .buttonStyle(OnboardingButtonStyle()).padding(.top, 12)
+                    .accessibilityIdentifier("basic-sample-sleep")
             } else if !healthKitStore.aiSharingAllowed {
                 Text("Blankmind AI shares your messages, protection history and selected sleep summaries with our backend and OpenAI. Broad Health context and clinical documents stay on this iPhone. Spoken replies are AI-generated.")
                     .font(.blankBody).padding(.top, 24)
@@ -2739,6 +2761,7 @@ private struct SettingsScreen: View {
     @State private var selectedBMBSettings: BMBSettingsSection?
     @State private var showingHistory = false
     @State private var showingUnlockConfirmation = false
+    @State private var showingSampleSleepConfirmation = false
 
     let onClose: () -> Void
     let onOpenEmergency: () -> Void
@@ -2811,6 +2834,15 @@ private struct SettingsScreen: View {
                     }
                     settingsRow(title: "health", detail: healthStatus, symbol: healthStatus == "connected" ? "checkmark" : "chevron.right", secondary: healthStatus == "connected", action: onRequestHealthAccess)
                     settingsRow(title: "screen time", detail: screenTimeStatus, symbol: screenTimeStatus == "approved" ? "checkmark" : "chevron.right", secondary: screenTimeStatus == "approved", action: onRequestScreenTimePermission)
+                    if healthKitStore.canUseSampleSleep {
+                        settingsRow(title: "sample sleep", detail: healthKitStore.sampleSleepEnabled ? "fictional nights · on" : "explore without recorded sleep", action: {
+                            if healthKitStore.sampleSleepEnabled { healthKitStore.setSampleSleepEnabled(false) }
+                            else { showingSampleSleepConfirmation = true }
+                        })
+                        Text("Sample nights are fictional. Turn them off to return to measured sleep. AI uses separate sharing permission.")
+                            .font(.blankInter(size: 13, relativeTo: .caption))
+                            .foregroundStyle(secondaryColor)
+                    }
                     if HealthKitStore.shared.canUseSyntheticSleep {
                         settingsRow(title: "synthetic sleep", detail: HealthKitStore.shared.syntheticSleepEnabled ? "on · sleep only" : "off", action: {
                             HealthKitStore.shared.setSyntheticSleepEnabled(!HealthKitStore.shared.syntheticSleepEnabled)
@@ -2834,6 +2866,12 @@ private struct SettingsScreen: View {
                 foreground: textColor, background: sessionStore.isBlankActive ? BlankColors.charcoal : BlankColors.pureWhite,
                 onApplyAction: onApplyHistoryAction)
                 .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
+        }
+        .alert("Use sample sleep data?", isPresented: $showingSampleSleepConfirmation) {
+            Button("Use sample data") { healthKitStore.setSampleSleepEnabled(true) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("These nights are fictional and are not written to Apple Health. Protection stays real. Open Chat to complete the separate AI sharing choice and rest setup. Tap Sample sleep again to turn it off.")
         }
         .sheet(item: $selectedBMBSettings) { BMBSettingsView(section: $0) }
         .sheet(isPresented: $showingAccount) {
