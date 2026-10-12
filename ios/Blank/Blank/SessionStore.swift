@@ -731,6 +731,9 @@ final class SessionStore: ObservableObject {
     }
 
     func syncFromSharedDefaults(now: Date = Date()) {
+        if BlankSharedState.finishWidgetUnlockIfDue(defaults: defaults, now: now) {
+            cancelManualUnlock()
+        }
         finishManualUnlockIfDue(now: now)
         BlankSharedState.finishExpiredBlock(defaults: defaults, now: now)
         let activeState = BlankSharedState.loadActiveState(now: now, defaults: defaults)
