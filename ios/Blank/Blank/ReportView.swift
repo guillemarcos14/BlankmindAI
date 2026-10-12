@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ReportView: View {
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var sessionStore: SessionStore
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
     @StateObject private var healthKitStore = HealthKitStore.shared
@@ -69,6 +70,11 @@ struct ReportView: View {
                 .ignoresSafeArea()
         }
         .foregroundStyle(BlankColors.cardInk)
+        .blankBackSwipe {
+            if showContext { showContext = false }
+            else if let onClose { onClose() }
+            else { dismiss() }
+        }
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
     }
 }

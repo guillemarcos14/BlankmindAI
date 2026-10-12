@@ -4,6 +4,7 @@ import UIKit
 // The centre phone in the supplied reference is the geometry authority.
 // Only its atmospheric material and typeface come from the local Minimal Web.
 enum MinimalHomeDesign {
+    static let replyBottomInset: CGFloat = 48
     static let ink = Color(red: 1, green: 254 / 255, blue: 245 / 255)
     static let base = Color(red: 213 / 255, green: 219 / 255, blue: 220 / 255)
     static let voiceInk = Color(red: 73 / 255, green: 84 / 255, blue: 78 / 255)
@@ -15,6 +16,39 @@ enum MinimalHomeDesign {
         max(180, height - max(116, max(height * 0.144, bottomInset + 92)))
     }
     static func navigationTop(_ safeTop: CGFloat) -> CGFloat { max(56, safeTop + 12) }
+}
+
+// Screen coordinates keep an inset form's edge aligned with the phone edge.
+struct BlankBackSwipe: ViewModifier {
+    var enabled: Bool
+    let action: () -> Void
+    func body(content: Content) -> some View {
+        content.contentShape(Rectangle()).simultaneousGesture(
+            DragGesture(minimumDistance: 18, coordinateSpace: .global).onEnded { value in
+                guard enabled, value.startLocation.x <= 28,
+                      value.translation.width >= 60,
+                      value.translation.width > abs(value.translation.height) * 1.5 else { return }
+                action()
+            }
+        )
+    }
+}
+
+private struct BlankDismissSwipe: ViewModifier {
+    @Environment(\.dismiss) private var dismiss
+    let enabled: Bool
+    func body(content: Content) -> some View {
+        content.blankBackSwipe(enabled: enabled) { dismiss() }
+    }
+}
+
+extension View {
+    func blankBackSwipe(enabled: Bool = true, action: @escaping () -> Void) -> some View {
+        modifier(BlankBackSwipe(enabled: enabled, action: action))
+    }
+    func blankDismissSwipe(enabled: Bool = true) -> some View {
+        modifier(BlankDismissSwipe(enabled: enabled))
+    }
 }
 
 enum MinimalHomeTab: CaseIterable, Hashable {
@@ -220,6 +254,7 @@ struct MinimalSectionBackground: View {
 struct MinimalSheetStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
+            .blankDismissSwipe()
             .font(.blankBody)
             .foregroundStyle(BlankColors.foreground)
             .tint(BlankColors.foreground)

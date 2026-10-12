@@ -74,13 +74,15 @@ final class ManualUnlockFixture {
     var blankActiveSince: Date?
     var delayedManualUnlockAt: Date?
     var unlocks = 0
+    var lastReason: BlankEndedReason?
     enum Keys {
         static let isBlankActive = "blankIsActive"
         static let blankActiveSince = "blankActiveSince"
     }
     enum NfcResult { case unblanked }
     enum EntryMode { case app }
-    enum EndReason { case manual }
+    func syncFromSharedDefaults() { isBlankActive = defaults.bool(forKey: Keys.isBlankActive) }
+${between(store, '    @discardableResult\n    func unlockFromControl()', '    func scheduleManualUnlock(')}
     init(defaults: UserDefaults, startedAt: Date) {
         self.defaults = defaults
         blankActiveSince = startedAt
@@ -90,7 +92,8 @@ final class ManualUnlockFixture {
         defaults.set(startedAt.timeIntervalSince1970, forKey: Keys.blankActiveSince)
     }
 ${between(store, '    func scheduleManualUnlock(', '    init(defaults: UserDefaults = BlankSharedState.defaults)')}
-    func deactivateBlank(entryMode: EntryMode, endedReason: EndReason) -> NfcResult {
+    func deactivateBlank(entryMode: EntryMode, endedReason: BlankEndedReason) -> NfcResult {
+        lastReason = endedReason
         unlocks += 1
         isBlankActive = false
         defaults.set(false, forKey: Keys.isBlankActive)
@@ -111,6 +114,17 @@ ${between(home, '    private func assistantActionRequiresScreenTime(', '    priv
 }
 enum BlankSharedState {
     static var sharedActive = false
+    static var widgetStarts = 0
+    enum Keys {
+        static let isBlankActive = "blankIsActive"
+        static let blankActiveSince = "blankActiveSince"
+        static let blankActiveUntil = "blankActiveUntil"
+        static let pendingWidgetTimerMinutes = "blankPendingWidgetTimerMinutes"
+    }
+    static func hasConfiguredBlock(in defaults: UserDefaults) -> Bool { true }
+    static func pendingWidgetTimerMinutes(defaults: UserDefaults) -> Int? { nil }
+    static func appendSession(defaults: UserDefaults, now: Date, entryMode: BlankEntryMode, plannedDurationMinutes: Int?) { widgetStarts += 1 }
+${between(read('ios/Blank/Blank/BlankSharedState.swift'), '    static func startQuickBlock(', '    static func pendingWidgetTimerMinutes(').replace('UserDefaults = Self.defaults', 'UserDefaults')}
     struct ActiveState { let isActive: Bool }
     static func loadActiveState(defaults: UserDefaults) -> ActiveState { ActiveState(isActive: sharedActive) }
 }
@@ -146,6 +160,8 @@ try {
   const file = path.join(temporary, 'ProtectionTests.swift');
   const binary = path.join(temporary, 'protection-tests');
   fs.writeFileSync(file, 'import Foundation\n' + between(model, 'struct BlankHabitWindow:', 'struct BlankSession:')
+    + between(model, 'enum BlankEntryMode:', 'enum BlankUsageEventKind:')
+    + between(model, 'enum BlankEndedReason:', 'struct BlankSelectionSnapshot:')
     + between(store, 'enum AssistantPendingAction:', 'struct AssistantProtectionExecution:')
     + between(home, 'struct UnblankHoldCadence {', 'struct AssistantInboxResponse:') + extensionModel + fixtures + read('tools/ios_protection_test.swift'));
   const built = spawnSync('swiftc', ['-swift-version', '5', '-parse-as-library', file, '-o', binary], { encoding: 'utf8' });

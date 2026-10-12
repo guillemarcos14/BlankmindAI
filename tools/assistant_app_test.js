@@ -434,6 +434,7 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
     assert.equal(rendered.status, 200);
     assert.equal(rendered.body.turn.action_label, fixture.label);
     assert.match(rendered.body.turn.assistant_text, fixture.required);
+    assert.equal(rows.get(rendered.body.turn.id).response_language, "es");
     if (fixture.forbidden) assert.doesNotMatch(rendered.body.turn.assistant_text, fixture.forbidden);
     assert.doesNotMatch(rendered.body.turn.assistant_text, /notificación|Ya están bloqueadas/i);
     assert.equal(rendered.body.turn.action_status, "queued");

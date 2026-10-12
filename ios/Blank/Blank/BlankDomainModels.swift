@@ -282,6 +282,7 @@ enum BlankUsageEventKind: String, Codable {
 }
 
 enum BlankEndedReason: String, Codable {
+    case control
     case nfc
     case manual
     case timer

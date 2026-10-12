@@ -11,7 +11,7 @@ on:
       ui_tests:
         description: UI coverage (targeted confirmation after full-suite diagnostics)
         type: choice
-        options: [all, onboarding, progress, control, basic]
+        options: [all, onboarding, progress, control, basic, polish]
         default: all
   pull_request:
     paths:
@@ -87,6 +87,10 @@ jobs:
           fi
           if [ "${{ inputs.ui_tests || 'all' }}" = control ]; then
             suite=BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear
+          fi
+          if [ "${{ inputs.ui_tests || 'all' }}" = polish ]; then
+            suite=BlankHomeUITests/MinimalHomeUITests/testLongResponseScrollsWhileVoiceAndTabsStayReachable
+            extra_tests=(-only-testing:BlankHomeUITests/MinimalHomeUITests/testEdgeSwipesNavigateNeighboursAndIgnoreCentreAndVerticalDrags -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlUnlockUsesNoEmergencyAndKeepsCooldown -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear -only-testing:BlankHomeUITests/MinimalHomeUITests/testProgressShowsRestContextAndPreservesNavigation -only-testing:BlankHomeUITests/MinimalHomeUITests/testLargestTextKeepsPreferencesSaveReachable)
           fi
           if [ "${{ inputs.ui_tests || 'all' }}" = basic ]; then
             suite=BlankHomeUITests/MinimalHomeUITests/testBasicBlockingWithoutSleepKeepsRestClosed

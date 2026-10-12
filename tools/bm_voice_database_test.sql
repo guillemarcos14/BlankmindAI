@@ -6,6 +6,13 @@ insert into assistant_app_turns(id,auth_user_id,user_text,assistant_text,status,
 do $$
 declare r record; i integer;
 begin
+  update assistant_app_turns set response_language='es' where id='aaaaaaaa-aaaa-4aaa-8aaa-000000000001';
+  update assistant_app_turns set response_language='en' where id='bbbbbbbb-bbbb-4bbb-8bbb-000000000001';
+  begin
+    update assistant_app_turns set response_language='fr';
+    raise exception 'unsupported response language accepted';
+  exception when check_violation then null;
+  end;
   if has_table_privilege('authenticated','assistant_voice_requests','select')
     or has_function_privilege('authenticated','reserve_assistant_voice(uuid,uuid,uuid)','execute') then
     raise exception 'voice grants exposed';

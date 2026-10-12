@@ -210,6 +210,15 @@ final class SessionStore: ObservableObject {
     private var lastManualUnblankedAt: Date?
     @Published private(set) var delayedManualUnlockAt: Date?
 
+    @discardableResult
+    func unlockFromControl() -> Bool {
+        syncFromSharedDefaults()
+        guard isBlankActive, !hardBlankActive else { return false }
+        guard deactivateBlank(entryMode: .app, endedReason: .control) == .unblanked else { return false }
+        defaults.set(Date().addingTimeInterval(60).timeIntervalSince1970, forKey: "blankManualReblockAt")
+        return true
+    }
+
     func scheduleManualUnlock(after seconds: Int, now: Date = Date()) {
         guard isBlankActive, !hardBlankActive, delayedManualUnlockAt == nil,
               let blankActiveSince else { return }
@@ -443,6 +452,7 @@ final class SessionStore: ObservableObject {
         }
         let now = Date()
         let pendingDuration = usePendingWidgetTimer ? pendingWidgetTimerMinutes : nil
+        guard defaults.double(forKey: "blankManualReblockAt") <= now.timeIntervalSince1970 else { return .unblanked }
         let selectedDuration = (durationMinutes ?? pendingDuration).map { min(max($0, 5), 240) }
         if isBlankActive {
             hardBlankActive = hardBlankActive || hardMode
@@ -567,7 +577,7 @@ final class SessionStore: ObservableObject {
         if hardBlankActive, endedReason != .emergency, endedReason != .timer, endedReason != .expired, endedReason != .schedule {
             return .hardBlankLocked
         }
-        if endedReason == .manual || endedReason == .emergency || endedReason == .nfc {
+        if endedReason == .manual || endedReason == .control || endedReason == .emergency || endedReason == .nfc {
             pauseScheduleForUserUnlock(at: endedAt)
         }
 

@@ -167,6 +167,22 @@ struct ProtectionTests {
         replacement.scheduleManualUnlock(after: 60, now: startedAt)
         replacement.cancelManualUnlock()
         expect(unlockDefaults.object(forKey: "blankManualUnlockAt") == nil && !replacement.finishManualUnlockIfDue(now: startedAt.addingTimeInterval(90)), "Cancelled cooldown survived restart")
+        let control = ManualUnlockFixture(defaults: unlockDefaults, startedAt: Date())
+        control.hardBlankActive = true
+        expect(!control.unlockFromControl() && control.unlocks == 0, "Control bypassed hard protection")
+        control.hardBlankActive = false
+        control.isBlankActive = false // stale app state; widget has started a block
+        let beforeUnlock = Date()
+        expect(control.unlockFromControl() && control.unlocks == 1, "Control failed to reconcile a widget block")
+        expect(control.lastReason == .control, "A regular unlock must not be recorded as manual relapse or emergency")
+        let reblockAt = unlockDefaults.double(forKey: "blankManualReblockAt")
+        expect(reblockAt >= beforeUnlock.addingTimeInterval(60).timeIntervalSince1970 && reblockAt <= Date().addingTimeInterval(60).timeIntervalSince1970,
+               "Control must persist exactly one minute of cooldown after unlocking")
+        expect(!control.unlockFromControl() && control.unlocks == 1, "Repeated Control unlock consumed a second session")
+        expect(!BlankSharedState.startQuickBlock(defaults: unlockDefaults, now: Date(timeIntervalSince1970: reblockAt - 1)) && BlankSharedState.widgetStarts == 0,
+               "Widget must respect the persisted deadline even after app exit")
+        expect(BlankSharedState.startQuickBlock(defaults: unlockDefaults, now: Date(timeIntervalSince1970: reblockAt)) && BlankSharedState.widgetStarts == 1,
+               "Widget must resume exactly at the end of the minute")
         print("iOS protection: schedule parity, selection locking, persistent manual unlock/restart/expiry/cancellation/session identity passed")
     }
 }

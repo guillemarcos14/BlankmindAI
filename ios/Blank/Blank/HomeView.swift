@@ -324,6 +324,8 @@ struct HomeView: View {
     @State private var messageAction: HomeMessageAction?
     @State private var showingPicker = false
     @State private var activeSection: HomeSection?
+    @State private var sectionHistory: [HomeSection?] = []
+    @State private var controlGroup: ControlSettingsGroup?
     @State private var showingAssistantChat = false
     @State private var homeConversationBusy = false
     @State private var chatLaunchMessage: String?
@@ -453,7 +455,10 @@ struct HomeView: View {
             }
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
             .clipped()
-            .simultaneousGesture(homeEdgeNavigation(width: viewportWidth))
+            .blankBackSwipe(enabled: activeSection != .control && activeSection != .settings && activeSection != .report) {
+                if showingRelapseReview { dismissRelapseReview() }
+                else { closeSection() }
+            }
         }
         .ignoresSafeArea(.container)
         .foregroundStyle(sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink)
@@ -724,6 +729,7 @@ struct HomeView: View {
                 screenTimeStatus: screenTimeBlocker.authorizationStatusLabel,
                 healthStatus: healthPermissionLabel,
                 onClose: closeSection,
+                controlGroup: $controlGroup,
                 onApplyHistoryAction: applyHistoryAction
             )
             .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
@@ -875,12 +881,15 @@ struct HomeView: View {
         if section == .distractions, sessionStore.pinProtectionEnabled {
             unlockAdvancedSettings {
                 withAnimation(.easeInOut(duration: 0.35)) {
+                    if activeSection != section { sectionHistory.append(activeSection) }
                     activeSection = section
                 }
             }
             return
         }
         withAnimation(.easeInOut(duration: 0.35)) {
+            if activeSection != section { sectionHistory.append(activeSection) }
+            if section == .control { controlGroup = nil }
             activeSection = section
         }
     }
@@ -894,7 +903,9 @@ struct HomeView: View {
         withAnimation(.easeInOut(duration: reduceMotion ? 0.12 : 0.38)) {
             switch tab {
             case .control: openSection(.control)
-            case .chat: activeSection = nil
+            case .chat:
+                if activeSection != nil { sectionHistory.append(activeSection) }
+                activeSection = nil
             case .progress: openSection(.report)
             }
         }
@@ -970,7 +981,9 @@ struct HomeView: View {
 
     private func closeSection() {
         withAnimation(.easeInOut(duration: 0.35)) {
-            if let section = activeSection, [.distractions, .schedule, .emergency, .settings].contains(section) {
+            if !sectionHistory.isEmpty {
+                activeSection = sectionHistory.removeLast()
+            } else if let section = activeSection, [.distractions, .schedule, .emergency, .settings].contains(section) {
                 activeSection = .control
             } else {
                 activeSection = nil
@@ -2566,6 +2579,7 @@ struct HomeSectionScreen: View {
     let screenTimeStatus: String
     let healthStatus: String
     let onClose: () -> Void
+    @Binding var controlGroup: ControlSettingsGroup?
     var onApplyHistoryAction: (String) -> Void = { _ in }
     private var textColor: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.ink }
 
@@ -2603,6 +2617,7 @@ struct HomeSectionScreen: View {
                 screenTimeStatus: screenTimeStatus,
                 healthStatus: healthStatus,
                 onApplyHistoryAction: onApplyHistoryAction,
+                selectedGroup: $controlGroup,
                 isControl: true,
                 onOpenDistractions: { onOpenSection(.distractions) },
                 onOpenSchedule: { onOpenSection(.schedule) }
@@ -2632,6 +2647,7 @@ struct HomeSectionScreen: View {
                 screenTimeStatus: screenTimeStatus,
                 healthStatus: healthStatus,
                 onApplyHistoryAction: onApplyHistoryAction,
+                selectedGroup: $controlGroup,
                 onOpenDistractions: { onOpenSection(.distractions) },
                 onOpenSchedule: { onOpenSection(.schedule) }
             )
@@ -2699,7 +2715,7 @@ struct SectionHeader: View {
     }
 }
 
-private enum ControlSettingsGroup: String {
+enum ControlSettingsGroup: String {
     case protection = "Protection"
     case data = "Data & Permissions"
     case account = "Account"
@@ -2716,12 +2732,13 @@ private enum ControlSettingsGroup: String {
 private struct SettingsScreen: View {
     @StateObject private var healthKitStore = HealthKitStore.shared
     @EnvironmentObject private var sessionStore: SessionStore
+    @EnvironmentObject private var screenTimeBlocker: ScreenTimeBlocker
     @Environment(\.openURL) private var openURL
     @Environment(\.blankSectionHorizontalPadding) private var sectionHorizontalPadding
     @State private var showingAccount = false
     @State private var selectedBMBSettings: BMBSettingsSection?
     @State private var showingHistory = false
-    @State private var selectedGroup: ControlSettingsGroup?
+    @State private var showingUnlockConfirmation = false
 
     let onClose: () -> Void
     let onOpenEmergency: () -> Void
@@ -2731,6 +2748,7 @@ private struct SettingsScreen: View {
     let screenTimeStatus: String
     let healthStatus: String
     let onApplyHistoryAction: (String) -> Void
+    @Binding var selectedGroup: ControlSettingsGroup?
     var isControl = false
     var onOpenDistractions: () -> Void = {}
     var onOpenSchedule: () -> Void = {}
@@ -2777,6 +2795,12 @@ private struct SettingsScreen: View {
                     settingsRow(title: "Data & Permissions", detail: "connected data, permissions and conversation history", action: { selectedGroup = .data })
                     settingsRow(title: "account", detail: "account controls, privacy and terms", action: { selectedGroup = .account })
                 case .protection:
+                    settingsRow(title: "unlock protection", detail: sessionStore.hardBlankActive
+                        ? "Hard protection requires an emergency."
+                        : (sessionStore.isBlankActive ? "No emergency used. One-minute cooldown after unlocking." : "No active block to unlock."),
+                        action: { showingUnlockConfirmation = true })
+                        .disabled(!sessionStore.isBlankActive || sessionStore.hardBlankActive)
+                        .accessibilityIdentifier("control-unlock-protection")
                     settingsRow(title: "schedule", detail: "manage your protection routines", action: onOpenSchedule)
                     if exposesRestControls {
                     settingsRow(title: "automatic protection", detail: "choose when and how Blankmind may act", action: { selectedBMBSettings = .automaticProtection })
@@ -2815,6 +2839,20 @@ private struct SettingsScreen: View {
         .sheet(isPresented: $showingAccount) {
             AccountSettingsSheet()
                 .environmentObject(sessionStore)
+        }
+        .blankBackSwipe {
+            if selectedGroup != nil { selectedGroup = nil }
+            else { onClose() }
+        }
+        .confirmationDialog("Unlock protection?", isPresented: $showingUnlockConfirmation, titleVisibility: .visible) {
+            Button("Unlock protection") {
+                if sessionStore.unlockFromControl() {
+                    screenTimeBlocker.apply(isBlankActive: sessionStore.isBlankActive)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This does not use an emergency. You can start protection again in one minute.")
         }
     }
 
@@ -3630,6 +3668,7 @@ private struct TechnicalSettingsSheetLayout<Content: View>: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .foregroundStyle(textColor)
         .background(BlankAtmosphericBackground(dimmed: sessionStore.isBlankActive))
+        .blankDismissSwipe()
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
     }
 }
@@ -3908,6 +3947,7 @@ struct AppAccountSignInSheet: View {
             }
         }
         .preferredColorScheme(sessionStore.isBlankActive ? .dark : .light)
+        .blankDismissSwipe(enabled: showsCancel)
     }
 
     private var accountForm: some View {
@@ -4366,6 +4406,7 @@ struct PostOnboardingPreviewScene: View {
     @StateObject private var screenTimeBlocker = ScreenTimeBlocker.preview()
     @State private var showingPicker = false
     @State private var simulatorHome = false
+    @State private var controlGroup: ControlSettingsGroup?
 
     private var section: HomeSection? {
         switch AssistantAppPreview.scenario {
@@ -4408,7 +4449,8 @@ struct PostOnboardingPreviewScene: View {
                     onRequestHealthAccess: {},
                     screenTimeStatus: screenTimeBlocker.authorizationStatusLabel,
                     healthStatus: "not connected",
-                    onClose: {}
+                    onClose: {},
+                    controlGroup: $controlGroup
                 )
             } else {
                 HomeView(simulatorGuest: true) { simulatorHome = false }

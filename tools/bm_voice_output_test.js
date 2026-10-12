@@ -10,6 +10,7 @@ membership.getSupabaseUser = async event => event.headers.authorization === "Bea
 identity.identityForAuthUser = async () => ({ auth_user_id: userID, app_install_id: "verified",
   assistant_connect_code: "FIXTURE" });
 const { voice, MAX_AUDIO_BYTES } = require("../netlify/functions/bm-voice-output");
+const { characterCues } = require("../netlify/functions/bm-voice-elevenlabs");
 const body = { turn_id: turnID, request_id: requestID, app_install_id: "verified" };
 const request = (override = {}, token = "fixture") => new Request("https://blank.test/voice", {
   method: "POST", headers: { authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -41,6 +42,9 @@ async function error(status, code, response) {
   assert.equal(response.headers.get("Cache-Control"), "no-store");
 }
 async function run() {
+  assert.deepEqual(characterCues("e\u0301👋", { characters: ["e", "\u0301", "\ud83d", "\udc4b"],
+    character_start_times_seconds: [0, 0.1, 0.2, 0.3], character_end_times_seconds: [0.1, 0.2, 0.3, 0.4] }, 1),
+    [{ start: 0, end: 2 }, { start: 0.2, end: 4 }], "Unicode cues must never split an accented character or emoji");
   process.env.BM_VOICE_ENABLED = "true"; process.env.OPENAI_API_KEY = "fixture-key";
   await error(401, "authentication_required", await voice(request({}, "invalid"), deps));
   await error(403, "installation_not_verified", await voice(request({ app_install_id: "other" }), deps));
@@ -88,6 +92,55 @@ async function run() {
   fetchOverride = null; aborted = false;
   const cancelled = await voice(request(), deps);
   await cancelled.body.cancel(); assert.equal(aborted, true);
+  process.env.BM_VOICE_PROVIDER = "elevenlabs";
+  const beforeMissingKey = reserved;
+  await error(503, "voice_unavailable", await voice(request(), deps));
+  assert.equal(reserved, beforeMissingKey, "Missing ElevenLabs key must not consume quota");
+  process.env.ELEVENLABS_API_KEY = "fixture-eleven-key";
+  row.response_language = "es";
+  const text = "Tu respuesta final 👋";
+  const characters = [...text];
+  const alignment = { characters, character_start_times_seconds: characters.map((_, i) => i * 0.01),
+    character_end_times_seconds: characters.map((_, i) => (i + 1) * 0.01) };
+  const elevenDeps = { ...deps, fetch: async (url, options) => {
+    assert.match(url, /^https:\/\/api.elevenlabs.io\/v1\/text-to-speech\/dNjJKg63Fr5AXwIdkATa\/with-timestamps\?output_format=pcm_24000$/);
+    assert.equal(options.headers["xi-api-key"], "fixture-eleven-key");
+    assert.equal(JSON.parse(options.body).text, text);
+    return Response.json({ audio_base64: Buffer.alloc(48000).toString("base64"), alignment });
+  } };
+  const elevenResponse = await voice(request({ synchronized: true }), elevenDeps);
+  assert.equal(elevenResponse.status, 200);
+  const elevenFrames = (await elevenResponse.text()).trim().split("\n").map(JSON.parse);
+  assert.equal(elevenFrames[0].type, "cue");
+  assert.equal(elevenFrames.filter(f => f.type === "cue").at(-1).end, text.length);
+  assert.equal(elevenFrames.at(-1).type, "end");
+  for (const [language, voiceID] of [["es", "dNjJKg63Fr5AXwIdkATa"], ["en", "WtA85syCrJwasGeHGH2p"]]) {
+    row.response_language = language;
+    const selected = await voice(request({ synchronized: true }), { ...elevenDeps,
+      fetch: async (url, options) => {
+        assert.ok(url.includes(`/text-to-speech/${voiceID}/with-timestamps`));
+        assert.equal(JSON.parse(options.body).text, text);
+        return Response.json({ audio_base64: Buffer.alloc(48000).toString("base64"), alignment });
+      } });
+    assert.equal(selected.status, 200);
+    await selected.text();
+  }
+  row.response_language = "es";
+  const mismatchDeps = { ...elevenDeps, fetch: async () => Response.json({
+    audio_base64: Buffer.alloc(48000).toString("base64"), alignment: { ...alignment, characters: ["wrong"] },
+  }) };
+  await error(503, "voice_unavailable", await voice(request({ synchronized: true }), mismatchDeps));
+  delete row.response_language;
+  let legacyCalls = 0;
+  const beforeLegacyReservation = reserved;
+  const noLanguageFetch = { ...elevenDeps, fetch: async () => {
+    legacyCalls++;
+    return Response.json({ audio_base64: Buffer.alloc(48000).toString("base64"), alignment });
+  } };
+  await error(503, "voice_unavailable", await voice(request({ synchronized: true }), noLanguageFetch));
+  assert.equal(legacyCalls, 0, "Missing language must not call a provider");
+  assert.equal(reserved, beforeLegacyReservation, "Missing language must not consume quota");
+  delete process.env.BM_VOICE_PROVIDER; delete process.env.ELEVENLABS_API_KEY;
   process.env.BM_VOICE_ENABLED = "false";
   await error(503, "voice_disabled", await voice(request(), deps));
   console.log("Voice backend: auth/install isolation, final text, quotas/dedup, deletion, PCM, errors, cancellation and kill switch PASS");
