@@ -3,6 +3,12 @@ import XCTest
 final class MinimalHomeUITests: XCTestCase {
     func testBasicBlockingWithoutSleepKeepsOriginalHomeAndProgress() {
         let app = launch("product-basic-home")
+        func capture(_ name: String) {
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = name
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
         XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.otherElements["home-chat-panel"].exists)
         XCTAssertFalse(app.staticTexts["Your distractions. Your choice."].exists)
