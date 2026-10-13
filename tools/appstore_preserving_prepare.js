@@ -46,11 +46,19 @@ function main() {
   const changes = [];
   for (const fn of selected) {
     assert.equal(digest(fn.path), fn.sha256, "candidate_archive_changed");
+    assert.equal(fn.compilation_target, "nodejs22.x", "uncertified_runtime");
+    if (["assistant-app-stream", "assistant-app-voice"].includes(fn.name)) {
+      assert.equal(fn.runtime_api_version, 2, "stream_api_version_missing");
+      assert.equal(fn.invocation_mode, "stream", "stream_invocation_mode_missing");
+    }
     changes.push({ name: fn.name, before: body.functions[fn.name] || null, after: fn.sha256 });
     body.functions[fn.name] = fn.sha256;
     artifacts[fn.sha256] = path.resolve(fn.path);
     if (!body.functions_config[fn.name]) body.functions_config[fn.name] = {
       build_data: { runtimeAPIVersion: ["assistant-app-stream", "assistant-app-voice"].includes(fn.name) ? 2 : 1 }, priority: 10 };
+    body.functions_config[fn.name].build_data = { ...(body.functions_config[fn.name].build_data || {}),
+      ...(fn.runtime_api_version !== undefined ? {runtimeAPIVersion:fn.runtime_api_version} : {}),
+      ...(fn.bootstrap_version !== undefined ? {bootstrapVersion:fn.bootstrap_version} : {}) };
   }
   body.title = "Unified Decisions / ElevenLabs / native App Store candidate";
   // Preserve production schedules exactly. New proactive work needs separate evidence/budget.
@@ -93,6 +101,8 @@ function main() {
     reconstructed_endpoints: 5, schedules_unchanged: true, ready_to_publish: false, production_mutations: 0,
     static_directory: staticRoot, original_static_files_preserved: statics.size - 1,
     static_changes: [{path:"privacy.html",before:old.body.files["privacy.html"],after:body.files["privacy.html"],reason:"Redirect the old Netlify policy to the updated public policy"}],
+    force_upload_app_entries: APP,
+    upload_metadata: Object.fromEntries(selected.map(fn => [fn.name,{runtime:fn.compilation_target,invocation_mode:fn.invocation_mode || "buffered"}])),
     rollback: old.rollback, pending: ["signed/distributed exact candidate", "20 physical cases",
       "active model and independent review of combined candidate", "real protected ElevenLabs PCM/timestamps"],
     preservation_evidence_sha256: digest(path.join(bundle, "evidence/legacy-runtime-validation.json")) };

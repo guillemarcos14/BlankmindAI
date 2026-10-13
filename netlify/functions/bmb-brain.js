@@ -17,6 +17,7 @@ const object=p=>({type:"object",additionalProperties:false,required:Object.keys(
 const str={type:"string"}, num={type:"integer"}, nil=p=>({anyOf:[p,{type:"null"}]});
 const ACTIONS=[...require("./bm-pending-action").PENDING_ASSISTANT_ACTION_TYPES].filter(t=>t!=="apply_ai_plan");
 const actionSchema=object({type:{type:"string",enum:ACTIONS},minutes:nil(num),start_minute:nil(num),end_minute:nil(num),
+  start_mode:nil({type:"string",enum:["scheduled","now"]}),
   weekdays:{type:"array",items:num,maxItems:7},duration_days:nil(num),local_date:nil(str),timezone:nil(str),
   recurrence:{type:"string",enum:["once","weekly","continuous"]},window_id:nil(str),hours:nil(num),hard_mode:{type:"boolean"}});
 const querySchema=object({source:{type:"string",enum:SOURCE_NAMES},
@@ -32,6 +33,7 @@ const schema=object({phase:{type:"string",enum:["read","final"]},response_langua
   observations:{type:"array",items:longitudinal.observationSchema,maxItems:12},followup_resolution:longitudinal.followupSchema,longitudinal_review:longitudinal.reviewSchema,
   cited_sources:{type:"array",items:str,maxItems:12}});
 const INSTRUCTIONS=`${conversationStyle}
+For a one-time block starting now, including 'all day today', 'the rest of today', 'todo el dia de hoy', or 'desde ahora hasta medianoche', use apply_schedule, recurrence=once, start_mode=now, local_date=today in the supplied timezone, end_minute=0 for the next midnight. The server resolves the immediate start from its clock with a short delivery lead; never guess midnight as 1440, use a past start time, or turn today into a weekly schedule. start_mode=scheduled (or null) is for an exact future clock time. A complete explicit request to block the remainder of today is sufficient authorization; do not ask for today's known date, timezone or exact current time. An established pending request supplies its missing details across turns. Preserve start_mode when accepting a saved proposal.
 For longitudinal tracking, extract multiple explicit current-user observations into observations; otherwise return []. Never turn a usual routine into daily measurements; set measurement=routine_statement for habits, declared only for an actual occurrence. Preserve bedtime (going to bed), sleep_onset (falling asleep), wake_time, duration and perceived restfulness as different metrics. Only extract numeric observations with explicit digits you can verify in evidence; use HH:MM or numeric hours for clock values. Numeric observations MUST have value_text=null. Clock 23:00 is value_number=1380, unit=local_minute. Duration uses minutes. Scores use unit=score_0_10 and require an explicit 0–10 scale. Caffeine/alcohol use servings. All qualitative observations use value_number=null, unit=text and value_text copied literally from the user's message; use life_context for qualitative stress/rest descriptions without a numeric scale. Do not infer stress, health, less need for sleep, causality or a benefit from phone protection. Use measured_at only when the user explicitly establishes the date; null means statement date, not an invented historic night. Keep temporary context as observations rather than replacing stable memory. No third-party facts. Never extract observations from a question or hypothetical. Followup_resolution may answer/dismiss only the supplied open followup that the CURRENT reply actually addresses; a new topic or silence does not answer it. Evidence must be literal current-message text.
 Every reactive turn requires a nonempty useful reply and decision other than silent; silent belongs only to proactive assessment. If there is no action or new fact, acknowledge or answer naturally rather than returning silence. A request for sleep advice should receive a helpful, non-diagnostic suggestion, not an empty reply.
 Saving, correcting or forgetting personal memory uses decision=respond and action=null. A memory operation is committed internally with the turn; decision=execute is reserved for a native device action. Never invent a device action to fulfil a memory request.
@@ -54,8 +56,23 @@ function normalizeAction(a, now=Date.now()) {
   const within=(v,lo,hi)=>Number.isInteger(v)&&v>=lo&&v<=hi;
   if (["start_protection","set_daily_limit"].includes(a.type)&&!within(a.minutes,5,240)) throw Error("bmb_missing_duration");
   if (["apply_schedule","update_schedule"].includes(a.type)) {
-    if (!within(a.start_minute,0,1439)||!within(a.end_minute,0,1439)||a.start_minute===a.end_minute) throw Error("bmb_invalid_schedule");
     result.timezone=zone(a.timezone);
+    if(a.start_mode!=null&&!['scheduled','now'].includes(a.start_mode))throw Error("bmb_invalid_schedule");
+    const immediate=a.start_mode==='now';
+    if(immediate&&a.recurrence!=='once')throw Error("bmb_missing_recurrence");
+    // Native build 110 requires a future dated start when it receives the
+    // command. One minute leaves room for response delivery and inbox polling.
+    const immediateStart=now+60000;
+    if(immediate) {
+      const local=t=>Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:result.timezone,
+        year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(t)).map(p=>[p.type,p.value]));
+      const today=local(now),start=local(immediateStart);
+      const date=p=>`${p.year}-${p.month}-${p.day}`;
+      if(a.local_date&&a.local_date!==date(today)||date(start)!==date(today))throw Error("bmb_invalid_once_date");
+      result.local_date=date(today);result.start_minute=Number(start.hour)*60+Number(start.minute);
+    } else delete result.start_mode;
+    if(a.recurrence==='once'&&result.end_minute===1440)result.end_minute=0;
+    if (!within(result.start_minute,0,1439)||!within(result.end_minute,0,1439)||result.start_minute===result.end_minute) throw Error("bmb_invalid_schedule");
     if (a.recurrence==="once") {
       // Find the exact local minute, rejecting DST gaps and ambiguity instead of guessing.
       const clock=m=>`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
@@ -66,7 +83,8 @@ function normalizeAction(a, now=Date.now()) {
         if(matches.length!==1) throw Error("bmb_ambiguous_or_missing_local_time");
         return matches[0];
       };
-      const start=instant(a.local_date,a.start_minute),end=instant(a.end_minute<a.start_minute?dayOffset(a.local_date,1):a.local_date,a.end_minute);
+      const start=immediate?immediateStart:instant(result.local_date,result.start_minute),
+        end=instant(result.end_minute<result.start_minute?dayOffset(result.local_date,1):result.local_date,result.end_minute);
       if(start<=now||end<=start||end-start<15*60000||start>now+366*86400000) throw Error("bmb_invalid_once_date");
       result.starts_at=new Date(start).toISOString();result.ends_at=new Date(end).toISOString();result.weekdays=[];result.duration_days=null;
     } else {
@@ -224,10 +242,26 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   let text=cleanProse(cleanCitations(result.response_text||"",{quotedIn:prompt}));
   if((!text&&result.decision!=="silent")||/:(?!\d{2}\b)/.test(text))throw Error("bmb_invalid_prose");
   let action=null,execute=false,acceptanceRecovery=false,durationLimited=false;
-  try { action=result.action?normalizeAction(result.action):null; }
+  const scheduleErrors=new Set(["bmb_invalid_schedule","bmb_missing_recurrence","bmb_missing_horizon","bmb_invalid_once_date","bmb_ambiguous_or_missing_local_time"]);
+  let scheduleInvalid=false;
+  const actionNow=Date.now();
+  try { action=result.action?normalizeAction(result.action,actionNow):null; }
   catch(error) {
     // A supported service receiving an unsupported duration is still a valid
     // conversation. Never clamp it or retain an older proposal for acceptance.
+    if(!proactive&&scheduleErrors.has(error.message)) {
+      // Invalid model parameters are a clarification, never an outage or an
+      // executable offer. Do not spend another model call to explain them.
+      scheduleInvalid=true;
+      const spanish=result.response_language==="es";
+      const reply=error.message==="bmb_missing_recurrence"||error.message==="bmb_missing_horizon"
+        ? (spanish ? "¿Lo quieres una sola vez o en qué días y durante cuánto tiempo? No he aplicado ningún cambio."
+          : "Would you like it once, or on which days and for how long? I haven't applied any change.")
+        : (spanish ? "No he podido preparar ese horario. ¿Qué hora de inicio y fin quieres, y para qué día? No he aplicado ningún cambio."
+          : "I couldn't prepare that schedule. What start and end times would you like, and for which day? I haven't applied any change.");
+      result={...result,response_text:reply,decision:"ask",action:null,memory:null,accepted_proposal:null,
+        pending_request:prompt,observations:[],followup_resolution:null,longitudinal_review:null};
+    } else {
     if(proactive||error.message!=="bmb_missing_duration")throw error;
     durationLimited=true;
     const spanish=result.response_language==="es";
@@ -244,8 +278,9 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     } catch(_) { /* A known product limit must remain explainable if copy generation fails. */ }
     result={...result,decision:"ask",action:null,memory:null,accepted_proposal:null,pending_request:prompt};
     result.response_text=reply;
+    }
   }
-  if(durationLimited)delete context.brain_memory_effect;
+  if(durationLimited||scheduleInvalid)delete context.brain_memory_effect;
   result.response_text=cleanCitations(result.response_text||"",{quotedIn:prompt});
   text=result.response_text.trim();
   if(result.decision==="execute"&&!action) {
@@ -256,9 +291,16 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   }
   if(result.decision==="execute"&&action&&!proactive) {
     execute=result.message_kind==="action_request";
-    if(result.message_kind==="acceptance")execute=prior.proposal?.fingerprint===result.accepted_proposal
-      && Date.parse(prior.proposal.expires_at)>Date.now()&&prior.proposal.action
-      && actionIdentity(action)===actionIdentity(normalizeAction(prior.proposal.action));
+    if(result.message_kind==="acceptance") {
+      let offeredAction=null;
+      try { offeredAction=prior.proposal?.action?normalizeAction(prior.proposal.action,actionNow):null; }
+      catch(error) {
+        if(!scheduleErrors.has(error.message)&&error.message!=="bmb_missing_duration")throw error;
+      }
+      execute=Boolean(prior.proposal?.fingerprint===result.accepted_proposal
+        && Date.parse(prior.proposal.expires_at)>Date.now()&&offeredAction
+        && actionIdentity(action)===actionIdentity(offeredAction));
+    }
     if(!execute) {
       if(result.message_kind==="acceptance") console.error("bmb_acceptance_failure",JSON.stringify({
         proposal_present:!!prior.proposal,token_matches:prior.proposal?.fingerprint===result.accepted_proposal,
@@ -274,6 +316,14 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
         : "I couldn't recover that proposal. I haven't applied any block. Tell me which times you want and I'll prepare it.";
     }
     if(execute&&!freshness(context.brain_snapshot))throw Error("bmb_stale_device_state");
+  }
+  if(execute&&action?.start_mode==='now') {
+    const end=action.end_minute===0?(result.response_language==='es'?'medianoche de hoy':'midnight tonight')
+      :`${String(Math.floor(action.end_minute/60)).padStart(2,'0')}:${String(action.end_minute%60).padStart(2,'0')}`;
+    text=result.response_language==='es'
+      ? `Voy a iniciar un bloqueo en aproximadamente un minuto, hasta ${end}, solo una vez.`
+      : `I'll start a block in about a minute, until ${end}, once only.`;
+    result.response_text=text;
   }
   let tracking;
   try {tracking=longitudinal.validateEffects(result,prompt,proactive,openFollowups);}
@@ -303,8 +353,8 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   if(!proactive&&!text.trim())throw Error("bmb_invalid_prose");
   const cancelled=result.decision==="cancel";
   const bmbState={pending_request:cancelled||execute?null:result.pending_request,
-    recovery_after:cancelled||execute||durationLimited?new Date().toISOString():prior.recovery_after||null,
-    proposal:cancelled||execute||acceptanceRecovery||durationLimited?null:result.decision==="propose"&&action?proposal(action):prior.proposal||null};
+    recovery_after:cancelled||execute||durationLimited||scheduleInvalid?new Date().toISOString():prior.recovery_after||null,
+    proposal:cancelled||execute||acceptanceRecovery||durationLimited||scheduleInvalid?null:result.decision==="propose"&&action?proposal(action):prior.proposal||null};
   if(!proactive&&!cancelled&&!execute&&!result.memory&&!result.observations?.length&&!bmbState.proposal&&!bmbState.pending_request&&(continuing||result.message_kind==='question')){
     const cited=sources.find(s=>s.source_id==='observations'&&result.cited_sources?.some(id=>id===s.source_id||s.rows?.some(r=>r.id===id)))||sources.find(s=>s.source_id==='current_sleep'&&result.cited_sources?.some(id=>id==='current_sleep'||s.rows?.some(r=>r.id===id)));
     const seeded=retrievalContext.seed(cited,timezone);
