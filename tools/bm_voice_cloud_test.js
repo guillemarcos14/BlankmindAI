@@ -15,7 +15,7 @@ async function run() {
   const db = (route, body, method = "POST") => request(c.supabase, "/rest/v1/" + route, body, service, method);
   const check = async (name, fn) => { await fn(); checks.push({ name, passed: true }); console.log("PASS " + name); };
   const voice = (user, turn, id = crypto.randomUUID(), extra = {}) => request(c.netlify, "/.netlify/functions/assistant-app-voice",
-    { turn_id: turn, request_id: id, app_install_id: user.install, elevenlabs_consent: true, ...extra }, { ...c.extraHeaders, authorization: "Bearer " + user.token });
+    { turn_id: turn, request_id: id, app_install_id: user.install, synchronized: true, elevenlabs_consent: true, ...extra }, { ...c.extraHeaders, authorization: "Bearer " + user.token });
   let failure;
   try {
     for (let index = 0; index < 2; index++) {
@@ -39,12 +39,18 @@ async function run() {
       const inserted = await db("assistant_app_turns", { id: turn, auth_user_id: a.id, user_text: "Synthetic voice QA",
         assistant_text: text, response_language: language, status: "completed", completed_at: new Date().toISOString() });
       ensure(inserted.ok, "fixture_turn_failed");
+      await check("declined_consent_" + language, async () => {
+        ensure((await voice(a, turn, undefined, { elevenlabs_consent: false })).status === 403, "declined_voice_consent");
+        const usage = await db("assistant_voice_requests?turn_id=eq." + turn + "&select=request_id", undefined, "GET");
+        ensure(usage.ok && (await usage.json()).length === 0, "declined_voice_consumed_quota");
+      });
       const id = crypto.randomUUID();
       await check("real_pcm_stream_" + language, async () => {
         const started = performance.now(), response = await voice(a, turn, id);
         ensure(response.ok && response.headers.get("X-Voice-Format") === "pcm-s16le-24000-mono", "voice_http_failed");
         ensure(response.headers.get("Cache-Control") === "no-store", "voice_cache_enabled");
-        let buffered = "", bytes = 0, end = false, first = null;
+        let buffered = "", bytes = 0, end = false, first = null, cues = 0, lastEnd = 0, lastStart = 0;
+        const audioChunks = [];
         const decoder = new TextDecoder();
         for await (const chunk of response.body) {
           buffered += decoder.decode(chunk, { stream: true });
@@ -57,12 +63,27 @@ async function run() {
             if (frame.type === "audio") {
               const audio = Buffer.from(frame.pcm, "base64"); ensure(audio.length > 0 && audio.length % 2 === 0, "invalid_pcm");
               bytes += audio.length; first ??= Math.round(performance.now() - started);
+              audioChunks.push(audio);
+            } else if (frame.type === "cue") {
+              ensure(Number.isFinite(frame.start) && frame.start >= lastStart && Number.isInteger(frame.end)
+                && frame.end > lastEnd && frame.end <= text.length, "invalid_canonical_cue");
+              cues++; lastEnd = frame.end; lastStart = frame.start;
             } else { ensure(frame.type === "end", "voice_stream_failed"); end = true; }
           }
         }
         ensure(end && bytes > 0 && !buffered.trim(), "voice_truncated");
+        ensure(cues > 0 && lastEnd === text.length && lastStart < bytes / 48000 + 0.1, "voice_text_not_aligned");
+        // Synthetic QA artifact only; the production route never stores audio.
+        const pcm = Buffer.concat(audioChunks), header = Buffer.alloc(44);
+        header.write("RIFF"); header.writeUInt32LE(36 + pcm.length, 4); header.write("WAVEfmt ", 8);
+        header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20); header.writeUInt16LE(1, 22);
+        header.writeUInt32LE(24000, 24); header.writeUInt32LE(48000, 28); header.writeUInt16LE(2, 32);
+        header.writeUInt16LE(16, 34); header.write("data", 36); header.writeUInt32LE(pcm.length, 40);
+        fs.mkdirSync("tmp/voice", { recursive: true });
+        fs.writeFileSync("tmp/voice/" + language + "-synthetic-qa.wav", Buffer.concat([header, pcm]));
         checks.push({ name: "timing_" + language, passed: true, first_audio_ms: first,
-          generation_ms: Math.round(performance.now() - started), audio_bytes: bytes });
+          generation_ms: Math.round(performance.now() - started), audio_bytes: bytes,
+          cues, final_text_end: lastEnd, pcm_duration_seconds: bytes / 48000 });
       });
       await check("same_request_cannot_regenerate_" + language, async () => {
         const response = await voice(a, turn, id); ensure(response.status === 409, "voice_replay_regenerated");
