@@ -1,0 +1,5 @@
+// Public distribution. No private-stage flag or authentication cookie.
+CURRENT_PROJECT_VERSION = 112
+MARKETING_VERSION = 1.9
+BLANK_MEMBERSHIP_API_BASE_URL = https:/$()/getblank.netlify.app/.netlify/functions
+BLANK_PRIVATE_QA_COOKIE =

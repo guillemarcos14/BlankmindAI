@@ -1,0 +1,70 @@
+{
+  "version": 7,
+  "authored_at": "2026-10-09",
+  "split": "known-context-regression",
+  "native_sleep_values": [
+    407,
+    418,
+    489,
+    431,
+    498,
+    452,
+    464,
+    426,
+    506,
+    443,
+    472,
+    459,
+    487,
+    508
+  ],
+  "cases": [
+    {
+      "id": "unit09-021",
+      "route": "contextual",
+      "fixture_route": "sleep_week",
+      "profile": "measured",
+      "language": "es",
+      "eligible": false,
+      "turns": [
+        "Dime la duración media del sueño que registré esta semana.",
+        "¿Y ayer?",
+        "¿Es medido o declarado ese dato?",
+        "Ahora dímelo en inglés."
+      ],
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "sleep_minutes": [
+        470,
+        525,
+        556
+      ],
+      "protection_minutes": 154,
+      "original_case_id": "source09-065"
+    },
+    {
+      "id": "unit09-022",
+      "route": "contextual",
+      "fixture_route": "sleep_week",
+      "profile": "measured",
+      "language": "en",
+      "eligible": false,
+      "turns": [
+        "Tell me the average duration of sleep I recorded this week.",
+        "And yesterday?",
+        "Is that sleep entry measured or declared?",
+        "Now tell me in Spanish."
+      ],
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "sleep_minutes": [
+        471,
+        526,
+        557
+      ],
+      "protection_minutes": 155,
+      "original_case_id": "source09-066"
+    }
+  ],
+  "contains_known_regression_followups": true,
+  "contains_known_provenance_regression_query": true,
+  "independence_note": "Reuses 24 deliberately selected cases from the previous full comparison. These are regression checks, not a fresh independent holdout, and cannot certify production performance or broad quality."
+}

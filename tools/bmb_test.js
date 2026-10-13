@@ -100,7 +100,8 @@ async function main() {
   const stale=context();stale.brain_snapshot.generated_at="2020-01-01";
   await assert.rejects(()=>turn({...base(),message_kind:"action_request",decision:"execute",action:action()},stale),/stale_device/);
   result=await turn({...base(),message_kind:"cancellation",decision:"cancel"},ctx);assert.equal(result.plan.bmb_state.proposal,null);assert.equal(result.plan.bmb_invalidates,true);
-  await assert.rejects(()=>turn({...base(),response_text:"Your evening: protected"}),/invalid_prose/);
+  assert.equal((await turn({...base(),response_text:"Your evening: protected"})).plan.response_text,"Your evening, protected");
+  await assert.rejects(()=>turn({...base(),response_text:""}),/invalid_prose/);
   assert.equal((await turn({...base(),response_text:"Let's start at 22:30."})).plan.response_text,"Let's start at 22:30.");
   await assert.rejects(()=>turn({...base(),cited_sources:["other-user"]}),/unknown_citation/);
   saved=[{key:"bedtime",value:"23:00",source_at:"2026-10-01T00:00:00Z"}];
