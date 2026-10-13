@@ -101,7 +101,7 @@ jobs:
             extra_tests=(-only-testing:BlankHomeUITests/MinimalHomeUITests/testEdgeSwipesNavigateNeighboursAndIgnoreCentreAndVerticalDrags -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlUnlockUsesNoEmergencyAndKeepsCooldown -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear -only-testing:BlankHomeUITests/MinimalHomeUITests/testProgressShowsRestContextAndPreservesNavigation -only-testing:BlankHomeUITests/MinimalHomeUITests/testLargestTextKeepsPreferencesSaveReachable)
           fi
           if [ "${{ inputs.ui_tests || 'all' }}" = basic ]; then
-            suite=BlankHomeUITests/MinimalHomeUITests/testBasicBlockingWithoutSleepKeepsRestClosed
+            suite=BlankHomeUITests/MinimalHomeUITests/testBasicBlockingWithoutSleepKeepsOriginalHomeAndProgress
             extra_tests=(-only-testing:BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear -only-testing:BlankHomeUITests/MinimalHomeUITests/testThreeSectionsKeepAllSettingsAndReturnToChat -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlFormsKeepNativeEditingAndDismissal -only-testing:BlankHomeUITests/MinimalHomeUITests/testProgressShowsRestContextAndPreservesNavigation -only-testing:BlankHomeUITests/MinimalHomeUITests/testSleepSourceKeepsProductionScreensAndUnmetAccountGate -only-testing:BlankHomeUITests/MinimalHomeUITests/testAppStoreScreenshotsLabelExamplesAndPreserveNavigation)
           fi
           xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank \

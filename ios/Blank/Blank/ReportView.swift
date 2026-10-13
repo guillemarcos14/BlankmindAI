@@ -11,12 +11,6 @@ struct ReportView: View {
 
     private var headerPrimary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.charcoal }
     private var headerSecondary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk }
-    private var canShowRest: Bool {
-        #if DEBUG && targetEnvironment(simulator)
-        if PostOnboardingPreviewScene.enabled && AssistantAppPreview.scenario != "product-basic-home" { return true }
-        #endif
-        return healthKitStore.sleepDataAvailable
-    }
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
             Group {
@@ -32,15 +26,7 @@ struct ReportView: View {
                         .padding(.top, 16).padding(.bottom, 24)
                 }
             }
-            if canShowRest {
-                RestProgressContent(showContext: $showContext)
-            } else {
-                Text("Personalised rest statistics require measured sleep records. Blocking and unlocking remain available.")
-                    .font(.blankBody)
-                    .accessibilityIdentifier("progress-sleep-required")
-                Button("Connect Apple Health") { healthKitStore.requestAccess() }
-                    .buttonStyle(.plain).padding(.top, 16)
-            }
+            RestProgressContent(showContext: $showContext)
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 

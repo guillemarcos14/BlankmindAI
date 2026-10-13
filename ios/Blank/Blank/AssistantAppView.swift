@@ -901,6 +901,8 @@ struct AssistantAppView: View {
     var simulatorGuest = false
     var usesHomePresentation = false
     var isHomeVisible = true
+    var assistantAvailable = true
+    var onRequestAssistantAccess: () -> Void = {}
     var offersFirstUseSetup = false
     var notificationsAuthorized = false
     var onChooseInitialApps: () -> Void = {}
@@ -1049,6 +1051,21 @@ struct AssistantAppView: View {
                 composer.draft = text
                 persist()
                 if composer.pending == nil { await send() }
+            }
+        }
+        .onChange(of: assistantAvailable) { available in
+            if available { Task { restoreOwner(); await reload() } }
+            else {
+                conversationRevision += 1
+                sendRequestID = nil
+                reloadRequestID = nil
+                streamedText = ""
+                voice.reset()
+                acceptingSpeech = false
+                speech.stop()
+                turns = []
+                visibleTurnID = nil
+                isLoading = false
             }
         }
         .onChange(of: speech.transcript) { transcript in
@@ -1246,6 +1263,7 @@ struct AssistantAppView: View {
 
                 Button {
                     guard !simulatorGuest else { return }
+                    guard assistantAvailable else { onRequestAssistantAccess(); return }
                     if requiresVerification { showAccountSignIn = true; return }
                     if voice.isBusy { voice.stop(); return }
                     voice.stop()
@@ -1460,6 +1478,7 @@ struct AssistantAppView: View {
 
     @ViewBuilder private var composerActions: some View {
         Button {
+                guard assistantAvailable else { onRequestAssistantAccess(); return }
                 if voice.isBusy { voice.stop(); return }
                 voice.stop()
                 if !speech.isRecording && !speech.isStarting {
@@ -1558,6 +1577,7 @@ struct AssistantAppView: View {
     }
 
     private func reload() async {
+        guard assistantAvailable else { isLoading = false; return }
         guard !preview, reloadRequestID == nil, !isSending else { return }
         let requestID = UUID()
         reloadRequestID = requestID
@@ -1668,6 +1688,7 @@ struct AssistantAppView: View {
     }
 
     private func send(audioText: String? = nil, allowAutoApply: Bool = true) async {
+        guard assistantAvailable else { onRequestAssistantAccess(); return }
         guard !preview, !simulatorGuest, !isSending, !requiresVerification else { return }
         voice.reset()
         acceptingSpeech = false

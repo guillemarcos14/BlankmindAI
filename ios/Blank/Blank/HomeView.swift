@@ -402,9 +402,10 @@ struct HomeView: View {
                     .offset(x: reduceMotion ? 0 : (activeSection == nil ? edgeDrag * 0.18 : (selectedHomeTab == .control ? viewportWidth : -viewportWidth)))
                     .ignoresSafeArea()
 
-                if simulatorGuest || healthKitStore.restAIAvailable {
                 AssistantAppView(simulatorGuest: simulatorGuest, usesHomePresentation: true,
                     isHomeVisible: activeSection == nil,
+                    assistantAvailable: simulatorGuest || healthKitStore.restAIAvailable,
+                    onRequestAssistantAccess: { showingRestSetup = true },
                     offersFirstUseSetup: BlankSharedState.defaults.integer(forKey: "blankHealthOnboardingVersion") == 6,
                     notificationsAuthorized: assistantNotificationsAuthorized,
                     onChooseInitialApps: { showingPicker = true },
@@ -419,13 +420,6 @@ struct HomeView: View {
                     .allowsHitTesting(activeSection == nil)
                     .accessibilityHidden(activeSection != nil)
 
-                } else {
-                    basicBlockingHome
-                        .frame(width: viewportWidth, height: viewportHeight)
-                        .opacity(activeSection == nil ? 1 : 0)
-                        .allowsHitTesting(activeSection == nil)
-                        .accessibilityHidden(activeSection != nil)
-                }
                 homeSectionScreen(viewportWidth: viewportWidth, viewportHeight: viewportHeight)
 
                 MinimalHomeNavigation(selected: selectedHomeTab,
@@ -730,6 +724,10 @@ struct HomeView: View {
                 try await prepareAssistantAction(actionId)
             }
         }
+        .sheet(isPresented: $showingRestSetup) {
+            SetupView(healthKitStore: healthKitStore) { showingRestSetup = false }
+                .environmentObject(sessionStore)
+        }
         .sheet(isPresented: $showingRelink) {
             RelinkSheet(message: $message, messageAction: $messageAction)
                 .presentationDetents([.medium])
@@ -853,54 +851,6 @@ struct HomeView: View {
     }
 
     @State private var showingRestSetup = false
-
-    private var basicBlockingHome: some View {
-        MinimalOnboardingPanel {
-            Text("Your distractions. Your choice.")
-                .font(.blankOnboardingEditorial(size: 30, relativeTo: .title))
-                .padding(.bottom, 24)
-            Button("Choose distractions") { openSection(.distractions) }
-                .buttonStyle(OnboardingButtonStyle()).padding(.bottom, 12)
-            if sessionStore.isBlankActive {
-                bottomAction(width: 320).padding(.vertical, 12)
-                Button("Emergency unlock") { openSection(.emergency) }
-                    .buttonStyle(OnboardingButtonStyle())
-            } else {
-                Button("Block apps") {
-                    if sessionStore.hasSelectedApps { handleHomeOrb(.block) }
-                    else { showingPicker = true }
-                }
-                .buttonStyle(OnboardingButtonStyle())
-                .accessibilityIdentifier("basic-block-apps")
-            }
-            if let message { Text(message).font(.blankBody).padding(.top, 16) }
-            if !healthKitStore.sleepDataAvailable {
-                Text("Connect measured sleep records to unlock personalised rest statistics and rest content.")
-                    .font(.blankBody).padding(.top, 24)
-                Button("Connect Apple Health") { healthKitStore.requestAccess() }
-                    .buttonStyle(OnboardingButtonStyle()).padding(.top, 16)
-                Button("Explore with sample sleep") { showingRestSetup = true }
-                    .buttonStyle(OnboardingButtonStyle()).padding(.top, 12)
-                    .accessibilityIdentifier("basic-sample-sleep")
-            } else if !healthKitStore.aiSharingAllowed {
-                Text("Blankmind AI shares your messages, protection history and selected sleep summaries with our backend and OpenAI. For spoken replies, the response text is also sent to ElevenLabs to generate audio. Broad Health context and clinical documents stay on this iPhone. Spoken replies are AI-generated.")
-                    .font(.blankBody).padding(.top, 24)
-                Link("Privacy Policy", destination: URL(string: "https://blankmind.ai/privacy")!)
-                    .padding(.vertical, 12)
-                Button("Allow sharing with OpenAI and ElevenLabs") { healthKitStore.enableAISharing(); showingRestSetup = true }
-                    .buttonStyle(OnboardingButtonStyle())
-                    .accessibilityIdentifier("basic-ai-consent")
-            } else if !healthKitStore.restAIAvailable {
-                Button("Finish rest setup") { showingRestSetup = true }
-                    .buttonStyle(OnboardingButtonStyle())
-            }
-        }
-        .accessibilityIdentifier("basic-blocking-home")
-        .sheet(isPresented: $showingRestSetup) {
-            SetupView(healthKitStore: healthKitStore) { showingRestSetup = false }
-                .environmentObject(sessionStore)
-        }
-    }
 
     private func topNavButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {

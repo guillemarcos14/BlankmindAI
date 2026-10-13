@@ -1,11 +1,12 @@
 import XCTest
 
 final class MinimalHomeUITests: XCTestCase {
-    func testBasicBlockingWithoutSleepKeepsRestClosed() {
+    func testBasicBlockingWithoutSleepKeepsOriginalHomeAndProgress() {
         let app = launch("product-basic-home")
-        XCTAssertTrue(app.buttons["basic-block-apps"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.buttons["Choose distractions"].exists)
-        XCTAssertFalse(app.buttons["home-voice"].exists)
+        XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.otherElements["home-chat-panel"].exists)
+        XCTAssertFalse(app.staticTexts["Your distractions. Your choice."].exists)
+        capture("home-without-sleep")
         app.buttons["home-tab-control"].tap()
         XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["notifications"].exists)
@@ -16,11 +17,15 @@ final class MinimalHomeUITests: XCTestCase {
         app.buttons["Data & Permissions"].tap()
         XCTAssertFalse(app.buttons["conversation history"].exists)
         app.buttons["home-tab-progress"].tap()
-        XCTAssertTrue(app.staticTexts["progress-sleep-required"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["progress-metric"].exists)
-        XCTAssertFalse(app.buttons["progress-all-context"].exists)
+        XCTAssertTrue(app.buttons["progress-metric"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["progress-all-context"].exists)
+        XCTAssertFalse(app.staticTexts["You feel more rested"].exists)
+        XCTAssertFalse(app.staticTexts["progress-sleep-required"].exists)
+        capture("progress-without-sleep")
         app.buttons["home-tab-chat"].tap()
-        XCTAssertTrue(app.buttons["basic-block-apps"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
+        app.buttons["home-voice"].tap()
+        XCTAssertTrue(app.staticTexts["onboarding-sleep-empty"].waitForExistence(timeout: 5))
     }
 
     func testProgressShowsRestContextAndPreservesNavigation() {
