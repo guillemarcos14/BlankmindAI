@@ -33,7 +33,7 @@ async function main() {
     if (value(current) === wanted && current.scopes.includes("functions")) continue;
     const values = [...(current?.values || []).filter(x => x.context !== "production"), { context: "production", value: wanted }];
     const body = { key: name, scopes: [...new Set([...(current?.scopes || []), "functions"])], values };
-    await api(current ? route + "/" + encodeURIComponent(name) + query : route + query, current ? "PATCH" : "POST", current ? body : [body]);
+    await api(current ? route + "/" + encodeURIComponent(name) + query : route + query, current ? "PUT" : "POST", current ? body : [body]);
     changed.push(name);
   }
   if (apply) {

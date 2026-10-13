@@ -39,3 +39,18 @@ MacinCloud commands are entered one character at a time. This task prepares the 
 Record actual results for the20 release cases and seven voice checks with commit, deploy, build, trace and evidence hashes. Cover fresh Apple sign-in, basic mode without Health/AI, consent refusal and v1 renewal, labelled sample/on-off cleanup, measured sleep, account switch/delete, app selection/block/unlock, Emergency/hard protection, recurring schedule/daily limit, cooldown with app closed, widget action, APNs/ack and ES/EN playback/cancellation/text alignment. Simulator fixtures never count as device permission or execution evidence.
 
 Reviewer instructions: Sign in with Apple -> Screen Time/select apps -> use basic mode, or explicitly enable Sample sleep -> separately allow OpenAI/ElevenLabs sharing -> open Home/Progress. Sample nights must remain visibly fictional; full access still requires the final working backend. Store screenshots already replaced on12October; older pending lists are historical. Public policy is updated separately through Sites and the draft here matches it. Preserve existing subscriptions and the free new experience; recheck store labels/age rating against actual final flows, then attach only build112 with production configuration.
+
+## Preparation receipts, 13 October
+
+Sites103 is published: source `16273c3592078274888a92e2e6320922d8156ea6`, deployment `appgdep_6acde61761908191866bc8f9ab3be934`. Both blankmind.ai/privacy and blanked.app/privacy return200 with ElevenLabs, renewed consent and labelled sample disclosure; all other static bytes are preserved.
+
+Private QA031–033 already existed with RLS/server-only reservations. Only migration034 was applied, transactionally, after schema/history checks. No production SQL was executed. `tools/appstore_qa_prepare.ps1` defaults to read-only; `-Apply` only adds the missing034 on the fixed isolated project. `tools/appstore_qa_environment.js --configure` sets nonsecret selected voice IDs/provider and bounded Decisions flags on the fixed QA site. The protected ElevenLabs key is absent there, so voice remains OFF with normal text fallback; it cannot be certified or switched ON until that existing key is securely configured in Functions/production. No key is read/exported or created by this tool.
+
+`tools/prepare_iphone_qa.ps1` reuses the existing protected private session cookie and generates an owner-readable config outside Git at `tmp/appstore-final/qa111.xcconfig`. Do not upload that file or include its contents in reports. For the final production package:
+
+```powershell
+node tools/backend_staging.js --dry-run
+node tools/appstore_preserving_prepare.js tmp/cloud-stage/package-<exact-head>-<timestamp>.json ../Codigo-elevenlabs-production
+```
+
+The latter copies every required original/reconstructed/candidate archive into a stable `tmp/appstore-final/production-bundle`, validates all archive digests and preserves the static backup and schedule configuration. It performs no remote calls and never publishes. The manifest replaces only the eight app/account/brain entry points; unrelated messaging endpoints retain their original or explicitly approved reconstruction hashes. Voice/model/device evidence and production live-digest preflight remain required before publication.
