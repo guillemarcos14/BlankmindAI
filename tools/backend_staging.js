@@ -149,6 +149,61 @@ async function apiGet(resource, token, fetcher = fetch) {
   return response.json();
 }
 
+function preservingManifest(report, current, files) {
+  assertEntries(current.map(fn => fn.n || fn.name));
+  const config=Object.fromEntries(current.map(fn => [fn.n || fn.name, {
+    build_data:fn.bd || null, priority:fn.p || 0,
+    ...(fn.dn ? {display_name:fn.dn} : {}), ...(fn.g ? {generator:fn.g} : {}),
+  }]));
+  for(const name of ["assistant-app-stream","assistant-app-voice"])
+    if(config[name]?.build_data?.runtimeAPIVersion !== 2) fail("Existing streaming runtime metadata must be API v2");
+  return {draft:true,files:Object.fromEntries(files.map(file => [file.path.replace(/^\//,""),file.sha])),
+    functions:Object.fromEntries(report.functions.map(fn => [fn.name,fn.sha256])),functions_config:config,
+    function_schedules:[],title:"Blankmind schedule recovery " + report.source_commit.slice(0,12)};
+}
+
+async function deployPreservingRuntime(report, packaged, current, site, token, fetcher, save) {
+  const request=async(resource,method,body,type="application/json")=>{
+    const response=await fetcher(`https://api.netlify.com/api/v1${resource}`,{method,
+      headers:{authorization:`Bearer ${token}`,"content-type":type},body:type==="application/json"?JSON.stringify(body):body,
+      signal:AbortSignal.timeout(30000)});
+    if(!response.ok)fail(`Preserving deployment request failed (${response.status})`);
+    return response.json();
+  };
+  const files=await apiGet(`/deploys/${site.published_deploy.id}/files`,token,fetcher);
+  const manifest=preservingManifest(report,current,files);
+  const deployment=await request(`/sites/${SITE_ID}/deploys`,"POST",manifest);
+  report.deploy_id=deployment.id;report.previous_deploy_id=site.published_deploy.id;report.status="draft_uploading";save();
+  for(const fn of report.functions) {
+    if(!(deployment.required_functions || []).includes(fn.sha256))continue;
+    const existing=current.find(item => (item.n || item.name)===fn.name);
+    const runtime=existing.r || existing.runtime;
+    if(runtime!==fn.compilation_target)fail("Function compilation target differs from existing runtime");
+    await request(`/deploys/${deployment.id}/functions/${encodeURIComponent(fn.name)}?runtime=${encodeURIComponent(runtime)}`,
+      "PUT",fs.readFileSync(fn.path),"application/octet-stream");
+  }
+  for(const file of files) {
+    if(!(deployment.required || []).includes(file.sha))continue;
+    const artifact=path.join(packaged.publicDir,file.path.replace(/^\//,""));
+    if(!inside(packaged.publicDir,artifact)||!fs.existsSync(artifact)
+      ||crypto.createHash("sha1").update(fs.readFileSync(artifact)).digest("hex")!==file.sha)fail("Preserved static artifact unavailable");
+    await request(`/deploys/${deployment.id}/files/${file.path.replace(/^\//,"")}`,"PUT",fs.readFileSync(artifact),"application/octet-stream");
+  }
+  let ready=false;
+  for(let attempt=0;attempt<30;attempt++) {
+    const draft=await apiGet(`/deploys/${deployment.id}`,token,fetcher);
+    if(draft.state==="ready"){ready=true;break;}
+    if(draft.state==="error")fail("Preserving draft failed");
+    await new Promise(resolve=>setTimeout(resolve,1000));
+  }
+  if(!ready)fail("Preserving draft not ready");
+  const before=await apiGet(`/sites/${SITE_ID}`,token,fetcher);
+  if(before.published_deploy.id!==site.published_deploy.id)fail("Existing QA deploy changed before publication");
+  report.status="publication_requested";save();
+  await request(`/sites/${SITE_ID}/deploys/${deployment.id}/restore`,"POST",{});
+  return deployment;
+}
+
 function productionValue(variable) {
   if (!variable?.scopes?.includes("functions")) return "";
   return variable.values?.find((value) => value.context === "production")?.value
@@ -237,6 +292,8 @@ async function verifyDeployment(report, token, fetcher) {
   if (deployment.site_id !== SITE_ID || deployment.state !== "ready" || deployment.function_schedules?.length) fail("Staging deploy is not ready or contains scheduled functions");
   const remote = productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
   if (remote.some((fn) => fn.schedule || (fn.d || fn.sha) !== report.functions.find((item) => item.name === (fn.n || fn.name))?.sha256)) fail("Remote function digests differ from the ten packaged ZIPs");
+  if(report.preserve_existing_experiments && remote.some(fn => (fn.r || fn.runtime)!=="nodejs22.x"
+    || (["assistant-app-stream","assistant-app-voice"].includes(fn.n || fn.name) && fn.bd?.runtimeAPIVersion!==2))) fail("Existing streaming runtime metadata was not preserved");
   await requirePrivateSite(fetcher);
   const finalSite = await apiGet(`/sites/${SITE_ID}`, token, fetcher);
   if (finalSite.id !== SITE_ID || finalSite.published_deploy?.id !== report.deploy_id) fail("The active staging deploy changed during verification");
@@ -302,18 +359,22 @@ async function main(args, dependencies = {}) {
     await requirePrivateSite(fetcher);
     report.environment_preflight = validateEnvironment(await apiGet(`/accounts/${site.account_id}/env?site_id=${SITE_ID}`, token, fetcher),
       { preserveExistingExperiments: args.preserveExistingExperiments === true });
-    productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
+    const existingFunctions=productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
     const current = sourceState(args.source, execute);
     requireDeployable(current);
     if (current.commit !== state.commit || packaged.inputs.some((input) => sha256(path.join(args.source, input.file)) !== input.sha256)) fail("Source changed after packaging");
     if (packaged.functions.some((fn) => sha256(fn.path) !== fn.sha256)) fail("Function artifact changed after packaging");
     report.status = "deploy_requested";
     save();
+    let deployed;
+    if(args.preserveExistingExperiments)deployed=await deployPreservingRuntime(report,packaged,existingFunctions,site,token,fetcher,save);
+    else {
     const output = execute(process.execPath, deployCommand(args, packaged), packaged.directory, {
       env: { ...process.env, NETLIFY_AUTH_TOKEN: token },
     });
-    let deployed;
     try { deployed = JSON.parse(output); } catch (_) { fail("CLI did not return a valid deploy receipt"); }
+    }
+    if(deployed.id&&!deployed.deploy_id)deployed={...deployed,deploy_id:deployed.id};
     if (deployed.site_id !== SITE_ID || !/^[a-f0-9]{24}$/.test(deployed.deploy_id || "")) fail("CLI returned an unexpected staging deploy identity");
     report.deploy_id = deployed.deploy_id;
     report.status = "deployed_unverified";
@@ -340,4 +401,4 @@ if (require.main === module) {
   })().catch((error) => { console.error(`backend_staging: ${error.message}`); process.exitCode = 1; });
 }
 module.exports = { SITE_ID, SITE_URL, SUPABASE_REF, ENTRIES, parseArgs, assertSite, assertEntries, requireDeployable,
-  validateEnvironment, requirePrivateSite, deployCommand, packageCandidate, productionFunctions, verifyReport, main };
+  validateEnvironment, requirePrivateSite, deployCommand, packageCandidate, productionFunctions, preservingManifest, verifyReport, main };
