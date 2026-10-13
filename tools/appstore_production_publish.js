@@ -83,7 +83,8 @@ async function main(args=process.argv.slice(2)){
  }
  assert.equal(site.published_deploy.id,PREVIOUS);
  const published=await api("/deploys/"+PREVIOUS);const current=inventory(await api("/sites/"+SITE+"/functions"));assert.equal(current.length,73);
- for(const change of manifest.changes)assert.equal(current.find(f=>(f.n||f.name)===change.name)?.d||null,change.before);
+ assert.equal(Object.keys(manifest.expected_production_functions).length,73);
+ for(const fn of current)assert.equal(fn.d||fn.sha,manifest.expected_production_functions[fn.n||fn.name],"Published baseline changed: "+(fn.n||fn.name));
  const vars=await api(envRoute+query);assert.equal(value(vars.find(v=>v.key==="SUPABASE_URL")),"https://vhiikgyyfisejjwqtxfc.supabase.co");
  const r={status:"preparing",source_commit:manifest.source_commit,operator_commit:git(["rev-parse","HEAD"]),manifest_sha256:hash(path.join(DIRECTORY,"manifest.json")),
   previous:PREVIOUS,previous_locked:!!published.locked,authorization:"Guillem: Pásalo a producción, 2026-10-13",physical_verified:false,model_quality_gate_passed:false,

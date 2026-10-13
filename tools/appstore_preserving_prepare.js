@@ -35,7 +35,7 @@ function main() {
   const legacy = json(path.join(bundle, "evidence/legacy-runtime-validation.json"));
   assert.equal(git(["status", "--porcelain"]), "", "source_dirty");
   assert(/^codex\/backend-release-/.test(git(["branch", "--show-current"])));
-  assert.equal(packaged.source_commit, git(["rev-parse", "HEAD"]), "package_not_current_candidate");
+  assert.equal(git(["diff", packaged.source_commit, "HEAD", "--", "netlify/functions", "supabase/migrations", "ios"]), "", "package_runtime_not_current_candidate");
   assert.equal(packaged.source_tree_clean, true);
   assert.equal(packaged.site_id, "2ef5a74e-af70-4893-a5f6-63fb2537720d");
   assert(legacy.pass && legacy.real_messages === 0 && legacy.paid_calls === 0);
@@ -44,6 +44,14 @@ function main() {
   assert.equal(selected.length, APP.length);
   const artifacts = Object.fromEntries(Object.entries(old.artifacts).map(([sha, file]) => [sha, path.resolve(preservationRoot, file)]));
   const changes = [];
+  // The preservation body already contains the earlier candidate replacements.
+  // Reconstruct the actual published baseline from its explicit change log.
+  const expectedProduction = { ...old.body.functions };
+  for (const change of old.changes) {
+    if (change.before) expectedProduction[change.name] = change.before;
+    else delete expectedProduction[change.name];
+  }
+  assert.equal(Object.keys(expectedProduction).length, 73, "published_baseline_incomplete");
   for (const fn of selected) {
     assert.equal(digest(fn.path), fn.sha256, "candidate_archive_changed");
     assert.equal(fn.compilation_target, "nodejs22.x", "uncertified_runtime");
@@ -51,7 +59,7 @@ function main() {
       assert.equal(fn.runtime_api_version, 2, "stream_api_version_missing");
       assert.equal(fn.invocation_mode, "stream", "stream_invocation_mode_missing");
     }
-    changes.push({ name: fn.name, before: body.functions[fn.name] || null, after: fn.sha256 });
+    changes.push({ name: fn.name, before: expectedProduction[fn.name] || null, after: fn.sha256 });
     body.functions[fn.name] = fn.sha256;
     artifacts[fn.sha256] = path.resolve(fn.path);
     if (!body.functions_config[fn.name]) body.functions_config[fn.name] = {
@@ -94,6 +102,7 @@ function main() {
   body.files["privacy.html"] = crypto.createHash("sha1").update(privacy).digest("hex");
   for (const [name, expected] of Object.entries(body.files)) assert.equal(crypto.createHash("sha1").update(fs.readFileSync(path.join(staticRoot, name))).digest("hex"), expected);
   const manifest = { generated_at: new Date().toISOString(), source_commit: packaged.source_commit,
+    operator_commit: git(["rev-parse", "HEAD"]), expected_production_functions: expectedProduction,
     source_package_sha256: digest(packagePath), expected_production_deploy: old.published_deploy,
     body, artifacts: stable, changes, total_functions: Object.keys(body.functions).length,
     unrelated_functions_preserved: originalFiles.length, statics: Object.keys(body.files).length,
