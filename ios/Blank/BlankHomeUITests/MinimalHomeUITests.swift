@@ -31,7 +31,7 @@ final class MinimalHomeUITests: XCTestCase {
         app.buttons["home-tab-chat"].tap()
         XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
         app.buttons["home-voice"].tap()
-        XCTAssertTrue(app.staticTexts["onboarding-sleep-empty"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Preview device setup"].waitForExistence(timeout: 5), "Anonymous access attempt must open the existing account setup")
     }
 
     func testProgressShowsRestContextAndPreservesNavigation() {
