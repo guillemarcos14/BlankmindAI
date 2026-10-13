@@ -94,6 +94,12 @@ function dependencies({ dirty = false, protectedSite = true, extraFunction = fal
   assert.equal(packaged.report.deploy_id, null);
   assert.equal(packaged.report.functions.length, 10);
   assert.throws(() => staging.validateEnvironment([...env, { key: "BM_RETRIEVAL_ENABLED", scopes: ["functions"], values: [{ context: "production", value: "true" }] }]), /acceleration/);
+  const flag = (key, value) => ({ key, scopes: ["functions"], values: [{ context: "production", value }] });
+  const bounded = [flag("BM_RETRIEVAL_STEP_ENABLED", "true"), flag("BM_DECISIONS_DATA_POLICY", "authenticated-account-records")];
+  assert(staging.validateEnvironment([...env, ...bounded]).bounded_decisions_enabled);
+  assert.throws(() => staging.validateEnvironment([...env, bounded[0]]), /acceleration/);
+  assert.throws(() => staging.validateEnvironment([...env, ...bounded, flag("BM_DECISIONS_QA_ENABLED", "true")]), /acceleration/);
+  assert.throws(() => staging.validateEnvironment([...env, ...bounded, flag("BM_JEV_SHADOW_ENABLED", "true")]), /acceleration/);
   assert(packaged.report.source_inputs.some((input) => input.file.endsWith("dependency.js")));
   assert(dry.operations.every((operation) => operation.command === "git"), "dry-run performed a remote read or mutation");
   const scheduled = dependencies();

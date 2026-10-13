@@ -171,10 +171,16 @@ function validateEnvironment(variables) {
         || !/^[A-Z0-9]{10}$/.test(productionValue(byName.get("APNS_KEY_ID")))
         || !/^[A-Z0-9]{10}$/.test(productionValue(byName.get("APNS_TEAM_ID"))))) fail("Transport APNs configuration must match the existing iPhone app and protected key");
   if (/^(?:true|1|yes|on)$/i.test(productionValue(byName.get("BM_FINAL_APP_LINKED_ROUTING_ENABLED")))) fail("Public linked routing must remain disabled in staging");
-  if (variables.some(variable => /RETRIEVAL|JEV|DECISIONS/.test(variable.key) && /^(?:true|1|yes|on)$/i.test(productionValue(variable)))) fail("Retrieval acceleration must remain disabled in private QA");
+  const boundedDecisions = productionValue(byName.get("BM_RETRIEVAL_STEP_ENABLED")) === "true"
+    && productionValue(byName.get("BM_DECISIONS_DATA_POLICY")) === "authenticated-account-records";
+  if (variables.some(variable => /RETRIEVAL|JEV|DECISIONS/.test(variable.key)
+      && /^(?:true|1|yes|on)$/i.test(productionValue(variable))
+      && !(boundedDecisions && variable.key === "BM_RETRIEVAL_STEP_ENABLED"))) {
+    fail("Unvalidated retrieval acceleration or Jev is forbidden in private QA");
+  }
   // The provider masks secret values. Host isolation is verified here; actual
   // hidden key validity is established by the authenticated cloud smoke.
-  return { database_host_verified: true, service_key_ref_visible_and_verified: Boolean(claims) };
+  return { database_host_verified: true, service_key_ref_visible_and_verified: Boolean(claims), bounded_decisions_enabled: boundedDecisions };
 }
 
 async function requirePrivateSite(fetcher = fetch) {
