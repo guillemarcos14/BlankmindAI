@@ -3,8 +3,13 @@
 // real user's conversation, public transport or native action is invoked.
 const fs = require("node:fs"), crypto = require("node:crypto");
 const { configuration, memoryIdentity } = require("./assistant_app_cloud_test");
-async function run() {
-  const c = configuration(), users = [], checks = [], cleanup = [];
+async function run({ production = false } = {}) {
+  const c = production ? configuration({ ...process.env,
+    BM_CLOUD_TEST_SUPABASE_URL: "https://vhiikgyyfisejjwqtxfc.supabase.co",
+    BM_CLOUD_TEST_NETLIFY_URL: process.env.BM_CLOUD_TEST_NETLIFY_URL || "https://getblank.netlify.app",
+    BM_CLOUD_TEST_EXTRA_HEADERS_JSON: "{}" }, true, { physicalQa: true }) : configuration();
+  const output = production ? "tmp/voice/production" : "tmp/voice";
+  const users = [], checks = [], cleanup = [];
   const service = { apikey: c.serviceKey, authorization: `Bearer ${c.serviceKey}` };
   const ensure = (value, code) => { if (!value) throw Error(code); };
   const request = async (origin, route, body, headers = {}, method = "POST") => {
@@ -90,8 +95,8 @@ async function run() {
         header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20); header.writeUInt16LE(1, 22);
         header.writeUInt32LE(24000, 24); header.writeUInt32LE(48000, 28); header.writeUInt16LE(2, 32);
         header.writeUInt16LE(16, 34); header.write("data", 36); header.writeUInt32LE(pcm.length, 40);
-        fs.mkdirSync("tmp/voice", { recursive: true });
-        fs.writeFileSync("tmp/voice/" + language + "-synthetic-qa.wav", Buffer.concat([header, pcm]));
+        fs.mkdirSync(output, { recursive: true });
+        fs.writeFileSync(output + "/" + language + "-synthetic-qa.wav", Buffer.concat([header, pcm]));
         checks.push({ name: "timing_" + language, passed: true, first_audio_ms: first,
           generation_ms: Math.round(performance.now() - started), audio_bytes: bytes,
           cues, final_text_end: lastEnd, pcm_duration_seconds: bytes / 48000 });
@@ -134,15 +139,17 @@ async function run() {
       }
     }
   }
-  const result = { scope: "private QA endpoint and real TTS; synthetic turns; no physical device", checks, cleanup,
+  const result = { scope: (production ? "production" : "private QA") + " endpoint and real TTS; synthetic turns; no physical device", checks, cleanup,
     passed: !failure && cleanup.every(x => x.passed), ...(failure ? { failure } : {}), ...(diagnostic ? { diagnostic } : {}) };
-  fs.mkdirSync("tmp/voice", { recursive: true }); fs.writeFileSync("tmp/voice/cloud-smoke.json", JSON.stringify(result, null, 2));
+  fs.mkdirSync(output, { recursive: true }); fs.writeFileSync(output + "/cloud-smoke.json", JSON.stringify(result, null, 2));
   console.log(JSON.stringify({ passed: result.passed, checks: checks.length, cleanup_passed: cleanup.every(x => x.passed), failure, diagnostic }));
   if (!result.passed) process.exitCode = 1;
   return result;
 }
 if (require.main === module) {
   if (!process.argv.includes("--run")) { console.error("Use --run for the private QA synthetic smoke"); process.exitCode = 1; }
-  else run().catch(() => { console.error("voice_cloud_unavailable"); process.exitCode = 1; });
+  else if (process.argv.includes("--production") && !process.argv.includes("--confirm")) {
+    console.error("production_smoke_requires_confirm"); process.exitCode = 1;
+  } else run({ production: process.argv.includes("--production") }).catch(() => { console.error("voice_cloud_unavailable"); process.exitCode = 1; });
 }
 module.exports = { run };

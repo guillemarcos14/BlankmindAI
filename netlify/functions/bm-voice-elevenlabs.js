@@ -1,5 +1,9 @@
 "use strict";
 
+// App voice may use its own Functions-only credential without changing the
+// existing ElevenLabs credential used by legacy channels.
+function apiKey() { return process.env.BM_VOICE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY; }
+
 function characterCues(text, alignment, duration) {
   const characters = alignment?.characters;
   const starts = alignment?.character_start_times_seconds;
@@ -30,7 +34,7 @@ async function elevenSpeech(text, fetcher, signal, maxBytes, language) {
   if (!/^[A-Za-z0-9]{20}$/.test(voice)) throw new Error("invalid_voice");
   const response = await fetcher(`https://api.elevenlabs.io/v1/text-to-speech/${voice}/with-timestamps?output_format=pcm_24000`, {
     method: "POST", signal,
-    headers: { "xi-api-key": process.env.ELEVENLABS_API_KEY, "Content-Type": "application/json" },
+    headers: { "xi-api-key": apiKey(), "Content-Type": "application/json" },
     body: JSON.stringify({ text, model_id: "eleven_multilingual_v2",
       voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0, use_speaker_boost: true } }),
   });
@@ -56,4 +60,4 @@ async function elevenSpeech(text, fetcher, signal, maxBytes, language) {
   } finally { await reader.cancel().catch(() => {}); }
 }
 
-module.exports = { elevenSpeech, characterCues };
+module.exports = { elevenSpeech, characterCues, apiKey };

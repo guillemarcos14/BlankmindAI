@@ -10,7 +10,7 @@ membership.getSupabaseUser = async event => event.headers.authorization === "Bea
 identity.identityForAuthUser = async () => ({ auth_user_id: userID, app_install_id: "verified",
   assistant_connect_code: "FIXTURE" });
 const { voice, MAX_AUDIO_BYTES } = require("../netlify/functions/bm-voice-output");
-const { characterCues } = require("../netlify/functions/bm-voice-elevenlabs");
+const { characterCues, apiKey } = require("../netlify/functions/bm-voice-elevenlabs");
 const body = { turn_id: turnID, request_id: requestID, app_install_id: "verified", elevenlabs_consent: true };
 const request = (override = {}, token = "fixture") => new Request("https://blank.test/voice", {
   method: "POST", headers: { authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -104,6 +104,10 @@ async function run() {
   await error(503, "voice_unavailable", await voice(request(), deps));
   assert.equal(reserved, beforeMissingKey, "Missing ElevenLabs key must not consume quota");
   process.env.ELEVENLABS_API_KEY = "fixture-eleven-key";
+  assert.equal(apiKey(), "fixture-eleven-key");
+  process.env.BM_VOICE_ELEVENLABS_API_KEY = "fixture-app-functions-key";
+  assert.equal(apiKey(), "fixture-app-functions-key");
+  delete process.env.ELEVENLABS_API_KEY;
   row.response_language = "es";
   const text = "Tu respuesta final 👋";
   const characters = [...text];
@@ -111,7 +115,7 @@ async function run() {
     character_end_times_seconds: characters.map((_, i) => (i + 1) * 0.01) };
   const elevenDeps = { ...deps, fetch: async (url, options) => {
     assert.match(url, /^https:\/\/api.elevenlabs.io\/v1\/text-to-speech\/dNjJKg63Fr5AXwIdkATa\/with-timestamps\?output_format=pcm_24000$/);
-    assert.equal(options.headers["xi-api-key"], "fixture-eleven-key");
+    assert.equal(options.headers["xi-api-key"], "fixture-app-functions-key");
     assert.equal(JSON.parse(options.body).text, text);
     return Response.json({ audio_base64: Buffer.alloc(48000).toString("base64"), alignment });
   } };

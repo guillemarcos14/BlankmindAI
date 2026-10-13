@@ -4,7 +4,7 @@ const { supabaseFetch } = require("./_membership");
 const assistant = require("./assistant-app");
 const { plainAssistantText } = require("./_assistant_reply_text");
 const { timingForAudio } = require("./bm-voice-alignment");
-const { elevenSpeech } = require("./bm-voice-elevenlabs");
+const { elevenSpeech, apiKey } = require("./bm-voice-elevenlabs");
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_AUDIO_BYTES = 12000000;
 const headers = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
@@ -56,7 +56,7 @@ async function voice(request, deps = {}) {
     if (eleven && body.elevenlabs_consent !== true) {
       cleanup(); return failure(403, "voice_consent_required");
     }
-    if (!(eleven ? process.env.ELEVENLABS_API_KEY : process.env.OPENAI_API_KEY)) {
+    if (!(eleven ? apiKey() : process.env.OPENAI_API_KEY)) {
       cleanup(); return failure(503, "voice_unavailable");
     }
     if (eleven && !["es", "en"].includes(row.response_language)) {
