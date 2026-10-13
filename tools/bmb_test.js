@@ -108,6 +108,34 @@ async function main() {
   assert.deepEqual(recoveredInvalid.plan.actions,[]);
   assert.equal(recoveredInvalid.plan.bmb_state.proposal,null);
   assert.match(recoveredInvalid.plan.response_text,/couldn't recover/);
+  assert.equal(recoveredInvalid.context.brain_request.execute,false);
+  const dayNow=Date.parse('2026-10-13T08:29:51Z');
+  const restOfToday=action({type:'apply_schedule',minutes:null,start_mode:'now',start_minute:null,end_minute:0,
+    local_date:'2026-10-13',timezone:'Europe/Madrid',recurrence:'once'});
+  for(const end_minute of [0,1440]) {
+    const normalized=brain.normalizeAction({...restOfToday,end_minute},dayNow);
+    assert.equal(normalized.starts_at,'2026-10-13T08:30:51.000Z');
+    assert.equal(normalized.ends_at,'2026-10-13T22:00:00.000Z');
+    assert.equal(normalized.start_minute,630);assert.equal(normalized.end_minute,0);
+    assert.deepEqual(normalized.weekdays,[]);assert.equal(normalized.duration_days,null);
+  }
+  assert.throws(()=>brain.normalizeAction({...restOfToday,recurrence:'continuous'},dayNow),/missing_recurrence/);
+  assert.throws(()=>brain.normalizeAction({...restOfToday,local_date:'2026-10-12'},dayNow),/invalid_once_date/);
+  assert.throws(()=>brain.normalizeAction({...restOfToday,start_mode:'scheduled',start_minute:629},dayNow),/invalid_once_date/);
+  // Local next midnight follows DST, rather than adding a fixed 24 hours.
+  const dst=brain.normalizeAction({...restOfToday,local_date:'2026-10-25'},Date.parse('2026-10-24T22:02:00Z'));
+  assert.equal(dst.ends_at,'2026-10-25T23:00:00.000Z');
+  const allTodayPrompt='Bloquea mis distracciones durante todo el día de hoy';
+  const immediate=await turn({...base(),message_kind:'action_request',decision:'execute',evidence:allTodayPrompt,
+    action:{...restOfToday,local_date:null}},context(),allTodayPrompt);
+  assert.equal(immediate.context.brain_request.execute,true);
+  assert.equal(immediate.plan.actions[0].recurrence,'once');assert.equal(immediate.plan.actions[0].end_minute,0);
+  assert.match(immediate.plan.response_text,/in about a minute/);
+  const immediateProposal=await turn({...base(),decision:'propose',action:{...restOfToday,local_date:null}});
+  const proposalContext=context();proposalContext.memory.conversation_state={bmb_state:{proposal:immediateProposal.plan.bmb_state.proposal}};
+  const immediateAcceptance=await turn({...base(),message_kind:'acceptance',decision:'execute',
+    accepted_proposal:immediateProposal.plan.bmb_state.proposal.fingerprint,action:immediateProposal.plan.bmb_state.proposal.action},proposalContext);
+  assert.equal(immediateAcceptance.context.brain_request.execute,true);
   const incident="Está yendo muy bien. ¿Me podrías bloquear las distracciones durante tres minutos ahora mismo? Solo una vez.";
   for(const repairFails of [false,true]) {
     let attempts=0;
