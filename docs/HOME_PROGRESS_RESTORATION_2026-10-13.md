@@ -27,3 +27,13 @@ Public TestFlight 1.9(112) still contains the rejected presentation. This correc
 - Final code/test candidate 009d312: product harness 89/89, baseline enforced scope, ph_1791892839383_60a042e4.
 - Failed test-fixture runs and cancelled superseded work remain in GitHub; no failed result was rewritten.
 - Device distribution is blocked solely on opening MacinCloud in this chat. The source correction is validated; it is not yet in TestFlight112.
+
+## Public TestFlight 114 — 2026-10-13
+
+MacinCloud FF368 was updated by fast-forward to d35d4a1. Both native CI workflows completed successfully: full 38394109196 and basic 38394118987, including screenshots. After reconnecting the remote keyboard, all commands were entered with individual keyboard presses.
+
+The first archive at build/Blankmind114.xcarchive succeeded but contained build112: -xcconfig overrides the command-line CURRENT_PROJECT_VERSION setting. It was preserved and not uploaded. Generated build/AppStore114.xcconfig by replacing only the number in public AppStore112.xcconfig; the definitive archive is /Users/user301201/blankmind-appstore-20261013/ios/Blank/build/Blankmind114Restored.xcarchive. ARCHIVE SUCCEEDED. Its plist verifies 1.9/114, en, production URL and an empty private QA cookie. codesign --verify --deep --strict --verbose=2 confirms valid on disk and satisfies its designated requirement.
+
+Export reused existing ExportOptions112.plist: app-store-connect upload, automatic signing, manageAppVersionAndBuildNumber=false, TestFlightInternalTestingOnly=false. Terminal confirms Upload succeeded / Uploaded Blank / EXPORT SUCCEEDED. App Store Connect displays 1.9(114) Processing. No App Review submission or backend publication. Processing and tester availability still need confirmation.
+
+Evidence: C:/Users/Guillem/Desktop/Blanked/tmp/home-progress-restoration-20261013/receipt.json, archive114-verified.png and upload114-succeeded.png. Logs preserved on the Mac as archive114.log, archive114-restored.log and upload114.log.
