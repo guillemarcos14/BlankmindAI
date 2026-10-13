@@ -47,11 +47,13 @@ struct SetupView: View {
         self.onFinishForQA = onFinishForQA
         #if DEBUG && targetEnvironment(simulator)
         _currentStep = State(initialValue: AssistantAppPreview.scenario.hasPrefix("product-onboarding-device") ? .device : .account)
-        if AssistantAppPreview.scenario == "product-onboarding-device-sample" {
+        if AssistantAppPreview.scenario == "product-onboarding-device-sample",
+           AssistantAppSession.userID != "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" {
             let payload: [String: Any] = ["sub": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "app_metadata": ["provider": "apple", "providers": ["apple"]]]
             let encoded = try! JSONSerialization.data(withJSONObject: payload).base64EncodedString()
                 .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
             AssistantAppSession.save(accessToken: "fixture.\(encoded).fixture", refreshToken: "fixture")
+            RestAIConsent.set(false, owner: AssistantAppSession.userID, defaults: BlankSharedState.defaults)
             healthKitStore.setSampleSleepEnabled(false)
             healthKitStore.setPreviewSleepAccess(.noData)
         }

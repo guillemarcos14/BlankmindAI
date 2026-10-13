@@ -104,7 +104,10 @@ final class MinimalHomeUITests: XCTestCase {
     }
 
     func testSampleSleepWithoutWatchIsVisibleAndRequiresSeparateAIConsent() {
-        let app = launch("product-onboarding-device-sample")
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["BLANK_UI_SCENARIO"] = "product-onboarding-device-sample"
+        app.launch()
         let sample = app.buttons["onboarding-sample-sleep"]
         XCTAssertTrue(sample.waitForExistence(timeout: 10))
         XCTAssertTrue(sample.isHittable, "Sample route must be visible before scrolling through Health recovery")
