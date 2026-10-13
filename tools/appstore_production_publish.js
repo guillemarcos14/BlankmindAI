@@ -7,6 +7,7 @@ const ROOT=path.resolve(__dirname,".."),SITE="59955668-9a9b-4979-a283-63fbf3115f
 const DIRECTORY=path.join(ROOT,"tmp/appstore-final/production-bundle"),RECEIPT=path.join(ROOT,"tmp/appstore-final/production-publication.json");
 const APP=["account-data","app-auth","assistant-app","assistant-app-stream","assistant-app-voice","assistant-channel","bmb-tick","bmb-worker-background"];
 const FLAGS={BM_VOICE_ENABLED:"true",BM_VOICE_PROVIDER:"elevenlabs",ELEVENLABS_VOICE_ID_ES:"dNjJKg63Fr5AXwIdkATa",ELEVENLABS_VOICE_ID_EN:"WtA85syCrJwasGeHGH2p",BM_RETRIEVAL_STEP_ENABLED:"true",BM_DECISIONS_DATA_POLICY:"authenticated-account-records",BM_RETRIEVAL_STEP_QA_ENABLED:"false",BM_DECISIONS_QA_ENABLED:"false",BM_JEV_SHADOW_ENABLED:"false",BM_JEV_PREFETCH_EXPERIMENT:"false"};
+const DORMANT=new Set(["BM_RETRIEVAL_STEP_QA_ENABLED","BM_DECISIONS_QA_ENABLED","BM_JEV_SHADOW_ENABLED","BM_JEV_PREFETCH_EXPERIMENT"]);
 const json=file=>JSON.parse(fs.readFileSync(file,"utf8").replace(/^\uFEFF/,""));
 const hash=file=>crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 const git=args=>execFileSync("git",args,{cwd:ROOT,encoding:"utf8",windowsHide:true}).trim();
@@ -45,7 +46,9 @@ async function main(args=process.argv.slice(2)){
  const envRoute="/accounts/"+site.account_id+"/env",query="?site_id="+SITE;
  const save=r=>fs.writeFileSync(RECEIPT,JSON.stringify(r,null,2));
  async function setFlag(key,wanted){const all=await api(envRoute+query),current=all.find(v=>v.key===key);assert(!current?.is_secret);
-  const body={key,scopes:[...new Set([...(current?.scopes||[]),"functions"])],values:[...(current?.values||[]).filter(v=>v.context!=="production"),{context:"production",value:wanted}]};
+  // These QA-only experiments default OFF when absent. Keep their explicit
+  // false settings in Builds without consuming the legacy Lambda 4KB budget.
+  const body={key,scopes:DORMANT.has(key)?["builds"]:[...new Set([...(current?.scopes||[]),"functions"])],values:[...(current?.values||[]).filter(v=>v.context!=="production"),{context:"production",value:wanted}]};
   await api(current?envRoute+"/"+key+query:envRoute+query,current?"PUT":"POST",current?body:[body]);
  }
  if(mode==="--rollback"){
