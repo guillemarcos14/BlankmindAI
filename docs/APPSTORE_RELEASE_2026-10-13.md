@@ -1,5 +1,7 @@
 # Unified Decisions / ElevenLabs / iPhone candidate
 
+Production is live as of13October2026: `6ace0be5d1774a17ce921165`, runtime `3b1c20a`,77function digests verified. Public TestFlight1.9(112) can use it without recompilation. Voice13/13 checks and12/12cleanup pass against the real production endpoint; draft authentication/isolation4/4 and12cleanup passed before publication. Physical acceptance and exact model-quality certification remain pending. The direct production rollout was requested by Guillem; the automatic release-readiness gate was not marked passed or weakened.
+
 Branch: `codex/backend-release-appstore-2026-10-13`, PR39. Native base PR38 (`1ea5ca6` runtime, `dffdff3` documentation), merged PR32 (`5f51c88`, runtime `5c3134c`), PR37 (`cd049c6`, runtime `5b1644b`) and PR40 (`8ee4033`, schedule recovery). Git ancestry preserves each original and all PR38 native changes. The combined source needs its own validation; historical model reviews do not certify this merge.
 
 ## Current behavior
@@ -32,7 +34,7 @@ For private QA113, replace `-xcconfig config/AppStore112.xcconfig` with the secu
 2. Check the actual QA catalogue and apply only missing voice migrations031–034. Never run global `db push`, alter migration020, reapply production026–028 or execute the disposable test setup on a real database. Production031–034 remains separate from private QA preparation.
 3. Verify private protection, exact packaged digests, Apple authentication/installation/account isolation, deletion and cleanup without paid inference. Voice requires the protected ElevenLabs key, selected IDs, `BM_VOICE_PROVIDER=elevenlabs`, `BM_VOICE_ENABLED=true` and a provider plan allowing the selected voices. Never test a Netlify mask. The certified publisher retains Node22, APIv2/bootstrap and stream/background upload modes even for cached ZIPs. A restored draft retains its deploy-preview context: mirror the validated nonsecret QA flags and protected provider key into that context on this private site. The publisher rejects mismatched voice/Decisions settings before publication.
 4. Keep the 67 original function ZIPs, three validated reconstructed packages and 17 static files from the PR37 preservation bundle. Build the final production manifest from the combined candidate packages; never publish PR37's older three-entry voice manifest or replace unrelated messaging endpoints indiscriminately. Retain rollback6abe94a. Proactive tick/worker code is integrated; do not enable scheduled paid work before its own validation and budget.
-5. Execute exact-candidate physical tests and real provider/independent model validation. The previous 24USD ledger has no sufficient allowance for the92 remaining Decisions reviews; no new paid model tests are started here. The Decisions-only exception does not waive voice/public release gates. Only then deploy/enable production and repeat remote smokes. No App Store submission before those checks.
+5. Execute exact-candidate physical tests and independent model validation before certifying the App Store release. The24USD evaluation ledger is unchanged;92 original judgements plus final-source quality acceptance remain pending. Guillem subsequently requested the production operational rollout, now completed with authentication/provider smokes and rollback ready. That deployment does not certify the remaining acceptance cases or authorize an Apple submission before the separate English-primary/unique and release acceptance requirements.
 
 ## Physical acceptance
 
@@ -61,8 +63,32 @@ Runtime anchor `096028840fb4cddf73ec11d8d0639513fa34ce76`, QA deploy `6acdf98a2d
 
 PR40 fixes malformed schedules and all-day requests: start60seconds in the future for build110 compatibility, once only, ending at the next local midnight. Its three independent real-provider/database cases42checks/18cleanup passed before integration; hermetic regressions pass in the combined source. No new paid planner/judge calls were made here.92 original Decisions judgements plus exact final-candidate quality validation remain pending; the previous24USD cap is unchanged.20 physical cases and seven physical voice checks remain unexecuted. Production stays6abe94a with73functions; the frozen77-function manifest is prepared, not published. Public112 currently contacts that production backend and therefore cannot validate the new QA functionality. App Store privacy labels must still be compared with actual collection before submission; the public policy/consent update alone does not attest those labels.
 
+The preceding paragraph records the earlier preparation state. The following production receipt supersedes its production/voice status; its physical/model/label limitations still apply.
+
 ## Paid voice acceptance,13October
 
 Starter activation is verified in the existing authenticated ElevenLabs account after Guillem's payment. `tmp/voice/cloud-smoke.json` now passes13checks and12cleanup checks on the same certified QA runtime0960288/deploy6acdf98a; read-only remote verification confirms all ten hashes and runtime metadata still match. Both selected voices generate actual PCM24kHz with canonical timestamp cues: EN58characters/147122audio bytes/3.065s audio, first audio3472ms; ES87characters/229598bytes/4.783s audio, first audio3009ms. These are two short synthetic samples, not representative latency benchmarks or physical-device evidence.
 
 Declined consent creates no reservation; replay409, cross-account404, arbitrary client text400, invalid installation403, cancellation preserving the completed text and durable quota429 all pass. Synthetic accounts, turns and quota fixtures are removed. Synthetic WAVs and their SHA256s are recorded outside Git in `tmp/appstore-final/paid-voice-receipt.json`; no user's actual conversations are synthesized or exported. The existing restricted key remains unchanged, and no new planner/judge calls or production mutations occur. Real backend/provider voice is no longer a release blocker; final iPhone playback and the other physical/model-quality gates remain pending.
+
+## Production receipt and iPhone voice test
+
+User authorization: “Pásalo a producción.” Production migrations031–034 were applied alone, in a guarded transaction, with migration history, RLS and server-only reservation privileges verified. No global database push or unrelated migration was executed. The authenticated-account Decisions route is ON; generic/private QA/Jev remain OFF and scheduled work remains OFF.
+
+App voice now prefers a dedicated protected `BM_VOICE_ELEVENLABS_API_KEY` Functions/production secret, reusing the existing restricted key. Legacy ElevenLabs credentials retain their original values/scopes. It falls back to the older key name for QA compatibility. The key's1000-credit restriction was not raised. The default IDs are the chosen Cristina/Ember voices.
+
+Lambda's4KB environment limit blocked early uploads while the old deploy remained locked and live. Four dormant experimental flags and the exact selected default voice IDs remain recorded in Builds instead of Functions. Two WhatsApp opening template overrides equal the baked defaults in all eight archived references; their values remain in Builds/Runtime and their Functions scope was removed. Their actual content/recipient behavior is unchanged. No legacy credential was deleted, exposed or changed. The original73published digests were checked against the reconstructed true baseline, rather than against the prior candidate's replacement hashes. All77archives are now verified live, with Node22/APIv2/stream metadata for app routes and original background modes preserved.
+
+`tmp/appstore-final/production-publication.json` binds source3b1c20a, deployed77-function manifest, explicit authorization, original rollback6abe94a, production context, unauthenticated stream200/auth401 and voice401 probes, publication and real voice13/13/cleanup12/12. Public voice sample first audio was3050ms EN/3194ms ES; these two short samples are not a general latency benchmark. All synthetic identities/turns/reservations are removed; the deliberately anonymous durable global quota aggregate remains. Auto-publication lock state is restored after verification. No independent judge/planner calls were added by these smokes.
+
+Public policy Sites104/sourcee20796f/deploymentappgdep_6ace07a89c94819184ef539c65499f91 corrects a prior disclosure error: the app microphone sends m4a audio through the backend to OpenAI transcription, not Apple's speech recognition. ElevenLabs receives completed reply text. Both privacy URLs return200 with the corrected sentence; other website files are unchanged. Review the microphone flow when reconciling App Store Audio Data declarations.
+
+To test on iPhone:
+
+1. Install TestFlight1.9(112) and sign in with Apple if verification is requested.
+2. Enable account-specific sharing with OpenAI and ElevenLabs. If no measured sleep is available, explicitly enable Control → Data & Permissions → Sample sleep to open rest features; the example is labelled fictional.
+3. In Home, hold the circular microphone control and enable “Spoken replies”.
+4. Tap the microphone, say “Respóndeme brevemente en español”, and tap again to send. A new completed spoken turn should play Cristina and reveal canonical text with the audio.
+5. Repeat with “Give me a short reply in English” for Ember. Tap the stop control to interrupt playback; text remains. Typed messages and recovered/history turns intentionally do not auto-play. Keep the app foreground and turn media volume up.
+
+Do not count these instructions as a recorded device test. Apple review submission remains separate and pending the English-primary/unique requirement and remaining acceptance.
