@@ -1,5 +1,5 @@
 // Build against the reserved private QA backend; never select this binary for App Review.
-CURRENT_PROJECT_VERSION = 111
+CURRENT_PROJECT_VERSION = 113
 MARKETING_VERSION = 1.9
 BLANK_MEMBERSHIP_API_BASE_URL = https:/$()/blank-product-staging-20260926.netlify.app/.netlify/functions
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) BLANK_PRIVATE_STAGE_QA

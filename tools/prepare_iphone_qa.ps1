@@ -5,11 +5,11 @@ $taskProtectedHeaders=Join-Path $taskRepo '../Codigo-product-next/tmp/cloud-stag
 $taskSecure=(Get-Content -LiteralPath $taskProtectedHeaders -Raw).Trim()|ConvertTo-SecureString
 $taskHeaders=([pscredential]::new('unused',$taskSecure)).GetNetworkCredential().Password|ConvertFrom-Json
 if(-not $taskHeaders.cookie -or $taskHeaders.cookie -match '[\r\n"]'){throw 'private_cookie_missing_or_invalid'}
-$taskConfig=Get-Content -LiteralPath 'ios/Blank/config/iPhoneQA111.xcconfig.example' -Raw
+$taskConfig=Get-Content -LiteralPath 'ios/Blank/config/iPhoneQA113.xcconfig.example' -Raw
 $taskConfig=$taskConfig.Replace('BLANK_PRIVATE_QA_COOKIE =',('BLANK_PRIVATE_QA_COOKIE = "'+$taskHeaders.cookie+'"'))
 $taskDirectory=Join-Path $taskRepo 'tmp/appstore-final'
 New-Item -ItemType Directory -Path $taskDirectory -Force|Out-Null
-$taskPath=Join-Path $taskDirectory 'qa111.xcconfig'
+$taskPath=Join-Path $taskDirectory 'qa113.xcconfig'
 [System.IO.File]::WriteAllText($taskPath,$taskConfig,[System.Text.UTF8Encoding]::new($false))
 $taskAcl=[System.Security.AccessControl.FileSecurity]::new()
 $taskAcl.SetAccessRuleProtection($true,$false)

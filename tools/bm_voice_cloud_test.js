@@ -53,6 +53,11 @@ async function run() {
       const id = crypto.randomUUID();
       await check("real_pcm_stream_" + language, async () => {
         const started = performance.now(), response = await voice(a, turn, id);
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          diagnostic = { stage: "synthesis", status: response.status,
+            error: /^[a-z0-9_]+$/i.test(body.error || "") ? body.error : "unexpected_response" };
+        }
         ensure(response.ok && response.headers.get("X-Voice-Format") === "pcm-s16le-24000-mono", "voice_http_failed");
         ensure(response.headers.get("Cache-Control") === "no-store", "voice_cache_enabled");
         let buffered = "", bytes = 0, end = false, first = null, cues = 0, lastEnd = 0, lastStart = 0;
