@@ -101,6 +101,13 @@ async function main() {
   assert.equal(validSchedule.plan.actions[0].start_minute,1320);
   assert.equal(validSchedule.plan.actions[0].end_minute,420);
   assert.equal(validSchedule.context.brain_request.execute,true);
+  const invalidSaved=context();
+  invalidSaved.memory.conversation_state={bmb_state:{proposal:{...proposed,action:{...scheduled,end_minute:null}}}};
+  const recoveredInvalid=await turn({...base(),message_kind:"acceptance",decision:"execute",
+    accepted_proposal:proposed.fingerprint,action:scheduled},invalidSaved);
+  assert.deepEqual(recoveredInvalid.plan.actions,[]);
+  assert.equal(recoveredInvalid.plan.bmb_state.proposal,null);
+  assert.match(recoveredInvalid.plan.response_text,/couldn't recover/);
   const incident="Está yendo muy bien. ¿Me podrías bloquear las distracciones durante tres minutos ahora mismo? Solo una vez.";
   for(const repairFails of [false,true]) {
     let attempts=0;

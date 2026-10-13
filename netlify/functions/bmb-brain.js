@@ -272,9 +272,16 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   }
   if(result.decision==="execute"&&action&&!proactive) {
     execute=result.message_kind==="action_request";
-    if(result.message_kind==="acceptance")execute=prior.proposal?.fingerprint===result.accepted_proposal
-      && Date.parse(prior.proposal.expires_at)>Date.now()&&prior.proposal.action
-      && actionIdentity(action)===actionIdentity(normalizeAction(prior.proposal.action));
+    if(result.message_kind==="acceptance") {
+      let offeredAction=null;
+      try { offeredAction=prior.proposal?.action?normalizeAction(prior.proposal.action):null; }
+      catch(error) {
+        if(!scheduleErrors.has(error.message)&&error.message!=="bmb_missing_duration")throw error;
+      }
+      execute=prior.proposal?.fingerprint===result.accepted_proposal
+        && Date.parse(prior.proposal.expires_at)>Date.now()&&offeredAction
+        && actionIdentity(action)===actionIdentity(offeredAction);
+    }
     if(!execute) {
       if(result.message_kind==="acceptance") console.error("bmb_acceptance_failure",JSON.stringify({
         proposal_present:!!prior.proposal,token_matches:prior.proposal?.fingerprint===result.accepted_proposal,
