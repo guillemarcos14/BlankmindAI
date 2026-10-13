@@ -175,11 +175,13 @@ async function deployPreservingRuntime(report, packaged, current, site, token, f
   const deployment=await request(`/sites/${SITE_ID}/deploys`,"POST",manifest);
   report.deploy_id=deployment.id;report.previous_deploy_id=site.published_deploy.id;report.status="draft_uploading";save();
   for(const fn of report.functions) {
-    if(!(deployment.required_functions || []).includes(fn.sha256))continue;
+    // Always upload: a cached ZIP can have been registered as buffered even
+    // though its bytes contain the API v2 streaming bootstrap.
     const existing=current.find(item => (item.n || item.name)===fn.name);
     const runtime=existing.r || existing.runtime;
     if(runtime!==fn.compilation_target)fail("Function compilation target differs from existing runtime");
-    await request(`/deploys/${deployment.id}/functions/${encodeURIComponent(fn.name)}?runtime=${encodeURIComponent(runtime)}`,
+    const invocation=existing.bd?.runtimeAPIVersion===2?"stream":fn.name.endsWith("-background")?"background":"buffer";
+    await request(`/deploys/${deployment.id}/functions/${encodeURIComponent(fn.name)}?runtime=${encodeURIComponent(runtime)}&invocation_mode=${invocation}`,
       "PUT",fs.readFileSync(fn.path),"application/octet-stream");
   }
   for(const file of files) {
