@@ -124,8 +124,11 @@ async function packageCandidate(args, state, bundler) {
       fail(`Source handler was not bundled: ${bundle.name}`);
     }
     return { name: bundle.name, path: bundle.path, sha256: sha256(bundle.path), bytes: fs.statSync(bundle.path).size,
-      compilation_target: bundle.runtimeVersion, runtime_api_version: bundle.runtimeAPIVersion,
-      bootstrap_version: bundle.bootstrapVersion, invocation_mode: bundle.invocationMode, priority: bundle.priority, schedule: null };
+      compilation_target: bundle.runtimeVersion,
+      ...(bundle.runtimeAPIVersion!==undefined?{runtime_api_version:bundle.runtimeAPIVersion}:{}),
+      ...(bundle.bootstrapVersion!==undefined?{bootstrap_version:bundle.bootstrapVersion}:{}),
+      ...(bundle.invocationMode!==undefined?{invocation_mode:bundle.invocationMode}:{}),
+      ...(bundle.priority!==undefined?{priority:bundle.priority}:{}),schedule: null };
   }).sort((a, b) => a.name.localeCompare(b.name));
   return { directory, archives, publicDir, functions,
     inputs: [...inputs].sort(([a], [b]) => a.localeCompare(b)).map(([file, digest]) => ({ file, sha256: digest })),
