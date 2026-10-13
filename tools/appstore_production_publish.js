@@ -39,7 +39,7 @@ async function main(args=process.argv.slice(2)){
  async function api(route,method="GET",body,type="application/json"){
   const response=await fetch("https://api.netlify.com/api/v1"+route,{method,headers:{authorization:"Bearer "+token,"content-type":type},
    ...(body===undefined?{}:{body:type==="application/json"?JSON.stringify(body):body}),signal:AbortSignal.timeout(60000)});
-  assert(response.ok,"Netlify "+method+" HTTP "+response.status);return response.status===204?null:response.json();
+  assert(response.ok,"Netlify "+method+" "+route+" HTTP "+response.status);return response.status===204?null:response.json();
  }
  let site=await api("/sites/"+SITE);assert.equal(site.ssl_url,"https://getblank.netlify.app");
  const envRoute="/accounts/"+site.account_id+"/env",query="?site_id="+SITE;
@@ -86,15 +86,16 @@ async function main(args=process.argv.slice(2)){
  assert.equal(Object.keys(manifest.expected_production_functions).length,73);
  for(const fn of current)assert.equal(fn.d||fn.sha,manifest.expected_production_functions[fn.n||fn.name],"Published baseline changed: "+(fn.n||fn.name));
  const vars=await api(envRoute+query);assert.equal(value(vars.find(v=>v.key==="SUPABASE_URL")),"https://vhiikgyyfisejjwqtxfc.supabase.co");
+ const earlier=fs.existsSync(RECEIPT)?json(RECEIPT):null;
  const r={status:"preparing",source_commit:manifest.source_commit,operator_commit:git(["rev-parse","HEAD"]),manifest_sha256:hash(path.join(DIRECTORY,"manifest.json")),
-  previous:PREVIOUS,previous_locked:!!published.locked,authorization:"Guillem: Pásalo a producción, 2026-10-13",physical_verified:false,model_quality_gate_passed:false,
+  previous:PREVIOUS,previous_locked:earlier?.previous===PREVIOUS?earlier.previous_locked:!!published.locked,authorization:"Guillem: Pásalo a producción, 2026-10-13",physical_verified:false,model_quality_gate_passed:false,
   schedules_enabled:false,prior_flags:Object.fromEntries(Object.keys(FLAGS).map(k=>[k,value(vars.find(v=>v.key===k))??null]))};save(r);
  await api("/deploys/"+PREVIOUS+"/lock","POST",{});assert((await api("/deploys/"+PREVIOUS)).locked);
  const secret=vars.find(v=>v.key==="BM_VOICE_ELEVENLABS_API_KEY");
  if(!secret){assert(/^sk_[A-Za-z0-9_-]{20,}$/.test(process.env.BM_VOICE_ELEVENLABS_API_KEY||""));
   await api(envRoute+query,"POST",[{key:"BM_VOICE_ELEVENLABS_API_KEY",scopes:["functions"],is_secret:true,values:[{context:"production",value:process.env.BM_VOICE_ELEVENLABS_API_KEY}]}]);}
  else assert(secret.is_secret&&secret.scopes.includes("functions")&&value(secret));
- for(const [key,wanted] of Object.entries(FLAGS))await setFlag(key,wanted);
+ for(const [key,wanted] of Object.entries(FLAGS)){r.phase="configure:"+key;save(r);await setFlag(key,wanted);}
  const body={...manifest.body,draft:false,title:"Unified app production, authorized13Oct; preserve legacy services"};
  const deployment=await api("/sites/"+SITE+"/deploys","POST",body);assert.equal(deployment.context,"production");
  r.deploy_id=deployment.id;r.deploy_url=deployment.deploy_ssl_url;save(r);
