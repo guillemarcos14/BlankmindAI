@@ -88,6 +88,7 @@ jobs:
           extra_tests=()
           if [ "${{ inputs.ui_tests || 'all' }}" = onboarding ]; then
             suite=BlankHomeUITests/MinimalHomeUITests/testLargestTextKeepsOnboardingActionsReachable
+            extra_tests=(-only-testing:BlankHomeUITests/MinimalHomeUITests/testSampleSleepWithoutWatchIsVisibleAndRequiresSeparateAIConsent)
           fi
           if [ "${{ inputs.ui_tests || 'all' }}" = progress ]; then
             suite=BlankHomeUITests/MinimalHomeUITests/testProgressShowsRestContextAndPreservesNavigation
