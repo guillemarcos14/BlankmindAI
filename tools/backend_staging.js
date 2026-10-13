@@ -31,6 +31,7 @@ function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
     if (value === "--deploy") args.deploy = true;
+    else if (value === "--preserve-existing-experiments") args.preserveExistingExperiments = true;
     else if (value === "--dry-run") dryRun = true;
     else if (value === "--help") args.help = true;
     else if (["--source", "--netlify-cli", "--site-id", "--verify-report"].includes(value)) {
@@ -154,7 +155,7 @@ function productionValue(variable) {
     ?? variable.values?.find((value) => value.context === "all")?.value ?? "";
 }
 
-function validateEnvironment(variables) {
+function validateEnvironment(variables, { preserveExistingExperiments = false } = {}) {
   const byName = new Map(variables.map((variable) => [variable.key, variable]));
   if (String(productionValue(byName.get("SUPABASE_URL"))).replace(/\/$/, "") !== `https://${SUPABASE_REF}.supabase.co`) fail("Staging must use its isolated Supabase URL");
   const serviceKey = productionValue(byName.get("SUPABASE_SERVICE_ROLE_KEY"));
@@ -171,10 +172,13 @@ function validateEnvironment(variables) {
         || !/^[A-Z0-9]{10}$/.test(productionValue(byName.get("APNS_KEY_ID")))
         || !/^[A-Z0-9]{10}$/.test(productionValue(byName.get("APNS_TEAM_ID"))))) fail("Transport APNs configuration must match the existing iPhone app and protected key");
   if (/^(?:true|1|yes|on)$/i.test(productionValue(byName.get("BM_FINAL_APP_LINKED_ROUTING_ENABLED")))) fail("Public linked routing must remain disabled in staging");
-  if (variables.some(variable => /RETRIEVAL|JEV|DECISIONS/.test(variable.key) && /^(?:true|1|yes|on)$/i.test(productionValue(variable)))) fail("Retrieval acceleration must remain disabled in private QA");
+  const experiments=variables.filter(variable => /RETRIEVAL|JEV|DECISIONS/.test(variable.key));
+  if (!preserveExistingExperiments && experiments.some(variable => /^(?:true|1|yes|on)$/i.test(productionValue(variable)))) fail("Retrieval acceleration must remain disabled in private QA");
   // The provider masks secret values. Host isolation is verified here; actual
   // hidden key validity is established by the authenticated cloud smoke.
-  return { database_host_verified: true, service_key_ref_visible_and_verified: Boolean(claims) };
+  return { database_host_verified: true, service_key_ref_visible_and_verified: Boolean(claims),
+    ...(preserveExistingExperiments ? { experimental_flags_digest: crypto.createHash("sha256").update(JSON.stringify(
+      experiments.map(variable => [variable.key, productionValue(variable)]).sort(([a],[b]) => a.localeCompare(b)))).digest("hex") } : {}) };
 }
 
 async function requirePrivateSite(fetcher = fetch) {
@@ -226,7 +230,9 @@ function validateReportArtifacts(report) {
 async function verifyDeployment(report, token, fetcher) {
   const site = await apiGet(`/sites/${SITE_ID}`, token, fetcher);
   if (site.id !== SITE_ID || site.ssl_url !== SITE_URL || site.published_deploy?.id !== report.deploy_id) fail("The active staging deploy identity changed during verification");
-  report.environment_verification = validateEnvironment(await apiGet(`/accounts/${site.account_id}/env?site_id=${SITE_ID}`, token, fetcher));
+  report.environment_verification = validateEnvironment(await apiGet(`/accounts/${site.account_id}/env?site_id=${SITE_ID}`, token, fetcher),
+    { preserveExistingExperiments: report.preserve_existing_experiments === true });
+  if (report.preserve_existing_experiments && report.environment_verification.experimental_flags_digest !== report.environment_preflight?.experimental_flags_digest) fail("Existing experiment flags changed during deployment");
   const deployment = await apiGet(`/deploys/${report.deploy_id}`, token, fetcher);
   if (deployment.site_id !== SITE_ID || deployment.state !== "ready" || deployment.function_schedules?.length) fail("Staging deploy is not ready or contains scheduled functions");
   const remote = productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
@@ -284,7 +290,8 @@ async function main(args, dependencies = {}) {
     source_commit: state.commit, source_branch: state.branch, source_tree_clean: state.clean,
     deployable: state.clean && RELEASE_BRANCH.test(state.branch), bundler_version: bundler.version,
     functions: packaged.functions, source_inputs: packaged.inputs, static_sha256: packaged.static_sha256,
-    package_directory: packaged.directory, deploy_id: null, remote_function_hashes_verified: false, status: "packaged" };
+    package_directory: packaged.directory, deploy_id: null, remote_function_hashes_verified: false, status: "packaged",
+    preserve_existing_experiments: args.preserveExistingExperiments === true };
   const save = () => fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
   save();
   if (!args.deploy) return { report, reportPath };
@@ -293,7 +300,8 @@ async function main(args, dependencies = {}) {
     const site = await apiGet(`/sites/${SITE_ID}`, token, fetcher);
     if (site.id !== SITE_ID || site.ssl_url !== SITE_URL) fail("Staging site identity does not match the reserved environment");
     await requirePrivateSite(fetcher);
-    report.environment_preflight = validateEnvironment(await apiGet(`/accounts/${site.account_id}/env?site_id=${SITE_ID}`, token, fetcher));
+    report.environment_preflight = validateEnvironment(await apiGet(`/accounts/${site.account_id}/env?site_id=${SITE_ID}`, token, fetcher),
+      { preserveExistingExperiments: args.preserveExistingExperiments === true });
     productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
     const current = sourceState(args.source, execute);
     requireDeployable(current);

@@ -94,6 +94,12 @@ function dependencies({ dirty = false, protectedSite = true, extraFunction = fal
   assert.equal(packaged.report.deploy_id, null);
   assert.equal(packaged.report.functions.length, 10);
   assert.throws(() => staging.validateEnvironment([...env, { key: "BM_RETRIEVAL_ENABLED", scopes: ["functions"], values: [{ context: "production", value: "true" }] }]), /acceleration/);
+  const activeExperiments=[...env,{key:"BM_RETRIEVAL_ENABLED",scopes:["functions"],values:[{context:"production",value:"true"}]}];
+  const retained=staging.validateEnvironment(activeExperiments,{preserveExistingExperiments:true});
+  assert.match(retained.experimental_flags_digest,/^[a-f0-9]{64}$/);
+  assert.equal(staging.validateEnvironment([...activeExperiments].reverse(),{preserveExistingExperiments:true}).experimental_flags_digest,retained.experimental_flags_digest);
+  assert.notEqual(staging.validateEnvironment(env,{preserveExistingExperiments:true}).experimental_flags_digest,retained.experimental_flags_digest);
+  assert.equal(staging.parseArgs(["--deploy","--preserve-existing-experiments"]).preserveExistingExperiments,true);
   assert(packaged.report.source_inputs.some((input) => input.file.endsWith("dependency.js")));
   assert(dry.operations.every((operation) => operation.command === "git"), "dry-run performed a remote read or mutation");
   const scheduled = dependencies();
