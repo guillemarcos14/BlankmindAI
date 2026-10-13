@@ -1,0 +1,7 @@
+# Último día de la ventana explícita
+
+QA78d privada conserva dos turnos distintos con contexto BMB actual. Preparación30min sin repetición pasa: outbox canónico, auto_apply y texto de preparación, sin afirmar ejecución física. La media anterior a hoy falla:421/482/543min sembrados para tres días, pero la respuesta devuelve451,5min y solo dos registros. Limpieza5/5 e integridad de registros pasan; reserva remota0,10USD retenida por usage no expuesto. No se repite ese turno fallido ni se borra su respuesta.
+
+No se guardó el query generado de esa llamada; no se inventa su timestamp exacto. Una regresión local reproduce la omisión con un `to` que excluye el último día. Para un periodo explícito de N días anteriores a hoy, el servidor suministra medianoches locales `from` inclusivo/`to` exclusivo y liga a ellas únicamente la lectura de observaciones ya elegida por el modelo como pregunta. No elige fuentes, rutas Decisions ni acciones. Ventanas citadas o mezcladas con otro periodo quedan fuera de esta regla. Tests ES/EN verifican tres registros, media482, límites y cambio de horario167/169horas; autoridad/efectos intactos.
+
+La fuente anterior78d pasa harness88/88 y CI37969894733 tres trabajos. QA6ac92b2328a7ac5145d04701 tiene diez hashes remotos e infraestructura4/4; su fallo de media se conserva. La fuente corregida requiere sus propios resultados; V3 todavía no ha consumido inferencias. Techo24USD, producción/Jev OFF; humana/build/física pendientes.

@@ -1,0 +1,7 @@
+# Fecha de registros rechazados conservada
+
+V3/d81 conserva200respuestas reales,466solicitudes de proveedor con usage conocido, cero errores de transporte/funcionales y fuente limpia e inmutable durante el replay. Review independiente completa:192excelentes/7aceptables/1deficiente,99,5%, un fallo duro. El fallo dice «three older duration records», aunque las tres filas inválidas pertenecen a esta semana. El servidor descartaba sus fechas al rechazar unidades; ahora mantiene timestamp original/fecha local/zona y aclara que unidades inválidas no cambian la fecha. Sigue excluyendo el valor numérico inválido y no lo convierte a minutos/cero.
+
+Un segundo rechazo era léxico: «not an average across every day of the week» describía honestamente la cobertura, sin recurrencia. Review exacta excelente conservada. El oráculo distingue esa negación factual ES/EN de «every day blocking is scheduled», que sigue rechazado. No se reescriben los outputs, ni el gate bloqueado d81:198passed/2failed tras ligar reviews exactas. La nueva fuente necesita sus propios outputs y bindings.
+
+Techo24USD; conocido22,09290305/reservado22,62675695 antes de la siguiente ejecución. Review anterior V2/7dc200 y toda la evidencia fallida quedan guardadas. QA d81: dos consultas distintas482/543PASS, integridad/cleanup5/5;10hashes, harness88/88 y CI37970777104 tres PASS. Producción/Jev OFF; humana/build/física pendientes. No se garantiza publicación.

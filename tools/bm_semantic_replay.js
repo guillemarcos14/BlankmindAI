@@ -145,7 +145,8 @@ async function runConversation(conversation, repetition, mode, adapter, reviews)
     } catch (error) {
       turns.push({ turn: index + 1, input: turn.input, latency_ms: Date.now() - started, status: "failed", release_eligible: false,
         dimensions: Object.fromEntries(DIMENSIONS.map(key => [key, "unverified"])),
-        expected: turn.expect, actual: null, issues: [{ dimension: "infrastructure", code: "adapter_error", actual: error.message }],
+        expected: turn.expect, actual: null, issues: [{ dimension: "infrastructure", code: "adapter_error", actual: error.message,
+          error_name:error.name,error_locations:String(error.stack||'').split('\n').slice(1,6).map(line=>line.match(/(?:[A-Za-z]:)?[^()]*\.(?:js|mjs):\d+:\d+/)?.[0]?.trim()).filter(Boolean) }],
       });
       // Continue remaining turns: report their errors instead of aborting the batch.
       history.push({ role: "user", content: turn.input });

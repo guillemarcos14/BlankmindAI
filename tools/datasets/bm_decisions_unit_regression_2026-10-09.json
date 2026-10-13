@@ -1,0 +1,442 @@
+{
+  "version": 7,
+  "authored_at": "2026-10-09",
+  "split": "requested-units-and-provenance-regression-only",
+  "native_sleep_values": [
+    407,
+    418,
+    489,
+    431,
+    498,
+    452,
+    464,
+    426,
+    506,
+    443,
+    472,
+    459,
+    487,
+    508
+  ],
+  "cases": [
+    {
+      "id": "unit09-001",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Cuánto duró mi sueño de ayer según los datos guardados?",
+      "eligible": true,
+      "sleep_minutes": [
+        406,
+        461,
+        492
+      ],
+      "protection_minutes": 90,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-001"
+    },
+    {
+      "id": "unit09-002",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "sparse",
+      "text": "Tell me the minutes logged for my sleep yesterday.",
+      "eligible": true,
+      "sleep_minutes": [
+        409,
+        464,
+        495
+      ],
+      "protection_minutes": 93,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-004"
+    },
+    {
+      "id": "unit09-003",
+      "route": "sleep_yesterday",
+      "language": "es",
+      "profile": "declared",
+      "text": "Según mi historial, ¿cuánto sueño quedó medido ayer?",
+      "eligible": true,
+      "sleep_minutes": [
+        412,
+        467,
+        498
+      ],
+      "protection_minutes": 96,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-007"
+    },
+    {
+      "id": "unit09-004",
+      "route": "sleep_yesterday",
+      "language": "en",
+      "profile": "declared",
+      "text": "How much measured sleep is on record for me yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        413,
+        468,
+        499
+      ],
+      "protection_minutes": 97,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-008"
+    },
+    {
+      "id": "unit09-005",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "sparse",
+      "text": "Dime en minutos la media de mis registros de sueño de esta semana natural.",
+      "eligible": true,
+      "sleep_minutes": [
+        416,
+        471,
+        502
+      ],
+      "protection_minutes": 100,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-011"
+    },
+    {
+      "id": "unit09-006",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "sparse",
+      "text": "Tell me in minutes the mean of my logged sleep this calendar week.",
+      "eligible": true,
+      "sleep_minutes": [
+        417,
+        472,
+        503
+      ],
+      "protection_minutes": 101,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-012"
+    },
+    {
+      "id": "unit09-007",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "declared",
+      "text": "Muéstrame la media de sueño registrada esta semana natural.",
+      "eligible": true,
+      "sleep_minutes": [
+        420,
+        475,
+        506
+      ],
+      "protection_minutes": 104,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-015"
+    },
+    {
+      "id": "unit09-008",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "declared",
+      "text": "Retrieve my recorded mean sleep for this calendar week.",
+      "eligible": true,
+      "sleep_minutes": [
+        421,
+        476,
+        507
+      ],
+      "protection_minutes": 105,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-016"
+    },
+    {
+      "id": "unit09-009",
+      "route": "protection_yesterday",
+      "language": "es",
+      "profile": "sparse",
+      "text": "Dime en minutos mi protección registrada ayer.",
+      "eligible": true,
+      "sleep_minutes": [
+        424,
+        479,
+        510
+      ],
+      "protection_minutes": 108,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-019"
+    },
+    {
+      "id": "unit09-010",
+      "route": "protection_yesterday",
+      "language": "en",
+      "profile": "sparse",
+      "text": "Tell me my recorded protection yesterday in minutes.",
+      "eligible": true,
+      "sleep_minutes": [
+        425,
+        480,
+        511
+      ],
+      "protection_minutes": 109,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-020"
+    },
+    {
+      "id": "unit09-011",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "sparse",
+      "text": "Dime en minutos el total registrado de protección esta semana natural.",
+      "eligible": true,
+      "sleep_minutes": [
+        432,
+        487,
+        518
+      ],
+      "protection_minutes": 116,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-027"
+    },
+    {
+      "id": "unit09-012",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "sparse",
+      "text": "Tell me in minutes the total recorded protection this calendar week.",
+      "eligible": true,
+      "sleep_minutes": [
+        433,
+        488,
+        519
+      ],
+      "protection_minutes": 117,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-028"
+    },
+    {
+      "id": "unit09-013",
+      "route": "protection_week",
+      "language": "es",
+      "profile": "declared",
+      "text": "Consulta los minutos de protección registrados esta semana.",
+      "eligible": true,
+      "sleep_minutes": [
+        436,
+        491,
+        522
+      ],
+      "protection_minutes": 120,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-031"
+    },
+    {
+      "id": "unit09-014",
+      "route": "protection_week",
+      "language": "en",
+      "profile": "declared",
+      "text": "Retrieve my recorded protection minutes for this week.",
+      "eligible": true,
+      "sleep_minutes": [
+        437,
+        492,
+        523
+      ],
+      "protection_minutes": 121,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-032"
+    },
+    {
+      "id": "unit09-015",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "Dime los minutos que figuran de mi sueño de ayer.",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa",
+      "sleep_minutes": [
+        440,
+        495,
+        526
+      ],
+      "protection_minutes": 124,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-035"
+    },
+    {
+      "id": "unit09-016",
+      "route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "Tell me the minutes logged for my sleep yesterday.",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa",
+      "sleep_minutes": [
+        441,
+        496,
+        527
+      ],
+      "protection_minutes": 125,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-036"
+    },
+    {
+      "id": "unit09-017",
+      "route": "sleep_week",
+      "profile": "measured",
+      "language": "es",
+      "text": "Dime en minutos la media de mis registros de sueño de esta semana natural.",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa",
+      "sleep_minutes": [
+        444,
+        499,
+        530
+      ],
+      "protection_minutes": 128,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-039"
+    },
+    {
+      "id": "unit09-018",
+      "route": "sleep_week",
+      "profile": "measured",
+      "language": "en",
+      "text": "Tell me in minutes the mean of my logged sleep this calendar week.",
+      "eligible": true,
+      "native_sleep": true,
+      "native_sleep_source": "synthetic_qa",
+      "sleep_minutes": [
+        445,
+        500,
+        531
+      ],
+      "protection_minutes": 129,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-040"
+    },
+    {
+      "id": "unit09-019",
+      "route": "sleep_week",
+      "language": "es",
+      "profile": "measured",
+      "text": "¿Cuál es la duración media de mi sueño guardado esta semana?",
+      "eligible": true,
+      "sleep_minutes": [
+        414,
+        469,
+        500
+      ],
+      "protection_minutes": 98,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-009"
+    },
+    {
+      "id": "unit09-020",
+      "route": "sleep_week",
+      "language": "en",
+      "profile": "measured",
+      "text": "What is the average duration of my stored sleep this week?",
+      "eligible": true,
+      "sleep_minutes": [
+        415,
+        470,
+        501
+      ],
+      "protection_minutes": 99,
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "original_case_id": "source09-010"
+    },
+    {
+      "id": "unit09-021",
+      "route": "contextual",
+      "fixture_route": "sleep_week",
+      "profile": "measured",
+      "language": "es",
+      "eligible": false,
+      "turns": [
+        "Dime la duración media del sueño que registré esta semana.",
+        "¿Y ayer?",
+        "¿Es medido o declarado ese dato?",
+        "Ahora dímelo en inglés."
+      ],
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "sleep_minutes": [
+        470,
+        525,
+        556
+      ],
+      "protection_minutes": 154,
+      "original_case_id": "source09-065"
+    },
+    {
+      "id": "unit09-022",
+      "route": "contextual",
+      "fixture_route": "sleep_week",
+      "profile": "measured",
+      "language": "en",
+      "eligible": false,
+      "turns": [
+        "Tell me the average duration of sleep I recorded this week.",
+        "And yesterday?",
+        "Is that sleep entry measured or declared?",
+        "Now tell me in Spanish."
+      ],
+      "expectation": "Exact owner-scoped records and source provenance. Never infer missing sleep, physical execution, phone usage or time saved. Preserve context, authority, requested units and local period. Invalid units or conflicting duplicate rows require the normal flow.",
+      "sleep_minutes": [
+        471,
+        526,
+        557
+      ],
+      "protection_minutes": 155,
+      "original_case_id": "source09-066"
+    },
+    {
+      "id": "unit09-023",
+      "route": "sleep_yesterday",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "es",
+      "text": "¿Cuánto sueño tengo registrado de ayer?",
+      "eligible": true,
+      "sleep_minutes": [
+        487,
+        519,
+        547
+      ],
+      "protection_minutes": 137,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health",
+      "native_skip_offsets": [
+        -1
+      ],
+      "expectation": "The supplied native rows lack yesterday but owner-scoped stored observations include yesterday. Read the stored records, do not claim that the entire account has no sleep data; preserve measured scope and requested local period.",
+      "original_case_id": "source09-073"
+    },
+    {
+      "id": "unit09-024",
+      "route": "sleep_yesterday",
+      "fixture_route": "sleep_yesterday",
+      "profile": "measured",
+      "language": "en",
+      "text": "How much sleep do I have recorded from yesterday?",
+      "eligible": true,
+      "sleep_minutes": [
+        487,
+        519,
+        547
+      ],
+      "protection_minutes": 137,
+      "native_sleep": true,
+      "native_sleep_source": "apple_health",
+      "native_skip_offsets": [
+        -1
+      ],
+      "expectation": "The supplied native rows lack yesterday but owner-scoped stored observations include yesterday. Read the stored records, do not claim that the entire account has no sleep data; preserve measured scope and requested local period.",
+      "original_case_id": "source09-074"
+    }
+  ],
+  "contains_known_regression_followups": true,
+  "contains_known_provenance_regression_query": true,
+  "independence_note": "Reuses 24 deliberately selected cases from the previous full comparison. These are regression checks, not a fresh independent holdout, and cannot certify production performance or broad quality."
+}
