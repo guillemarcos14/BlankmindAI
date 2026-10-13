@@ -12,6 +12,11 @@ const hash=file=>crypto.createHash("sha256").update(fs.readFileSync(file)).diges
 const git=args=>execFileSync("git",args,{cwd:ROOT,encoding:"utf8",windowsHide:true}).trim();
 const value=v=>v?.values?.find(x=>x.context==="production")?.value??v?.values?.find(x=>x.context==="all")?.value;
 function inventory(payload){const groups=Array.isArray(payload)?payload:[payload];const group=groups.filter(g=>g.branch===null);assert.equal(group.length,1);assert(Array.isArray(group[0].functions));return group[0].functions;}
+function uploadMode(name,metadata,existing){
+ if(metadata?.invocation_mode==="stream"||existing?.bd?.runtimeAPIVersion===2)return "stream";
+ if(metadata?.invocation_mode==="background"||name.endsWith("-background"))return "background";
+ return "buffer";
+}
 function validateManifest(manifest){
  assert.equal(manifest.expected_production_deploy,PREVIOUS);assert.equal(manifest.total_functions,77);
  assert.equal(manifest.statics,17);assert.equal(manifest.original_static_files_preserved,16);
@@ -97,7 +102,7 @@ async function main(args=process.argv.slice(2)){
   if(!required.has(sha)&&!APP.includes(name))continue;
   const metadata=manifest.upload_metadata[name],old=current.find(f=>(f.n||f.name)===name);
   const runtime=metadata?.runtime||old?.r||"nodejs22.x";
-  const invocation=metadata?.invocation_mode==="stream"?"stream":metadata?.invocation_mode==="background"?"background":"buffer";
+  const invocation=uploadMode(name,metadata,old);
   await api("/deploys/"+deployment.id+"/functions/"+name+"?runtime="+runtime+"&invocation_mode="+invocation,"PUT",fs.readFileSync(manifest.artifacts[sha]),"application/octet-stream");
  }
  for(const [name,sha] of Object.entries(body.files))if((deployment.required||[]).includes(sha))await api("/deploys/"+deployment.id+"/files/"+name,"PUT",fs.readFileSync(path.join(manifest.static_directory,name)),"application/octet-stream");
@@ -107,4 +112,4 @@ async function main(args=process.argv.slice(2)){
  console.log(JSON.stringify({status:r.status,deploy:r.deploy_id,url:r.deploy_url,functions:77,context:"production",previous_still_live:true}));
 }
 if(require.main===module)main().catch(error=>{console.error("production_rollout: "+error.message);process.exitCode=1;});
-module.exports={inventory,validateManifest,FLAGS,APP,main};
+module.exports={inventory,uploadMode,validateManifest,FLAGS,APP,main};

@@ -1,0 +1,14 @@
+"use strict";
+const assert=require('node:assert/strict');
+const publish=require('./appstore_production_publish');
+assert.equal(publish.uploadMode('assistant-app-voice',{invocation_mode:'stream'},null),'stream');
+assert.equal(publish.uploadMode('assistant-app',{invocation_mode:'buffered'},null),'buffer');
+assert.equal(publish.uploadMode('legacy-worker-background',null,{r:'nodejs22.x'}),'background');
+assert.equal(publish.uploadMode('existing-stream',null,{bd:{runtimeAPIVersion:2}}),'stream');
+assert.deepEqual(publish.inventory({branch:null,functions:[{n:'existing'}]}),[{n:'existing'}]);
+assert.throws(()=>publish.inventory([{branch:null,functions:[]},{branch:null,functions:[]} ]));
+assert.throws(()=>publish.inventory({branch:'preview',functions:[]}));
+assert.equal(publish.FLAGS.BM_JEV_SHADOW_ENABLED,'false');
+assert.equal(publish.FLAGS.BM_DECISIONS_QA_ENABLED,'false');
+assert.equal(publish.FLAGS.BM_DECISIONS_DATA_POLICY,'authenticated-account-records');
+publish.main([]).then(()=>{throw Error('Missing authorization accepted');},()=>console.log('PASS production authorization, inventories and preserved background/stream modes (no network)'));
