@@ -199,6 +199,18 @@ async function deployPreservingRuntime(report, packaged, current, site, token, f
     await new Promise(resolve=>setTimeout(resolve,1000));
   }
   if(!ready)fail("Preserving draft not ready");
+  // Exercise the Lambda transport before publishing. No JWT means no account
+  // lookup or model call; a valid stream carries the expected auth rejection.
+  const headers=require("./assistant_app_cloud_test").protectionHeaders(process.env.BM_CLOUD_TEST_EXTRA_HEADERS_JSON);
+  const origin=deployment.deploy_ssl_url;
+  if(!origin || new URL(origin).hostname!==`${deployment.id}--blank-product-staging-20260926.netlify.app`)fail("Private draft URL mismatch");
+  const probe=await fetcher(`${origin}/.netlify/functions/assistant-app-stream`,{method:"POST",
+    headers:{"content-type":"application/json",...headers},body:JSON.stringify({action:"send",turn_id:"runtime-preflight"}),
+    signal:AbortSignal.timeout(15000)});
+  if(probe.status!==200 || !probe.headers.get("content-type")?.startsWith("application/x-ndjson"))fail("Draft streaming transport failed before publication");
+  const frames=(await probe.text()).trim().split("\n").map(line=>JSON.parse(line));
+  if(!frames.some(frame=>frame.type==="result"&&frame.status===401&&frame.body?.error==="authentication_required"))fail("Draft streaming authentication probe failed");
+  report.streaming_preflight={status:200,authentication_status:401,model_calls:0};save();
   const before=await apiGet(`/sites/${SITE_ID}`,token,fetcher);
   if(before.published_deploy.id!==site.published_deploy.id)fail("Existing QA deploy changed before publication");
   report.status="publication_requested";save();
