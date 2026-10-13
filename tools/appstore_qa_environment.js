@@ -30,15 +30,20 @@ async function main() {
   const changed = [];
   if (apply) for (const [name, wanted] of Object.entries(desired)) {
     const current = vars.find(v => v.key === name);
-    if (value(current) === wanted && current.scopes.includes("functions")) continue;
-    const values = [...(current?.values || []).filter(x => x.context !== "production"), { context: "production", value: wanted }];
+    const contexts = ["production", "deploy-preview"];
+    if (contexts.every(context => current?.values?.some(x => x.context === context && x.value === wanted)) && current.scopes.includes("functions")) continue;
+    // Restoring a draft does not change Netlify's deploy-preview runtime context.
+    // Both contexts belong to this one password-protected QA site.
+    const values = [...(current?.values || []).filter(x => !contexts.includes(x.context)),
+      ...contexts.map(context => ({ context, value: wanted }))];
     const body = { key: name, scopes: [...new Set([...(current?.scopes || []), "functions"])], values };
     await api(current ? route + "/" + encodeURIComponent(name) + query : route + query, current ? "PUT" : "POST", current ? body : [body]);
     changed.push(name);
   }
   if (apply) {
     vars = await api(route + query);
-    for (const [name, wanted] of Object.entries(desired)) if (value(vars.find(v => v.key === name)) !== wanted) throw Error("qa_flag_not_saved_" + name);
+    for (const [name, wanted] of Object.entries(desired)) for (const context of ["production", "deploy-preview"])
+      if (!vars.find(v => v.key === name)?.values?.some(x => x.context === context && x.value === wanted)) throw Error("qa_flag_not_saved_" + name);
   }
   const report = { generated_at: new Date().toISOString(), site_id: SITE, configured: apply, changed,
     flags: desired, protected_provider_key_present: providerKeyConfigured, provider_key_tested: false,

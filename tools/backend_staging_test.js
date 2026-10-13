@@ -107,6 +107,12 @@ function dependencies({ dirty = false, protectedSite = true, extraFunction = fal
   assert.notEqual(staging.validateEnvironment(env,{preserveExistingExperiments:true}).experimental_flags_digest,retained.experimental_flags_digest);
   assert.equal(staging.parseArgs(["--deploy","--preserve-existing-experiments"]).preserveExistingExperiments,true);
   assert.equal(staging.parseArgs(["--deploy"]).preserveExistingExperiments,true);
+  assert.throws(() => staging.validatePreviewEnvironment([flag("BM_VOICE_ENABLED", "true")]), /preview context differs/);
+  const mirrored = flag("BM_VOICE_ENABLED", "true");
+  mirrored.values.push({ context: "deploy-preview", value: "true" });
+  assert(staging.validatePreviewEnvironment([mirrored]).configuration_matches_production);
+  mirrored.values[1].value = "false";
+  assert.throws(() => staging.validatePreviewEnvironment([mirrored]), /preview context differs/);
   assert.throws(() => staging.validateEnvironment([...activeExperiments, flag("BM_JEV_SHADOW_ENABLED", "true")], {preserveExistingExperiments:true}), /acceleration/);
   const runtimeInventory=staging.ENTRIES.map(n=>({n,bd:/stream|voice/.test(n)?{runtimeAPIVersion:2,bootstrapVersion:"2.7.1"}:null,p:10}));
   const manifest=staging.preservingManifest({source_commit:"a".repeat(40),functions:staging.ENTRIES.map(name=>({name,sha256:"b".repeat(64)}))},runtimeInventory,[{path:"/index.html",sha:"c".repeat(40)}]);

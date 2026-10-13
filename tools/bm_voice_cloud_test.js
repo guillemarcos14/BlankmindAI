@@ -16,7 +16,7 @@ async function run() {
   const check = async (name, fn) => { await fn(); checks.push({ name, passed: true }); console.log("PASS " + name); };
   const voice = (user, turn, id = crypto.randomUUID(), extra = {}) => request(c.netlify, "/.netlify/functions/assistant-app-voice",
     { turn_id: turn, request_id: id, app_install_id: user.install, synchronized: true, elevenlabs_consent: true, ...extra }, { ...c.extraHeaders, authorization: "Bearer " + user.token });
-  let failure;
+  let failure, diagnostic;
   try {
     for (let index = 0; index < 2; index++) {
       const id = crypto.randomUUID(), email = "voice-" + id + "@example.invalid", password = crypto.randomBytes(28).toString("base64url");
@@ -40,7 +40,13 @@ async function run() {
         assistant_text: text, response_language: language, status: "completed", completed_at: new Date().toISOString() });
       ensure(inserted.ok, "fixture_turn_failed");
       await check("declined_consent_" + language, async () => {
-        ensure((await voice(a, turn, undefined, { elevenlabs_consent: false })).status === 403, "declined_voice_consent");
+        const denied = await voice(a, turn, undefined, { elevenlabs_consent: false });
+        if (denied.status !== 403) {
+          const body = await denied.json().catch(() => ({}));
+          diagnostic = { stage: "consent", status: denied.status,
+            error: /^[a-z0-9_]+$/i.test(body.error || "") ? body.error : "unexpected_response" };
+        }
+        ensure(denied.status === 403, "declined_voice_consent");
         const usage = await db("assistant_voice_requests?turn_id=eq." + turn + "&select=request_id", undefined, "GET");
         ensure(usage.ok && (await usage.json()).length === 0, "declined_voice_consumed_quota");
       });
@@ -124,9 +130,9 @@ async function run() {
     }
   }
   const result = { scope: "private QA endpoint and real TTS; synthetic turns; no physical device", checks, cleanup,
-    passed: !failure && cleanup.every(x => x.passed), ...(failure ? { failure } : {}) };
+    passed: !failure && cleanup.every(x => x.passed), ...(failure ? { failure } : {}), ...(diagnostic ? { diagnostic } : {}) };
   fs.mkdirSync("tmp/voice", { recursive: true }); fs.writeFileSync("tmp/voice/cloud-smoke.json", JSON.stringify(result, null, 2));
-  console.log(JSON.stringify({ passed: result.passed, checks: checks.length, cleanup_passed: cleanup.every(x => x.passed), failure }));
+  console.log(JSON.stringify({ passed: result.passed, checks: checks.length, cleanup_passed: cleanup.every(x => x.passed), failure, diagnostic }));
   if (!result.passed) process.exitCode = 1;
   return result;
 }

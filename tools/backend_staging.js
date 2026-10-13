@@ -235,6 +235,16 @@ function productionValue(variable) {
     ?? variable.values?.find((value) => value.context === "all")?.value ?? "";
 }
 
+function validatePreviewEnvironment(variables) {
+  for (const variable of variables.filter(v => v.scopes?.includes("functions")
+      && /^(BM_VOICE_|ELEVENLABS_|BM_RETRIEVAL|BM_DECISIONS|BM_JEV)/.test(v.key))) {
+    const preview = variable.values?.find(v => v.context === "deploy-preview")?.value
+      ?? variable.values?.find(v => v.context === "all")?.value ?? "";
+    if (preview !== productionValue(variable)) fail("Private QA preview context differs for " + variable.key);
+  }
+  return { context: "deploy-preview", configuration_matches_production: true };
+}
+
 function validateEnvironment(variables, { preserveExistingExperiments = false } = {}) {
   const byName = new Map(variables.map((variable) => [variable.key, variable]));
   if (String(productionValue(byName.get("SUPABASE_URL"))).replace(/\/$/, "") !== `https://${SUPABASE_REF}.supabase.co`) fail("Staging must use its isolated Supabase URL");
@@ -385,7 +395,9 @@ async function main(args, dependencies = {}) {
     const site = await apiGet(`/sites/${SITE_ID}`, token, fetcher);
     if (site.id !== SITE_ID || site.ssl_url !== SITE_URL) fail("Staging site identity does not match the reserved environment");
     await requirePrivateSite(fetcher);
-    report.environment_preflight = validateEnvironment(await apiGet(`/accounts/${site.account_id}/env?site_id=${SITE_ID}`, token, fetcher),
+    const variables = await apiGet(`/accounts/${site.account_id}/env?site_id=${SITE_ID}`, token, fetcher);
+    report.preview_environment_preflight = validatePreviewEnvironment(variables);
+    report.environment_preflight = validateEnvironment(variables,
       { preserveExistingExperiments: args.preserveExistingExperiments === true });
     const existingFunctions=productionFunctions(await apiGet(`/sites/${SITE_ID}/functions`, token, fetcher));
     const current = sourceState(args.source, execute);
@@ -429,4 +441,4 @@ if (require.main === module) {
   })().catch((error) => { console.error(`backend_staging: ${error.message}`); process.exitCode = 1; });
 }
 module.exports = { SITE_ID, SITE_URL, SUPABASE_REF, ENTRIES, parseArgs, assertSite, assertEntries, requireDeployable,
-  validateEnvironment, requirePrivateSite, deployCommand, packageCandidate, productionFunctions, preservingManifest, verifyReport, main };
+  validateEnvironment, validatePreviewEnvironment, requirePrivateSite, deployCommand, packageCandidate, productionFunctions, preservingManifest, verifyReport, main };
