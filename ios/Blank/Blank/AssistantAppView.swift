@@ -47,6 +47,16 @@ enum AssistantAppSession {
     }
 
     static func token(_ account: String) -> String? {
+        #if DEBUG && targetEnvironment(simulator)
+        // An isolated UI account, never persisted in Keychain or accepted by the server.
+        if AssistantAppPreview.scenario == "product-onboarding-device-sample" {
+            guard account == "access" else { return account == "refresh" ? "fixture" : nil }
+            let payload: [String: Any] = ["sub": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "app_metadata": ["provider": "apple", "providers": ["apple"]]]
+            let encoded = try! JSONSerialization.data(withJSONObject: payload).base64EncodedString()
+                .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+            return "fixture." + encoded + ".fixture"
+        }
+        #endif
         lock.lock()
         defer { lock.unlock() }
         return readToken(account)

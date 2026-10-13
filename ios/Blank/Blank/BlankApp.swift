@@ -47,9 +47,10 @@ struct BlankApp: App {
 
     init() {
         #if DEBUG && targetEnvironment(simulator)
-        // UI fixtures must never retain a previous fixture account across scenarios.
-        if AssistantAppPreview.enabled, AssistantAppSession.token("access")?.hasPrefix("fixture.") == true {
-            AssistantAppSession.clear()
+        if AssistantAppPreview.scenario == "product-onboarding-device-sample" {
+            RestAIConsent.set(false, owner: AssistantAppSession.userID, defaults: BlankSharedState.defaults)
+            HealthKitStore.shared.setSampleSleepEnabled(false)
+            HealthKitStore.shared.setPreviewSleepAccess(.noData)
         }
         #endif
         BlankPrivateStageQA.configure(
