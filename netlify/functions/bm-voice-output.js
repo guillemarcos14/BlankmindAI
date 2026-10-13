@@ -4,6 +4,7 @@ const { supabaseFetch } = require("./_membership");
 const assistant = require("./assistant-app");
 const { plainAssistantText } = require("./_assistant_reply_text");
 const { timingForAudio } = require("./bm-voice-alignment");
+const { elevenSpeech } = require("./bm-voice-elevenlabs");
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_AUDIO_BYTES = 12000000;
 const headers = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
@@ -21,8 +22,9 @@ async function voice(request, deps = {}) {
     body = JSON.parse(raw);
   } catch (_) { return failure(400, "invalid_json"); }
   if (!body || Array.isArray(body) || typeof body !== "object"
-      || Object.keys(body).some(key => !["turn_id", "request_id", "app_install_id", "synchronized"].includes(key))
+      || Object.keys(body).some(key => !["turn_id", "request_id", "app_install_id", "synchronized", "elevenlabs_consent"].includes(key))
       || (body.synchronized !== undefined && typeof body.synchronized !== "boolean")
+      || (body.elevenlabs_consent !== undefined && typeof body.elevenlabs_consent !== "boolean")
       || !UUID.test(body.turn_id || "") || !UUID.test(body.request_id || "")) {
     return failure(400, "invalid_voice_request");
   }
@@ -50,7 +52,16 @@ async function voice(request, deps = {}) {
     if (row.status !== "completed") { cleanup(); return failure(409, "voice_turn_not_ready"); }
     const text = plainAssistantText(row.assistant_text || "");
     if (!text.trim() || text.length > 4000) { cleanup(); return failure(422, "voice_text_unavailable"); }
-    if (!process.env.OPENAI_API_KEY) { cleanup(); return failure(503, "voice_unavailable"); }
+    const eleven = process.env.BM_VOICE_PROVIDER === "elevenlabs";
+    if (eleven && body.elevenlabs_consent !== true) {
+      cleanup(); return failure(403, "voice_consent_required");
+    }
+    if (!(eleven ? process.env.ELEVENLABS_API_KEY : process.env.OPENAI_API_KEY)) {
+      cleanup(); return failure(503, "voice_unavailable");
+    }
+    if (eleven && !["es", "en"].includes(row.response_language)) {
+      cleanup(); return failure(503, "voice_unavailable");
+    }
     const reserve = deps.reserve || (async args => supabaseFetch("rpc/reserve_assistant_voice", {
       method: "POST", body: JSON.stringify(args),
     }));
@@ -65,12 +76,19 @@ async function voice(request, deps = {}) {
     metered = true; characters = text.length;
     // A deleted/changed turn must not be spoken after the quota reservation.
     const current = await readTurn(auth.user.id, body.turn_id);
-    if (!current || current.status !== "completed" || current.assistant_text !== row.assistant_text) {
+    if (!current || current.status !== "completed" || current.assistant_text !== row.assistant_text
+        || current.response_language !== row.response_language) {
       cleanup(); return failure(409, "voice_text_unavailable");
     }
     timer = setTimeout(() => abort.abort(), 120000);
     if (request.signal.aborted) abort.abort();
-    const upstream = await (deps.fetch || fetch)("https://api.openai.com/v1/audio/speech", {
+    let providerCues;
+    let upstream;
+    if (eleven) {
+      const speech = await elevenSpeech(text, deps.fetch || fetch, abort.signal, MAX_AUDIO_BYTES, row.response_language);
+      providerCues = speech.cues;
+      upstream = new Response(speech.pcm);
+    } else upstream = await (deps.fetch || fetch)("https://api.openai.com/v1/audio/speech", {
       method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json" }, signal: abort.signal,
       body: JSON.stringify({ model: "gpt-4o-mini-tts", voice: "marin", input: text,
@@ -97,11 +115,12 @@ async function voice(request, deps = {}) {
         }
         if (!length || length % 2) throw new Error("invalid_audio");
         const pcm = Buffer.concat(chunks);
-        const cues = await timingForAudio(pcm, text, deps.fetch || fetch, abort.signal);
+        const cues = providerCues ?? await timingForAudio(pcm, text, deps.fetch || fetch, abort.signal);
         // Recheck deletion/ownership after the additional provider request.
         const final = await readTurn(auth.user.id, body.turn_id);
         if (abort.signal.aborted || !final || final.status !== "completed"
-            || final.assistant_text !== row.assistant_text) throw new Error("voice_text_unavailable");
+            || final.assistant_text !== row.assistant_text
+            || final.response_language !== row.response_language) throw new Error("voice_text_unavailable");
         let cueIndex = 0, offset = 0;
         const stream = new ReadableStream({
           pull(controller) {

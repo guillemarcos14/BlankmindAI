@@ -124,7 +124,8 @@ async function packageCandidate(args, state, bundler) {
       fail(`Source handler was not bundled: ${bundle.name}`);
     }
     return { name: bundle.name, path: bundle.path, sha256: sha256(bundle.path), bytes: fs.statSync(bundle.path).size,
-      compilation_target: bundle.runtimeVersion, schedule: null };
+      compilation_target: bundle.runtimeVersion, runtime_api_version: bundle.runtimeAPIVersion,
+      bootstrap_version: bundle.bootstrapVersion, invocation_mode: bundle.invocationMode, priority: bundle.priority, schedule: null };
   }).sort((a, b) => a.name.localeCompare(b.name));
   return { directory, archives, publicDir, functions,
     inputs: [...inputs].sort(([a], [b]) => a.localeCompare(b)).map(([file, digest]) => ({ file, sha256: digest })),
@@ -155,8 +156,13 @@ function preservingManifest(report, current, files) {
     build_data:fn.bd || null, priority:fn.p || 0,
     ...(fn.dn ? {display_name:fn.dn} : {}), ...(fn.g ? {generator:fn.g} : {}),
   }]));
-  for(const name of ["assistant-app-stream","assistant-app-voice"])
+  for(const name of ["assistant-app-stream","assistant-app-voice"]) {
+    const artifact=report.functions.find(fn=>fn.name===name);
+    if(artifact?.runtime_api_version===2)config[name]={...config[name],priority:artifact.priority ?? 10,
+      build_data:{...(config[name].build_data || {}),runtimeAPIVersion:2,
+        ...(artifact.bootstrap_version ? {bootstrapVersion:artifact.bootstrap_version} : {})}};
     if(config[name]?.build_data?.runtimeAPIVersion !== 2) fail("Existing streaming runtime metadata must be API v2");
+  }
   return {draft:true,files:Object.fromEntries(files.map(file => [file.path.replace(/^\//,""),file.sha])),
     functions:Object.fromEntries(report.functions.map(fn => [fn.name,fn.sha256])),functions_config:config,
     function_schedules:[],title:"Blankmind schedule recovery " + report.source_commit.slice(0,12)};
@@ -178,9 +184,11 @@ async function deployPreservingRuntime(report, packaged, current, site, token, f
     // Always upload: a cached ZIP can have been registered as buffered even
     // though its bytes contain the API v2 streaming bootstrap.
     const existing=current.find(item => (item.n || item.name)===fn.name);
-    const runtime=existing.r || existing.runtime;
-    if(runtime!==fn.compilation_target)fail("Function compilation target differs from existing runtime");
-    const invocation=existing.bd?.runtimeAPIVersion===2?"stream":fn.name.endsWith("-background")?"background":"buffer";
+    // Use the artifact's declared target/mode. An earlier ZIP-only publisher
+    // may have registered the same source as Node 24 with buffered transport.
+    const runtime=fn.compilation_target;
+    if(runtime!=="nodejs22.x")fail("Unexpected private QA compilation target");
+    const invocation=fn.invocation_mode || (manifest.functions_config[fn.name].build_data?.runtimeAPIVersion===2?"stream":fn.name.endsWith("-background")?"background":"buffer");
     await request(`/deploys/${deployment.id}/functions/${encodeURIComponent(fn.name)}?runtime=${encodeURIComponent(runtime)}&invocation_mode=${invocation}`,
       "PUT",fs.readFileSync(fn.path),"application/octet-stream");
   }

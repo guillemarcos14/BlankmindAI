@@ -106,6 +106,11 @@ function dependencies({ dirty = false, protectedSite = true, extraFunction = fal
   assert.equal(manifest.functions_config["assistant-app-voice"].build_data.bootstrapVersion,"2.7.1");
   assert.equal(manifest.files["index.html"],"c".repeat(40));assert.deepEqual(manifest.function_schedules,[]);
   assert.throws(()=>staging.preservingManifest({source_commit:"a",functions:[]},runtimeInventory.map(fn=>({...fn,bd:null})),[]),/API v2/);
+  const certified=staging.ENTRIES.map(name=>({name,sha256:'b'.repeat(64),
+    runtime_api_version:/stream|voice/.test(name)?2:1,bootstrap_version:'2.7.1',priority:10}));
+  const repairedManifest=staging.preservingManifest({source_commit:'a'.repeat(40),functions:certified},runtimeInventory.map(fn=>({...fn,bd:null,r:'nodejs24.x'})),[]);
+  assert.equal(repairedManifest.functions_config['assistant-app-stream'].build_data.runtimeAPIVersion,2);
+  assert.equal(repairedManifest.functions_config['assistant-app-voice'].build_data.bootstrapVersion,'2.7.1');
   assert(packaged.report.source_inputs.some((input) => input.file.endsWith("dependency.js")));
   assert(dry.operations.every((operation) => operation.command === "git"), "dry-run performed a remote read or mutation");
   const scheduled = dependencies();
