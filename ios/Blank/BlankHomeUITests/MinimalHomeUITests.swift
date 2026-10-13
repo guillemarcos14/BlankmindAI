@@ -103,6 +103,30 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["protection"].waitForExistence(timeout: 5))
     }
 
+    func testSampleSleepWithoutWatchIsVisibleAndRequiresSeparateAIConsent() {
+        let app = launch("product-onboarding-device-sample")
+        let sample = app.buttons["onboarding-sample-sleep"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 10))
+        XCTAssertTrue(sample.isHittable, "Sample route must be visible before scrolling through Health recovery")
+        XCTAssertLessThan(sample.frame.minY, app.buttons["Review access"].frame.minY)
+        XCTAssertFalse(app.buttons["onboarding-ai-consent"].exists)
+        sample.tap()
+        app.alerts.buttons["Use sample data"].tap()
+        XCTAssertTrue(app.staticTexts["onboarding-sample-ready"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["Connect Apple Health"].value as? String, "Not completed")
+        let consent = app.buttons["onboarding-ai-consent"]
+        XCTAssertTrue(consent.exists)
+        for _ in 0..<6 { if consent.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(consent.isHittable)
+        consent.tap()
+        XCTAssertFalse(app.buttons["onboarding-ai-consent"].exists)
+        XCTAssertTrue(app.staticTexts["onboarding-sample-ready"].exists)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "sample-sleep-without-watch"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     func testSleepSourceKeepsProductionScreensAndUnmetAccountGate() {
         continueAfterFailure = false
         let app = XCUIApplication()

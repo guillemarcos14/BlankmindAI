@@ -46,6 +46,12 @@ struct BlankApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        #if DEBUG && targetEnvironment(simulator)
+        // UI fixtures must never retain a previous fixture account across scenarios.
+        if AssistantAppPreview.enabled, AssistantAppSession.token("access")?.hasPrefix("fixture.") == true {
+            AssistantAppSession.clear()
+        }
+        #endif
         BlankPrivateStageQA.configure(
             baseURL: (Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String).flatMap(URL.init(string:)),
             cookieHeader: Bundle.main.object(forInfoDictionaryKey: "BlankPrivateQAAuthenticationCookie") as? String

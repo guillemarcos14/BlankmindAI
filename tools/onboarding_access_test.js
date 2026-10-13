@@ -41,6 +41,12 @@ const request = install => handler({ httpMethod: "POST", headers: { authorizatio
   const ready = await request(record.app_install_id);
   assert.equal(ready.statusCode, 200);
   assert.equal(JSON.parse(ready.body).ready, true);
+  currentContext = normalizeUserContext({ ...context, sleep_data_checked_at: new Date().toISOString(),
+    personal_profile: { sleep_source: "synthetic_qa", sleep_is_synthetic: true,
+      sleep_nights: [{ date: "2026-10-12", sleep_minutes: 425, source: "synthetic_qa" }] },
+    health_signal_reasons: "Fictional sample nights selected by the user; no measured Health or Watch records." });
+  assert.equal(JSON.parse((await request(record.app_install_id)).body).ready, true,
+    "Explicit sample sleep enables authenticated app onboarding without Watch records");
   currentContext.sleep_data_available = false;
   assert.equal(JSON.parse((await request(record.app_install_id)).body).ready, false);
   assert.equal((await request("another-install")).statusCode, 403);

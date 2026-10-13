@@ -102,7 +102,7 @@ jobs:
           fi
           if [ "${{ inputs.ui_tests || 'all' }}" = basic ]; then
             suite=BlankHomeUITests/MinimalHomeUITests/testBasicBlockingWithoutSleepKeepsOriginalHomeAndProgress
-            extra_tests=(-only-testing:BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear -only-testing:BlankHomeUITests/MinimalHomeUITests/testThreeSectionsKeepAllSettingsAndReturnToChat -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlFormsKeepNativeEditingAndDismissal -only-testing:BlankHomeUITests/MinimalHomeUITests/testProgressShowsRestContextAndPreservesNavigation -only-testing:BlankHomeUITests/MinimalHomeUITests/testSleepSourceKeepsProductionScreensAndUnmetAccountGate -only-testing:BlankHomeUITests/MinimalHomeUITests/testAppStoreScreenshotsLabelExamplesAndPreserveNavigation)
+            extra_tests=(-only-testing:BlankHomeUITests/MinimalHomeUITests/testSampleSleepWithoutWatchIsVisibleAndRequiresSeparateAIConsent -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlGroupsKeepSettingsReachableAndRootClear -only-testing:BlankHomeUITests/MinimalHomeUITests/testThreeSectionsKeepAllSettingsAndReturnToChat -only-testing:BlankHomeUITests/MinimalHomeUITests/testControlFormsKeepNativeEditingAndDismissal -only-testing:BlankHomeUITests/MinimalHomeUITests/testProgressShowsRestContextAndPreservesNavigation -only-testing:BlankHomeUITests/MinimalHomeUITests/testSleepSourceKeepsProductionScreensAndUnmetAccountGate -only-testing:BlankHomeUITests/MinimalHomeUITests/testAppStoreScreenshotsLabelExamplesAndPreserveNavigation)
           fi
           xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank \
             -configuration Debug -destination "platform=iOS Simulator,id=$device" \
