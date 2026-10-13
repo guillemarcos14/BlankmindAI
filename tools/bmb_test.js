@@ -82,6 +82,25 @@ async function main() {
     const supported=await turn({...base(),message_kind:"action_request",decision:"execute",action:action({minutes})});
     assert.equal(supported.plan.actions[0].minutes,minutes);assert.equal(supported.context.brain_request.execute,true);
   }
+  // Invalid generated schedules must complete without actions, memory effects,
+  // or an old offer that a later acceptance could accidentally execute.
+  const scheduled=action({type:"apply_schedule",minutes:null,start_minute:1320,end_minute:420,
+    timezone:"Europe/Madrid",recurrence:"continuous",weekdays:[1,2],duration_days:null});
+  for(const params of [{start_minute:null},{end_minute:null},{start_minute:1440},{start_minute:2.5},
+    {end_minute:1320},{weekdays:[]},{recurrence:"weekly",duration_days:null},
+    {recurrence:"once",local_date:"2020-01-01"}])for(const language of ["es","en"]) {
+    const ctx=context();ctx.memory.conversation_state={bmb_state:{proposal:proposed}};
+    const invalid=await turn({...base(),response_language:language,message_kind:"acceptance",decision:"execute",
+      accepted_proposal:proposed.fingerprint,action:{...scheduled,...params}},ctx);
+    assert.deepEqual(invalid.plan.actions,[]);assert.equal(invalid.context.brain_request.execute,false);
+    assert.equal(invalid.plan.bmb_state.proposal,null);assert(invalid.plan.bmb_state.recovery_after);
+    assert.equal(invalid.plan.bmb_state.pending_request,"help");assert.equal(invalid.context.brain_memory_effect,undefined);
+    assert.match(invalid.plan.response_text,language==="es"?/No he aplicado/:/haven't applied/);
+  }
+  const validSchedule=await turn({...base(),message_kind:"action_request",decision:"execute",action:scheduled});
+  assert.equal(validSchedule.plan.actions[0].start_minute,1320);
+  assert.equal(validSchedule.plan.actions[0].end_minute,420);
+  assert.equal(validSchedule.context.brain_request.execute,true);
   const incident="Está yendo muy bien. ¿Me podrías bloquear las distracciones durante tres minutos ahora mismo? Solo una vez.";
   for(const repairFails of [false,true]) {
     let attempts=0;

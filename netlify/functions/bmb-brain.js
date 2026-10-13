@@ -224,10 +224,25 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   let text=cleanProse(cleanCitations(result.response_text||"",{quotedIn:prompt}));
   if((!text&&result.decision!=="silent")||/:(?!\d{2}\b)/.test(text))throw Error("bmb_invalid_prose");
   let action=null,execute=false,acceptanceRecovery=false,durationLimited=false;
+  const scheduleErrors=new Set(["bmb_invalid_schedule","bmb_missing_recurrence","bmb_missing_horizon","bmb_invalid_once_date","bmb_ambiguous_or_missing_local_time"]);
+  let scheduleInvalid=false;
   try { action=result.action?normalizeAction(result.action):null; }
   catch(error) {
     // A supported service receiving an unsupported duration is still a valid
     // conversation. Never clamp it or retain an older proposal for acceptance.
+    if(!proactive&&scheduleErrors.has(error.message)) {
+      // Invalid model parameters are a clarification, never an outage or an
+      // executable offer. Do not spend another model call to explain them.
+      scheduleInvalid=true;
+      const spanish=result.response_language==="es";
+      const reply=error.message==="bmb_missing_recurrence"||error.message==="bmb_missing_horizon"
+        ? (spanish ? "¿Lo quieres una sola vez o en qué días y durante cuánto tiempo? No he aplicado ningún cambio."
+          : "Would you like it once, or on which days and for how long? I haven't applied any change.")
+        : (spanish ? "No he podido preparar ese horario. ¿Qué hora de inicio y fin quieres, y para qué día? No he aplicado ningún cambio."
+          : "I couldn't prepare that schedule. What start and end times would you like, and for which day? I haven't applied any change.");
+      result={...result,response_text:reply,decision:"ask",action:null,memory:null,accepted_proposal:null,
+        pending_request:prompt,observations:[],followup_resolution:null,longitudinal_review:null};
+    } else {
     if(proactive||error.message!=="bmb_missing_duration")throw error;
     durationLimited=true;
     const spanish=result.response_language==="es";
@@ -244,8 +259,9 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     } catch(_) { /* A known product limit must remain explainable if copy generation fails. */ }
     result={...result,decision:"ask",action:null,memory:null,accepted_proposal:null,pending_request:prompt};
     result.response_text=reply;
+    }
   }
-  if(durationLimited)delete context.brain_memory_effect;
+  if(durationLimited||scheduleInvalid)delete context.brain_memory_effect;
   result.response_text=cleanCitations(result.response_text||"",{quotedIn:prompt});
   text=result.response_text.trim();
   if(result.decision==="execute"&&!action) {
@@ -303,8 +319,8 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   if(!proactive&&!text.trim())throw Error("bmb_invalid_prose");
   const cancelled=result.decision==="cancel";
   const bmbState={pending_request:cancelled||execute?null:result.pending_request,
-    recovery_after:cancelled||execute||durationLimited?new Date().toISOString():prior.recovery_after||null,
-    proposal:cancelled||execute||acceptanceRecovery||durationLimited?null:result.decision==="propose"&&action?proposal(action):prior.proposal||null};
+    recovery_after:cancelled||execute||durationLimited||scheduleInvalid?new Date().toISOString():prior.recovery_after||null,
+    proposal:cancelled||execute||acceptanceRecovery||durationLimited||scheduleInvalid?null:result.decision==="propose"&&action?proposal(action):prior.proposal||null};
   if(!proactive&&!cancelled&&!execute&&!result.memory&&!result.observations?.length&&!bmbState.proposal&&!bmbState.pending_request&&(continuing||result.message_kind==='question')){
     const cited=sources.find(s=>s.source_id==='observations'&&result.cited_sources?.some(id=>id===s.source_id||s.rows?.some(r=>r.id===id)))||sources.find(s=>s.source_id==='current_sleep'&&result.cited_sources?.some(id=>id==='current_sleep'||s.rows?.some(r=>r.id===id)));
     const seeded=retrievalContext.seed(cited,timezone);
