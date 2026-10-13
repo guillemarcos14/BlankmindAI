@@ -421,6 +421,16 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
 
 @MainActor private func verifyViewRaces() async throws {
     AssistantAppSession.save(accessToken: "session#A", refreshToken: "refresh-A")
+    let unavailable = ConversationFixture()
+    unavailable.assistantAvailable = false
+    unavailable.composer.draft = "Private message"
+    ViewTransport.history = { fatalError("Unavailable Home fetched history") }
+    ViewTransport.send = { _, _ in fatalError("Unavailable Home sent data") }
+    await unavailable.reloadForTest()
+    await unavailable.sendForTest(audioText: "Private audio")
+    check(!unavailable.isLoading && unavailable.requestedAccess == 1, "Original shell must defer AI until access is granted")
+    check(unavailable.composer.draft == "Private message" && unavailable.composer.pending == nil, "Access request consumed the draft")
+    ViewTransport.send = { text, id in makeTurn(id: id, text: text) }
     let view = ConversationFixture()
     view.composer.draft = "New message"
     var suspendedHistory: CheckedContinuation<AssistantAppHistoryPage, Error>?
