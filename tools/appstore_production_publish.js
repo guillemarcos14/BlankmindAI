@@ -9,6 +9,7 @@ const APP=["account-data","app-auth","assistant-app","assistant-app-stream","ass
 const FLAGS={BM_VOICE_ENABLED:"true",BM_VOICE_PROVIDER:"elevenlabs",ELEVENLABS_VOICE_ID_ES:"dNjJKg63Fr5AXwIdkATa",ELEVENLABS_VOICE_ID_EN:"WtA85syCrJwasGeHGH2p",BM_RETRIEVAL_STEP_ENABLED:"true",BM_DECISIONS_DATA_POLICY:"authenticated-account-records",BM_RETRIEVAL_STEP_QA_ENABLED:"false",BM_DECISIONS_QA_ENABLED:"false",BM_JEV_SHADOW_ENABLED:"false",BM_JEV_PREFETCH_EXPERIMENT:"false"};
 const DORMANT=new Set(["BM_RETRIEVAL_STEP_QA_ENABLED","BM_DECISIONS_QA_ENABLED","BM_JEV_SHADOW_ENABLED","BM_JEV_PREFETCH_EXPERIMENT"]);
 const DEFAULT_VOICE_IDS=new Set(["ELEVENLABS_VOICE_ID_ES","ELEVENLABS_VOICE_ID_EN"]);
+const OPENING_DEFAULTS={WAITLIST_WHATSAPP_OPENING_CONTENT_SID_1:"HX8d2a6ae19f26e983695d248284b74c40",WAITLIST_WHATSAPP_OPENING_CONTENT_SID_2:"HX99b42fe21aaa483720b97bcbb57020d2"};
 const json=file=>JSON.parse(fs.readFileSync(file,"utf8").replace(/^\uFEFF/,""));
 const hash=file=>crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 const git=args=>execFileSync("git",args,{cwd:ROOT,encoding:"utf8",windowsHide:true}).trim();
@@ -51,7 +52,8 @@ async function main(args=process.argv.slice(2)){
   // false settings in Builds without consuming the legacy Lambda 4KB budget.
   // The selected IDs equal the tested server defaults. Preserve their values
   // in Builds; legacy channels use their separate singular VOICE_ID setting.
-  const body={key,scopes:DORMANT.has(key)||DEFAULT_VOICE_IDS.has(key)?["builds"]:[...new Set([...(current?.scopes||[]),"functions"])],values:[...(current?.values||[]).filter(v=>v.context!=="production"),{context:"production",value:wanted}]};
+  const scopes=key in OPENING_DEFAULTS?["builds","runtime"]:DORMANT.has(key)||DEFAULT_VOICE_IDS.has(key)?["builds"]:[...new Set([...(current?.scopes||[]),"functions"])];
+  const body={key,scopes,values:[...(current?.values||[]).filter(v=>v.context!=="production"),{context:"production",value:wanted}]};
   await api(current?envRoute+"/"+key+query:envRoute+query,current?"PUT":"POST",current?body:[body]);
  }
  if(mode==="--rollback"){
@@ -92,6 +94,9 @@ async function main(args=process.argv.slice(2)){
  assert.equal(Object.keys(manifest.expected_production_functions).length,73);
  for(const fn of current)assert.equal(fn.d||fn.sha,manifest.expected_production_functions[fn.n||fn.name],"Published baseline changed: "+(fn.n||fn.name));
  const vars=await api(envRoute+query);assert.equal(value(vars.find(v=>v.key==="SUPABASE_URL")),"https://vhiikgyyfisejjwqtxfc.supabase.co");
+ const audit=json(path.join(ROOT,"tmp/appstore-final/env-reference-audit.json"));assert(audit.openingDefaults.length>0);
+ for(const row of audit.openingDefaults){assert.equal(row.one,OPENING_DEFAULTS.WAITLIST_WHATSAPP_OPENING_CONTENT_SID_1);assert.equal(row.two,OPENING_DEFAULTS.WAITLIST_WHATSAPP_OPENING_CONTENT_SID_2);}
+ for(const [key,expected] of Object.entries(OPENING_DEFAULTS))assert.equal(value(vars.find(v=>v.key===key)),expected,"Legacy fallback differs; keep its function variable");
  const earlier=fs.existsSync(RECEIPT)?json(RECEIPT):null;
  const r={status:"preparing",source_commit:manifest.source_commit,operator_commit:git(["rev-parse","HEAD"]),manifest_sha256:hash(path.join(DIRECTORY,"manifest.json")),
   previous:PREVIOUS,previous_locked:earlier?.previous===PREVIOUS?earlier.previous_locked:!!published.locked,authorization:"Guillem: Pásalo a producción, 2026-10-13",physical_verified:false,model_quality_gate_passed:false,
@@ -102,6 +107,7 @@ async function main(args=process.argv.slice(2)){
   await api(envRoute+query,"POST",[{key:"BM_VOICE_ELEVENLABS_API_KEY",scopes:["functions"],is_secret:true,values:[{context:"production",value:process.env.BM_VOICE_ELEVENLABS_API_KEY}]}]);}
  else assert(secret.is_secret&&secret.scopes.includes("functions")&&value(secret));
  for(const [key,wanted] of Object.entries(FLAGS)){r.phase="configure:"+key;save(r);await setFlag(key,wanted);}
+ for(const [key,wanted] of Object.entries(OPENING_DEFAULTS))await setFlag(key,wanted);
  const body={...manifest.body,draft:false,title:"Unified app production, authorized13Oct; preserve legacy services"};
  const deployment=await api("/sites/"+SITE+"/deploys","POST",body);assert.equal(deployment.context,"production");
  r.deploy_id=deployment.id;r.deploy_url=deployment.deploy_ssl_url;save(r);
