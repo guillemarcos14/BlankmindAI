@@ -108,9 +108,10 @@ def sign(root):
     archive_info = plistlib.loads((archive / "Info.plist").read_bytes())
     archive_info["ApplicationProperties"].update({"SigningIdentity": certificate_name, "Team": TEAM})
     (archive / "Info.plist").write_bytes(plistlib.dumps(archive_info))
+    # These existing approved profiles are Xcode-managed. Export must retain
+    # automatic signing; a manual export rejects managed extension profiles.
     options = {"method": "app-store-connect", "destination": "upload", "teamID": TEAM,
-               "signingStyle": "manual", "signingCertificate": certificate,
-               "provisioningProfiles": mapping, "manageAppVersionAndBuildNumber": False,
+               "signingStyle": "automatic", "manageAppVersionAndBuildNumber": False,
                "testFlightInternalTestingOnly": False}
     (root / "ExportOptions.plist").write_bytes(plistlib.dumps(options))
     (root / "signing-receipt.json").write_text(json.dumps({"source": receipt["source"], "ios_tree": receipt["ios_tree"],
