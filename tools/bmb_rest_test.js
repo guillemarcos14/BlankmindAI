@@ -27,6 +27,7 @@ assert.equal(R.evaluate(experiment,after,{now:Date.parse("2026-10-06"),protectio
 assert.equal(R.evaluate({...experiment,excluded_dates:after.map(n=>n.date)},after,{now,protection}).measured_improvement,false);
 assert.equal(R.evaluate(experiment,after.map(n=>({...n,source_bundle:"another Watch algorithm"})),{now,protection}).measured_improvement,false);
 assert.equal(R.evaluate(experiment,after.map(n=>({...n,awake_minutes:null})),{now,protection}).measured_improvement,false,"Missing awake became zero");
+assert.equal(R.metricValue({...after[0],sleep_minutes:440,awake_minutes:0},"sleep_continuity"),100*440/480,"Unobserved gaps rewarded as improved continuity");
 assert.equal(R.evaluate(experiment,after.map(n=>({...n,sleep_minutes:390,awake_minutes:10})),{now,protection}).status,"worse","Better continuity masked lost sleep duration");
 assert.equal(R.metricValue(after[0],"sleep_duration_target",null),null,"Invented duration target");
 assert.equal(R.metricValue({...after[0],sleep_minutes:600},"sleep_duration_target",480),-120,"More sleep always rewarded");

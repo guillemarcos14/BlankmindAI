@@ -4,6 +4,7 @@ import Combine
 import DeviceActivity
 import FamilyControls
 import UIKit
+import SwiftUI // Loads the public DeviceActivity SwiftUI overlay (activitySegments).
 
 // Progress never enables cloud sharing; summaries require a separate explicit opt-in.
 enum RestHealthCatalog {

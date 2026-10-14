@@ -131,7 +131,8 @@ extension RestNight {
             "source": watchMeasured ? "apple_watch" : "apple_health", "source_bundle": source,
             "sleep_minutes": sleepMinutes, "manual": manual,
             // Ongoing episodes and unstaged/manual records cannot certify efficacy.
-            "complete": watchMeasured && !manual && !stageMinutes.isEmpty && end.timeIntervalSinceNow < -3600]
+            "complete": watchMeasured && !manual && !stageMinutes.isEmpty && end.timeIntervalSinceNow < -3600
+                && (sleepMinutes + (awakeMinutes ?? 0)) >= end.timeIntervalSince(start) / 60 * 0.95]
         if let awakeMinutes { row["awake_minutes"] = awakeMinutes }
         if let inBedMinutes { row["in_bed_minutes"] = inBedMinutes }
         for (key, stage) in [("core_minutes", 3), ("deep_minutes", 4), ("rem_minutes", 5)] {

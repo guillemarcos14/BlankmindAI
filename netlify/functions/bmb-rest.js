@@ -73,7 +73,11 @@ function normalizeDigital(value,timezone,now=Date.now()) {
 function measured(n){return n.source==="apple_watch"&&n.manual===false&&n.complete===true;}
 function metricValue(n,metric,target,reference) {
   if(!measured(n))return null;
-  if(metric==="sleep_continuity")return number(n.awake_minutes,0,1440)?100*n.sleep_minutes/(n.sleep_minutes+n.awake_minutes):null;
+  if(metric==="sleep_continuity"){
+    const span=(Date.parse(n.end_at)-Date.parse(n.start_at))/60000;
+    // Unknown gaps remain in the denominator; missing awake records are not zero.
+    return number(n.awake_minutes,0,1440)&&span>=n.sleep_minutes?100*n.sleep_minutes/span:null;
+  }
   if(metric==="sleep_duration_target")return number(target,180,720)?-Math.abs(n.sleep_minutes-target):null;
   if(metric==="sleep_regularity"){
     if(!number(reference,0,1439))return null;
