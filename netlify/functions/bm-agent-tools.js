@@ -15,6 +15,7 @@ function contract(legacy, citations = []) {
   const literal = "Exact contiguous substring of current_message. Keep original words, pronouns and verb forms; never summarize or translate.";
   const memory = structuredClone(p.memory), observations = structuredClone(p.observations);
   const memoryFields = memory.anyOf.find(s=>s.type==="object").properties;
+  memoryFields.operation.description="forget deletes only key; forget_all clears all personal memory, not the account. For a category spanning multiple keys, ask for a precise supported scope before deleting. Never claim a wider deletion than this operation.";
   memoryFields.value.anyOf.find(s=>s.type==="string").description=literal;
   memoryFields.evidence.description=literal;
   observations.items.properties.value_text.anyOf.find(s=>s.type==="string").description=literal;
