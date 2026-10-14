@@ -38,7 +38,7 @@ const reviewed=r=>({...quality,source_sha256:sha(r),reviews:[{...quality.reviews
 const voiced=structuredClone(report);voiced.records[0].audio_requested=true;
 assert.equal(adapt(voiced,reviewed(voiced))[0].cost_usd,null,"Unknown billed voice cost became a free audio measurement");
 voiced.records[0].voice_cost_usd=.01;
-assert.equal(adapt(voiced,reviewed(voiced))[0].cost_usd,.010032,"Known voice cost was omitted from total cost");
+assert(Math.abs(adapt(voiced,reviewed(voiced))[0].cost_usd-.010032)<1e-12,"Known voice cost was omitted from total cost");
 const v4=input({...row,model_contexts:[{turn_clock:"2026-10-14T16:00:00Z",rest_evidence:{available:false,reason:"no_synced_watch_baseline"}}]},report,4);
 assert.equal(v4.actual.model_contexts[0].rest_evidence.available,false);
 assert(v4.recording_semantics.clock_scope.includes("seed time"));
