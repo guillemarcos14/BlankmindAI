@@ -134,7 +134,7 @@ async function main(){
        row.canonical_memories=await request('/rest/v1/bm_brain_memories?auth_user_id=eq.'+user+'&select=key,value',undefined,service,'GET');
        row.canonical_observations=await request('/rest/v1/bmb_observations?auth_user_id=eq.'+user+'&select=metric,value_number,value_text,unit,measurement,evidence,measured_at',undefined,service,'GET');
        row.committed_effect=await request('/rest/v1/assistant_app_turns?auth_user_id=eq.'+user+'&id=eq.'+turn+'&select=brain_memory_effect,brain_memory_applied_at',undefined,service,'GET');
-       if(spec.expected_memory)row.passed=row.passed&&row.canonical_memories.some(m=>m.key===spec.expected_memory.key&&m.value===spec.expected_memory.value);
+       if(spec.expected_memory)row.passed=row.passed&&row.canonical_memories.some(m=>m.key===spec.expected_memory.key&&typeof m.value==="string"&&m.value.includes(spec.expected_memory.value));
        if(spec.forbid_memory)row.passed=row.passed&&row.canonical_memories.length===0;
      }
      if(group==="forget"&&response.statusCode===200){

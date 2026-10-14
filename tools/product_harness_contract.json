@@ -79,6 +79,10 @@
         "run": "node tools/bm_agent_runtime.js"
       },
       {
+        "name": "bm_agent_report",
+        "run": "node tools/bm_agent_report_test.js"
+      },
+      {
         "name": "decisions_voice_integration",
         "run": "node tools/decisions_voice_integration_test.js"
       },

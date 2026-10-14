@@ -38,7 +38,13 @@ async function main(){
   const turn=crypto.randomUUID(),effect={operation:"forget_all",key:null,value:null,evidence:"Olvida todo"};
   sql("insert into assistant_app_turns(id,auth_user_id,user_text,assistant_text,status,completed_at,brain_memory_effect) values("+[quote(turn),quote(user),quote("Olvida todo"),quote("Hecho"),quote("completed"),"clock_timestamp()",quote(JSON.stringify(effect))+"::jsonb"].join(",")+");select commit_assistant_brain_memory("+quote(user)+","+quote(turn)+")");
   assert.equal(sql("select count(*) from bm_agent_labels where auth_user_id="+quote(user)),"0");
-  const report={version:1,source_hashes:require("./bm_agent_runtime").verify(),provider_measured:true,database_real:true,cloud_schema_mutations:0,calls,records,correction_invalidation:true,forgetting_invalidation:true,gates_passed:false};
+  const batch=labels.request(Array.from({length:13},(_,i)=>({id:"synthetic:"+i,text:"Normalmente duermo en silencio"})));
+  calls++;
+  const response=await meter("https://api.openai.com/v1/decisions",{method:"POST",headers:{authorization:"Bearer "+process.env.OPENAI_API_KEY,"content-type":"application/json"},signal:AbortSignal.timeout(5000),body:JSON.stringify(batch)});
+  assert(response.ok,"Maximum batch rejected by provider");
+  const checked=require("../netlify/functions/bm-agent-decisions").validate(await response.json(),batch);
+  assert.equal(Object.keys(checked.answers).length,26);
+  const report={version:1,source_hashes:require("./bm_agent_runtime").verify(),provider_measured:true,database_real:true,cloud_schema_mutations:0,calls,records,correction_invalidation:true,forgetting_invalidation:true,max_batch_questions_verified:26,gates_passed:false};
   fs.writeFileSync(output,JSON.stringify(report,null,2)+"\n");console.log(JSON.stringify({passed:true,calls,labels:records.map(r=>r.result.labels)}));
  }finally{sql("delete from auth.users where id="+quote(user));}
 }

@@ -38,6 +38,7 @@ async function main(){
    const response=await fetcher("https://api.openai.com/v1/responses",{method:"POST",headers:{authorization:"Bearer "+process.env.OPENAI_API_KEY,"content-type":"application/json"},signal:AbortSignal.timeout(45000),body:JSON.stringify(request)});
    if(!response.ok)throw Error("provider_"+response.status);
    const body=await response.json();if(body.status!=="completed")throw Error("incomplete");
+   if(body.model!==model)throw Error("unexpected_reviewer_model");
    const raw=body.output_text||(body.output||[]).flatMap(o=>o.content||[]).filter(o=>o.type==="output_text").map(o=>o.text).join("");
    review=JSON.parse(raw);
    if(!["response_ok","memory_ok","action_ok"].every(k=>typeof review[k]==="boolean"))throw Error("invalid_review");
