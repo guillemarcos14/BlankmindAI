@@ -160,7 +160,7 @@ async function main(){
        row.passed=row.passed&&unchanged;
      }
      history.push({role:"user",content:text},{role:"assistant",content:t.assistant_text||""}); records.push(row);for(const req of row.provider_requests){const measured=meter.estimate(req,rates);if(measured!==null){budget.known_usd+=measured;budget.reserved_upper_usd-=req.reserved_upper_usd-measured;}}saveBudget();active=null;console.info=originalInfo;save();
-     if(args.includes("--fail-fast")&&!row.passed)throw Error("agent_hard_failure_"+row.case_id+"_"+variant);
+     if(args.includes("--fail-fast")&&variant==="decisions"&&!row.passed)throw Error("agent_hard_failure_"+row.case_id+"_"+variant);
      if(records.length%20===0)console.log(JSON.stringify({turns:records.length,pairs:pair+1,errors:records.filter(r=>!r.passed).length}));
    }
    }

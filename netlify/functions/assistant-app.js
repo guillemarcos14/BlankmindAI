@@ -199,7 +199,8 @@ function actionCopy(action, spanish) {
 }
 
 function visibleReply(plan, context, action) {
-  let answer = plainAssistantText(chatText(String(plan.message_text || plan.response_text || "").trim().slice(0, 4000)));
+  const generatedText = String(plan.message_text || plan.response_text || "").trim().slice(0, 4000);
+  let answer = plainAssistantText(plan.bmb_generated ? generatedText : chatText(generatedText));
   if (!answer) throw new Error("assistant_empty_reply");
   const spanish = String(plan.response_language || context.language || "").startsWith("es");
   const proposedAction = Array.isArray(plan.actions) && plan.actions.length > 0;
