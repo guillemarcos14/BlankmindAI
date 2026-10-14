@@ -37,7 +37,8 @@ final class MinimalHomeUITests: XCTestCase {
     func testProgressShowsRestContextAndPreservesNavigation() {
         let app = launch("product-shell-progress")
         XCTAssertTrue(app.staticTexts["Progress"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["You feel more rested"].exists)
+        XCTAssertTrue(app.staticTexts["Your sleep data"].exists)
+        XCTAssertFalse(app.staticTexts["You feel more rested"].exists)
         XCTAssertTrue(app.buttons["progress-metric"].exists)
         XCTAssertFalse(app.staticTexts["risk signal"].exists)
         app.buttons["progress-metric"].tap()
@@ -50,7 +51,7 @@ final class MinimalHomeUITests: XCTestCase {
         context.tap()
         XCTAssertTrue(app.staticTexts["All health context"].waitForExistence(timeout: 5))
         app.buttons["back"].firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["You feel more rested"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Your sleep data"].waitForExistence(timeout: 5))
         app.buttons["home-tab-chat"].tap()
         XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
     }

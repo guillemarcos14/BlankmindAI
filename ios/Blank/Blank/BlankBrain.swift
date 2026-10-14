@@ -228,10 +228,11 @@ final class BlankBrain {
     private func flushRestRevocation(owner: String?) async -> Bool {
         guard let owner, owner == AssistantAppSession.userID else { return false }
         let key = "blankRestPendingRevocation.v1." + owner
-        guard BlankSharedState.defaults.bool(forKey: key) else { return true }
+        guard let withdrawal = BlankSharedState.defaults.string(forKey: key) else { return true }
         guard let data = try? JSONSerialization.data(withJSONObject: ["action": "bmb_revoke_rest", "app_install_id": BlankSharedState.appInstallId]),
               let (_, response) = try? await AssistantAppClient().postAuthorized(path: "assistant-app", payload: data, timeout: 10),
               response.statusCode == 200, owner == AssistantAppSession.userID else { return false }
+        guard BlankSharedState.defaults.string(forKey: key) == withdrawal else { return false }
         BlankSharedState.defaults.removeObject(forKey: key)
         return true
     }
@@ -245,7 +246,7 @@ final class BlankBrain {
         } else {
             syncTask?.cancel()
             RestDigitalContext.shared.clear()
-            if let owner { BlankSharedState.defaults.set(true, forKey: "blankRestPendingRevocation.v1." + owner) }
+            if let owner { BlankSharedState.defaults.set(UUID().uuidString, forKey: "blankRestPendingRevocation.v1." + owner) }
             sync()
         }
     }

@@ -40,6 +40,23 @@
         _ = BlankSharedState.requestWidgetUnlock(defaults: d, now: next)
         expect(BlankSharedState.finishWidgetUnlockIfDue(defaults: d, now: next.addingTimeInterval(60)), "Earlier timed expiry wins")
         expect(BlankSharedState.widgetUnlockDeadline(defaults: d) == nil, "Expired sessions clear pending unlock")
+        let window = UUID().uuidString
+        let plan: [String: Any] = ["start_minute": 1350, "end_minute": 420, "weekdays": [2, 3, 4], "timezone": "UTC"]
+        d.set("A", forKey: "blankBMBSignalOwner")
+        BlankSharedState.recordRestProtection(activeWindowIDs: [window], plans: [window: plan], defaults: d, now: start)
+        BlankSharedState.recordRestProtection(activeWindowIDs: [window], plans: [window: plan], defaults: d, now: start.addingTimeInterval(5))
+        expect((d.array(forKey: "blankRestProtectionIntervals") ?? []).count == 1, "Repeated monitor observation duplicated protection")
+        var nextPlan = plan; nextPlan["start_minute"] = 1335
+        BlankSharedState.recordRestProtection(activeWindowIDs: [window], plans: [window: nextPlan], defaults: d, now: start.addingTimeInterval(10))
+        var proofs = d.array(forKey: "blankRestProtectionIntervals") as! [[String: Any]]
+        expect(proofs.count == 2 && proofs[0]["ended_at"] != nil, "Changed plan silently extended the original intervention phase")
+        BlankSharedState.recordRestProtection(activeWindowIDs: [], uncertain: true, defaults: d, now: start.addingTimeInterval(15))
+        proofs = d.array(forKey: "blankRestProtectionIntervals") as! [[String: Any]]
+        expect(proofs[1]["uncertain"] as? Bool == true && proofs[1]["ended_at"] != nil, "Revoked permission credited reliable protection")
+        d.set("B", forKey: "blankBMBSignalOwner")
+        BlankSharedState.recordRestProtection(activeWindowIDs: [window], plans: [window: plan], defaults: d, now: start.addingTimeInterval(20))
+        proofs = d.array(forKey: "blankRestProtectionIntervals") as! [[String: Any]]
+        expect(proofs.count == 3 && proofs[2]["owner"] as? String == "B" && proofs[0]["owner"] as? String == "A", "Protection proof crossed account ownership")
         print("Widget cooldown: configuration, duplicate tap, hard protection, persistence, early release, session ownership, replay, metrics and reblock passed")
     }
 }

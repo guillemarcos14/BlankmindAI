@@ -4539,6 +4539,9 @@ private struct BMBSettingsView: View {
                   Section("Permission") {
                     Toggle("Allow automatic protection", isOn:$active)
                     Text("Blankmind uses measured Apple Watch sleep to assess whether protecting your rest helps. Changes stay within your limits. Existing blocks keep their release rules.").font(.blankInter(size: 14, relativeTo: .footnote))
+                    DatePicker("Allowed from",selection:clock($actionStart),displayedComponents:.hourAndMinute)
+                    DatePicker("Allowed until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
+                    Text("Set the same start and end time to allow any hour.").font(.blankInter(size: 14, relativeTo: .footnote))
                   }
                   Section("Allowed changes") {
                     ForEach([("start_protection","Block selected distractions"),("update_schedule","Adjust my rest window")], id: \.0) { type,label in
@@ -4548,8 +4551,10 @@ private struct BMBSettingsView: View {
                   }
                   Section("Rest plan limits") {
                     Toggle("Allow measured rest adjustments", isOn: $restAdjustments)
-                    ForEach(Array(zip(1...7, ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"])), id: \.0) { day, label in
-                        Toggle(label, isOn: Binding(get: { restDays.contains(day) }, set: { if $0 { restDays.insert(day) } else { restDays.remove(day) } }))
+                    DisclosureGroup("Allowed days") {
+                        ForEach(Array(zip(1...7, ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"])), id: \.0) { day, label in
+                            Toggle(label, isOn: Binding(get: { restDays.contains(day) }, set: { if $0 { restDays.insert(day) } else { restDays.remove(day) } }))
+                        }
                     }
                     DatePicker("Rest window from", selection: clock($restStart), displayedComponents: .hourAndMinute)
                     DatePicker("Rest window until", selection: clock($restEnd), displayedComponents: .hourAndMinute)
@@ -4567,9 +4572,6 @@ private struct BMBSettingsView: View {
                     Text("Optional anonymous summaries of measured experiment outcomes can inform other users after enough people contribute. Conversations, Health records and phone-use histories are never pooled.").font(.blankInter(size: 14, relativeTo: .footnote))
                   }
                   Section("When and for how long") {
-                    DatePicker("Allowed from",selection:clock($actionStart),displayedComponents:.hourAndMinute)
-                    DatePicker("Allowed until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
-                    Text("Set the same start and end time to allow any hour.").font(.blankInter(size: 14, relativeTo: .footnote))
                     Stepper("Maximum block: \(maxMinutes) min",value:$maxMinutes,in:5...240,step:5)
                   }
                   Section {
@@ -4615,7 +4617,6 @@ private struct BMBSettingsView: View {
                   }
                 }
                 Section {
-                    Button("Save preferences") { Task { await save() } }
                     if !status.isEmpty { Text(status).font(.blankInter(size: 14, relativeTo: .footnote)) }
                 }
                 if section == .automaticProtection && !events.isEmpty {
@@ -4638,6 +4639,15 @@ private struct BMBSettingsView: View {
             .scrollContentBackground(.hidden)
             .background(BlankColors.canvas)
             .foregroundStyle(BlankColors.foreground)
+            .safeAreaInset(edge: .bottom) {
+                if loaded {
+                    Button("Save preferences") { Task { await save() } }
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .padding(.horizontal, 16).padding(.vertical, 8)
+                        .background(BlankColors.canvas)
+                        .disabled(busy)
+                }
+            }
             .disabled(busy || !loaded)
             .opacity(loaded ? 1 : 0)
             .accessibilityHidden(!loaded)

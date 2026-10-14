@@ -209,10 +209,7 @@ struct RestProgressSnapshot {
         return current - previous
     }
     var headline: String {
-        guard let change = restChange else { return "How rested do you feel?" }
-        if change >= 0.3 { return "You feel more rested" }
-        if change <= -0.3 { return "You feel less rested" }
-        return "Your morning rest is steady"
+        weeklyNights.contains { $0.watchMeasured && !$0.manual } ? "Your measured sleep" : "Your sleep data"
     }
     func chartValue(day: Date, metric: RestProgressMetric) -> Double? {
         let key = RestCheckInRepository.dayKey(day, calendar: calendar)
@@ -231,22 +228,6 @@ struct RestProgressSnapshot {
         let start = morning ? night.end : night.start.addingTimeInterval(-3600)
         let end = morning ? min(now, night.end.addingTimeInterval(3600)) : night.start
         return BlankBrainMetrics.protectedSeconds(sessions: sessions, from: start, to: end) / 60
-    }
-    func association(sessions: [BlankSession], historyStart: Date?) -> (delta: Double, protected: Int, other: Int)? {
-        // A night without a session is only a valid comparison after account history began.
-        guard let historyStart else { return nil }
-        var protected: [Double] = [], other: [Double] = []
-        for night in nights where night.date >= baselineStart && night.end <= now && !night.manual {
-            guard night.start.addingTimeInterval(-3600) >= historyStart,
-                  let rating = checkIns.first(where: { $0.day == RestCheckInRepository.dayKey(night.date, calendar: calendar) }),
-                  rating.recordedAt >= night.end else { continue }
-            let minutes = protectedMinutes(night: night, sessions: sessions, morning: false)
-            if minutes >= 45 { protected.append(Double(rating.score)) }
-            else if minutes == 0 { other.append(Double(rating.score)) }
-        }
-        guard protected.count >= 5, other.count >= 5,
-              let a = Self.mean(protected), let b = Self.mean(other) else { return nil }
-        return (a - b, protected.count, other.count)
     }
     static func make(nights: [RestNight], checkIns: [RestCheckIn], now: Date = Date(), calendar: Calendar = .current) -> Self {
         let today = calendar.startOfDay(for: now)
