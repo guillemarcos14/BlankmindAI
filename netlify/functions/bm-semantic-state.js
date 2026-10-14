@@ -495,7 +495,7 @@ function requiredFields(state, context = {}) {
 
 function capabilityGap(state, context) {
   const channel = fold(context.channel || context.assistant_channel);
-  const native = ["ios", "android", "app"].includes(channel);
+  const native = ["ios", "app"].includes(channel);
   const present = native || context.device_execution_ready === true || context.app_presence_recent === true || context.app_presence_state === "recently_seen";
   if (!present) return "app_presence";
   if (context.screen_time_authorized !== true) return "permissions";

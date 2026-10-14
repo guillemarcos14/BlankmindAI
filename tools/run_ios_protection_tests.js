@@ -114,17 +114,12 @@ ${between(home, '    private func assistantActionRequiresScreenTime(', '    priv
 }
 enum BlankSharedState {
     static var sharedActive = false
-    static var widgetStarts = 0
     enum Keys {
         static let isBlankActive = "blankIsActive"
         static let blankActiveSince = "blankActiveSince"
         static let blankActiveUntil = "blankActiveUntil"
-        static let pendingWidgetTimerMinutes = "blankPendingWidgetTimerMinutes"
     }
     static func hasConfiguredBlock(in defaults: UserDefaults) -> Bool { true }
-    static func pendingWidgetTimerMinutes(defaults: UserDefaults) -> Int? { nil }
-    static func appendSession(defaults: UserDefaults, now: Date, entryMode: BlankEntryMode, plannedDurationMinutes: Int?) { widgetStarts += 1 }
-${between(read('ios/Blank/Blank/BlankSharedState.swift'), '    static func startQuickBlock(', '    // Session ownership').replace('UserDefaults = Self.defaults', 'UserDefaults')}
     struct ActiveState { let isActive: Bool }
     static func loadActiveState(defaults: UserDefaults) -> ActiveState { ActiveState(isActive: sharedActive) }
 }
@@ -146,7 +141,6 @@ ${selection}
 ${selectionPolicy}
     init() { selection = 1 }
     func saveSelection(_ value: Int) { saved += 1 }
-    func reloadBlankWidget() {}
     func syncRecurringSchedule() { schedules += 1 }
     func refreshDailyLimitMonitoring() { limits += 1 }
 }

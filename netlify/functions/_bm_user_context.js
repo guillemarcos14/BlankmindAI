@@ -74,38 +74,8 @@ async function enrichAssistantContext(input = {}, connectCode = "", options = {}
   const anonymousUserId = clean(mergedBase.anonymous_user_id || identity?.anonymous_user_id || snapshot.anonymous_user_id, 120);
   if (!anonymousUserId) return mergedBase;
 
-  // BMB retrieves these sources through its scoped catalog when needed. Keep
-  // the current durable snapshot, but do not load unused legacy BAI sources.
-  if (options.includeLegacySources === false) return { ...mergedBase,
-    anonymous_user_id: anonymousUserId, canonical_user_id: clean(identity?.auth_user_id, 80) };
-
-  const [onboarding, insights, outcomes, memories, signals] = await Promise.all([
-    safeRows(`onboarding_responses?anonymous_user_id=eq.${encodeURIComponent(anonymousUserId)}&select=name,age_range,goal,profile,daily_hours,ai_goal,weak_moment,selected_plan,submitted_at&limit=1`),
-    safeRows(`digital_wellness_feature_payloads?anonymous_user_id=eq.${encodeURIComponent(anonymousUserId)}&select=insight,period_start,period_end,submitted_at&order=submitted_at.desc&limit=1`),
-    safeRows(`bai_user_plan_outcomes?anonymous_user_id=eq.${encodeURIComponent(anonymousUserId)}&select=pattern_key,recommendation_kind,proposed_value,outcome,outcome_score,created_at&order=created_at.desc&limit=20`),
-    safeRows(`bai_user_memory_signals?anonymous_user_id=eq.${encodeURIComponent(anonymousUserId)}&select=signal_type,signal_value,confidence,source,updated_at&order=updated_at.desc&limit=20`),
-    safeRows(`wellness_signal_events?anonymous_user_id=eq.${encodeURIComponent(anonymousUserId)}&select=signal_type,value_number,value_text,source,measured_at&order=measured_at.desc&limit=20`),
-  ]);
-  const profile = onboarding[0] || {};
-  return {
-    ...mergedBase,
-    anonymous_user_id: anonymousUserId,
-    canonical_user_id: clean(identity?.auth_user_id, 80),
-    profile_name: clean(mergedBase.profile_name || profile.name, 80),
-    age_range: clean(mergedBase.age_range || profile.age_range, 40),
-    personal_profile: {
-      goal: clean(profile.goal, 120),
-      profile: clean(profile.profile, 120),
-      daily_hours: Number.isFinite(Number(profile.daily_hours)) ? Number(profile.daily_hours) : null,
-      ai_goal: clean(profile.ai_goal, 180),
-      weak_moment: clean(profile.weak_moment, 180),
-      selected_plan: clean(profile.selected_plan, 120),
-    },
-    latest_insight: safeObject(insights[0]?.insight),
-    recent_plan_outcomes: outcomes,
-    learned_memory_signals: memories,
-    recent_wellness_signals: signals,
-  };
+  return {...mergedBase, anonymous_user_id:anonymousUserId,
+    canonical_user_id:clean(identity?.auth_user_id,80)};
 }
 
 module.exports = { canonicalIdentity, enrichAssistantContext, persistCanonicalSnapshot };

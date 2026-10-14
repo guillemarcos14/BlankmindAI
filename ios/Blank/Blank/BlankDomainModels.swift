@@ -294,9 +294,13 @@ enum BlankStrategyKind: String, Codable, CaseIterable, Identifiable {
 
 enum BlankEntryMode: String, Codable {
     case app
-    case widget
     case nfc
     case schedule
+    init(from decoder: Decoder) throws {
+        let value = try decoder.singleValueContainer().decode(String.self)
+        self = Self(rawValue: value) ?? .app
+    }
+
 }
 
 enum BlankUsageEventKind: String, Codable {

@@ -2,7 +2,7 @@
   "version": 1,
   "id": "bm-semantic-development-v1",
   "split": "development",
-  "provenance": "Independently authored expected logical values. Five channel variants and one explicitly labeled reconstruction, not a production transcript.",
+  "provenance": "Independently authored expected logical values. Retained channel variants and one explicitly labeled reconstruction, not a production transcript.",
   "conversations": [
     {
       "id": "whatsapp_duration_correction",
@@ -653,168 +653,6 @@
       ]
     },
     {
-      "id": "android_duration_correction",
-      "channel": "android",
-      "context": {
-        "has_selected_apps": true,
-        "selected_app_names": [
-          "Instagram"
-        ],
-        "selection_count": 1,
-        "screen_time_authorized": true,
-        "app_presence": {
-          "app_present": true,
-          "app_ready": true,
-          "last_seen_at": "__REPLAY_NOW__"
-        },
-        "app_presence_state": "recently_seen",
-        "app_presence_recent": true
-      },
-      "turns": [
-        {
-          "input": "Block Instagram now for 30 minutes.",
-          "expect": {
-            "state": {
-              "intent": "block",
-              "apps": [
-                "Instagram"
-              ],
-              "app_category": null,
-              "moment": null,
-              "action_type": "strict_block",
-              "start": {
-                "type": "now"
-              },
-              "end": null,
-              "duration_minutes": 30,
-              "recurrence": null,
-              "confirmation": null,
-              "pending_slots": [
-                "recurrence"
-              ],
-              "status": "collecting",
-              "next_question": "recurrence"
-            },
-            "decision": {
-              "type": "ask",
-              "slot": "recurrence"
-            },
-            "actions": [],
-            "language": "en"
-          }
-        },
-        {
-          "input": "Just once.",
-          "expect": {
-            "state": {
-              "intent": "block",
-              "apps": [
-                "Instagram"
-              ],
-              "app_category": null,
-              "moment": null,
-              "action_type": "strict_block",
-              "start": {
-                "type": "now"
-              },
-              "end": null,
-              "duration_minutes": 30,
-              "recurrence": {
-                "type": "once",
-                "weekdays": []
-              },
-              "confirmation": null,
-              "pending_slots": [
-                "confirmation"
-              ],
-              "status": "awaiting_confirmation",
-              "next_question": "confirmation"
-            },
-            "decision": {
-              "type": "confirm",
-              "slot": "confirmation"
-            },
-            "actions": [],
-            "language": "en"
-          }
-        },
-        {
-          "input": "Actually, make that 45 minutes.",
-          "expect": {
-            "state": {
-              "intent": "block",
-              "apps": [
-                "Instagram"
-              ],
-              "app_category": null,
-              "moment": null,
-              "action_type": "strict_block",
-              "start": {
-                "type": "now"
-              },
-              "end": null,
-              "duration_minutes": 45,
-              "recurrence": {
-                "type": "once",
-                "weekdays": []
-              },
-              "confirmation": null,
-              "pending_slots": [
-                "confirmation"
-              ],
-              "status": "awaiting_confirmation",
-              "next_question": "confirmation"
-            },
-            "decision": {
-              "type": "confirm",
-              "slot": "confirmation"
-            },
-            "actions": [],
-            "language": "en"
-          }
-        },
-        {
-          "input": "Yes.",
-          "expect": {
-            "state": {
-              "intent": "block",
-              "apps": [
-                "Instagram"
-              ],
-              "app_category": null,
-              "moment": null,
-              "action_type": "strict_block",
-              "start": {
-                "type": "now"
-              },
-              "end": null,
-              "duration_minutes": 45,
-              "recurrence": {
-                "type": "once",
-                "weekdays": []
-              },
-              "confirmation": "confirmed",
-              "pending_slots": [],
-              "status": "ready",
-              "next_question": null
-            },
-            "decision": {
-              "type": "ready",
-              "slot": null
-            },
-            "actions": [
-              {
-                "type": "start_protection",
-                "minutes": 45,
-                "hard_mode": false
-              }
-            ],
-            "language": "en"
-          }
-        }
-      ]
-    },
-    {
       "id": "duration_not_end_time_anonymized_reconstruction",
       "channel": "ios",
       "provenance": "Reconstruction of the user-reported duration-vs-clock failure class. No private transcript available or invented as real evidence.",
@@ -960,5 +798,12 @@
         }
       ]
     }
-  ]
+  ],
+  "platform_cleanup": {
+    "date": "2026-10-14",
+    "original_utf8_lf_sha256": "42ec5598eda32e6becc5adc463939530f6e19d14468024404a322084fbce7d55",
+    "removed_conversations": 1,
+    "status": "filtered_not_evaluated",
+    "note": "Retained authored cases preserve their gold values. Prior aggregate evaluations and frozen manifests apply to the original artifact in Git history, not this subset."
+  }
 }

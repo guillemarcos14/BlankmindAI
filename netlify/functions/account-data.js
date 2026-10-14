@@ -6,10 +6,11 @@ const {
   supabaseFetch,
   supabaseAuthFetch,
 } = require("./_membership");
-const { decryptToken, revokeToken } = require("./_wearable_oauth");
 const { ensureIdentityForAuthUser, identityForAuthUser } = require("./_identity");
-const { assistantChannelUserId } = require("./_assistant_channel");
+const { assistantChannelUserId } = require("./_assistant_memory");
 const { revokeAppleAuthorization } = require("./_apple_revoke");
+
+function legacyChannelOwner(channel,phone){return "assistant:"+require("node:crypto").createHash("sha256").update(`${channel}:${phone}`).digest("hex").slice(0,32);}
 
 const DATA_TABLES = [
   "digital_wellness_feature_payloads",
@@ -80,23 +81,7 @@ async function linkedAnonymousIds(authUserId) {
   return rows.map((row) => cleanText(row.anonymous_user_id)).filter(Boolean);
 }
 
-async function revokeWearableTokens(anonymousIds) {
-  for (const anonymousUserId of anonymousIds) {
-    const rows = await supabaseFetch(
-      `wearable_connections?anonymous_user_id=eq.${encodeURIComponent(anonymousUserId)}&select=provider,encrypted_access_token,encrypted_refresh_token`,
-      { method: "GET" },
-    );
-    for (const row of rows) {
-      const encrypted = row.encrypted_refresh_token || row.encrypted_access_token;
-      if (!encrypted) continue;
-      try {
-        await revokeToken(row.provider, decryptToken(encrypted));
-      } catch (_) {
-        // Deletion continues even if an external provider is unavailable.
-      }
-    }
-  }
-}
+
 
 async function deleteData(event, requireAppleRevocation = false) {
   const user = await requireUser(event);
@@ -117,13 +102,12 @@ async function deleteData(event, requireAppleRevocation = false) {
   if (identity?.anonymous_user_id) ids.push(identity.anonymous_user_id);
   ids.push(assistantChannelUserId("app", authUserId));
   if (identity?.phone_e164) {
-    ids.push(assistantChannelUserId("whatsapp", identity.phone_e164));
-    ids.push(assistantChannelUserId("sms", identity.phone_e164));
+    ids.push(legacyChannelOwner("whatsapp", identity.phone_e164));
+    ids.push(legacyChannelOwner("sms", identity.phone_e164));
   }
 
   const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
 
-  await revokeWearableTokens(uniqueIds);
   await supabaseFetch(`assistant_app_turns?auth_user_id=eq.${encodeURIComponent(authUserId)}`, {
     method: "DELETE",
     headers: { prefer: "return=minimal" },

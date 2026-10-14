@@ -43,7 +43,7 @@ async function main() {
     return originalFetch(url,options);
   };
   const app=require(path.join(source,"netlify/functions/assistant-app.js"));
-  const sourceHashes=Object.fromEntries(["assistant-app.js","whatsapp-agent.js","bmb-brain.js","_assistant_channel.js","_bm_user_context.js","bm-response-stream.js","bm-turn-timing.js"].flatMap(name=>{
+  const sourceHashes=Object.fromEntries(["assistant-app.js","assistant-app-agent.js","bmb-brain.js","_assistant_memory.js","_bm_user_context.js","bm-response-stream.js","bm-turn-timing.js"].flatMap(name=>{
     const file=path.join(source,"netlify/functions",name);return fs.existsSync(file)?[[name,crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex")]]:[];
   }));
   const records=[],cleanup=[],runId=crypto.randomUUID(),install="latency-"+runId;

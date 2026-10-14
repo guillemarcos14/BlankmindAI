@@ -1,12 +1,21 @@
 {
   "file": "tools/datasets/bm_semantic_heldout_v3.json",
-  "sha256": "150e3d749ac8d5669cabc89c5e2a4b654ca6bf12ead220a7f8ee6f4d8ecad42e",
-  "frozen_at": "2026-09-15T17:49:04.425675+00:00",
-  "conversations": 5,
-  "turns": 12,
-  "status": "frozen_before_execution",
-  "core_sha256": "01bf71a04dc8b50b128e998a6cf951b414bc14e02600c3db9c4de2d08afb86db",
-  "oracle_sha256": "4362f699f866c218e15d1ccac7eaf2f9ff2d0421b82f16cfb18019b2d58921db",
+  "sha256": "8f53d74098acfd0ccdf47e99e493e4b1b242212900cb8c293ccbc657fdf2a221",
+  "conversations": 4,
+  "turns": 10,
+  "status": "platform_filtered_not_evaluated",
   "hash_kind": "utf8_lf_sha256",
-  "line_endings_note": "Frozen with LF. Windows Git may materialize CRLF; normalize CRLF to LF before comparing this original SHA256. No JSON content changes."
+  "original_manifest": {
+    "file": "tools/datasets/bm_semantic_heldout_v3.json",
+    "sha256": "150e3d749ac8d5669cabc89c5e2a4b654ca6bf12ead220a7f8ee6f4d8ecad42e",
+    "frozen_at": "2026-09-15T17:49:04.425675+00:00",
+    "conversations": 5,
+    "turns": 12,
+    "status": "frozen_before_execution",
+    "core_sha256": "01bf71a04dc8b50b128e998a6cf951b414bc14e02600c3db9c4de2d08afb86db",
+    "oracle_sha256": "4362f699f866c218e15d1ccac7eaf2f9ff2d0421b82f16cfb18019b2d58921db",
+    "hash_kind": "utf8_lf_sha256",
+    "line_endings_note": "Frozen with LF. Windows Git may materialize CRLF; normalize CRLF to LF before comparing this original SHA256. No JSON content changes."
+  },
+  "note": "This subset was not frozen before the historical evaluation and inherits no evaluation approval."
 }

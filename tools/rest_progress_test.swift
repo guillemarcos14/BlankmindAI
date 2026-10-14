@@ -74,3 +74,9 @@ check(snap.headline == "Your measured sleep", "Watch data lost priority to subje
 check(RestProgressSnapshot.make(nights: [], checkIns: ratings, now: now, calendar: calendar).headline == "Your sleep data",
     "Improved subjective scores became measured sleep improvement")
 print("Rest Progress: source reconciliation, DST, unknown data, check-in isolation/deletion, baseline and protection passed")
+
+check(RestReportScope.includes("blank.nightHeartRate"), "Overnight heart rate lost from rest report")
+check(RestReportScope.includes("HKQuantityTypeIdentifierHeartRateVariabilitySDNN"), "Recovery context lost")
+for id in ["HKQuantityTypeIdentifierStepCount", "HKQuantityTypeIdentifierBodyMass", "HKQuantityTypeIdentifierDietaryEnergyConsumed", "HKWorkoutTypeIdentifier", "HKQuantityTypeIdentifierTimeInDaylight"] { check(!RestReportScope.includes(id), "General wellness metric entered rest report") }
+let legacySessionMode = try JSONDecoder().decode(BlankEntryMode.self, from: Data("\"widget\"".utf8))
+check(legacySessionMode == .app, "Old session became unreadable after widget deletion")

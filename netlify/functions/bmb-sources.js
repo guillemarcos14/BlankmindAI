@@ -13,9 +13,6 @@ const CATALOG={
   history:["assistant_app_turns","auth_user_id","id,user_text,assistant_text,action_id,created_at","created_at",true],
   sessions:["bmb_sessions","auth_user_id","id,started_at,ended_at,pause_started_at,pause_ended_at,ended_reason,entry_mode,observed_at","started_at"],
   onboarding:["onboarding_responses","anonymous_user_id","id,name,age_range,goal,profile,daily_hours,ai_goal,weak_moment,selected_plan,locale,created_at","created_at",true,true],
-  wellness:["wellness_signal_events","anonymous_user_id","id,signal_type,value_number,value_text,measured_at,source","measured_at",true],
-  wearable_connections:["wearable_connections","anonymous_user_id","id,provider,status,scopes,last_sync_at,disconnected_at,updated_at","updated_at"],
-  wearables:["wearable_feature_snapshots","anonymous_user_id","id,provider,common_features,provider_features,source_confidence,freshness,period_start,period_end,created_at","created_at",true],
   feedback:["bmb_events","auth_user_id","id,kind,outcome,feedback,created_at","created_at"],
   events:["bmb_events","auth_user_id","id,kind,facts,outcome,created_at","created_at"],
   device_signals:["bmb_device_signals","auth_user_id","id,kind,occurred_at,threshold_minutes","occurred_at"]
@@ -89,7 +86,6 @@ async function readSource(userId,identity,q,cutoff,db=supabaseFetch) {
   let path=`${table}?${filter}=eq.${enc(owner)}&select=${select}&order=${time}.desc,id.desc&limit=41&offset=${q.offset}`;
   if(personal&&cutoff)path+=`&${time}=gt.${enc(cutoff)}`;
   if(consent)path+="&data_consent=eq.true";
-  if(cutoff&&q.source==="wearables")path+=`&period_start=gt.${enc(cutoff)}`;
   if(q.source==="observations")path+="&status=eq.active";
   if(q.source==="reviews")path+="&status=eq.completed";
   if(q.source==="history") {

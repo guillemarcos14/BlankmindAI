@@ -14,7 +14,7 @@ El flujo afecta a:
 - Migraciones y Edge Functions de `supabase/`.
 - Tests, harness y documentación técnica relacionados.
 
-La compilación iOS/Android continúa siendo un flujo separado.
+La compilación iOS continúa siendo un flujo separado.
 
 ## Ciclo reusable
 

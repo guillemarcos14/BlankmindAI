@@ -4,7 +4,6 @@ import Foundation
 import ManagedSettings
 import OSLog
 import UserNotifications
-import WidgetKit
 
 private let log = Logger(
     subsystem: "com.blanknfc.app.ios.device-activity",
@@ -28,10 +27,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         super.intervalDidStart(for: activity)
         log.info("DeviceActivity interval started: \(activity.rawValue)")
 
-        if activity.rawValue == "BlankWidgetUnlock" {
-            finishWidgetUnlock()
-            return
-        }
+
 
         if activity.rawValue.hasPrefix(strategyExpiryPrefix) {
             releaseExpiredStrategy()
@@ -55,10 +51,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         super.intervalDidEnd(for: activity)
         log.info("DeviceActivity interval ended: \(activity.rawValue)")
 
-        if activity.rawValue == "BlankWidgetUnlock" {
-            finishWidgetUnlock()
-            return
-        }
+
 
         if activity.rawValue.hasPrefix(strategyActivityPrefix) || activity.rawValue.hasPrefix(strategyExpiryPrefix) {
             releaseExpiredStrategy()
@@ -87,12 +80,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         store.webContent.blockedByFilter = Self.adultContentBlockingEnabled ? .auto() : nil
     }
 
-    private func finishWidgetUnlock() {
-        guard BlankSharedState.finishWidgetUnlockIfDue(defaults: Self.sharedDefaults) else { return }
-        // Named recurring/daily-limit stores remain independent of this manual block.
-        strategyStore.clearAllSettings()
-        WidgetCenter.shared.reloadTimelines(ofKind: "BlankQuickBlockWidget")
-    }
+
 
     private func releaseExpiredStrategy() {
         // A delayed callback from an older timer must not release a newer block.

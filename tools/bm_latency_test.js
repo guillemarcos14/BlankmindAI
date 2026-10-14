@@ -43,7 +43,7 @@ async function main(){
     calls.length=0;await adapter.enrichAssistantContext({},"CODE-A",{identity:{...identity,assistant_connect_code:"CODE-B"},includeLegacySources:false});
     assert(calls.some(p=>p.startsWith("blankmind_identity_links")),"Wrong identity cannot be reused");
     calls.length=0;await adapter.enrichAssistantContext({},"CODE-A");
-    assert(calls.some(p=>p.startsWith("onboarding_responses")),"Messaging keeps its source enrichment");
+    assert(!calls.some(p=>/^(onboarding_responses|wearable_|wellness_signal)/.test(p)),"Removed channels must not trigger legacy enrichment");
   }finally{if(oldUrl===undefined)delete process.env.SUPABASE_URL;else process.env.SUPABASE_URL=oldUrl;if(oldKey===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=oldKey;}
 
   // Account reads begin together, while history MUST await the memory cutoff.

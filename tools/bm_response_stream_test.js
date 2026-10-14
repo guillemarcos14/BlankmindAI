@@ -56,6 +56,25 @@ async function main() {
       + sse({ type: "response.completed", response: { status: "completed" } })) });
   assert.equal(leaked, false, "Tool reads cannot become visible text");
 
+  // Real Responses function-call SSE shape. Only gestionar's response_text
+  // can be previewed, with arbitrary byte boundaries and no final execution.
+  for(const name of ["gestionar","consultar_contexto","unknown"]){
+    const seen=[],args=JSON.stringify({decision:"execute",action:{type:"start_protection",minutes:30},memory:null,response_text:"Lo intento 👋"});
+    const events=[{type:"response.output_item.added",item:{type:"function_call",id:"fc-1",name}}];
+    for(const delta of args)events.push({type:"response.function_call_arguments.delta",item_id:"fc-1",delta});
+    const completed={status:"completed",output:[{type:"function_call",id:"fc-1",name,arguments:args}]};
+    events.push({type:"response.completed",response:completed});
+    const bytes=enc.encode(events.map(sse).join(""));
+    const response=await readModelStream({request:{},timeoutMs:1000,errorPrefix:"agent",onDraft:text=>seen.push(text),
+      fetchImpl:async()=>new Response(new ReadableStream({start(c){for(const byte of bytes)c.enqueue(Uint8Array.of(byte));c.close();}}))});
+    assert.deepEqual(response.body,completed);
+    if(name==="gestionar")assert.equal(seen.at(-1),"Lo intento 👋");
+    else assert.deepEqual(seen,[],"Private/unknown tool leaked arguments");
+  }
+  await assert.rejects(()=>readModelStream({request:{},timeoutMs:1000,errorPrefix:"agent",onDraft(){},fetchImpl:async()=>new Response(
+    sse({type:"response.output_item.added",item:{type:"function_call",id:"fc-1",name:"gestionar"}})
+    +sse({type:"response.function_call_arguments.delta",item_id:"fc-1",delta:'{"response_text":"provisional'}))}),/stream_truncated/);
+
   // Use the production BMB generation and conformance repair path. Repair must
   // replace the provisional copy, while the validated plan owns final text.
   const brain = require("../netlify/functions/bmb-brain");

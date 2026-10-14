@@ -43,8 +43,6 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NFCReaderUsageDescription</key>
-	<string>Blankmind AI may use NFC for legacy tag backup flows when enabled.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Blankmind AI reads health data you choose to share, including sleep, physical signals, activity, daylight, nutrition, reproductive health, symptoms and wellbeing, to put your rest and disconnection habits in context. Progress analysis stays on your device. It does not diagnose medical conditions.</string>
 	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>

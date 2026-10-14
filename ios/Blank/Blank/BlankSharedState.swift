@@ -80,90 +80,10 @@ enum BlankSharedState {
         return ActiveState(isActive: isActive, startedAt: startedAt, endsAt: endsAt)
     }
 
-    static func startQuickBlock(defaults: UserDefaults = Self.defaults, now: Date = Date()) -> Bool {
-        guard defaults.double(forKey: "blankManualReblockAt") <= now.timeIntervalSince1970 else { return false }
-        guard !defaults.bool(forKey: Keys.isBlankActive) else { return false }
-        guard hasConfiguredBlock(in: defaults) else { return false }
-        let durationMinutes = pendingWidgetTimerMinutes(defaults: defaults)
-        defaults.set(true, forKey: Keys.isBlankActive)
-        defaults.set(now.timeIntervalSince1970, forKey: Keys.blankActiveSince)
-        if let durationMinutes {
-            defaults.set(now.addingTimeInterval(TimeInterval(durationMinutes * 60)).timeIntervalSince1970, forKey: Keys.blankActiveUntil)
-        } else {
-            defaults.removeObject(forKey: Keys.blankActiveUntil)
-        }
-        defaults.removeObject(forKey: Keys.pendingWidgetTimerMinutes)
-        defaults.removeObject(forKey: "blankQuickBlockDurationMinutes")
-        appendSession(defaults: defaults, now: now, entryMode: .widget, plannedDurationMinutes: durationMinutes)
-        return true
-    }
+
 
     // Session ownership prevents a late extension callback from releasing a new block.
-    static func widgetUnlockDeadline(defaults: UserDefaults = Self.defaults) -> Date? {
-        guard defaults.bool(forKey: Keys.isBlankActive),
-              !defaults.bool(forKey: "blankHardBlankActive"),
-              let owner = date(forKey: Keys.widgetUnlockSessionSince, defaults: defaults),
-              owner == date(forKey: Keys.blankActiveSince, defaults: defaults) else { return nil }
-        return date(forKey: Keys.widgetUnlockAt, defaults: defaults)
-    }
 
-    @discardableResult
-    static func requestWidgetUnlock(defaults: UserDefaults = Self.defaults, now: Date = Date()) -> Date? {
-        guard loadActiveState(now: now, defaults: defaults).isActive,
-              !defaults.bool(forKey: "blankHardBlankActive"),
-              let owner = date(forKey: Keys.blankActiveSince, defaults: defaults) else { return nil }
-        if let pending = widgetUnlockDeadline(defaults: defaults) { return pending }
-        // Do not restart a countdown already requested in the app.
-        let manualOwner = defaults.double(forKey: "blankManualUnlockSessionSince")
-        let manualDeadline = date(forKey: "blankManualUnlockAt", defaults: defaults)
-        let deadline = manualOwner == owner.timeIntervalSince1970
-            ? (manualDeadline ?? now.addingTimeInterval(60)) : now.addingTimeInterval(60)
-        defaults.set(owner.timeIntervalSince1970, forKey: Keys.widgetUnlockSessionSince)
-        defaults.set(deadline.timeIntervalSince1970, forKey: Keys.widgetUnlockAt)
-        return deadline
-    }
-
-    static func cancelWidgetUnlock(defaults: UserDefaults = Self.defaults) {
-        defaults.removeObject(forKey: Keys.widgetUnlockAt)
-        defaults.removeObject(forKey: Keys.widgetUnlockSessionSince)
-    }
-
-    @discardableResult
-    static func finishWidgetUnlockIfDue(defaults: UserDefaults = Self.defaults, now: Date = Date()) -> Bool {
-        guard let deadline = widgetUnlockDeadline(defaults: defaults) else {
-            // An upgraded hard block or a replaced session permanently invalidates the request.
-            cancelWidgetUnlock(defaults: defaults)
-            return false
-        }
-        guard now >= deadline else { return false }
-        // A timed session that ends first retains its original completion reason.
-        if finishExpiredBlock(defaults: defaults, now: now) { return true }
-        defaults.set(false, forKey: Keys.isBlankActive)
-        defaults.removeObject(forKey: Keys.blankActiveSince)
-        defaults.removeObject(forKey: Keys.blankActiveUntil)
-        defaults.removeObject(forKey: Keys.pendingWidgetTimerMinutes)
-        defaults.removeObject(forKey: "blankManualUnlockAt")
-        defaults.removeObject(forKey: "blankManualUnlockSessionSince")
-        defaults.set(now.addingTimeInterval(60).timeIntervalSince1970, forKey: "blankManualReblockAt")
-        cancelWidgetUnlock(defaults: defaults)
-        endActiveSession(defaults: defaults, now: now, endedReason: .control)
-        return true
-    }
-
-    static func pendingWidgetTimerMinutes(defaults: UserDefaults = Self.defaults) -> Int? {
-        guard defaults.object(forKey: Keys.pendingWidgetTimerMinutes) != nil else { return nil }
-        let minutes = defaults.integer(forKey: Keys.pendingWidgetTimerMinutes)
-        guard minutes > 0 else { return nil }
-        return min(max(minutes, 5), 240)
-    }
-
-    static func setPendingWidgetTimerMinutes(_ minutes: Int?, defaults: UserDefaults = Self.defaults) {
-        if let minutes {
-            defaults.set(min(max(minutes, 5), 240), forKey: Keys.pendingWidgetTimerMinutes)
-        } else {
-            defaults.removeObject(forKey: Keys.pendingWidgetTimerMinutes)
-        }
-    }
 
     @discardableResult
     static func finishExpiredBlock(defaults: UserDefaults = Self.defaults, now: Date = Date()) -> Bool {
@@ -176,8 +96,6 @@ enum BlankSharedState {
         defaults.set(false, forKey: Keys.isBlankActive)
         defaults.removeObject(forKey: Keys.blankActiveSince)
         defaults.removeObject(forKey: Keys.blankActiveUntil)
-        defaults.removeObject(forKey: Keys.pendingWidgetTimerMinutes)
-        cancelWidgetUnlock(defaults: defaults)
         endActiveSession(defaults: defaults, now: now, endedReason: activeExpiredReason(defaults: defaults))
         return true
     }
@@ -187,46 +105,7 @@ enum BlankSharedState {
         return activeSession?.plannedDurationMinutes == nil ? .expired : .timer
     }
 
-    private static func appendSession(
-        defaults: UserDefaults,
-        now: Date,
-        entryMode: BlankEntryMode,
-        plannedDurationMinutes: Int? = nil
-    ) {
-        let snapshot = selectionSnapshot(in: defaults)
-        let session = BlankSession(
-            profileId: canonicalProtectionId,
-            strategy: .manual,
-            startedAt: now,
-            entryMode: entryMode,
-            selectionSnapshot: snapshot,
-            modeName: canonicalProtectionName,
-            plannedDurationMinutes: plannedDurationMinutes
-        )
-        var sessions = loadSessions(defaults: defaults)
-        if let index = sessions.lastIndex(where: { $0.isActive }) {
-            sessions[index].end(at: now, endedReason: .unknown)
-            appendUsageEvent(
-                defaults: defaults,
-                kind: .blockEnded,
-                session: sessions[index],
-                entryMode: entryMode,
-                endedReason: .unknown,
-                now: now
-            )
-        }
-        sessions.append(session)
-        saveSessions(sessions, defaults: defaults)
-        appendUsageEvent(
-            defaults: defaults,
-            kind: .blockStarted,
-            session: session,
-            entryMode: entryMode,
-            now: now,
-            selectionSnapshot: snapshot,
-            modeName: canonicalProtectionName
-        )
-    }
+
 
     private static func endActiveSession(defaults: UserDefaults, now: Date, endedReason: BlankEndedReason) {
         var sessions = loadSessions(defaults: defaults)
@@ -237,7 +116,7 @@ enum BlankSharedState {
             defaults: defaults,
             kind: .blockEnded,
             session: sessions[index],
-            entryMode: sessions[index].entryMode ?? .widget,
+            entryMode: sessions[index].entryMode ?? .app,
             endedReason: endedReason,
             now: now
         )
@@ -320,8 +199,5 @@ enum BlankSharedState {
         static let selection = "familyActivitySelection"
         static let sessions = "blankSessions"
         static let usageEvents = "blankUsageEvents"
-        static let pendingWidgetTimerMinutes = "blankPendingWidgetTimerMinutes"
-        static let widgetUnlockAt = "blankWidgetUnlockAt"
-        static let widgetUnlockSessionSince = "blankWidgetUnlockSessionSince"
     }
 }

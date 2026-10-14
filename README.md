@@ -1,30 +1,22 @@
-# BlankMVP
+# Blankmind for iOS
 
-Blank is a physical NFC-controlled app blocker.
+Blankmind works exclusively on iPhone, with Apple Watch sleep data informing the personal rest model.
 
-## Project Structure
+## Project structure
 
-- `app/` - Android Kotlin/Jetpack Compose MVP.
-- `ios/Blank/` - iPhone SwiftUI MVP using Core NFC and Screen Time APIs.
-- `docs/` - production, beta, analytics, market test, and store copy documents.
-- `web/landing/` - static landing page for waitlist/preorder testing.
+- `ios/Blank/` — SwiftUI app and Screen Time extensions.
+- `netlify/functions/` and `supabase/` — authenticated conversation, memory, voice and measured rest.
+- `tools/` — runtime, database, native and release validation.
+- `docs/` — product, validation and Apple distribution documentation.
+- `web/landing/` — app access page.
 
-## Android Beta
+## Validation
+
+Create a baseline before editing, then validate the declared scope:
 
 ```powershell
-.\gradlew.bat testDebugUnitTest
-.\gradlew.bat assembleDebug
-.\gradlew.bat bundleRelease
+node tools/product_harness.js --contract tools/product_harness_contract.json --write-baseline tmp/product-harness/baseline.json --mode plan
+node tools/product_harness.js --contract tools/product_harness_contract.json --baseline tmp/product-harness/baseline.json --mode validate --enforce-scope
 ```
 
-Release signing is configured through secrets outside the repo. See `docs/ANDROID_BETA_RELEASE.md`.
-
-## iPhone Beta
-
-Open `ios/Blank/Blank.xcodeproj` on macOS with Xcode and run on a physical iPhone. NFC does not work in Simulator. Real app shielding requires Apple's Family Controls entitlement. See `docs/IOS_TESTFLIGHT_AND_ENTITLEMENT.md`.
-
-## Market Test
-
-Open `web/landing/index.html` in a browser to preview the static landing page. Before sending traffic, connect the email form to a real backend or form tool.
-
-Use `docs/MARKET_TEST_PLAN.md` to run a 20-50 user beta.
+The iOS Build workflow compiles and tests the SwiftUI app on macOS. Open `ios/Blank/Blank.xcodeproj` in Xcode for local Apple development. Physical iPhone/Watch validation, signing and distribution remain separate gates; see `docs/IOS_TESTFLIGHT_AND_ENTITLEMENT.md`.

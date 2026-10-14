@@ -153,30 +153,15 @@ struct BlankApp: App {
             return
         }
 
-        if action == "open" {
-            BlankSharedState.defaults.set(true, forKey: "blankWidgetOpenHome")
-            return
-        }
+
 
         if action == "assistant" {
             NotificationCenter.default.post(name: .blankAssistantFollowupRequested, object: nil)
             return
         }
-        if action == "timer" || action == "schedule-timer" {
-            sessionStore.requestWidgetTimerSelector()
-            return
-        }
 
-        if action == "widget-toggle" {
-            sessionStore.syncFromSharedDefaults()
-            if sessionStore.isBlankActive {
-                sessionStore.scheduleManualUnlock(after: 60)
-            } else {
-                _ = sessionStore.activateBlank(entryMode: .widget)
-            }
-            applyScreenTimeState()
-            return
-        }
+
+
 
         if action == "configure-block" || action == "open-picker" || action == "choose-apps" {
             openBlockConfiguration(from: components)

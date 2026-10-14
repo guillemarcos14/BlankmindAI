@@ -3,7 +3,7 @@ const crypto = require("node:crypto");
 const { emptyState } = require("../netlify/functions/bm-semantic-state");
 
 const membership = require("../netlify/functions/_membership");
-const channel = require("../netlify/functions/_assistant_channel");
+const channel = require("../netlify/functions/_assistant_memory");
 const identity = require("../netlify/functions/_identity");
 const semantic = require("../netlify/functions/_bm_semantic_store");
 const push = require("../netlify/functions/_assistant_push");
@@ -162,9 +162,9 @@ membership.supabaseFetch = async (path, options = {}) => {
 };
 
 // Use the real pending-action queue with only network/storage adapters stubbed.
-delete require.cache[require.resolve("../netlify/functions/whatsapp-agent")];
-const whatsapp = require("../netlify/functions/whatsapp-agent");
-whatsapp.callBlankedAgent = async (_prompt, _user, _connection, { onDraft } = {}) => {
+delete require.cache[require.resolve("../netlify/functions/assistant-app-agent")];
+const appAgent = require("../netlify/functions/assistant-app-agent");
+appAgent.callBlankedAgent = async (_prompt, _user, _connection, { onDraft } = {}) => {
   effects.planner += 1;
   faultOnce("planner");
   const context = { language: "es", memory: copy(memory), ...copy(brainContext) };
@@ -175,8 +175,16 @@ whatsapp.callBlankedAgent = async (_prompt, _user, _connection, { onDraft } = {}
 };
 const { handler, actionStatus } = require("../netlify/functions/assistant-app");
 const event = (body, token = "valid") => ({ httpMethod: "POST", headers: { authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+const metadataHooks=[];
+let metadataReject=false;
 const request = async (body, token) => {
-  const response = await handler(event({ app_install_id: "verified-install", ...body }, token));
+  const response = await handler(event({ app_install_id: "verified-install", ...body }, token),null,{afterCommit:ids=>{
+    const row=rows.get(ids.turnId);assert.equal(row.status,"completed");assert.equal(ids.userId,row.auth_user_id);
+    assert(!memoryCommitUnavailable,"Metadata started before the memory checkpoint");
+    assert.deepEqual(Object.keys(ids).sort(),["turnId","userId"]);
+    metadataHooks.push(ids);
+    if(metadataReject)return Promise.reject(Error("optional_metadata_failure"));
+  }});
   return { status: response.statusCode, body: JSON.parse(response.body) };
 };
 const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ action: "send", turn_id: id, text }, token);
@@ -231,7 +239,7 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
   assert.equal(memory.conversation_state.last_assistant_message, guarded.body.turn.assistant_text);
   const guardedId = guarded.body.turn.id;
   memory.last_assistant_action_outcome = { id: guarded.body.turn.action_id, status: "verified" };
-  // assistant-channel persists the validated native receipt before advancing
+  // assistant-device persists the validated native receipt before advancing
   // memory; its isolation and write-failure cases live in bm_app_receipt_test.
   rows.get(guardedId).action_status = "verified";
   delete memory.pending_assistant_action;
@@ -449,11 +457,16 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
   assert.equal((await send(memoryId, "Estudiar")).status, 503);
   assert.equal(rows.get(memoryId).status, "completed");
   assert.equal(memoryCommitCount, 0);
+  assert(!metadataHooks.some(ids=>ids.turnId===memoryId),"Failed memory commit scheduled metadata");
   memoryCommitUnavailable = false;
   assert.equal((await send(memoryId, "Estudiar")).status, 200);
   assert.equal((await send(memoryId, "Estudiar")).status, 200);
   assert.equal(memoryCommitCount, 1, "Recovered memory committed twice");
+  assert(metadataHooks.some(ids=>ids.turnId===memoryId),"Completed recovery did not resume optional metadata");
   assert.equal(effects.planner - beforeMemory, 1, "Memory recovery regenerated the turn");
+  metadataReject=true;
+  assert.equal((await send(memoryId,"Estudiar")).status,200,"Optional metadata rejection failed completed reply");
+  metadataReject=false;
   brainContext = { brain_request: { execute: true }, brain_snapshot: {}, has_selected_apps: true, screen_time_authorized: true };
   actions = [{ type: "start_protection", minutes: 30 }];
   let automatic = await send(crypto.randomUUID());

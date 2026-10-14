@@ -1,0 +1,62 @@
+"use strict";
+const assert=require("node:assert/strict"),crypto=require("node:crypto"),{adapt}=require("./bm_agent_report"),{input}=require("./bm_agent_quality");
+const sha=x=>crypto.createHash("sha256").update(JSON.stringify(x)).digest("hex");
+const {providerFailure}=require("./bm_agent_quality");
+const {nativeQueued}=require("./bm_retrieval_wide_benchmark");
+assert.equal(nativeQueued({action_id:"queued",auto_apply:false},{expected_action:{type:"open_app_picker"}}),true,"A native UI interaction was mistaken for a missing command");
+assert.equal(nativeQueued({action_id:null,auto_apply:false},{expected_action:{type:"open_app_picker"}}),false);
+assert.equal(nativeQueued({action_id:"queued",auto_apply:false},{expected_action:{type:"start_protection"}}),false,"Non-UI commands lost the automatic-execution check");
+assert.equal(providerFailure(429,{error:{code:"credit_balance_exhausted"}}),"provider_credit_exhausted");
+assert.equal(providerFailure(429,{}),"provider_rate_limited");
+const row={agent_feature:"tools",variant:"decisions",pair:0,step:0,case_id:"fixture",language:"es",group:"action",status:200,
+ synthetic_input:"Modifica mi ventana",synthetic_response:"Voy a intentarlo",action_id_present:true,auto_apply:true,pending_action:{type:"update_schedule",window_id:"fixture",weekdays:[2,3,4,5,6]},
+ expected:{criterion:"Exact update only"},canonical_memories:[],canonical_observations:[],committed_effect:[{brain_memory_effect:null}],
+ first_text_ms:100,first_audio_ms:999,cost_usd:0,provider_requests:[{endpoint:"responses",provider_request_id:"req_fixture",usage:{input_tokens:100,output_tokens:10,cached_input_tokens:0,cache_write_tokens:0}}]};
+const report={complete:true,run_id:"fixture",provider_real:true,generative_model:"gpt-5.6-luna",rates:{input:.2,cached:.02,output:1.2},agent_source_hashes:{},case_manifest:{cases:[{id:"fixture",expected_action:structuredClone(row.pending_action)}]},records:[row]};
+const quality={complete:true,input_version:3,source_sha256:sha(report),model:"gpt-5.6-sol",reviews:[{id:"decisions:0:0",input_sha256:sha(input(row,report)),review:{response_ok:true,memory_ok:true,action_ok:true,naturalness:4}}]};
+const converted=adapt(report,quality)[0];
+assert.equal(converted.first_audio_ms,null,"An unpaired/unsolicited audio timing was invented");
+assert.equal(converted.audio_requested,false);assert.equal(converted.quality.reviewed,true);assert.equal(converted.variant,"candidate");
+assert.equal(converted.quality.action_ok,true);
+const wrong=structuredClone(report);wrong.records[0].pending_action.weekdays=[1,2,3,4,5];
+const wrongReview={...quality,source_sha256:sha(wrong),reviews:[{...quality.reviews[0],input_sha256:sha(input(wrong.records[0],wrong))}]};
+assert.equal(adapt(wrong,wrongReview)[0].quality.action_ok,false,"A model approval overrode wrong native parameters");
+assert.equal(converted.cost_usd,.000032);assert.equal(converted.background_cost_usd,0);
+assert.equal(input(row,report).requested_action.type,"update_schedule","All actions became a hardcoded 30-minute block");
+assert(!Object.hasOwn(input(row,report),"variant"),"Reviewer was not blind");
+assert.throws(()=>adapt(report,{...quality,source_sha256:"changed"}),/unchanged/);
+assert.throws(()=>adapt(report,{...quality,model:report.generative_model}),/Independent/);
+assert.throws(()=>adapt(report,{...quality,reviews:[...quality.reviews,...quality.reviews]}),/Duplicate/);
+assert.throws(()=>adapt(report,{...quality,reviews:[{...quality.reviews[0],input_sha256:"changed"}]}),/original turn/);
+const unaudited=structuredClone(report);delete unaudited.records[0].canonical_observations;
+const uq={...quality,source_sha256:sha(unaudited),reviews:[{...quality.reviews[0],input_sha256:sha(input(unaudited.records[0],unaudited))}]};
+assert.equal(adapt(unaudited,uq)[0].quality.reviewed,false,"Missing database audit qualified as complete memory review");
+const fact={key:"preferences",literal:"leer en papel"},stored=structuredClone(report);
+stored.case_manifest.cases[0].expected_fact=fact;
+stored.records[0].canonical_memories=[{key:fact.key,value:fact.literal}];
+const reviewed=r=>({...quality,source_sha256:sha(r),reviews:[{...quality.reviews[0],input_sha256:sha(input(r.records[0],r))}]});
+const voiced=structuredClone(report);voiced.records[0].audio_requested=true;
+assert.equal(adapt(voiced,reviewed(voiced))[0].cost_usd,null,"Unknown billed voice cost became a free audio measurement");
+voiced.records[0].voice_cost_usd=.01;
+assert(Math.abs(adapt(voiced,reviewed(voiced))[0].cost_usd-.010032)<1e-12,"Known voice cost was omitted from total cost");
+const v4=input({...row,model_contexts:[{turn_clock:"2026-10-14T16:00:00Z",rest_evidence:{available:false,reason:"no_synced_watch_baseline"}}]},report,4);
+assert.equal(v4.actual.model_contexts[0].rest_evidence.available,false);
+assert(v4.recording_semantics.clock_scope.includes("seed time"));
+assert.equal(adapt(stored,reviewed(stored))[0].quality.memory_ok,false,"Pre-existing rows or a judge approval hid a missing write");
+stored.records[0].committed_effect=[{brain_memory_effect:{operation:"set",key:fact.key,value:fact.literal},brain_memory_applied_at:null}];
+assert.equal(adapt(stored,reviewed(stored))[0].quality.memory_ok,false,"An unapplied planned effect counted as persisted");
+stored.records[0].committed_effect[0].brain_memory_applied_at="2026-10-14T00:00:00Z";
+assert.equal(adapt(stored,reviewed(stored))[0].quality.memory_ok,true);
+// An explicit stop must finish without a provider call or budget reservation.
+const fs=require("node:fs"),path=require("node:path"),os=require("node:os"),cp=require("node:child_process");
+const temp=fs.mkdtempSync(path.join(os.tmpdir(),"bm-agent-review-stop-")),file=name=>path.join(temp,name);
+try{
+ fs.writeFileSync(file("source.json"),JSON.stringify(report));fs.writeFileSync(file("rates.json"),JSON.stringify({...report.rates,model:"gpt-5.6-luna"}));
+ const budget=JSON.stringify({limit_usd:1,known_usd:0,reserved_upper_usd:0,requests:0});fs.writeFileSync(file("budget.json"),budget);
+ fs.writeFileSync(file("stop"),"");fs.writeFileSync(file("offline.js"),"globalThis.fetch=async()=>{throw Error('unexpected_network_call')}");
+ const run=cp.spawnSync(process.execPath,["--require",file("offline.js"),path.join(__dirname,"bm_agent_quality.js"),"--run","--input",file("source.json"),"--output",file("review.json"),"--rates",file("rates.json"),"--budget-file",file("budget.json"),"--stop-file",file("stop"),"--candidate-first"],{env:{...process.env,OPENAI_API_KEY:"offline-fixture"},encoding:"utf8",windowsHide:true});
+ assert.equal(run.status,1);const stopped=JSON.parse(fs.readFileSync(file("review.json")));
+ assert.equal(stopped.stop_reason,"requested_between_batches");assert.equal(stopped.reviews.length,0);assert.equal(stopped.complete,false);
+ assert.equal(fs.readFileSync(file("budget.json"),"utf8"),budget);
+}finally{for(const name of fs.readdirSync(temp))fs.unlinkSync(file(name));fs.rmdirSync(temp);}
+console.log("PASS real-receipt adapter: exact source/review binding, independent blind judge, actual action, full cost, missing state audits and no invented audio");

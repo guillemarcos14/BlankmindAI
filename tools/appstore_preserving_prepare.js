@@ -4,7 +4,7 @@ const fs = require("node:fs"), path = require("node:path"), crypto = require("no
 const zlib = require("node:zlib");
 const { spawnSync } = require("node:child_process");
 const ROOT = path.resolve(__dirname, "..");
-const APP = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-app-stream", "assistant-app-voice", "assistant-channel", "bmb-tick", "bmb-worker-background"]);
+const APP = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-app-stream", "assistant-app-voice", "assistant-device", "bmb-tick", "bmb-worker-background"]);
 const digest = file => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 function json(file) { return JSON.parse(fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "")); }
 function git(args) {

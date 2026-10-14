@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const membership = require("../netlify/functions/_membership");
-const channel = require("../netlify/functions/_assistant_channel");
+const channel = require("../netlify/functions/_assistant_memory");
 const identity = require("../netlify/functions/_identity");
 const turnId = "11111111-1111-4111-8111-111111111111";
 const actionId = `app_${turnId}`;
@@ -45,7 +45,7 @@ membership.supabaseFetch = async (path, options) => {
   receipt = JSON.parse(options.body).action_status;
   return [{ id: turnId, action_status: receipt }];
 };
-const { handler } = require("../netlify/functions/assistant-channel");
+const { handler } = require("../netlify/functions/assistant-device");
 const pending = () => ({ id: actionId, type: "delete_schedule", window_id: "window-1", status: "execution_started",
   expires_at: new Date(Date.now() + 60_000).toISOString() });
 const request = (fields = {}) => handler({ httpMethod: "POST", headers: { authorization: "Bearer app-session" }, body: JSON.stringify({

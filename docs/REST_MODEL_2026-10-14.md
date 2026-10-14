@@ -34,7 +34,7 @@ Comparisons match the wake-date weekday; the permitted schedule day is the actua
 
 ## Source validation receipt
 
-Runtime `4f1b453`: full harness90/90, baseline/scope enforced, `ph_1791980238663_b994a546`; disposable SQL passed, including the positive/negative twenty-contributor boundary. [Backend CI38562651365](https://github.com/guillemarcos14/BlankmindAI/actions/runs/38562651365) passed all three jobs (contracts/runtime, PostgreSQL15, Android).
+Runtime `4f1b453`: full harness90/90, baseline/scope enforced, `ph_1791980238663_b994a546`; disposable SQL passed, including the positive/negative twenty-contributor boundary. [Backend CI38562651365](https://github.com/guillemarcos14/BlankmindAI/actions/runs/38562651365) passed the retained jobs (contracts/runtime, PostgreSQL15).
 
 [Native CI38561348408](https://github.com/guillemarcos14/BlankmindAI/actions/runs/38561348408) passed the actual Swift tests, Xcode26.4 simulator build and complete nineteen-case UI suite. Tested source37a9df9 has exactly the same iOS tree as runtime4f1b453 (`c8df357d102121139a3ab924457abdbc2e71df78`); later commits change backend/tests/documentation only. Visual export is a separate CI step, not evidence of physical execution. Local machine-readable receipt: `tmp/rest-validation/receipt.json`; harness report: `tmp/product-harness/rest-final-source.json`.
 

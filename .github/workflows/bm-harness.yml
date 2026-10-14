@@ -6,7 +6,6 @@ on:
       - "netlify/functions/**"
       - "tools/**"
       - "docs/**"
-      - "app/**"
       - "ios/**"
       - "supabase/migrations/**"
       - ".github/workflows/**"
@@ -17,7 +16,6 @@ on:
       - "netlify/functions/**"
       - "tools/**"
       - "docs/**"
-      - "app/**"
       - "ios/**"
       - "supabase/migrations/**"
       - ".github/workflows/**"
@@ -69,6 +67,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/034_assistant_response_language.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/035_bmb_measured_rest.sql
           psql -v ON_ERROR_STOP=1 -f tools/bmb_rest_database_test.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/036_bm_agent_labels.sql
+          psql -v ON_ERROR_STOP=1 -f tools/bm_agent_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/bm_voice_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/bmb_longitudinal_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/assistant_app_database_test.sql
@@ -94,22 +94,3 @@ jobs:
           fi
       - name: Verify repository whitespace
         run: git diff --check
-
-  android:
-    name: Android compile and unit tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - name: Install Android SDK platform
-        run: |
-          sdkmanager_path="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -type f -name sdkmanager -print -quit)"
-          test -n "$sdkmanager_path"
-          "$sdkmanager_path" "platforms;android-36" "build-tools;36.0.0"
-      - name: Compile and test Android
-        run: |
-          chmod +x ./gradlew
-          ./gradlew testDebugUnitTest assembleDebug --no-daemon

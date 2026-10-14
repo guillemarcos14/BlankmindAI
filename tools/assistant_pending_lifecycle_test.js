@@ -54,7 +54,7 @@ membership.supabaseFetch = async (path, options = {}) => {
   }
   throw new Error(`Unexpected storage request ${path}`);
 };
-const channel = require("../netlify/functions/_assistant_channel");
+const channel = require("../netlify/functions/_assistant_memory");
 channel.getAssistantMemory = async () => structuredClone(memory);
 channel.findAssistantConnection = async () => ({ channel: "app", channelUser: owner.auth_user_id });
 channel.sendAssistantMessage = async () => { throw new Error("App receipts must not send WhatsApp messages"); };
@@ -62,14 +62,13 @@ identity.identityForAuthUser = async () => owner;
 identity.identityForAppInstall = async () => owner;
 identity.identityForPhone = async () => owner;
 push.sendAssistantActionPush = async () => { pushes += 1; return { sent: true }; };
-const { handler } = require("../netlify/functions/assistant-channel");
-const { queueOnboardingPicker } = require("../netlify/functions/bm-onboarding");
+const { handler } = require("../netlify/functions/assistant-device");
 const action = (id = actionId, status = "queued") => ({ id, status, type: "delete_schedule", window_id: "window-1", expires_at: new Date(Date.now() + 60_000).toISOString() });
 const request = (fields) => handler({ httpMethod: "POST", headers: { authorization: "Bearer app-session" }, body: JSON.stringify({
   connect_code: owner.assistant_connect_code, app_install_id: owner.app_install_id, channel: "app", ...fields,
 }) });
 function reset(pending) { memory = { pending_assistant_action: pending, semantic_store_version: 3 }; savedReceipt = null; beforeTransition = null; historicalOutcome = null; history.clear(); operations.length = 0; }
-const installB = () => { memory.pending_assistant_action = action("wa_B"); };
+const installB = () => { memory.pending_assistant_action = action("app_B"); };
 
 (async () => {
   reset(action());
@@ -77,18 +76,18 @@ const installB = () => { memory.pending_assistant_action = action("wa_B"); };
   let response = await request({ action: "poll_pending_action" });
   assert.equal(response.statusCode, 200, response.body);
   assert.equal(JSON.parse(response.body).pending_action, null, "stale poll returned executable A");
-  assert.equal(memory.pending_assistant_action.id, "wa_B");
+  assert.equal(memory.pending_assistant_action.id, "app_B");
 
-  reset(action("wa_B"));
+  reset(action("app_B"));
   historicalOutcome = { id: actionId, status: "failed", detail: "action_expired_before_execution" };
   memory.last_assistant_action_outcome = historicalOutcome;
   history.set(actionId, action(actionId, "execution_started"));
   response = await request({ action: "ack_pending_action", action_id: actionId, status: "verified" });
   assert.equal(JSON.parse(response.body).status, "verified", "expiry inference swallowed a real late iPhone receipt");
   assert.equal(savedReceipt, "verified", "inferred expired must be replaced by the validated native result");
-  assert.equal(memory.pending_assistant_action.id, "wa_B");
+  assert.equal(memory.pending_assistant_action.id, "app_B");
 
-  reset(action("wa_B"));
+  reset(action("app_B"));
   historicalOutcome = { id: actionId, status: "failed", detail: "action_expired_before_execution" };
   memory.last_assistant_action_outcome = historicalOutcome;
   const requestedAt = new Date(Date.now() - 30_000).toISOString();
@@ -101,7 +100,7 @@ const installB = () => { memory.pending_assistant_action = action("wa_B"); };
     effective_until: new Date(Date.parse(requestedAt) + 5 * 60_000).toISOString(), start_delay_seconds: 0 });
   assert.equal(JSON.parse(response.body).status, "verified", response.body);
   assert.equal(savedReceipt, "verified");
-  assert.equal(memory.pending_assistant_action.id, "wa_B");
+  assert.equal(memory.pending_assistant_action.id, "app_B");
 
   reset(action());
   beforeTransition = () => { memory.pending_assistant_action.status = "confirmed"; };
@@ -115,38 +114,32 @@ const installB = () => { memory.pending_assistant_action = action("wa_B"); };
   assert.equal(JSON.parse(response.body).acknowledged, true, response.body);
   assert.equal(savedReceipt, "verified");
   assert.deepEqual(operations, ["receipt", "transition"]);
-  assert.equal(memory.pending_assistant_action.id, "wa_B", "late terminal receipt cleared B");
+  assert.equal(memory.pending_assistant_action.id, "app_B", "late terminal receipt cleared B");
   assert.equal(memory.last_assistant_action_outcome.id, actionId);
 
-  reset(action("wa_B"));
+  reset(action("app_B"));
   history.set(actionId, action(actionId, "execution_started"));
   response = await request({ action: "ack_pending_action", action_id: actionId, status: "verified" });
   assert.equal(JSON.parse(response.body).acknowledged, true, "a late receipt must recover its own scoped historical action");
   assert.equal(savedReceipt, "verified");
-  assert.equal(memory.pending_assistant_action.id, "wa_B");
+  assert.equal(memory.pending_assistant_action.id, "app_B");
 
   reset({ ...action(), expires_at: "2020-01-01T00:00:00Z" });
   beforeTransition = installB;
   response = await request({ action: "poll_pending_action" });
   assert.equal(response.statusCode, 200, response.body);
   assert.equal(savedReceipt, "expired");
-  assert.equal(memory.pending_assistant_action.id, "wa_B", "stale expiry erased B");
+  assert.equal(memory.pending_assistant_action.id, "app_B", "stale expiry erased B");
 
   reset(null);
-  beforeTransition = installB;
-  const onboarding = await queueOnboardingPicker({ channel: "whatsapp", channelUser: owner.phone_e164, messages: { setup: "Choose distractions" } });
-  assert.equal(onboarding.preserved, true);
-  assert.equal(onboarding.action, null);
-  assert.equal(memory.pending_assistant_action.id, "wa_B");
-  assert.equal(pushes, 0);
-  const stopped = await channel.transitionPendingAssistantAction({ channel: "whatsapp", channelUser: owner.phone_e164,
+  const stopped = await channel.transitionPendingAssistantAction({ channel: "app", channelUser: owner.auth_user_id,
     pending: null, expectedVersion: 3, invalidateGeneration: true });
   assert.equal(stopped.updated, true);
   assert.equal(memory.semantic_store_version, 4, "STOP must invalidate already-prepared enqueue work");
   assert.equal(memory.pending_assistant_action, null);
-  await assert.rejects(() => channel.transitionPendingAssistantAction({ channel: "whatsapp", channelUser: owner.phone_e164,
+  await assert.rejects(() => channel.transitionPendingAssistantAction({ channel: "app", channelUser: owner.auth_user_id,
     invalidateGeneration: true }), /missing_semantic_version/);
-  await assert.rejects(() => channel.recordAssistantMemory({ channel: "whatsapp", channelUser: owner.phone_e164,
+  await assert.rejects(() => channel.recordAssistantMemory({ channel: "app", channelUser: owner.auth_user_id,
     memory: { pending_assistant_action: null } }), /pending_action_requires_atomic_write/);
-  console.log("Pending lifecycle: observed action/status CAS fences poll, ack, expiry and onboarding; late receipts persist without clearing newer actions; direct canonical writes forbidden");
+  console.log("Pending lifecycle: observed action/status CAS fences poll, ack and expiry; late receipts persist without clearing newer actions; direct canonical writes forbidden");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

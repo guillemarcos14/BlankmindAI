@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const { onboardingReady } = require("../netlify/functions/_onboarding_access");
+const { onboardingReady } = require("../netlify/functions/_app_onboarding_access");
 const { normalizeUserContext } = require("../netlify/functions/bm-context");
 const now = Date.parse("2026-10-07T12:00:00Z");
 const context = normalizeUserContext({ onboarding_version: 6, screen_time_authorized: true,
@@ -16,13 +16,13 @@ for (const patch of [{ screen_time_authorized: false }, { sleep_data_available: 
 assert.equal(onboardingReady(context, {}, "sms", now), false, "New app gate cannot change external channels");
 const legacy = { has_selected_apps: true, selection_count: 2, screen_time_authorized: true, notification_authorized: true };
 assert.equal(onboardingReady(legacy, {}, "app", now), false, "Legacy still requires registered push");
-assert.equal(onboardingReady(legacy, { assistant_device_push: { token: "fixture" } }, "app", now), true);
-assert.equal(onboardingReady(legacy, { assistant_device_push: { token: "fixture" } }, "sms", now), true);
+assert.equal(onboardingReady(legacy, { assistant_device_push: { token: "fixture" } }, "app", now), false);
+assert.equal(onboardingReady(legacy, { assistant_device_push: { token: "fixture" } }, "sms", now), false);
 console.log("Onboarding access: versioned app gate, freshness, denial and legacy channel contract passed");
 
 // Exercise the real authenticated endpoint, with only database/identity edges mocked.
 const membership = require("../netlify/functions/_membership");
-const channel = require("../netlify/functions/_assistant_channel");
+const channel = require("../netlify/functions/_assistant_memory");
 const identity = require("../netlify/functions/_identity");
 const record = { auth_user_id: "owner", app_install_id: "fixture-install", assistant_connect_code: "ABCDEFGH23" };
 let currentContext = { ...context, sleep_data_checked_at: new Date().toISOString() };
@@ -33,7 +33,7 @@ channel.findAssistantConnection = async () => ({ channel: "app", channelUser: "o
 channel.getAssistantUserContext = async () => currentContext;
 channel.getAssistantMemory = async () => ({});
 channel.recordAssistantMemory = async () => { throw new Error("App onboarding must not fabricate a message or push token"); };
-const { handler } = require("../netlify/functions/assistant-channel");
+const { handler } = require("../netlify/functions/assistant-device");
 const request = install => handler({ httpMethod: "POST", headers: { authorization: "Bearer fixture" },
   body: JSON.stringify({ action: "complete_onboarding", channel: "app", preferred_channel: "app",
     connect_code: record.assistant_connect_code, app_install_id: install }) });

@@ -1,12 +1,21 @@
 {
   "file": "tools/datasets/bm_semantic_heldout_v4.json",
-  "sha256": "f4b7500e723b55126b62d8c6b6c6b7c3a85abd547fd594e5fd243b24de2e91b3",
+  "sha256": "49c177c05358b77f7f7397e34a2302ce608254f84f8a1dd2c6cebb864bca40c4",
+  "conversations": 4,
+  "turns": 9,
+  "status": "platform_filtered_not_evaluated",
   "hash_kind": "utf8_lf_sha256",
-  "line_endings_note": "Frozen with LF. Normalize CRLF to LF before comparing; do not change JSON content.",
-  "frozen_at": "2026-09-15T18:07:12.789861+00:00",
-  "conversations": 5,
-  "turns": 11,
-  "status": "frozen_before_execution",
-  "core_sha256": "cb012e03ecb61dcc5a88ae9c3790789f55e6c1a55432a89d7c8e06f5ba270b58",
-  "oracle_sha256": "b4d45e7502e971ec6d1cb1a825b28577409c0e4bf3ff040ba31cd000502bb2bf"
+  "original_manifest": {
+    "file": "tools/datasets/bm_semantic_heldout_v4.json",
+    "sha256": "f4b7500e723b55126b62d8c6b6c6b7c3a85abd547fd594e5fd243b24de2e91b3",
+    "hash_kind": "utf8_lf_sha256",
+    "line_endings_note": "Frozen with LF. Normalize CRLF to LF before comparing; do not change JSON content.",
+    "frozen_at": "2026-09-15T18:07:12.789861+00:00",
+    "conversations": 5,
+    "turns": 11,
+    "status": "frozen_before_execution",
+    "core_sha256": "cb012e03ecb61dcc5a88ae9c3790789f55e6c1a55432a89d7c8e06f5ba270b58",
+    "oracle_sha256": "b4d45e7502e971ec6d1cb1a825b28577409c0e4bf3ff040ba31cd000502bb2bf"
+  },
+  "note": "This subset was not frozen before the historical evaluation and inherits no evaluation approval."
 }

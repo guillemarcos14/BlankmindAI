@@ -1,6 +1,5 @@
 import FamilyControls
 import Foundation
-import WidgetKit
 
 enum AssistantPendingAction: Equatable {
     case startProtection(minutes: Int?, hardMode: Bool, appNames: [String])
@@ -50,21 +49,18 @@ final class SessionStore: ObservableObject {
     @Published var isBlankActive: Bool {
         didSet {
             defaults.set(isBlankActive, forKey: Keys.isBlankActive)
-            reloadBlankWidget()
         }
     }
 
     @Published var blankActiveSince: Date? {
         didSet {
             defaults.set(blankActiveSince?.timeIntervalSince1970, forKey: Keys.blankActiveSince)
-            reloadBlankWidget()
         }
     }
 
     @Published var blankActiveUntil: Date? {
         didSet {
             defaults.set(blankActiveUntil?.timeIntervalSince1970, forKey: Keys.blankActiveUntil)
-            reloadBlankWidget()
         }
     }
 
@@ -142,7 +138,6 @@ final class SessionStore: ObservableObject {
                 return
             }
             saveSelection(selection)
-            reloadBlankWidget()
             syncRecurringSchedule()
             refreshDailyLimitMonitoring()
         }
@@ -184,15 +179,9 @@ final class SessionStore: ObservableObject {
     private(set) var bmbScheduleFailure = "dated_schedule_registration_failed"
     @Published private(set) var dailyLimitRegistered = false
 
-    @Published var pendingWidgetTimerMinutes: Int? {
-        didSet {
-            BlankSharedState.setPendingWidgetTimerMinutes(pendingWidgetTimerMinutes, defaults: defaults)
-            reloadBlankWidget()
-        }
-    }
+
 
     @Published var shouldOpenBlockConfiguration = false
-    @Published var shouldShowWidgetTimerSelector = false
     @Published var pendingPlanAppNames: [String] = []
     @Published var pendingPlanShouldActivate = false
     @Published var pendingPlanDurationMinutes: Int?
@@ -292,7 +281,6 @@ final class SessionStore: ObservableObject {
         usageEvents = Self.loadUsageEvents(from: defaults)
         schedule = Self.loadSchedule(from: defaults)
         deviceActivityTimerScheduled = defaults.bool(forKey: Keys.deviceActivityTimerScheduled)
-        pendingWidgetTimerMinutes = BlankSharedState.pendingWidgetTimerMinutes(defaults: defaults)
         let currentWeekKey = Self.currentWeekKey()
         if defaults.string(forKey: Keys.emergencyUnlockWeekKey) == currentWeekKey {
             emergencyUnlocksThisWeek = defaults.integer(forKey: Keys.emergencyUnlocksThisWeek)
@@ -419,16 +407,14 @@ final class SessionStore: ObservableObject {
         forceStarted: Bool = false,
         durationMinutes: Int? = nil,
         hardMode: Bool = false,
-        entryMode: BlankEntryMode = .app,
-        usePendingWidgetTimer: Bool = true
+        entryMode: BlankEntryMode = .app
     ) -> NfcResult {
         guard hasSelectedApps else {
             return .noAppsSelected
         }
         let now = Date()
-        let pendingDuration = usePendingWidgetTimer ? pendingWidgetTimerMinutes : nil
         guard defaults.double(forKey: "blankManualReblockAt") <= now.timeIntervalSince1970 else { return .unblanked }
-        let selectedDuration = (durationMinutes ?? pendingDuration).map { min(max($0, 5), 240) }
+        let selectedDuration = durationMinutes.map { min(max($0, 5), 240) }
         if isBlankActive {
             hardBlankActive = hardBlankActive || hardMode
             if let selectedDuration, blankActiveUntil != nil {
@@ -441,7 +427,6 @@ final class SessionStore: ObservableObject {
                     durationMinutes: remainingMinutes
                 )
             }
-            pendingWidgetTimerMinutes = nil
             return .blanked
         }
         if let lastManualUnblankedAt,
@@ -463,7 +448,6 @@ final class SessionStore: ObservableObject {
             blankActiveUntil = nil
             deviceActivityTimerScheduled = false
         }
-        pendingWidgetTimerMinutes = nil
         startSession(tag: nfcTagUid, forceStarted: forceStarted, entryMode: entryMode, plannedDurationMinutes: selectedDuration)
         return .blanked
     }
@@ -498,8 +482,7 @@ final class SessionStore: ObservableObject {
         _ = activateBlank(
             durationMinutes: remainingMinutes,
             hardMode: hardMode,
-            entryMode: .app,
-            usePendingWidgetTimer: false
+            entryMode: .app
         )
         if !mergedWithExisting || existingEnd != nil {
             let mergedEnd = max(existingEnd ?? requestedEnd, requestedEnd)
@@ -561,7 +544,6 @@ final class SessionStore: ObservableObject {
         hardBlankActive = false
         blankActiveSince = nil
         blankActiveUntil = nil
-        pendingWidgetTimerMinutes = nil
         if endedReason == .manual {
             lastManualUnblankedAt = endedAt
         }
@@ -649,19 +631,7 @@ final class SessionStore: ObservableObject {
         }
     }
 
-    func forgetNfcTag() {
-        endActiveSession(entryMode: .app, endedReason: .unknown, broken: true)
-        nfcTagUid = nil
-        isBlankActive = false
-        hardBlankActive = false
-        blankActiveSince = nil
-        blankActiveUntil = nil
-        pendingWidgetTimerMinutes = nil
-        DeviceActivityTimerScheduler.stop(protectionId: Self.canonicalProtectionId)
-        deviceActivityTimerScheduled = false
-        schedulePausedUntil = nil
-        setupComplete = false
-    }
+
 
     func finishSetup() {
         setupComplete = true
@@ -693,9 +663,7 @@ final class SessionStore: ObservableObject {
         pendingPlanDailyLimitMinutes = nil
     }
 
-    func requestWidgetTimerSelector() {
-        shouldShowWidgetTimerSelector = true
-    }
+
 
     func requestAssistantActionConfirmation(_ action: AssistantPendingAction) {
         pendingAssistantAction = action
@@ -706,9 +674,7 @@ final class SessionStore: ObservableObject {
     }
 
     func syncFromSharedDefaults(now: Date = Date()) {
-        if BlankSharedState.finishWidgetUnlockIfDue(defaults: defaults, now: now) {
-            cancelManualUnlock()
-        }
+
         finishManualUnlockIfDue(now: now)
         BlankSharedState.finishExpiredBlock(defaults: defaults, now: now)
         let activeState = BlankSharedState.loadActiveState(now: now, defaults: defaults)
@@ -721,10 +687,7 @@ final class SessionStore: ObservableObject {
         if blankActiveUntil != activeState.endsAt {
             blankActiveUntil = activeState.endsAt
         }
-        let sharedPendingTimer = BlankSharedState.pendingWidgetTimerMinutes(defaults: defaults)
-        if pendingWidgetTimerMinutes != sharedPendingTimer {
-            pendingWidgetTimerMinutes = sharedPendingTimer
-        }
+
         if !activeState.isActive, hardBlankActive {
             hardBlankActive = false
         }
@@ -1269,7 +1232,6 @@ final class SessionStore: ObservableObject {
             Keys.isBlankActive,
             Keys.blankActiveSince,
             Keys.blankActiveUntil,
-            BlankSharedState.Keys.pendingWidgetTimerMinutes,
             Keys.hardBlankActive,
             Keys.allowOnlyModeEnabled,
             Keys.adultContentBlockingEnabled,
@@ -1340,9 +1302,7 @@ final class SessionStore: ObservableObject {
     private static let maxEmergencyUnlocksPerWeek = 3
     private static let maxUsageEvents = 500
 
-    private func reloadBlankWidget() {
-        WidgetCenter.shared.reloadTimelines(ofKind: "BlankQuickBlockWidget")
-    }
+
 }
 
 #if DEBUG

@@ -73,16 +73,16 @@ struct AssistantClientTests {
         AssistantAppSession.save(accessToken: "valid#A", refreshToken: "refresh-A")
         let setupPayload = Data(#"{"action":"complete_onboarding"}"#.utf8)
         TransportStub.respond = { _ in .init(body: #"{"ok":true,"ready":true}"#) }
-        let setup = try await client.postAuthorizedJSON(path: "assistant-channel", payload: setupPayload)
+        let setup = try await client.postAuthorizedJSON(path: "assistant-device", payload: setupPayload)
         check(setup["ready"] as? Bool == true, "Authenticated setup receipt is preserved")
         TransportStub.respond = { _ in .init(status: 403, body: #"{"error":"installation_not_verified"}"#) }
         do {
-            _ = try await client.postAuthorizedJSON(path: "assistant-channel", payload: setupPayload)
+            _ = try await client.postAuthorizedJSON(path: "assistant-device", payload: setupPayload)
             fatalError("Foreign installation must not finish setup")
         } catch AssistantAppError.installationNotVerified { }
         TransportStub.respond = { _ in .init(body: #"{"ok":false,"ready":true}"#) }
         do {
-            _ = try await client.postAuthorizedJSON(path: "assistant-channel", payload: setupPayload)
+            _ = try await client.postAuthorizedJSON(path: "assistant-device", payload: setupPayload)
             fatalError("An unsuccessful JSON result cannot finish setup")
         } catch AssistantAppError.invalidResponse { }
         var clock = 10.0

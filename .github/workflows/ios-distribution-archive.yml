@@ -49,8 +49,8 @@ jobs:
           pathlib.Path('tmp/distribution/receipt.json').write_text(json.dumps(report,indent=2,default=str))
           PY
           cp ios/Blank/Blank/Blank.entitlements tmp/distribution/main.entitlements
-          for ext in BlankDeviceActivityMonitor BlankWidgetExtension BlankShieldConfiguration BlankShieldAction; do cp "ios/Blank/$ext/$ext.entitlements" "tmp/distribution/$ext.entitlements"; done
-          tar -czf tmp/distribution/unsigned-archive.tar.gz -C tmp/distribution Blankmind.xcarchive receipt.json main.entitlements BlankDeviceActivityMonitor.entitlements BlankWidgetExtension.entitlements BlankShieldConfiguration.entitlements BlankShieldAction.entitlements
+          for ext in BlankDeviceActivityMonitor BlankShieldConfiguration BlankShieldAction; do cp "ios/Blank/$ext/$ext.entitlements" "tmp/distribution/$ext.entitlements"; done
+          tar -czf tmp/distribution/unsigned-archive.tar.gz -C tmp/distribution Blankmind.xcarchive receipt.json main.entitlements BlankDeviceActivityMonitor.entitlements BlankShieldConfiguration.entitlements BlankShieldAction.entitlements
           shasum -a 256 tmp/distribution/unsigned-archive.tar.gz
       - uses: actions/upload-artifact@v4
         if: always()

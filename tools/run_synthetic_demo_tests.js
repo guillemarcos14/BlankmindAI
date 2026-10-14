@@ -13,8 +13,6 @@ const context = normalizeUserContext({ sleep_data_available: true, sleep_minutes
 assert.equal(context.personal_profile.sleep_source, "synthetic_qa");
 assert.equal(context.personal_profile.sleep_is_synthetic, true);
 assert.match(context.health_signal_reasons, /synthetic/);
-const { personalContextView } = require("../netlify/functions/bm-personal-context-view");
-assert.equal(personalContextView(context).person.goals_and_preferences.sleep_nights[0].source, "synthetic_qa");
 const read = name => fs.readFileSync(path.join(root, "ios/Blank/Blank/" + name), "utf8");
 assert.doesNotMatch(read("ContentView.swift"), /SyntheticDemoView/);
 assert.doesNotMatch(read("ReportView.swift"), /demoData|reportSessions|reportEvents/);

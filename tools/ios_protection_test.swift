@@ -107,7 +107,7 @@ struct ProtectionTests {
         state.isBlankActive = false
         BlankSharedState.sharedActive = true
         state.selection = 2
-        expect(state.selection == 1, "Widget protection bypassed selection lock")
+        expect(state.selection == 1, "Protection bypassed selection lock")
         BlankSharedState.sharedActive = false
         DeviceActivityTimerScheduler.hasIndependentProtection = true
         state.selection = 2
@@ -171,18 +171,14 @@ struct ProtectionTests {
         control.hardBlankActive = true
         expect(!control.unlockFromControl() && control.unlocks == 0, "Control bypassed hard protection")
         control.hardBlankActive = false
-        control.isBlankActive = false // stale app state; widget has started a block
+        control.isBlankActive = false // stale app state; monitor has started a block
         let beforeUnlock = Date()
-        expect(control.unlockFromControl() && control.unlocks == 1, "Control failed to reconcile a widget block")
+        expect(control.unlockFromControl() && control.unlocks == 1, "Control failed to reconcile a monitor block")
         expect(control.lastReason == .control, "A regular unlock must not be recorded as manual relapse or emergency")
         let reblockAt = unlockDefaults.double(forKey: "blankManualReblockAt")
         expect(reblockAt >= beforeUnlock.addingTimeInterval(60).timeIntervalSince1970 && reblockAt <= Date().addingTimeInterval(60).timeIntervalSince1970,
                "Control must persist exactly one minute of cooldown after unlocking")
         expect(!control.unlockFromControl() && control.unlocks == 1, "Repeated Control unlock consumed a second session")
-        expect(!BlankSharedState.startQuickBlock(defaults: unlockDefaults, now: Date(timeIntervalSince1970: reblockAt - 1)) && BlankSharedState.widgetStarts == 0,
-               "Widget must respect the persisted deadline even after app exit")
-        expect(BlankSharedState.startQuickBlock(defaults: unlockDefaults, now: Date(timeIntervalSince1970: reblockAt)) && BlankSharedState.widgetStarts == 1,
-               "Widget must resume exactly at the end of the minute")
         print("iOS protection: schedule parity, selection locking, persistent manual unlock/restart/expiry/cancellation/session identity passed")
     }
 }

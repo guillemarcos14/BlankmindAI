@@ -142,7 +142,7 @@ async function dailyReview(a,identity,context,brain,db=supabaseFetch,now=Date.no
   try {
     const {readSource}=require("./bmb-sources");
     const from=new Date(Math.max(now-35*86400000,Date.parse(claimed.cutoff)||0)).toISOString(),sources=[];
-    for(const source of ["observations","rest_nights","rest_experiments","onboarding","wellness","wearables","sessions","events","reviews","history"]) {
+    for(const source of ["observations","rest_nights","rest_experiments","onboarding","sessions","events","reviews","history"]) {
       for(let offset=0;offset<(source==="observations"?2000:80);offset+=40) {
         const s=await readSource(a.auth_user_id,identity,{source,from,to:null,offset},claimed.cutoff,db);sources.push(s);
         if(s.next_offset===null||s.next_offset===undefined)break;

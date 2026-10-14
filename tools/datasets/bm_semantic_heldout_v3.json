@@ -505,92 +505,13 @@
           }
         }
       ]
-    },
-    {
-      "id": "unseen_v3_sunday_monday_cancel",
-      "channel": "android",
-      "context": {
-        "selected_app_names": [
-          "Reddit"
-        ],
-        "has_selected_apps": true,
-        "screen_time_authorized": true,
-        "language": "en",
-        "app_presence": {
-          "app_present": true,
-          "app_ready": true,
-          "last_seen_at": "2026-09-15T16:00:00Z"
-        }
-      },
-      "turns": [
-        {
-          "input": "Block Reddit from 07:15 to 07:40 on Sundays and Mondays for 9 days.",
-          "expect": {
-            "state": {
-              "intent": "block",
-              "action_type": "strict_block",
-              "apps": [
-                "Reddit"
-              ],
-              "app_category": null,
-              "moment": null,
-              "start": {
-                "type": "time",
-                "minute": 435
-              },
-              "end": 460,
-              "duration_minutes": 25,
-              "recurrence": {
-                "type": "weekly",
-                "weekdays": [
-                  1,
-                  7
-                ]
-              },
-              "schedule_horizon_days": 9,
-              "confirmation": null,
-              "pending_slots": [
-                "confirmation"
-              ],
-              "status": "awaiting_confirmation",
-              "next_question": "confirmation"
-            },
-            "decision": {
-              "type": "confirm",
-              "slot": "confirmation"
-            },
-            "actions": [],
-            "language": "en"
-          }
-        },
-        {
-          "input": "Cancel this request.",
-          "expect": {
-            "state": {
-              "intent": "cancelled",
-              "action_type": null,
-              "apps": null,
-              "app_category": null,
-              "moment": null,
-              "start": null,
-              "end": null,
-              "duration_minutes": null,
-              "recurrence": null,
-              "schedule_horizon_days": null,
-              "confirmation": null,
-              "pending_slots": [],
-              "status": "cancelled",
-              "next_question": null
-            },
-            "decision": {
-              "type": "cancelled",
-              "slot": null
-            },
-            "actions": [],
-            "language": "en"
-          }
-        }
-      ]
     }
-  ]
+  ],
+  "platform_cleanup": {
+    "date": "2026-10-14",
+    "original_utf8_lf_sha256": "ab9173bbc6bfd6973a868ede9b30a89e874b6e2e1a9558112ef0abed7498f22b",
+    "removed_conversations": 1,
+    "status": "filtered_not_evaluated",
+    "note": "Retained authored cases preserve their gold values. Prior aggregate evaluations and frozen manifests apply to the original artifact in Git history, not this subset."
+  }
 }

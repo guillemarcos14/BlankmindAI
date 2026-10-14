@@ -183,7 +183,7 @@ test("Spanish facts and replies stay Spanish", () => {
   equalSlot(result,"duration_minutes",60); assert.match(result.responseText,/distracciones seleccionadas.*60 minutos/i); assert.equal(result.state.language,"es");
 });
 test("all supported channels use identical facts", () => {
-  const states = ["whatsapp","sms","web","ios","android"].map(channel => turn("Block Instagram now for 30 minutes once",null,{...DEVICE,channel,app_presence_state:"recently_seen"}));
+  const states = ["whatsapp","sms","web","ios"].map(channel => turn("Block Instagram now for 30 minutes once",null,{...DEVICE,channel,app_presence_state:"recently_seen"}));
   for (const r of states) { assert.deepEqual(r.actions,states[0].actions); assert.deepEqual(r.state.slots,states[0].state.slots); }
 });
 test("missing app presence suppresses executable action", () => {

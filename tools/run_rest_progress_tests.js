@@ -12,7 +12,7 @@ try {
     fs.writeFileSync(source, "import Foundation\nenum BlankSharedState { static let defaults = UserDefaults.standard }\n" +
         domain.slice(0, domain.indexOf("struct RelapseIntervention")) + "\n" +
         read("ios/Blank/Blank/BlankBrainMetrics.swift") + "\n" + read("ios/Blank/Blank/RestProgress.swift") + "\n" +
-        read("tools/rest_progress_test.swift"));
+        read("ios/Blank/Blank/RestReportScope.swift") + "\n" + read("tools/rest_progress_test.swift"));
     const compile = spawnSync("swiftc", ["-swift-version", "5", source, "-o", binary], { encoding: "utf8" });
     if (compile.error || compile.status !== 0) throw new Error(compile.stderr || compile.error?.message || "Swift failed");
     const run = spawnSync(binary, [], { encoding: "utf8" });

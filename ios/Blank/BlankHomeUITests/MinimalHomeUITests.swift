@@ -49,7 +49,7 @@ final class MinimalHomeUITests: XCTestCase {
         let context = app.buttons["progress-all-context"]
         XCTAssertTrue(context.waitForExistence(timeout: 5))
         context.tap()
-        XCTAssertTrue(app.staticTexts["All health context"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Sleep context"].waitForExistence(timeout: 5))
         app.buttons["back"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Your sleep data"].waitForExistence(timeout: 5))
         app.buttons["home-tab-chat"].tap()

@@ -1,6 +1,6 @@
 # Blank iOS-first plan from Foqos
 
-Blank will start as an iOS-first product. Android remains useful later, but the first production-quality build should focus on iPhone because Foqos proves the strongest blocking model on iOS: Screen Time APIs plus physical controls.
+Blank will start as an iOS-first product.
 
 ## Source reference
 
@@ -26,7 +26,7 @@ If future work copies or substantially adapts Foqos source, add the MIT notice t
 
 - Foqos is primarily an iOS app built with SwiftUI, SwiftData, FamilyControls, ManagedSettings, DeviceActivity, CoreNFC, WidgetKit, Live Activities, and App Intents.
 - Blank already has an iOS MVP under `ios/Blank` with Core NFC, FamilyControls selection, and ManagedSettings shielding.
-- iOS app blocking cannot use Android Accessibility. It must use Apple's Screen Time stack.
+It must use Apple's Screen Time stack.
 - The main external dependency is Apple approval for the Family Controls entitlement.
 
 ## Current Blank iOS baseline
@@ -64,7 +64,7 @@ Missing:
 
 Goal: a polished Blank iPhone app with one default profile, physical NFC control, and an honest report.
 
-- Done: `HomeView` uses the Blank visual structure and exposes the main Android-equivalent controls.
+
 - Done: records `BlankSession` on activation/deactivation.
 - Done: report screen shows total protected time, estimated time saved, completed sessions, and best day.
 - Done: app/category/web-domain selection via FamilyActivityPicker.

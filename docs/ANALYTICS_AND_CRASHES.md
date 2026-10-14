@@ -1,62 +1,7 @@
-# Analytics and Crash Reporting
+# iOS analytics and crash reporting
 
-## Current State
+Instrument only the active iPhone product, with consent and the existing privacy controls. Do not add a provider or credentials as part of platform cleanup.
 
-Android has a local `AnalyticsTracker` abstraction and a `LogcatAnalyticsTracker`. This avoids adding Firebase/Sentry credentials to the repo while keeping all instrumentation points explicit.
+Measure setup completion, permission failures, conversation/voice errors and crash-free operation. Validate Screen Time actions on a physical iPhone and rest outcomes using authorized Apple Watch data. Missing data is unknown, not a successful event.
 
-Tracked Android events:
-
-- `app_opened`
-- `setup_completed`
-- `nfc_tag_registered`
-- `nfc_wrong_tag`
-- `nfc_no_apps_selected`
-- `BLANK_MODE_activated`
-- `BLANK_MODE_deactivated`
-- `blocked_apps_updated`
-- `block_screen_shown`
-- `tag_forgotten`
-
-## Recommended Production Stack
-
-Use one of:
-
-- Firebase Analytics + Crashlytics for Android.
-- Firebase Analytics + Crashlytics for iOS.
-- Sentry if you want one cross-platform crash/error view with simpler product analytics elsewhere.
-
-## Firebase Android Integration Steps
-
-1. Create a Firebase project.
-2. Add Android app with package `com.blanknfc.app`.
-3. Download `google-services.json` into `app/`.
-4. Add Google Services and Crashlytics Gradle plugins.
-5. Implement `FirebaseAnalyticsTracker : AnalyticsTracker`.
-6. Replace `LogcatAnalyticsTracker` in `AppContainer`.
-7. Complete Play Console Data Safety again because analytics changes data collection.
-
-Do not add Firebase until privacy policy, consent copy, and Data Safety answers are updated.
-
-## Beta Metrics
-
-Primary activation metrics:
-
-- Install to setup completion.
-- Setup step drop-off.
-- NFC registration success rate.
-- App selection completion rate.
-- First Blank activation rate.
-
-Retention metrics:
-
-- Sessions per active user per day.
-- Median Blank session duration.
-- Day 1, Day 3, Day 7 active usage.
-
-Quality metrics:
-
-- Accessibility permission failure rate.
-- NFC scan failure rate.
-- Block screen shown count.
-- Wrong tag attempts.
-- Crash-free users.
+Before adding a telemetry provider, review data collection, disclosure and App Store privacy answers.

@@ -11,7 +11,7 @@ const { pathToFileURL } = require("node:url");
 const ROOT = path.resolve(__dirname, "..");
 const SITE = "59955668-9a9b-4979-a283-63fbf3115fe5";
 const ORIGIN = "https://getblank.netlify.app";
-const ENTRIES = ["account-data", "app-auth", "assistant-app", "assistant-channel"];
+const ENTRIES = ["account-data", "app-auth", "assistant-app", "assistant-device"];
 const sha = data => crypto.createHash("sha256").update(data).digest("hex");
 const git = (...args) => {
   const r = spawnSync("git", args, { cwd: ROOT, encoding: "utf8" });

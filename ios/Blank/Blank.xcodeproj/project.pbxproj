@@ -36,7 +36,6 @@
 		8A0000010000000000000001 /* BlankApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000011 /* BlankApp.swift */; };
 		8A0000010000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000012 /* ContentView.swift */; };
 		8A0000010000000000000003 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000013 /* SessionStore.swift */; };
-		8A0000010000000000000004 /* NFCReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000014 /* NFCReader.swift */; };
 		8A0000010000000000000005 /* ScreenTimeBlocker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000015 /* ScreenTimeBlocker.swift */; };
 		8A0000010000000000000006 /* BlankColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000016 /* BlankColors.swift */; };
 		8A0000010000000000000007 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000017 /* SetupView.swift */; };
@@ -54,27 +53,18 @@
 		8A000001000000000000000F /* inter_variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000022 /* inter_variable.ttf */; };
 		8A0000020000000000000001 /* DeviceActivityMonitorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000020000000000000011 /* DeviceActivityMonitorExtension.swift */; };
 		8A0000020000000000000002 /* BlankDeviceActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 8A0000020000000000000010 /* BlankDeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		8A0000040000000000000001 /* BlankWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000040000000000000011 /* BlankWidget.swift */; };
-		8A0000040000000000000002 /* BlankSharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000025 /* BlankSharedState.swift */; };
-		8A0000040000000000000003 /* BlankDomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000001B /* BlankDomainModels.swift */; };
-		8A0000040000000000000004 /* BlankWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 8A0000040000000000000010 /* BlankWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		8A0000040000000000000005 /* inter_variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000022 /* inter_variable.ttf */; };
 		8A0000050000000000000001 /* ShieldConfigurationExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000050000000000000011 /* ShieldConfigurationExtension.swift */; };
 		8A0000050000000000000002 /* BlankShieldConfiguration.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 8A0000050000000000000010 /* BlankShieldConfiguration.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8A0000060000000000000001 /* ShieldActionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000060000000000000011 /* ShieldActionExtension.swift */; };
 		8A0000060000000000000002 /* BlankShieldAction.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 8A0000060000000000000010 /* BlankShieldAction.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		05A19C7B2EFC426E8B5DFF06 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E129DB18F017451EB81BF9F2 /* PrivacyInfo.xcprivacy */; };
 		5AFDAD4FE6F449B08D9FC9F2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C2367044E2714502B551BAB9 /* PrivacyInfo.xcprivacy */; };
-		C633559507C74858A1CEB08D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 14345F0A317C4DB9AE276331 /* PrivacyInfo.xcprivacy */; };
 		63C68C09E7B74B4AA238F332 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3F25DC49D4674B4C8B22E955 /* PrivacyInfo.xcprivacy */; };
 		EA0C1BCB75904DD68DAA27F0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = BF1828A8E5024924A5E85517 /* PrivacyInfo.xcprivacy */; };
+		C01400000000000000000001 /* RestReportScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000002 /* RestReportScope.swift */; };
 		BC1212000000000000000001 /* BlankSharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000025 /* BlankSharedState.swift */; };
 		BC1212000000000000000002 /* BlankDomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000001B /* BlankDomainModels.swift */; };
 		BC1212000000000000000003 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
-		BC1212000000000000000004 /* WidgetAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BC1212000000000000000010 /* WidgetAssets.xcassets */; };
-		BC1212000000000000000005 /* neue-montreal-regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = AA1000060000000000000004 /* neue-montreal-regular.otf */; };
-		BC1212000000000000000021 /* BlankWidgetSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1212000000000000000020 /* BlankWidgetSurface.swift */; };
-		BC1212000000000000000030 /* DeviceActivityTimerScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000001E /* DeviceActivityTimerScheduler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,13 +74,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 8A0000020000000000000040;
 			remoteInfo = BlankDeviceActivityMonitor;
-		};
-		8A0000040000000000000042 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8A0000010000000000000070 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 8A0000040000000000000040;
-			remoteInfo = BlankWidgetExtension;
 		};
 		8A0000050000000000000042 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -116,7 +99,6 @@
 			dstSubfolderSpec = 13;
 			files = (
 				8A0000020000000000000002 /* BlankDeviceActivityMonitor.appex in Embed App Extensions */,
-				8A0000040000000000000004 /* BlankWidgetExtension.appex in Embed App Extensions */,
 				8A0000050000000000000002 /* BlankShieldConfiguration.appex in Embed App Extensions */,
 				8A0000060000000000000002 /* BlankShieldAction.appex in Embed App Extensions */,
 			);
@@ -142,7 +124,6 @@
 		8A0000010000000000000011 /* BlankApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankApp.swift; sourceTree = "<group>"; };
 		8A0000010000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		8A0000010000000000000013 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
-		8A0000010000000000000014 /* NFCReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NFCReader.swift; sourceTree = "<group>"; };
 		8A0000010000000000000015 /* ScreenTimeBlocker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTimeBlocker.swift; sourceTree = "<group>"; };
 		8A0000010000000000000016 /* BlankColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankColors.swift; sourceTree = "<group>"; };
 		8A0000010000000000000017 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
@@ -164,10 +145,6 @@
 		8A0000020000000000000011 /* DeviceActivityMonitorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityMonitorExtension.swift; sourceTree = "<group>"; };
 		8A0000020000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8A0000020000000000000013 /* BlankDeviceActivityMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BlankDeviceActivityMonitor.entitlements; sourceTree = "<group>"; };
-		8A0000040000000000000010 /* BlankWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BlankWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		8A0000040000000000000011 /* BlankWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankWidget.swift; sourceTree = "<group>"; };
-		8A0000040000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		8A0000040000000000000013 /* BlankWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BlankWidgetExtension.entitlements; sourceTree = "<group>"; };
 		8A0000050000000000000010 /* BlankShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BlankShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A0000050000000000000011 /* ShieldConfigurationExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldConfigurationExtension.swift; sourceTree = "<group>"; };
 		8A0000050000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -178,11 +155,9 @@
 		8A0000060000000000000013 /* BlankShieldAction.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BlankShieldAction.entitlements; sourceTree = "<group>"; };
 		E129DB18F017451EB81BF9F2 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C2367044E2714502B551BAB9 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		14345F0A317C4DB9AE276331 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		3F25DC49D4674B4C8B22E955 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BF1828A8E5024924A5E85517 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		BC1212000000000000000010 /* WidgetAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = WidgetAssets.xcassets; sourceTree = "<group>"; };
-		BC1212000000000000000020 /* BlankWidgetSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Blank/BlankWidgetSurface.swift; sourceTree = SOURCE_ROOT; };
+		C01400000000000000000002 /* RestReportScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Blank/RestReportScope.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -194,13 +169,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		8A0000020000000000000020 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8A0000040000000000000020 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -229,7 +197,6 @@
 			children = (
 				8A0000010000000000000031 /* Blank */,
 				8A0000020000000000000031 /* BlankDeviceActivityMonitor */,
-				8A0000040000000000000031 /* BlankWidgetExtension */,
 				8A0000050000000000000031 /* BlankShieldConfiguration */,
 				8A0000060000000000000031 /* BlankShieldAction */,
 				8A0000010000000000000032 /* Products */,
@@ -247,7 +214,6 @@
 				BA10000000000000000000021 /* AssistantControl.swift */,
 				BA10000000000000000000031 /* BlankBrainMetrics.swift */,
 				8A0000010000000000000013 /* SessionStore.swift */,
-				8A0000010000000000000014 /* NFCReader.swift */,
 				8A0000010000000000000015 /* ScreenTimeBlocker.swift */,
 				8A0000010000000000000016 /* BlankColors.swift */,
 				8A0000010000000000000017 /* SetupView.swift */,
@@ -259,6 +225,7 @@
 				BA10000700000000000000002 /* AssistantVoicePlayback.swift */,
 				8A00000100000000000000F3 /* AssistantComposerState.swift */,
 				8A000001000000000000001B /* BlankDomainModels.swift */,
+				C01400000000000000000002 /* RestReportScope.swift */,
 				8A000001000000000000001C /* ReportView.swift */,
 				BC0810080000000000000021 /* RestProgressView.swift */,
 				BC0810080000000000000011 /* RestHealthContext.swift */,
@@ -305,19 +272,6 @@
 			path = BlankDeviceActivityMonitor;
 			sourceTree = "<group>";
 		};
-		8A0000040000000000000031 /* BlankWidgetExtension */ = {
-			isa = PBXGroup;
-			children = (
-				BC1212000000000000000010 /* WidgetAssets.xcassets */,
-				14345F0A317C4DB9AE276331 /* PrivacyInfo.xcprivacy */,
-				8A0000040000000000000011 /* BlankWidget.swift */,
-				BC1212000000000000000020 /* BlankWidgetSurface.swift */,
-				8A0000040000000000000012 /* Info.plist */,
-				8A0000040000000000000013 /* BlankWidgetExtension.entitlements */,
-			);
-			path = BlankWidgetExtension;
-			sourceTree = "<group>";
-		};
 		8A0000050000000000000031 /* BlankShieldConfiguration */ = {
 			isa = PBXGroup;
 			children = (
@@ -346,7 +300,6 @@
                 AA1000060000000000000012,
 				8A0000010000000000000010 /* Blank.app */,
 				8A0000020000000000000010 /* BlankDeviceActivityMonitor.appex */,
-				8A0000040000000000000010 /* BlankWidgetExtension.appex */,
 				8A0000050000000000000010 /* BlankShieldConfiguration.appex */,
 				8A0000060000000000000010 /* BlankShieldAction.appex */,
 			);
@@ -369,7 +322,6 @@
 			);
 			dependencies = (
 				8A0000020000000000000041 /* PBXTargetDependency */,
-				8A0000040000000000000041 /* PBXTargetDependency */,
 				8A0000050000000000000041 /* PBXTargetDependency */,
 				8A0000060000000000000041 /* PBXTargetDependency */,
 			);
@@ -393,23 +345,6 @@
 			name = BlankDeviceActivityMonitor;
 			productName = BlankDeviceActivityMonitor;
 			productReference = 8A0000020000000000000010 /* BlankDeviceActivityMonitor.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
-		8A0000040000000000000040 /* BlankWidgetExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 8A0000040000000000000080 /* Build configuration list for PBXNativeTarget "BlankWidgetExtension" */;
-			buildPhases = (
-				8A0000040000000000000050 /* Sources */,
-				8A0000040000000000000020 /* Frameworks */,
-				8A0000040000000000000060 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = BlankWidgetExtension;
-			productName = BlankWidgetExtension;
-			productReference = 8A0000040000000000000010 /* BlankWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		8A0000050000000000000040 /* BlankShieldConfiguration */ = {
@@ -471,9 +406,6 @@
 					8A0000020000000000000040 = {
 						CreatedOnToolsVersion = 15.2;
 					};
-					8A0000040000000000000040 = {
-						CreatedOnToolsVersion = 15.2;
-					};
 					8A0000050000000000000040 = {
 						CreatedOnToolsVersion = 15.2;
 					};
@@ -498,7 +430,6 @@
                 AA1000060000000000000016,
 				8A0000010000000000000040 /* Blank */,
 				8A0000020000000000000040 /* BlankDeviceActivityMonitor */,
-				8A0000040000000000000040 /* BlankWidgetExtension */,
 				8A0000050000000000000040 /* BlankShieldConfiguration */,
 				8A0000060000000000000040 /* BlankShieldAction */,
 			);
@@ -523,17 +454,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				5AFDAD4FE6F449B08D9FC9F2 /* PrivacyInfo.xcprivacy in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8A0000040000000000000060 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BC1212000000000000000004 /* WidgetAssets.xcassets in Resources */,
-				BC1212000000000000000005 /* neue-montreal-regular.otf in Resources */,
-				C633559507C74858A1CEB08D /* PrivacyInfo.xcprivacy in Resources */,
-				8A0000040000000000000005 /* inter_variable.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -566,7 +486,6 @@
 				BA10000000000000000000022 /* AssistantControl.swift in Sources */,
 				BA10000000000000000000032 /* BlankBrainMetrics.swift in Sources */,
 				8A0000010000000000000003 /* SessionStore.swift in Sources */,
-				8A0000010000000000000004 /* NFCReader.swift in Sources */,
 				8A0000010000000000000005 /* ScreenTimeBlocker.swift in Sources */,
 				8A0000010000000000000006 /* BlankColors.swift in Sources */,
 				8A0000010000000000000007 /* SetupView.swift in Sources */,
@@ -578,6 +497,7 @@
 				BA10000700000000000000001 /* AssistantVoicePlayback.swift in Sources */,
 				8A00000100000000000000F2 /* AssistantComposerState.swift in Sources */,
 				8A0000010000000000000009 /* BlankDomainModels.swift in Sources */,
+				C01400000000000000000001 /* RestReportScope.swift in Sources */,
 				8A000001000000000000000A /* ReportView.swift in Sources */,
 				BC0810080000000000000022 /* RestProgressView.swift in Sources */,
 				BC0810080000000000000012 /* RestHealthContext.swift in Sources */,
@@ -598,19 +518,6 @@
 				BC1212000000000000000002 /* BlankDomainModels.swift in Sources */,
 				BC1212000000000000000003 /* BlankBrainMetrics.swift in Sources */,
 				8A0000020000000000000001 /* DeviceActivityMonitorExtension.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8A0000040000000000000050 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				8A0000040000000000000001 /* BlankWidget.swift in Sources */,
-				BC1212000000000000000030 /* DeviceActivityTimerScheduler.swift in Sources */,
-				BC1212000000000000000021 /* BlankWidgetSurface.swift in Sources */,
-				8A0000040000000000000002 /* BlankSharedState.swift in Sources */,
-				8A0000040000000000000003 /* BlankDomainModels.swift in Sources */,
-				BA10000000000000000000033 /* BlankBrainMetrics.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -637,11 +544,6 @@
 			isa = PBXTargetDependency;
 			target = 8A0000020000000000000040 /* BlankDeviceActivityMonitor */;
 			targetProxy = 8A0000020000000000000042 /* PBXContainerItemProxy */;
-		};
-		8A0000040000000000000041 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 8A0000040000000000000040 /* BlankWidgetExtension */;
-			targetProxy = 8A0000040000000000000042 /* PBXContainerItemProxy */;
 		};
 		8A0000050000000000000041 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -892,64 +794,6 @@
 			};
 			name = Release;
 		};
-		8A0000040000000000000092 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = BlankWidgetExtension/BlankWidgetExtension.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 112;
-				DEVELOPMENT_TEAM = GS54UV79RG;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = BlankWidgetExtension/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.9;
-				PRODUCT_BUNDLE_IDENTIFIER = com.blanknfc.app.ios.widget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		8A0000040000000000000093 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = BlankWidgetExtension/BlankWidgetExtension.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 112;
-				DEVELOPMENT_TEAM = GS54UV79RG;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = BlankWidgetExtension/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.9;
-				PRODUCT_BUNDLE_IDENTIFIER = com.blanknfc.app.ios.widget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
-		};
 		8A0000050000000000000092 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1092,15 +936,6 @@
 			buildConfigurations = (
 				8A0000020000000000000092 /* Debug */,
 				8A0000020000000000000093 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		8A0000040000000000000080 /* Build configuration list for PBXNativeTarget "BlankWidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				8A0000040000000000000092 /* Debug */,
-				8A0000040000000000000093 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
