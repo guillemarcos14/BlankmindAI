@@ -80,6 +80,36 @@ begin
  r:=bmb_save_settings(u,'rest-install-C',jsonb_set(prefs,'{grant,active}','false'),current_version);
  if (bmb_enqueue_event(u,claimed_id,a)->>'enqueued')::boolean then raise exception 'Revoked rest adjustment was enqueued'; end if;
 end $$;
+-- The aggregate must not count the requesting user, non-consenting users or a
+-- different lead-time cohort toward the twenty-other-users privacy boundary.
+do $$
+declare requester uuid:=gen_random_uuid(); contributor uuid; twentieth uuid; r jsonb; i int;
+begin
+ insert into auth.users(id) values(requester);
+ insert into bmb_accounts(auth_user_id,app_install_id,settings) values(requester,'rest-pool-requester','{"rest":{"global_learning_enabled":true}}');
+ insert into bmb_rest_experiments(auth_user_id,action_id,hypothesis,metric,review_after_days,action,baseline,evidence_ids,status,evaluation,lead_minutes_bucket)
+ values(requester,'own-outcome','Private hypothesis','sleep_continuity',14,'{}','[]','[]','completed','{"status":"improved","delta":99}',30);
+ for i in 1..20 loop
+   contributor:=gen_random_uuid(); twentieth:=contributor;
+   insert into auth.users(id) values(contributor);
+   insert into bmb_accounts(auth_user_id,app_install_id,settings) values(contributor,'rest-pool-'||i,jsonb_build_object('rest',jsonb_build_object('global_learning_enabled',i<20)));
+   insert into bmb_rest_experiments(auth_user_id,action_id,hypothesis,metric,review_after_days,action,baseline,evidence_ids,status,evaluation,lead_minutes_bucket)
+   values(contributor,'measured-outcome','Private hypothesis','sleep_continuity',14,'{}','[]','[]','completed','{"status":"improved","delta":4}',30);
+ end loop;
+ r:=bmb_rest_global_prior(requester);
+ if (r->>'available')::boolean then raise exception 'Own or non-consenting outcome crossed the twenty-other-users boundary'; end if;
+ update bmb_accounts set settings='{"rest":{"global_learning_enabled":true}}' where auth_user_id=twentieth;
+ r:=bmb_rest_global_prior(requester);
+ if not (r->>'available')::boolean or (r#>>'{rows,0,users}')::int<>20 or (r#>>'{rows,0,mean_delta}')::numeric<>4
+ or r::text like '%'||twentieth::text||'%' or r::text like '%Private hypothesis%' then raise exception 'Aggregate leaked personal evidence or computed the wrong prior %',r; end if;
+ update bmb_rest_experiments set lead_minutes_bucket=45 where auth_user_id=twentieth;
+ if (bmb_rest_global_prior(requester)->>'available')::boolean then raise exception 'Different plan cohorts were combined'; end if;
+ update bmb_rest_experiments set lead_minutes_bucket=30 where auth_user_id=twentieth;
+ update bmb_accounts set settings='{"rest":{"global_learning_enabled":false}}' where auth_user_id=twentieth;
+ if (bmb_rest_global_prior(requester)->>'available')::boolean then raise exception 'Withdrawn contributor remained pooled'; end if;
+ update bmb_accounts set settings='{"rest":{"global_learning_enabled":false}}' where auth_user_id=requester;
+ if bmb_rest_global_prior(requester)->>'reason'<>'global_learning_not_enabled' then raise exception 'Requester withdrawal failed'; end if;
+end $$;
 do $$ begin
  if has_table_privilege('authenticated','public.bmb_rest_nights','SELECT') or has_table_privilege('anon','public.bmb_rest_context','SELECT')
  or has_function_privilege('authenticated','public.bmb_rest_global_prior(uuid)','EXECUTE') then raise exception 'Client bypassed server-only rest access'; end if;
