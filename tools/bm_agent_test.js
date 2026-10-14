@@ -31,6 +31,12 @@ async function main(){
  assert.equal(pauseContract.properties.hours.type,"integer");assert.equal(pauseContract.properties.hours.minimum,1);
  assert.equal(pauseContract.properties.minutes.type,"null");
  assert(r.requests[0].text.format.schema.required.length<brain.schema.required.length,"Plain replies still generate the full effects envelope");
+ let proactiveRequest;
+ const proactive=await brain.generate({mode:"proactive",current_message:"",sources:[],memories:[],coverage:[]},{model:async({request})=>{
+  proactiveRequest=request;return {body:{status:"completed",output_text:JSON.stringify({...management("",{decision:"silent"}),phase:"final",queries:[]})}};
+ }});
+ assert.equal(proactiveRequest.tools,undefined,"Conversational tools changed the central proactive reasoning envelope");
+ assert.equal(proactiveRequest.text.format.name,"bmb_turn");assert.equal(proactive.decision,"silent");
  for(const type of require("../netlify/functions/bm-pending-action").PENDING_ASSISTANT_ACTION_TYPES){
   if(type==="apply_ai_plan")continue;
   p="Aplica el cambio que te pido";

@@ -135,7 +135,7 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
   const citationSchema=availableCitations.length?{...schema.properties.cited_sources,items:{type:'string',enum:availableCitations}}:{...schema.properties.cited_sources,maxItems:0};
   const outputSchema=input.mode==="proactive"?schema:{...schema,properties:{...schema.properties,decision:{...schema.properties.decision,enum:schema.properties.decision.enum.filter(value=>value!=="silent")}}};
   const boundedSchema={...outputSchema,properties:{...outputSchema.properties,cited_sources:citationSchema}};
-  const useTools=agentActivation.enabled("tools")&&!input.retrieval_contract;
+  const useTools=agentActivation.enabled("tools")&&input.mode!=="proactive"&&!input.retrieval_contract;
   const retrievalAdapter=input.retrieval_contract?.agent_count?require("./bm-agent-decisions"):require("./bm-retrieval-step");
   const request=input.retrieval_contract?retrievalAdapter.proseRequest(input):{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
     input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
@@ -264,7 +264,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     (m&&(!m.evidence?.trim()||!prompt.includes(m.evidence)||(m.operation==="set"&&(!m.value?.trim()||!prompt.includes(m.value))))));
   if(needsRepair) {
     const repairEffects=reactiveEmpty||syntheticCopy?effectsIdentity(result):null;
-    const preserveMemory=agentActivation.enabled("tools")&&m;
+    const preserveMemory=agentActivation.enabled("tools")&&!proactive&&m;
     const control={kind:result.message_kind,decision:reactiveEmpty&&result.decision==="silent"?"respond":result.decision,action:result.action?fingerprint(result.action):null,accepted:result.accepted_proposal};
     input.previous_generated_result=result;
     input.conformance_error=(syntheticCopy?"This reply uses simulated current_sleep. Briefly identify the sleep as simulated/sample data, including when the user asks for minutes only. Preserve the requested units and exact numeric facts. ":"")+(reactiveEmpty?"This reactive turn has no visible reply. Return a nonempty useful answer to current_message. Never use silent here. If the previous decision was silent, use respond with no action; otherwise preserve the decision. Preserve all device, memory and tracking authority. ":"")+"Repair copy/output conformance only. Remove narrative colons while preserving clock times. evidence and memory.evidence must be literal nonempty current_message substrings. memory.value must copy one exact meaningful contiguous substring. "+(preserveMemory?"Use gestionar and preserve the existing memory operation and key; repair its literal value/evidence, never drop the requested memory into a plain reply. ":"If no memory value can be grounded, use memory=null. ")+"Preserve message_kind, decision (except the explicit silent-to-respond repair), accepted_proposal and every action parameter exactly. Return final, no reads. Keep the reply natural.";
