@@ -208,8 +208,7 @@ async function main() {
   assert(sources.SOURCE_NAMES.includes("onboarding")&&sources.SOURCE_NAMES.includes("rest_nights")&&sources.SOURCE_NAMES.includes("protection_statistics"));
   assert(!sources.SOURCE_NAMES.includes("learned_signals")&&!sources.SOURCE_NAMES.includes("plan_outcomes"),"Legacy adherence pools remain learning inputs");
   let sourcePath;
-  await sources.readSource("A",{anonymous_user_id:"verified-A"},{source:"wearable_connections",offset:0},null,async p=>{sourcePath=p;return [];});
-  assert(!sourcePath.includes("encrypted")&&sourcePath.includes("anonymous_user_id=eq.verified-A"));
+  assert(!sources.SOURCE_NAMES.some(n=>["wellness","wearables","wearable_connections"].includes(n)));
   await sources.readSource("A",{anonymous_user_id:"verified-A"},{source:"onboarding",offset:0},"2026-10-01",async p=>{sourcePath=p;return [];});
   assert(sourcePath.includes("data_consent=eq.true")&&sourcePath.includes("created_at=gt.2026-10-01"));
   const all=sources.readSource("A",null,{source:"protection_statistics",offset:0,from:"2026-10-01T10:00:00Z",to:"2026-10-01T12:00:00Z",timezone:"UTC"},null,async()=>[

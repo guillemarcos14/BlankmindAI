@@ -19,6 +19,7 @@ function install({budgetFile,requestsFile,fetcher=global.fetch,rates}){
   const settle=()=>{if(settled)return;settled=true;const measured=meter.estimate(row,price);if(measured!==null){const fresh=JSON.parse(fs.readFileSync(budgetFile));fresh.known_usd+=measured;fresh.reserved_upper_usd-=upper-measured;if(request.model==='gpt-5.6-sol')fresh.reviewer_known_usd=(fresh.reviewer_known_usd||0)+measured;fs.writeFileSync(budgetFile,JSON.stringify(fresh,null,2));}save();};
   try{
    const original=await fetcher(url,options);row.status=original.status;
+   const requestId=original.headers.get('x-request-id');if(/^[A-Za-z0-9_-]{1,159}$/.test(requestId||''))row.provider_request_id=requestId;
    if(!original.headers.get('content-type')?.includes('text/event-stream')){
     // One network-body reader. Return an independent buffered body to the caller
     // so metering cannot race a consumer or leave it with a disturbed body.

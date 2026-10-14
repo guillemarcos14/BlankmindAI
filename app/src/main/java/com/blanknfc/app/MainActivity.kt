@@ -34,8 +34,6 @@ class MainActivity : ComponentActivity() {
         get() = BlankApp.get(this).container.purchaseStore
     private val healthConnectStore
         get() = BlankApp.get(this).container.healthConnectStore
-    private val digitalWellnessStore
-        get() = BlankApp.get(this).container.digitalWellnessStore
     private val onboardingSyncStore
         get() = BlankApp.get(this).container.onboardingSyncStore
     private val referralStore
@@ -62,7 +60,6 @@ class MainActivity : ComponentActivity() {
                     sessionManager = sessionManager,
                     purchaseStore = purchaseStore,
                     healthConnectStore = healthConnectStore,
-                    digitalWellnessStore = digitalWellnessStore,
                     onboardingSyncStore = onboardingSyncStore,
                     referralStore = referralStore,
                     startDestination = startDestination

@@ -324,7 +324,6 @@ struct HomeView: View {
     @State private var messageAction: HomeMessageAction?
     @State private var showingPicker = false
     @State private var activeSection: HomeSection?
-    @AppStorage("blankWidgetOpenHome", store: BlankSharedState.defaults) private var widgetOpenHome = false
     @State private var sectionHistory: [HomeSection?] = []
     @State private var controlGroup: ControlSettingsGroup?
     @State private var showingAssistantChat = false
@@ -492,9 +491,6 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .blankAssistantApplyNowRequested)) { _ in
             pollPendingAssistantActionIfNeeded(force: true)
         }
-        .onChange(of: widgetOpenHome) { requested in
-            if requested { openHomeFromWidgetIfNeeded() }
-        }
         .onReceive(NotificationCenter.default.publisher(for: .blankAssistantFollowupRequested).receive(on: RunLoop.main)) { _ in
             activeSection = nil
         }
@@ -534,7 +530,6 @@ struct HomeView: View {
             if let error { message = error }
         }
         .onAppear {
-            openHomeFromWidgetIfNeeded()
             #if DEBUG && targetEnvironment(simulator)
             guard !PostOnboardingPreviewScene.enabled else { return }
             #endif
@@ -880,16 +875,6 @@ struct HomeView: View {
         }
     }
 
-    private func openHomeFromWidgetIfNeeded() {
-        guard widgetOpenHome else { return }
-        widgetOpenHome = false
-        activeSection = nil
-        sectionHistory = []
-        controlGroup = nil
-        showingAssistantChat = false
-        homeChatFocused = false
-        isHoldingToUnblank = false
-    }
 
     private var selectedHomeTab: MinimalHomeTab {
         guard let activeSection else { return .chat }
@@ -1104,7 +1089,7 @@ struct HomeView: View {
                 showingHomeBlockError = true
                 return
             }
-            let result = sessionStore.activateBlank(usePendingWidgetTimer: false)
+            let result = sessionStore.activateBlank()
             screenTimeBlocker.apply(isBlankActive: sessionStore.isBlankActive)
             setMessage(for: result)
             if !sessionStore.isBlankActive {

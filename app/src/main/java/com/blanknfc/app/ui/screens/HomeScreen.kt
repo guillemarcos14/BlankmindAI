@@ -76,9 +76,6 @@ import com.blanknfc.app.BlankApp
 import com.blanknfc.app.R
 import com.blanknfc.app.analytics.BlankEvent
 import com.blanknfc.app.analytics.BlankEvents
-import com.blanknfc.app.data.DigitalWellnessEngine
-import com.blanknfc.app.data.DigitalWellnessPlan
-import com.blanknfc.app.data.DigitalWellnessRemoteStore
 import com.blanknfc.app.data.FocusActivityDay
 import com.blanknfc.app.data.FocusSchedule
 import com.blanknfc.app.data.FocusStats
@@ -151,7 +148,6 @@ fun HomeScreen(
     sessionManager: SessionManager,
     purchaseStore: PlayPurchaseStore,
     healthConnectStore: HealthConnectStore,
-    digitalWellnessStore: DigitalWellnessRemoteStore,
     referralStore: ReferralStore,
     onRelinkTag: () -> Unit,
     onForgetTag: () -> Unit
@@ -168,17 +164,8 @@ fun HomeScreen(
     val schedule by sessionManager.schedule.collectAsState()
     val purchaseState by purchaseStore.state.collectAsState()
     val healthSummary by healthConnectStore.summary.collectAsState()
-    val remoteAiPlan by digitalWellnessStore.plan.collectAsState()
     val referralState by referralStore.state.collectAsState()
     val hasPremiumAccess = purchaseState.hasPremiumAccess || referralStore.hasReferralProAccess || referralState.rewardUnlocked
-    val localAiPlan = DigitalWellnessEngine.build(
-        stats = stats,
-        selectedAppCount = blockedPackages.size,
-        emergencyUnlocksRemaining = emergencyUnlocksRemaining,
-        schedule = schedule,
-        healthSummary = healthSummary
-    )
-    val aiPlan = remoteAiPlan ?: localAiPlan
     val buttonLight = !isBlankActive
     val apps = remember { PackageHelper.getInstalledApps(context) }
     var panel by remember { mutableStateOf(HomePanel.HOME) }
@@ -203,17 +190,7 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(stats, blockedPackages.size, emergencyUnlocksRemaining, schedule, healthSummary) {
-        digitalWellnessStore.refresh(
-            localPlan = localAiPlan,
-            stats = stats,
-            selectedAppCount = blockedPackages.size,
-            emergencyUnlocksRemaining = emergencyUnlocksRemaining,
-            schedule = schedule,
-            healthSummary = healthSummary
-        )
-        referralStore.refreshStatus()
-    }
+
 
     LaunchedEffect(healthSummary) {
         val status = healthSourceStatus(healthSummary)
@@ -280,40 +257,20 @@ fun HomeScreen(
             HomePanel.HOME -> HomePanelContent(
                 isBlankActive = isBlankActive,
                 configIssues = configIssues,
-                aiPlan = aiPlan,
                 hasPremiumAccess = hasPremiumAccess,
                 onSettings = { panel = HomePanel.SETTINGS },
                 onStats = { panel = HomePanel.STATS },
                 onDistractions = { panel = HomePanel.DISTRACTIONS },
                 onTimer = { panel = HomePanel.SCHEDULE },
-                onStartAIPlan = {
-                    if (blockedPackages.isEmpty()) {
-                        showDistractionPicker = true
-                    } else if (!AccessibilityHelper.isServiceEnabled(context)) {
-                        AccessibilityHelper.openAccessibilitySettings(context)
-                    } else {
-                        val result = sessionManager.activateBlank()
-                        digitalWellnessStore.recordExecution(
-                            recommendationId = aiPlan.recommendationId,
-                            plan = aiPlan,
-                            success = result == SessionManager.NfcResult.BLANKED,
-                            outcome = if (result == SessionManager.NfcResult.BLANKED) "activated" else "failed"
-                        )
-                    }
-                },
+
                 onMainAction = {
                     if (blockedPackages.isEmpty()) {
                         showDistractionPicker = true
                     } else if (!AccessibilityHelper.isServiceEnabled(context)) {
                         AccessibilityHelper.openAccessibilitySettings(context)
                     } else {
-                        val result = sessionManager.activateBlank()
-                        digitalWellnessStore.recordExecution(
-                            recommendationId = aiPlan.recommendationId,
-                            plan = aiPlan,
-                            success = result == SessionManager.NfcResult.BLANKED,
-                            outcome = if (result == SessionManager.NfcResult.BLANKED) "activated" else "failed"
-                        )
+                        sessionManager.activateBlank()
+
                     }
                 }
             )
@@ -358,27 +315,7 @@ fun HomeScreen(
             )
 
             HomePanel.STATS -> StatsPanel(
-                stats = stats,
-                emergencyUnlocksRemaining = emergencyUnlocksRemaining,
-                aiPlan = aiPlan,
-                hasPremiumAccess = hasPremiumAccess,
                 healthConnectStore = healthConnectStore,
-                onTrack = analyticsTracker::track,
-                onStartWearableOAuth = { provider ->
-                    val body = backendClient.commonEnvelope(JSONObject().apply { put("provider", provider) })
-                    val response = backendClient.post("wearable-oauth-start", body)
-                    response.optString("authorization_url").takeIf { it.isNotBlank() }?.let { url ->
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                    }
-                },
-                onLogWellnessSignal = { signal, value ->
-                    val body = backendClient.commonEnvelope(JSONObject().apply {
-                        put("signal_type", signal)
-                        put("value_number", value)
-                        put("source", "android_app")
-                    })
-                    backendClient.post("wellness-signal", body)
-                },
                 buttonLight = buttonLight,
                 onBack = { panel = HomePanel.HOME }
             )
@@ -468,13 +405,11 @@ private fun AppBackground(
 private fun HomePanelContent(
     isBlankActive: Boolean,
     configIssues: List<ConfigIssue>,
-    aiPlan: DigitalWellnessPlan,
     hasPremiumAccess: Boolean,
     onSettings: () -> Unit,
     onStats: () -> Unit,
     onDistractions: () -> Unit,
     onTimer: () -> Unit,
-    onStartAIPlan: () -> Unit,
     onMainAction: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -488,15 +423,6 @@ private fun HomePanelContent(
         if (configIssues.isNotEmpty()) {
             ConfigIssuesCard(
                 issues = configIssues,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 62.dp)
-            )
-        } else if (!isBlankActive && hasPremiumAccess) {
-            AiPlanHomeCard(
-                aiPlan = aiPlan,
-                onStart = onStartAIPlan,
-                onOpenReport = onStats,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 62.dp)
@@ -536,51 +462,7 @@ private fun HomePanelContent(
     }
 }
 
-@Composable
-private fun AiPlanHomeCard(
-    aiPlan: DigitalWellnessPlan,
-    onStart: () -> Unit,
-    onOpenReport: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.widthIn(max = 330.dp),
-        color = Color.White.copy(alpha = 0.74f),
-        shape = RoundedCornerShape(18.dp),
-        onClick = onOpenReport
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "BM now",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = BlankOnSurface.copy(alpha = 0.74f)
-                )
-                Text(
-                    text = "${aiPlan.recommendedDurationMinutes} min before ${aiPlan.riskWindow}",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = BlankOnSurface
-                )
-            }
-            Surface(
-                color = BlankOnSurface,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(999.dp),
-                onClick = onStart
-            ) {
-                Text(
-                    text = "Start",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                )
-            }
-        }
-    }
 
-}
 
 @Composable
 private fun HomeTopNav(
@@ -770,164 +652,27 @@ private fun MenuList(buttonLight: Boolean, items: List<MenuItem>) {
 
 @Composable
 private fun StatsPanel(
-    stats: FocusStats,
-    emergencyUnlocksRemaining: Int,
-    aiPlan: DigitalWellnessPlan,
-    hasPremiumAccess: Boolean,
     healthConnectStore: HealthConnectStore,
-    onTrack: (BlankEvent) -> Unit,
-    onStartWearableOAuth: (String) -> Unit,
-    onLogWellnessSignal: (String, Int) -> Unit,
     buttonLight: Boolean,
     onBack: () -> Unit
 ) {
-    val savedMs = estimatedSavedMs(stats)
-    val insight = progressInsight(stats, savedMs)
-    var showDetail by remember { mutableStateOf(false) }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    val sleep by healthConnectStore.summary.collectAsState()
+    val ink = progressTextColor(buttonLight)
+    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        item { ScreenHeader(title = "Rest", onBack = onBack) }
         item {
-            ScreenHeader(title = "Stats", onBack = onBack)
-            Spacer(modifier = Modifier.height(38.dp))
-        }
-        item {
-            ProgressMinimalHero(
-                stats = stats,
-                savedMs = savedMs,
-                insight = insight,
-                buttonLight = buttonLight
-            )
-        }
-        item {
-            WeeklySummaryCard(
-                stats = stats,
-                emergencyUnlocksRemaining = emergencyUnlocksRemaining,
-                buttonLight = buttonLight
-            )
-        }
-        item {
-            DigitalWellnessReportCard(
-                aiPlan = aiPlan,
-                hasPremiumAccess = hasPremiumAccess,
-                buttonLight = buttonLight
-            )
-        }
-        item {
-            WellnessDashboardCard(
-                stats = stats,
-                aiPlan = aiPlan,
-                healthConnectStore = healthConnectStore,
-                buttonLight = buttonLight,
-                onLogWellnessSignal = onLogWellnessSignal
-            )
-        }
-        item {
-            HealthContextCard(
-                aiPlan = aiPlan,
-                healthConnectStore = healthConnectStore,
-                onTrack = onTrack,
-                onStartWearableOAuth = onStartWearableOAuth,
-                buttonLight = buttonLight
-            )
-        }
-        item {
-            NextStepCard(
-                stats = stats,
-                buttonLight = buttonLight
-            )
-        }
-        item {
-            ProgressDetailCard(
-                stats = stats,
-                emergencyUnlocksRemaining = emergencyUnlocksRemaining,
-                buttonLight = buttonLight,
-                expanded = showDetail,
-                onToggle = { showDetail = !showDetail }
-            )
-        }
-    }
-}
-
-@Composable
-private fun WellnessDashboardCard(
-    stats: FocusStats,
-    aiPlan: DigitalWellnessPlan,
-    healthConnectStore: HealthConnectStore,
-    buttonLight: Boolean,
-    onLogWellnessSignal: (String, Int) -> Unit
-) {
-    val healthSummary by healthConnectStore.summary.collectAsState()
-    val scope = rememberCoroutineScope()
-    var logStatus by remember { mutableStateOf<String?>(null) }
-    val rowColor = if (buttonLight) Color.White else Color.Black
-    val textColor = progressTextColor(buttonLight)
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = rowColor,
-        shape = RoundedCornerShape(22.dp)
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp)) {
-            Text(text = "Wellness Dashboard", color = textColor, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Body, screen control and context signals only. No calendar, music, money, reading or TV.",
-                color = textColor.copy(alpha = 0.64f),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-            SummaryLine("Screen Control", "${aiPlan.score}/100", "${stats.sessionsThisWeek} focus starts this week", textColor)
-            ProgressDivider(textColor)
-            SummaryLine("Recovery", healthSummary.recoveryScore?.let { "$it/100" } ?: "Learning", healthSummary.recoveryTrend, textColor)
-            ProgressDivider(textColor)
-            SummaryLine("Training", "Strava", "Connect workouts, load and outdoor activity", textColor)
-            ProgressDivider(textColor)
-            SummaryLine("Weather", "Context", "Objective context for energy and activity", textColor)
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = "This week's adjustment",
-                color = textColor,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = aiPlan.primaryAction,
-                color = textColor.copy(alpha = 0.66f),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-            SummaryLine("Next risk", "${aiPlan.riskScore}/100", aiPlan.riskWindow, textColor)
-            ProgressDivider(textColor)
-            SummaryLine("Behavior chain", aiPlan.behaviorChain, aiPlan.forecastReasons.firstOrNull() ?: "Blankmind is learning your baseline.", textColor)
-            ProgressDivider(textColor)
-            SummaryLine("Experiment", aiPlan.experimentName, aiPlan.experimentWhy, textColor)
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = "Quick check-in",
-                color = textColor,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuickSignalButton("Mood", textColor) { scope.launch { logSignal("mood", 7, onLogWellnessSignal) { logStatus = it } } }
-                QuickSignalButton("Energy", textColor) { scope.launch { logSignal("energy", 7, onLogWellnessSignal) { logStatus = it } } }
-                QuickSignalButton("Stress", textColor) { scope.launch { logSignal("stress", 4, onLogWellnessSignal) { logStatus = it } } }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuickSignalButton("Coffee", textColor) { scope.launch { logSignal("caffeine", 1, onLogWellnessSignal) { logStatus = it } } }
-                QuickSignalButton("Alcohol", textColor) { scope.launch { logSignal("alcohol", 1, onLogWellnessSignal) { logStatus = it } } }
-                QuickSignalButton("Meditation", textColor) { scope.launch { logSignal("meditation", 1, onLogWellnessSignal) { logStatus = it } } }
-            }
-            logStatus?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = it, color = textColor.copy(alpha = 0.56f), style = MaterialTheme.typography.bodySmall)
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(20.dp)) {
+                Text("Your sleep", color = ink, style = MaterialTheme.typography.titleMedium)
+                SummaryLine("Sleep per night", sleep.avgSleepMinutes7d?.let { "${it / 60} h ${it % 60} min" } ?: "No measured sleep", "${sleep.sleepSessions7d ?: 0} recorded sessions in 7 days", ink)
+                sleep.avgSleepEfficiency7d?.let { SummaryLine("Sleep continuity", "$it%", "Recorded sleep efficiency", ink) }
+                Text("Missing data is unknown. Blocking records alone do not demonstrate improved rest.", color = ink, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
 }
+
+
+
 
 @Composable
 private fun RowScope.QuickSignalButton(label: String, textColor: Color, onClick: () -> Unit) {
@@ -947,312 +692,18 @@ private fun RowScope.QuickSignalButton(label: String, textColor: Color, onClick:
     }
 }
 
-private suspend fun logSignal(
-    signal: String,
-    value: Int,
-    onLogWellnessSignal: (String, Int) -> Unit,
-    setStatus: (String) -> Unit
-) {
-    runCatching {
-        withContext(Dispatchers.IO) { onLogWellnessSignal(signal, value) }
-    }.onSuccess {
-        setStatus("Logged $signal.")
-    }.onFailure { error ->
-        setStatus(error.message?.take(90) ?: "Could not log signal.")
-    }
-}
 
-@Composable
-private fun ProgressMinimalHero(
-    stats: FocusStats,
-    savedMs: Long,
-    insight: String,
-    buttonLight: Boolean
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.Transparent
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Text(
-                text = formatProtectedTime(savedMs),
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Medium),
-                color = BlankOnSurface,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "tiempo recuperado",
-                style = MaterialTheme.typography.bodyLarge,
-                color = BlankOnSurface.copy(alpha = 0.68f),
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = insight,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                color = BlankOnSurface.copy(alpha = 0.74f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = if (buttonLight) Color.White.copy(alpha = 0.86f) else Color.Black.copy(alpha = 0.72f),
-                shape = RoundedCornerShape(26.dp)
-            ) {
-                ProgressLineChart(
-                    title = "Weekly trend",
-                    values = savedChartValues(stats),
-                    buttonLight = buttonLight,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(142.dp)
-                        .padding(18.dp)
-                )
-            }
-        }
-    }
-}
 
-@Composable
-private fun WeeklySummaryCard(
-    stats: FocusStats,
-    emergencyUnlocksRemaining: Int,
-    buttonLight: Boolean
-) {
-    val rowColor = if (buttonLight) Color.White else Color.Black
-    val textColor = progressTextColor(buttonLight)
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = rowColor,
-        shape = RoundedCornerShape(22.dp)
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp)) {
-            Text(text = "This week", color = textColor, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(12.dp))
-            SummaryLine("Protected", formatProtectedTime(stats.protectedMsThisWeek), "Time in Blankmind", textColor)
-            ProgressDivider(textColor)
-            SummaryLine("Sessions", stats.sessionsThisWeek.toString(), "Focus blocks", textColor)
-            ProgressDivider(textColor)
-            SummaryLine("Emergency", emergencyUnlocksRemaining.toString(), "Left", textColor)
-        }
-    }
-}
 
-@Composable
-private fun DigitalWellnessReportCard(
-    aiPlan: DigitalWellnessPlan,
-    hasPremiumAccess: Boolean,
-    buttonLight: Boolean
-) {
-    val rowColor = if (buttonLight) Color.White else Color.Black
-    val textColor = progressTextColor(buttonLight)
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = rowColor,
-        shape = RoundedCornerShape(22.dp)
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp)) {
-            Text(text = "Digital Wellness Report", color = textColor, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(12.dp))
-            SummaryLine("AI Focus Plan", aiPlan.archetype, aiPlan.primaryAction, textColor)
-            ProgressDivider(textColor)
-            SummaryLine("Early Risk", "${aiPlan.riskScore}/100", aiPlan.riskWindow, textColor)
-            ProgressDivider(textColor)
-            SummaryLine("Wellness Score", "${aiPlan.score}/100", aiPlan.reportInsight, textColor)
-            if (!hasPremiumAccess) {
-                ProgressDivider(textColor)
-                Text(
-                    text = "Pro includes AI reports, adaptive plans, Health insights and preventive alerts.",
-                    color = textColor.copy(alpha = 0.64f),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
-    }
-}
 
-@Composable
-private fun HealthContextCard(
-    aiPlan: DigitalWellnessPlan,
-    healthConnectStore: HealthConnectStore,
-    onTrack: (BlankEvent) -> Unit,
-    onStartWearableOAuth: (String) -> Unit,
-    buttonLight: Boolean
-) {
-    val healthSummary by healthConnectStore.summary.collectAsState()
-    val scope = rememberCoroutineScope()
-    var oauthError by remember { mutableStateOf<String?>(null) }
-    val launcher = rememberLauncherForActivityResult(
-        PermissionController.createRequestPermissionResultContract()
-    ) {
-        healthConnectStore.refresh()
-        val grantedCount = it.size
-        if (grantedCount > 0) {
-            onTrack(
-                BlankEvent(
-                    BlankEvents.WEARABLE_CONNECTED,
-                    mapOf(
-                        "provider" to "health_connect",
-                        "granted_count" to grantedCount.toString()
-                    )
-                )
-            )
-            onTrack(
-                BlankEvent(
-                    BlankEvents.PERMISSION_GRANTED,
-                    mapOf(
-                        "source" to "health_connect",
-                        "permission" to "health",
-                        "granted_count" to grantedCount.toString()
-                    )
-                )
-            )
-        }
-    }
-    val rowColor = if (buttonLight) Color.White else Color.Black
-    val textColor = progressTextColor(buttonLight)
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = rowColor,
-        shape = RoundedCornerShape(22.dp)
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp)) {
-            Text(
-                text = "Health Sources",
-                color = textColor,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = aiPlan.healthContext,
-                color = textColor.copy(alpha = 0.66f),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            if (healthSummary.permissionGranted) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "${healthSourceStatus(healthSummary)} · ${healthSummary.daysWithAnySignal}/${healthSummary.daysRequested} days · ${healthSummary.recoveryTrend}",
-                    color = textColor.copy(alpha = 0.52f),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            } else if (healthSummary.partialPermission) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Partial permission · ${healthSummary.grantedPermissionCount}/${healthSummary.requestedPermissionCount} signals",
-                    color = textColor.copy(alpha = 0.52f),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            WearableProviderList(
-                healthSummary = healthSummary,
-                textColor = textColor,
-                onConnect = { provider ->
-                    oauthError = null
-                    onTrack(BlankEvent(BlankEvents.WEARABLE_CONNECT_STARTED, mapOf("provider" to provider)))
-                    scope.launch {
-                        runCatching {
-                            withContext(Dispatchers.IO) { onStartWearableOAuth(provider) }
-                        }.onFailure { error ->
-                            oauthError = if (provider == "garmin") "Garmin requires partner access." else error.message?.take(90)
-                        }
-                    }
-                }
-            )
-            oauthError?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = it,
-                    color = textColor.copy(alpha = 0.58f),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Surface(
-                color = textColor,
-                contentColor = if (buttonLight) Color.White else Color.Black,
-                shape = RoundedCornerShape(999.dp),
-                onClick = {
-                    onTrack(
-                        BlankEvent(
-                            BlankEvents.WEARABLE_CONNECT_STARTED,
-                            mapOf("provider" to "health_connect")
-                        )
-                    )
-                    onTrack(
-                        BlankEvent(
-                            BlankEvents.PERMISSION_REQUESTED,
-                            mapOf("source" to "health_connect", "permission" to "health")
-                        )
-                    )
-                    launcher.launch(healthConnectStore.permissions)
-                }
-            ) {
-                Text(
-                    text = if (healthSummary.permissionGranted) "Refresh Health" else "Connect Health",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
-                )
-            }
-        }
-    }
-}
 
-@Composable
-private fun WearableProviderList(
-    healthSummary: com.blanknfc.app.data.HealthConnectSummary,
-    textColor: Color,
-    onConnect: (String) -> Unit
-) {
-    val providers = listOf(
-        WearableProvider("Health Connect", "health_connect", healthSourceStatus(healthSummary), "Sleep, activity, heart and recovery context.", false),
-        WearableProvider("Strava", "strava", "Connect", "Training, load, cardio and outdoor activity.", true),
-        WearableProvider("Oura", "oura", "Connect", "Readiness, sleep contributors and recovery signals.", true),
-        WearableProvider("WHOOP", "whoop", "Connect", "Recovery, strain, sleep debt and cycle signals.", true),
-        WearableProvider("Garmin", "garmin", "Partner gated", "Body Battery, stress, training readiness and HRV status.", false),
-        WearableProvider("Google Health / Fitbit", "fitbit_google_health", "Connect", "Fitbit, Pixel Watch and Google Health metrics.", true),
-        WearableProvider("Withings", "withings", "Connect", "Weight, body composition, blood pressure and temperature context.", true),
-        WearableProvider("Weather", "weather", "Ready", "Temperature, rain, daylight and UV context.", false)
-    )
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        providers.forEach { provider ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = provider.canConnect) { onConnect(provider.id) },
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = provider.name,
-                        color = textColor.copy(alpha = 0.86f),
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
-                    )
-                    Text(
-                        text = provider.detail,
-                        color = textColor.copy(alpha = 0.52f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                Text(
-                    text = provider.status,
-                    color = textColor.copy(alpha = 0.58f),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold)
-                )
-            }
-        }
-    }
-}
 
-private data class WearableProvider(
-    val name: String,
-    val id: String,
-    val status: String,
-    val detail: String,
-    val canConnect: Boolean
-)
+
+
+
+
+
+
 
 private fun healthSourceStatus(summary: com.blanknfc.app.data.HealthConnectSummary): String {
     return when {
@@ -1265,70 +716,9 @@ private fun healthSourceStatus(summary: com.blanknfc.app.data.HealthConnectSumma
     }
 }
 
-@Composable
-private fun NextStepCard(stats: FocusStats, buttonLight: Boolean) {
-    val rowColor = if (buttonLight) Color.White else Color.Black
-    val textColor = progressTextColor(buttonLight)
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = rowColor,
-        shape = RoundedCornerShape(22.dp)
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp)) {
-            Text(text = "Next improvement", color = textColor, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = nextStepText(stats),
-                color = textColor.copy(alpha = 0.66f),
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-    }
-}
 
-@Composable
-private fun ProgressDetailCard(
-    stats: FocusStats,
-    emergencyUnlocksRemaining: Int,
-    buttonLight: Boolean,
-    expanded: Boolean,
-    onToggle: () -> Unit
-) {
-    val rowColor = if (buttonLight) Color.White else Color.Black
-    val textColor = progressTextColor(buttonLight)
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = rowColor,
-        shape = RoundedCornerShape(22.dp),
-        onClick = onToggle
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "View details",
-                    color = textColor,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = if (expanded) "Hide" else "Open",
-                    color = textColor.copy(alpha = 0.58f),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            if (expanded) {
-                Spacer(modifier = Modifier.height(10.dp))
-                SummaryLine("Blankmind time", formatProtectedTime(stats.totalProtectedMs), "Total protected", textColor)
-                ProgressDivider(textColor)
-                SummaryLine("Best day", bestDayValue(stats.activityDays), bestDayCaption(stats.activityDays), textColor)
-                ProgressDivider(textColor)
-                SummaryLine("Unlocks used", "${usedEmergencyUnlocks(emergencyUnlocksRemaining)}/3", emergencyCaption(emergencyUnlocksRemaining), textColor)
-                ProgressDivider(textColor)
-                SummaryLine("Urges stopped", stats.blockedAttemptsThisWeek.toString(), "Pauses created this week", textColor)
-            }
-        }
-    }
-}
+
+
 
 @Composable
 private fun SummaryLine(label: String, value: String, caption: String, textColor: Color) {
@@ -1346,67 +736,9 @@ private fun SummaryLine(label: String, value: String, caption: String, textColor
     }
 }
 
-@Composable
-private fun ProgressDivider(textColor: Color) {
-    Spacer(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(textColor.copy(alpha = 0.08f))
-    )
-}
 
-@Composable
-private fun ProgressLineChart(title: String, values: List<Long>, buttonLight: Boolean, modifier: Modifier = Modifier) {
-    val textColor = progressTextColor(buttonLight)
-    val scale = roundedChartScale(values.maxOrNull() ?: 0L)
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = title, style = MaterialTheme.typography.bodySmall, color = textColor.copy(alpha = 0.58f), modifier = Modifier.weight(1f))
-            Text(text = formatProtectedTime(scale), style = MaterialTheme.typography.bodySmall, color = textColor.copy(alpha = 0.46f))
-        }
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val left = 2.dp.toPx()
-            val right = size.width - 2.dp.toPx()
-            val top = 10.dp.toPx()
-            val bottom = size.height - 10.dp.toPx()
-            val maxValue = scale.coerceAtLeast(1L).toFloat()
-            val points = values.ifEmpty { listOf(0L) }
-            for (i in 0..2) {
-                val y = top + ((bottom - top) * i / 2f)
-                drawLine(
-                    color = textColor.copy(alpha = 0.08f),
-                    start = Offset(left, y),
-                    end = Offset(right, y),
-                    strokeWidth = 1.dp.toPx()
-                )
-            }
-            if (points.size == 1) {
-                val y = bottom - ((points.first().toFloat() / maxValue) * (bottom - top))
-                drawCircle(color = textColor.copy(alpha = 0.84f), radius = 3.dp.toPx(), center = Offset(left, y))
-            } else {
-                val step = (right - left) / (points.size - 1).coerceAtLeast(1)
-                val offsets = points.mapIndexed { index, value ->
-                    val x = left + step * index
-                    val y = bottom - ((value.toFloat() / maxValue) * (bottom - top))
-                    Offset(x, y)
-                }
-                offsets.zipWithNext().forEach { (start, end) ->
-                    drawLine(
-                        color = textColor.copy(alpha = 0.84f),
-                        start = start,
-                        end = end,
-                        strokeWidth = 2.dp.toPx(),
-                        cap = StrokeCap.Round
-                    )
-                }
-                offsets.forEach { point ->
-                    drawCircle(color = textColor.copy(alpha = 0.9f), radius = 2.5.dp.toPx(), center = point)
-                }
-            }
-        }
-    }
-}
+
+
 
 @Composable
 private fun SchedulePanel(
@@ -1889,171 +1221,39 @@ private fun MainActionButton(
     }
 }
 
-private fun formatProtectedTime(ms: Long): String {
-    val totalMinutes = (ms / 60000L).coerceAtLeast(0L)
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
-    return when {
-        hours > 0L && minutes > 0L -> "${hours}h ${minutes}m"
-        hours > 0L -> "${hours}h"
-        else -> "${minutes}m"
-    }
-}
 
-private fun estimatedSavedMs(stats: FocusStats): Long {
-    val estimated = stats.totalSessions * 15L * 60L * 1000L
-    return estimated.coerceAtMost(stats.totalProtectedMs).coerceAtLeast(0L)
-}
 
-private fun averageSessionMs(stats: FocusStats): Long {
-    if (stats.sessionsThisWeek <= 0) return 0L
-    return stats.protectedMsThisWeek / stats.sessionsThisWeek
-}
 
-private fun savedChartValues(stats: FocusStats): List<Long> {
-    val values = stats.activityDays.sortedBy { it.key }.takeLast(28).map { day ->
-        (day.sessions * 15L * 60L * 1000L).coerceAtMost(day.protectedMs)
-    }
-    return values.ifEmpty { listOf(estimatedSavedMs(stats)) }
-}
 
-private fun roundedChartScale(valuesMax: Long): Long {
-    val minutes = ((valuesMax / 60000L) + 1L).coerceAtLeast(15L)
-    val roundedMinutes = when {
-        minutes <= 30L -> 30L
-        minutes <= 60L -> 60L
-        minutes <= 120L -> 120L
-        else -> ((minutes + 59L) / 60L) * 60L
-    }
-    return roundedMinutes * 60000L
-}
 
-private fun currentStreakDays(days: List<FocusActivityDay>): Int {
-    val activeDays = days
-        .filter { it.sessions > 0 || it.protectedMs > 0L }
-        .sortedByDescending { it.key }
-    var expected: Int? = null
-    var streak = 0
-    activeDays.forEach { day ->
-        val ordinal = dayOrdinal(day.key) ?: return@forEach
-        if (expected == null || ordinal == expected) {
-            streak += 1
-            expected = ordinal - 1
-        } else {
-            return streak
-        }
-    }
-    return streak
-}
 
-private fun dayOrdinal(key: String): Int? {
-    val parts = key.split("-")
-    if (parts.size != 2) return null
-    val year = parts[0].toIntOrNull() ?: return null
-    val day = parts[1].toIntOrNull() ?: return null
-    return year * 400 + day
-}
 
-private fun bestDay(days: List<FocusActivityDay>): FocusActivityDay? {
-    val best = days.maxByOrNull { it.protectedMs + (it.sessions * 60000L) }
-    return if (best == null || (best.protectedMs <= 0L && best.sessions <= 0)) null else best
-}
 
-private fun bestDayValue(days: List<FocusActivityDay>): String {
-    return bestDay(days)?.let { dayName(it.dayOfWeek) } ?: "No data"
-}
 
-private fun bestDayCaption(days: List<FocusActivityDay>): String {
-    val day = bestDay(days) ?: return "This week"
-    val details = mutableListOf<String>()
-    if (day.protectedMs > 0L) details += formatProtectedTime(day.protectedMs)
-    if (day.blockedAttempts == 0) {
-        details += "No urges"
-    } else {
-        details += "${day.blockedAttempts} urges stopped"
-    }
-    return details.joinToString(" · ")
-}
 
-private fun dayName(dayOfWeek: Int): String {
-    return when (dayOfWeek) {
-        Calendar.MONDAY -> "Monday"
-        Calendar.TUESDAY -> "Tuesday"
-        Calendar.WEDNESDAY -> "Wednesday"
-        Calendar.THURSDAY -> "Thursday"
-        Calendar.FRIDAY -> "Friday"
-        Calendar.SATURDAY -> "Saturday"
-        Calendar.SUNDAY -> "Sunday"
-        else -> "No data"
-    }
-}
 
-private fun riskiestDay(days: List<FocusActivityDay>): FocusActivityDay? {
-    return days
-        .filter { it.blockedAttempts > 0 || it.sessions > 0 || it.protectedMs > 0L }
-        .maxWithOrNull(
-            compareBy<FocusActivityDay> { it.blockedAttempts }
-                .thenBy { it.sessions }
-                .thenBy { it.protectedMs }
-        )
-}
 
-private fun protectionQualityScore(stats: FocusStats, emergencyUnlocksRemaining: Int): Int {
-    if (stats.sessionsThisWeek <= 0 && stats.protectedMsThisWeek <= 0L) return 0
-    val usedEmergencies = usedEmergencyUnlocks(emergencyUnlocksRemaining)
-    val attemptsPerSession = if (stats.sessionsThisWeek > 0) {
-        stats.blockedAttemptsThisWeek.toFloat() / stats.sessionsThisWeek
-    } else {
-        stats.blockedAttemptsThisWeek.toFloat()
-    }
-    val averageMinutes = averageSessionMs(stats) / 60000L
-    val durationBonus = when {
-        averageMinutes >= 60L -> 12
-        averageMinutes >= 30L -> 8
-        averageMinutes >= 15L -> 4
-        else -> 0
-    }
-    val attemptPenalty = (attemptsPerSession * 10f).toInt().coerceAtMost(35)
-    val emergencyPenalty = usedEmergencies * 12
-    val streakBonus = currentStreakDays(stats.activityDays).coerceAtMost(5) * 3
-    return (76 + durationBonus + streakBonus - attemptPenalty - emergencyPenalty).coerceIn(0, 100)
-}
 
-private fun usedEmergencyUnlocks(emergencyUnlocksRemaining: Int): Int {
-    return (3 - emergencyUnlocksRemaining).coerceIn(0, 3)
-}
 
-private fun emergencyCaption(emergencyUnlocksRemaining: Int): String {
-    val used = usedEmergencyUnlocks(emergencyUnlocksRemaining)
-    return when {
-        used == 0 -> "No unlocks this week"
-        emergencyUnlocksRemaining > 0 -> "$emergencyUnlocksRemaining still available"
-        else -> "Weekly limit reached"
-    }
-}
 
-private fun nextStepText(stats: FocusStats): String {
-    val riskyDay = riskiestDay(stats.activityDays)
-        ?: return "Complete a few more sessions and Blankmind will detect which moment needs support."
-    val day = dayName(riskyDay.dayOfWeek).lowercase()
-    return when {
-        riskyDay.blockedAttempts > 0 -> "Your risk moment is usually $day. Schedule Blankmind before that window."
-        riskyDay.sessions > 1 -> "$day is when you use Blankmind most. Reinforce that routine before opening apps."
-        else -> "$day was your most sensitive point. Reinforce that window before the urge appears."
-    }
-}
 
-private fun progressInsight(stats: FocusStats, savedMs: Long): String {
-    return when {
-        stats.totalSessions == 0 -> "After your first session, Blankmind will start building weekly progress."
-        protectionQualityScore(stats, 3) >= 90 -> "Your sessions are clean: low urge pressure and strong protected time."
-        stats.blockedAttemptsThisWeek >= 5 -> "Your pattern is visible: Blankmind is intercepting urges before they take over."
-        savedMs >= 60L * 60L * 1000L -> "You have recovered more than one hour of attention with Blankmind."
-        stats.sessionsThisWeek >= 3 -> "Repetition is starting to count: several sessions completed this week."
-        stats.blockedAttemptsThisWeek > 0 -> "Blankmind has already intercepted automatic urges. That pause is the product."
-        else -> "One completed session is one less automatic interruption."
-    }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @Composable
 private fun progressTextColor(buttonLight: Boolean): Color {

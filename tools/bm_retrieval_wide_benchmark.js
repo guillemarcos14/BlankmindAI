@@ -27,12 +27,16 @@ function summarize(records,rates) {
 const {seed}=require('./bm_retrieval_wide_fixtures');
 async function main(){
  const args=process.argv.slice(2),get=(k,d)=>args.includes(k)?args[args.indexOf(k)+1]:d;
+ const agentFeature=get("--agent-feature",null);
+ if(agentFeature&&!["tools","retrieval","labels"].includes(agentFeature))throw Error("decisions_agent_feature");
+ if(agentFeature&&(!args.includes("--budget-file")||!fs.existsSync(get("--budget-file"))))throw Error("decisions_existing_budget_required");
  if(!args.includes("--run"))throw Error("retrieval_explicit_benchmark_required");
  const CASES=JSON.parse(fs.readFileSync(get("--cases","tools/datasets/bm_retrieval_step_cases_2026-10-08.json"))).cases;
  const pairs=Number(get("--pairs",20)),fromPair=Number(get("--from-pair",0));if(!Number.isInteger(pairs)||pairs<1||pairs>300||!Number.isInteger(fromPair)||fromPair<0||fromPair+pairs>300)throw Error("decisions_pairs_invalid");
  const c=configuration();if(process.env.SUPABASE_URL!==c.supabase||!process.env.OPENAI_API_KEY)throw Error("decisions_private_providers_required");
  const rateFile=get("--rates",null),rates=rateFile?JSON.parse(fs.readFileSync(rateFile)):null;
  if(rates&&(!["input","cached","output"].every(k=>Number.isFinite(rates[k])&&rates[k]>=0)||rates.model!==(process.env.OPENAI_MODEL||"gpt-5.6-luna")||!rates.source))throw Error("decisions_rates_invalid");
+ if(agentFeature&&(!rates||!Number.isFinite(rates.decisions_input)))throw Error("decisions_rates_required");
  const roots={optimized:path.resolve(get("--baseline","../Codigo-decisions")),decisions:path.resolve(get("--candidate","."))};
  const meter=require('./bm_decisions_meter');
  const budgetFile=get('--budget-file','tmp/retrieval-wide/budget.json');const budget=fs.existsSync(budgetFile)?JSON.parse(fs.readFileSync(budgetFile)):{limit_usd:4,reserved_upper_usd:0,known_usd:0,requests:0};
@@ -44,7 +48,9 @@ async function main(){
    if(!endpoint)return originalFetch(url,options); const reserved=reserve(options.body,endpoint); if(!active)return originalFetch(url,options);
    const local=active,row={endpoint,reserved_upper_usd:reserved,request_sha256:crypto.createHash('sha256').update(String(options?.body||'')).digest('hex'),...(args.includes('--retain-synthetic-requests')?{synthetic_request:JSON.parse(options.body)}:{})};local.provider_requests.push(row);
    if(endpoint==='responses')local.model_calls++;else local.decisions_calls++;
-   try{const result=await meter.meterResponse(await originalFetch(url,options),row);return result;}catch(e){row.error=e.name;throw e;}
+   try{const raw=await originalFetch(url,options);
+    if(agentFeature&&endpoint==="decisions"){const result=await raw.clone().json().catch(()=>null);if(Number.isSafeInteger(result?.usage?.input_tokens))row.usage={input_tokens:result.usage.input_tokens,output_tokens:0,cached_input_tokens:0,cache_write_tokens:0};}
+    const result=await meter.meterResponse(raw,row);return result;}catch(e){row.error=e.name;throw e;}
  };
  const handlers={};for(const [key,root]of Object.entries(roots)){
    const m=require(path.join(root,"netlify/functions/_membership")),db=m.supabaseFetch;
@@ -59,17 +65,19 @@ async function main(){
  };
  const sourceHashes=Object.fromEntries(Object.entries(roots).map(([key,root])=>[key,Object.fromEntries(["assistant-app.js","bmb-brain.js","bm-decisions.js","bm-retrieval-step.js","bmb-sources.js","bm-brain-data.js","bm-response-stream.js","bm-conversation-style.js","bmb-sleep-context.js"].flatMap(n=>{const f=path.join(root,"netlify/functions",n);return fs.existsSync(f)?[[n,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]]:[]}))]));
  const report={schema_version:1,run_id:runId,provider_real:true,decisions_real:true,database_real:true,netlify_transport_tested:false,physical_device_tested:false,native_actions_executed:0,source_commits:{optimized:require("node:child_process").execFileSync("git",["-C",roots.optimized,"rev-parse","HEAD"],{encoding:"utf8"}).trim(),decisions:require("node:child_process").execFileSync("git",["-C",roots.decisions,"rev-parse","HEAD"],{encoding:"utf8"}).trim()},
-   first_text_definition:'First retained draft after any reset; raw first emitted draft is separately retained.',personal_record_verification_requested:args.includes('--verify-personal-records'),order:"paired AB/BA alternation by case; identical independent fixtures; same conversation context within each variant",data_policy:args.includes('--account-policy')?'authenticated-account-records':'synthetic-private-qa',from_pair:fromPair,pair_count:pairs,sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,complete:false,gates_passed:false};
+   first_text_definition:'First retained draft after any reset; raw first emitted draft is separately retained.',personal_record_verification_requested:args.includes('--verify-personal-records'),order:"paired AB/BA alternation by case; identical independent fixtures; same conversation context within each variant",data_policy:args.includes('--account-policy')?'authenticated-account-records':'synthetic-private-qa',from_pair:fromPair,pair_count:pairs,sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,agent_feature:agentFeature,agent_source_hashes:agentFeature?require('./bm_agent_runtime').verify():null,complete:false,gates_passed:false};
  const save=()=>fs.writeFileSync(file,JSON.stringify({...report,summary:summarize(records,rates)},null,2));
  let user,connect,token;const fixtureNow=Date.now();report.fixture_clock=new Date(fixtureNow).toISOString();report.case_manifest=JSON.parse(fs.readFileSync(get("--cases","tools/datasets/bm_retrieval_step_cases_2026-10-08.json")));
  const context=()=>({context_revision:Date.now()*1000,language:"en",locale:"en",timezone:"Europe/Madrid",has_selected_apps:true,selection_count:2,
    screen_time_authorized:true,is_blank_active:false,protection_target:"selected_distractions",device_execution_ready:true,schedule:{windows:[]},
    brain_snapshot:{schema_version:1,generated_at:new Date().toISOString(),timezone:"Europe/Madrid",sessions:[],history_complete:true,account:{signed_in:true,premium_access:true}}});
- const invoke=(variant,body)=>handlers[variant]({httpMethod:"POST",headers:{authorization:"Bearer "+token},body:JSON.stringify({app_install_id:install,...body})},null,
+ const background=[];
+ const host=()=>({waitUntil(promise){background.push(Promise.resolve(promise));}});
+ const invoke=(variant,body)=>handlers[variant]({httpMethod:"POST",headers:{authorization:"Bearer "+token},body:JSON.stringify({app_install_id:install,...body})},host(),
    {onDraft:text=>{if(active&&text==="")active.first_text_ms=null;if(active&&text.trim()){active.drafts.push(text);if(active.first_emitted_text_ms===null)active.first_emitted_text_ms=performance.now()-active.start;if(active.first_text_ms===null)active.first_text_ms=performance.now()-active.start;}}});
  const streams={};for(const [key,root]of Object.entries(roots))streams[key]=(await import(require('url').pathToFileURL(path.join(root,'netlify/functions/assistant-app-stream.mjs')))).default;
- const invokeStream=async(variant,body)=>{const r=await streams[variant](new Request('http://localhost/assistant-app-stream',{method:'POST',headers:{authorization:'Bearer '+token},body:JSON.stringify({app_install_id:install,...body})}),{});let buffer='',result;const reader=r.body.getReader(),decoder=new TextDecoder();const frames=[];while(true){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let i;while((i=buffer.indexOf('\n'))>=0){const frame=JSON.parse(buffer.slice(0,i));buffer=buffer.slice(i+1);frames.push(frame.type);if(frame.type==='draft'){if(frame.text==='')active.first_text_ms=null;else if(frame.text.trim()){active.drafts.push(frame.text);if(active.first_emitted_text_ms===null)active.first_emitted_text_ms=performance.now()-active.start;if(active.first_text_ms===null)active.first_text_ms=performance.now()-active.start;}}if(frame.type==='result')result=frame;}}active.transport_frames=frames;return {statusCode:result?.status||503,body:JSON.stringify(result?.body||{})};};
- const envBefore=Object.fromEntries(["BM_RETRIEVAL_STEP_ENABLED","BM_RETRIEVAL_STEP_QA_ENABLED","BM_DECISIONS_QA_ENABLED","BM_DECISIONS_DATA_POLICY","BM_DECISIONS_QA_USERS","BM_JEV_SHADOW_ENABLED","BM_JEV_PREFETCH_EXPERIMENT"].map(k=>[k,process.env[k]]));
+ const invokeStream=async(variant,body)=>{const r=await streams[variant](new Request('http://localhost/assistant-app-stream',{method:'POST',headers:{authorization:'Bearer '+token},body:JSON.stringify({app_install_id:install,...body})}),host());let buffer='',result;const reader=r.body.getReader(),decoder=new TextDecoder();const frames=[];while(true){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let i;while((i=buffer.indexOf('\n'))>=0){const frame=JSON.parse(buffer.slice(0,i));buffer=buffer.slice(i+1);frames.push(frame.type);if(frame.type==='draft'){if(frame.text==='')active.first_text_ms=null;else if(frame.text.trim()){active.drafts.push(frame.text);if(active.first_emitted_text_ms===null)active.first_emitted_text_ms=performance.now()-active.start;if(active.first_text_ms===null)active.first_text_ms=performance.now()-active.start;}}if(frame.type==='result')result=frame;}}active.transport_frames=frames;return {statusCode:result?.status||503,body:JSON.stringify(result?.body||{})};};
+ const envBefore=Object.fromEntries(["BM_AGENT_ENABLED","BM_AGENT_QA_ENABLED","BM_AGENT_QA_FEATURES","BM_AGENT_LABEL_DAILY_USD","BM_RETRIEVAL_STEP_ENABLED","BM_RETRIEVAL_STEP_QA_ENABLED","BM_DECISIONS_QA_ENABLED","BM_DECISIONS_DATA_POLICY","BM_DECISIONS_QA_USERS","BM_JEV_SHADOW_ENABLED","BM_JEV_PREFETCH_EXPERIMENT"].map(k=>[k,process.env[k]]));
  const originalInfo=console.info;
  try{
    const password=crypto.randomBytes(28).toString("base64url"),email="decisions-"+runId+"@example.invalid";
@@ -83,10 +91,14 @@ async function main(){
     token=(await request("/auth/v1/token?grant_type=password",{email,password},{apikey:c.anonKey})).access_token;
     for(const variant of (Math.floor(pair/2)+Math.floor(pair/CASES.length))%2?["decisions","optimized"]:["optimized","decisions"]){
      await Promise.all([...["assistant_app_turns","bmb_events","bmb_followups","bmb_observations","bm_brain_memories","bmb_sessions"].map(table=>request(`/rest/v1/${table}?auth_user_id=eq.${user}`,undefined,service,"DELETE")),...["assistant_semantic_conversations","digital_wellness_feature_payloads"].map(table=>request(`/rest/v1/${table}?anonymous_user_id=eq.${memoryIdentity("app",user)}`,undefined,service,"DELETE"))]);
-     const spec=CASES[pair%CASES.length],{language}=spec,group=spec.route;
+     const spec=CASES[pair%CASES.length],{language}=spec,group=agentFeature?(spec.group||spec.route):spec.route;
      const expected=await seed(spec,{request,user,service,now:fixtureNow});
      process.env.BM_DECISIONS_QA_ENABLED="false";process.env.BM_RETRIEVAL_STEP_QA_ENABLED=!args.includes('--account-policy')&&variant==="decisions"&&!args.includes("--retrieval-off")?"true":"false";
      process.env.BM_RETRIEVAL_STEP_ENABLED=args.includes('--account-policy')&&variant==="decisions"&&!args.includes('--retrieval-off')?'true':'false';
+     if(agentFeature){
+       Object.assign(process.env,{BM_AGENT_ENABLED:"false",BM_AGENT_QA_ENABLED:variant==="decisions"?"true":"false",BM_AGENT_QA_FEATURES:agentFeature,
+         BM_AGENT_LABEL_DAILY_USD:agentFeature==="labels"?"0.5":"",BM_RETRIEVAL_STEP_ENABLED:"true",BM_RETRIEVAL_STEP_QA_ENABLED:"false",BM_DECISIONS_DATA_POLICY:"authenticated-account-records"});
+     }
      let nativeContext={};
      if(spec.native_sleep){const {dayOffset}=require('../netlify/functions/bm-brain-data'),today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).format(fixtureNow),values=report.case_manifest.native_sleep_values;
        const source=spec.native_sleep_source||'synthetic_qa',nights=values.map((sleep_minutes,i)=>({date:dayOffset(today,i-values.length),source,sleep_minutes,offset:i-values.length})).filter(n=>!(spec.native_skip_offsets||[]).includes(n.offset)).map(({offset,...n})=>n);
@@ -97,24 +109,33 @@ async function main(){
        else expected.primary_source='observations';
      }
      if(spec.profile==='invalid'&&report.case_manifest.version===1&&spec.id.startsWith('fresh-'))expected.minutes=null;
-     const history=[];for(const [step,text]of (spec.turns||[spec.text]).entries()){const turn=crypto.randomUUID();active={pair,step,variant,group,turn_id:turn,start:performance.now(),first_text_ms:null,first_emitted_text_ms:null,drafts:[],database_calls:0,model_calls:0,usage_records:0,metered_usage:{},decisions_calls:0,decisions_known_cost_usd:0,decisions_unknown_cost_upper_usd:0,provider_requests:[],decisions_trace:[],retrieval_trace:[]};
+     const history=[];for(const [step,text]of (spec.turns||[spec.text]).entries()){const turn=crypto.randomUUID();active={pair,step,variant,group,turn_id:turn,start:performance.now(),first_text_ms:null,first_emitted_text_ms:null,drafts:[],database_calls:0,model_calls:0,usage_records:0,metered_usage:{},decisions_calls:0,decisions_known_cost_usd:0,decisions_unknown_cost_upper_usd:0,provider_requests:[],decisions_trace:[],retrieval_trace:[],agent_trace:[]};
      console.info=line=>{try{const m=JSON.parse(line);if(["bm_stream_timing","bm_token_usage"].includes(m.event)&&Number.isSafeInteger(m.usage?.input_tokens)&&Number.isSafeInteger(m.usage?.output_tokens)){
        active.usage_records++;for(const [k,v]of Object.entries(m.usage))active.metered_usage[k]=(active.metered_usage[k]||0)+v;
-     }if(m.event==="bm_decisions_timing")active.decisions_trace.push(m);if(m.event.startsWith("bm_retrieval_step_"))active.retrieval_trace.push(m);if(m.event==="bm_turn_timing"){active.usage=m.usage;active.stages=m.stages;active.decisions=m.decisions||[];}}catch(_){};};
-     let response;try{response=await (args.includes('--all-ndjson')||pair%8===0?invokeStream:invoke)(variant,{action:"send",turn_id:turn,text,context:{...context(),...nativeContext,language,locale:language}});}catch(_){response={statusCode:503,body:"{}"};}
+     }if(m.event?.startsWith("bm_agent_"))active.agent_trace.push(m);if(m.event==="bm_decisions_timing")active.decisions_trace.push(m);if(m.event.startsWith("bm_retrieval_step_"))active.retrieval_trace.push(m);if(m.event==="bm_turn_timing"){active.usage=m.usage;active.stages=m.stages;active.decisions=m.decisions||[];}}catch(_){};};
+     let response;try{response=await (args.includes('--all-ndjson')||pair%8===0?invokeStream:invoke)(variant,{action:"send",turn_id:turn,text,context:{...context(),...nativeContext,...(agentFeature?spec.context||{}:{}),language,locale:language}});}catch(_){response={statusCode:503,body:"{}"};}
+     const foregroundMs=performance.now()-active.start;
+     if(agentFeature)await Promise.allSettled(background.splice(0));
      const value=JSON.parse(response.body),t=value.turn||{},noAction=!t.action_id&&!t.auto_apply;
-     const row={...active,case_id:spec.id,eligible:spec.eligible,expected:{...expected,criterion:spec.expectation,history:[...history]},transport:args.includes('--all-ndjson')||pair%8===0?"local-ndjson-handler":"local-json-handler",profile:spec.profile,language,start:undefined,status:response.statusCode,elapsed_ms:performance.now()-active.start,
+     const row={...active,agent_feature:agentFeature,foreground_ms:foregroundMs,case_id:spec.id,eligible:spec.eligible,expected:{...expected,criterion:spec.expectation,history:[...history]},transport:args.includes('--all-ndjson')||pair%8===0?"local-ndjson-handler":"local-json-handler",profile:spec.profile,language,start:undefined,status:response.statusCode,elapsed_ms:performance.now()-active.start,
        passed:response.statusCode===200&&t.status==="completed"&&typeof t.assistant_text==="string"&&Boolean(t.assistant_text.trim())&&(["action","actions_combined"].includes(group)?Boolean(t.action_id&&t.auto_apply):noAction),
        // Synthetic text is kept for semantic review, never live-user transcripts.
        synthetic_input:text,synthetic_response:t.assistant_text||null,action_id_present:Boolean(t.action_id),auto_apply:Boolean(t.auto_apply)};
      if(group==="habits")row.passed=row.passed&&/sleep|dorm/i.test(t.assistant_text||"");
      if(group==="bedtime")row.passed=row.passed&&/23:00|11\s*p\.?m/i.test(t.assistant_text||"");
      if(group==="incomplete")row.passed=row.passed&&/\?/.test(t.assistant_text||"");
-     if(["action","actions_combined"].includes(group)&&t.action_id){
+     if((["action","actions_combined"].includes(group)||agentFeature&&spec.expected_action)&&t.action_id){
        const payloads=await request(`/rest/v1/digital_wellness_feature_payloads?anonymous_user_id=eq.${memoryIdentity("app",user)}&select=payload`,undefined,service,"GET");
        const p=payloads.map(r=>r.payload?.properties?.memory?.pending_assistant_action).find(p=>p?.id===t.action_id);
-       row.pending_action=p?{type:p.type,minutes:p.minutes,recurrence:p.recurrence}:null;
-       row.passed=row.passed&&p?.type==="start_protection"&&p.minutes===30&&!['verified','applied'].includes(t.action_status);
+       row.pending_action=p?{type:p.type,minutes:p.minutes,recurrence:p.recurrence,start_minute:p.start_minute,end_minute:p.end_minute,weekdays:p.weekdays,duration_days:p.duration_days,window_id:p.window_id,hours:p.hours,hard_mode:p.hard_mode}:null;
+       row.passed=row.passed&&(spec.expected_action?Object.entries(spec.expected_action).every(([k,v])=>JSON.stringify(p?.[k])===JSON.stringify(v)):p?.type==="start_protection"&&p.minutes===30)&&!['verified','applied'].includes(t.action_status);
+     }
+     if(agentFeature){
+       row.canonical_memories=await request('/rest/v1/bm_brain_memories?auth_user_id=eq.'+user+'&select=key,value',undefined,service,'GET');
+       row.canonical_observations=await request('/rest/v1/bmb_observations?auth_user_id=eq.'+user+'&select=metric,value_number,value_text,unit,measurement,evidence,measured_at',undefined,service,'GET');
+       row.committed_effect=await request('/rest/v1/assistant_app_turns?auth_user_id=eq.'+user+'&id=eq.'+turn+'&select=brain_memory_effect,brain_memory_applied_at',undefined,service,'GET');
+       if(spec.expected_memory)row.passed=row.passed&&row.canonical_memories.some(m=>m.key===spec.expected_memory.key&&typeof m.value==="string"&&m.value.includes(spec.expected_memory.value));
+       if(spec.forbid_memory)row.passed=row.passed&&row.canonical_memories.length===0;
      }
      if(group==="forget"&&response.statusCode===200){
        const memories=await request(`/rest/v1/bm_brain_memories?auth_user_id=eq.${user}&select=value`,undefined,service,"GET");

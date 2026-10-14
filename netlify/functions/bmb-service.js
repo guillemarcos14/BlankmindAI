@@ -67,7 +67,7 @@ function opportunities(events,now=Date.now()) {
   return candidates.filter(c=>Date.parse(c.expires_at)>now).sort((a,b)=>b.priority-a.priority);
 }
 async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./_assistant_push").sendAssistantActionPush,notify=require("./_assistant_push").sendBMBNotification,
-  db=supabaseFetch,identityLookup=require("./_identity").identityForAuthUser,getMemory=require("./_assistant_channel").getAssistantMemory,getContext=require("./_bm_user_context").enrichAssistantContext}={}) {
+  db=supabaseFetch,identityLookup=require("./_identity").identityForAuthUser,getMemory=require("./_assistant_memory").getAssistantMemory,getContext=require("./_bm_user_context").enrichAssistantContext}={}) {
   if(a.settings.rest?.sharing_revoked)return {skipped:"rest_sharing_revoked"};
   const identity=await identityLookup(a.auth_user_id);
   if(!identity||identity.app_install_id!==a.app_install_id)return {skipped:"installation_changed"};

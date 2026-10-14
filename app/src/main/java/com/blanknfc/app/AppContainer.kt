@@ -6,7 +6,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.blanknfc.app.analytics.NetlifyAnalyticsTracker
 import com.blanknfc.app.data.BlankBackendClient
-import com.blanknfc.app.data.DigitalWellnessRemoteStore
 import com.blanknfc.app.data.HealthConnectStore
 import com.blanknfc.app.data.OnboardingSyncStore
 import com.blanknfc.app.data.PlayPurchaseStore
@@ -21,7 +20,6 @@ class AppContainer(context: Context) {
     val sessionManager = SessionManager(context.dataStore, analyticsTracker = analyticsTracker)
     val purchaseStore = PlayPurchaseStore(context)
     val healthConnectStore = HealthConnectStore(context)
-    val digitalWellnessStore = DigitalWellnessRemoteStore(backendClient)
     val onboardingSyncStore = OnboardingSyncStore(backendClient)
     val referralStore = ReferralStore(context, backendClient)
 }

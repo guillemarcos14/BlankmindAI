@@ -5,7 +5,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.blanknfc.app.data.HealthConnectStore
-import com.blanknfc.app.data.DigitalWellnessRemoteStore
 import com.blanknfc.app.data.OnboardingSyncStore
 import com.blanknfc.app.data.PlayPurchaseStore
 import com.blanknfc.app.data.ReferralStore
@@ -32,7 +31,6 @@ fun NavGraph(
     sessionManager: SessionManager,
     purchaseStore: PlayPurchaseStore,
     healthConnectStore: HealthConnectStore,
-    digitalWellnessStore: DigitalWellnessRemoteStore,
     onboardingSyncStore: OnboardingSyncStore,
     referralStore: ReferralStore,
     startDestination: String
@@ -62,7 +60,6 @@ fun NavGraph(
                 sessionManager = sessionManager,
                 purchaseStore = purchaseStore,
                 healthConnectStore = healthConnectStore,
-                digitalWellnessStore = digitalWellnessStore,
                 referralStore = referralStore,
                 onRelinkTag = {
                     navController.navigate(Routes.RELINK_NFC)

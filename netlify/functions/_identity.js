@@ -6,7 +6,7 @@ function cleanText(value, maxLength = 240) {
 }
 
 function normalizePhone(value) {
-  let raw = cleanText(value, 80).toLowerCase().replace(/^whatsapp:/, "");
+  let raw = cleanText(value, 80).toLowerCase();
   raw = raw.replace(/[()\s.-]/g, "");
   if (raw.startsWith("00")) raw = `+${raw.slice(2)}`;
   if (raw.startsWith("+")) raw = `+${raw.slice(1).replace(/\D/g, "")}`;

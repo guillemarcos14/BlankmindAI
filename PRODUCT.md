@@ -16,3 +16,7 @@ Solicitud ampliada de Guillem del 2026-10-06: extender el Home aprobado a todas 
 ## Accessibility and evidence
 
 Conservar VoiceOver, Dynamic Type, Reduce Motion, controles/confirmaciones nativos, hold3s/20s, cooldown60s y hard protection. Las capturas de Simulator no certifican micrófono ni Screen Time físicos. La subida TestFlight Internal Only está autorizada por separado y requiere archive, firma y upload confirmados; no publicar App Store ni relajar el gate de producción. Contrato visual: [Uniformidad](docs/UNIFORM_APP_2026-10-06.md); referencia del Home: [Minimal App Home](docs/MINIMAL_HOME_2026-10-06.md).
+
+## Launch scope — 2026-10-14
+
+App-only: no WhatsApp/SMS, widget extension, secondary widget controls, general wellness reports or external wearable/weather connectors. Progress shows sleep and overnight recovery. Broader authorized Apple Health context remains available to the sleep model; it is not a wellness dashboard. Decisions, retrieval, memory classification, the consented global sleep pool and the autonomous measured-rest loop remain CORE. No source change by itself activates unmeasured optimizations or certifies sleep efficacy.

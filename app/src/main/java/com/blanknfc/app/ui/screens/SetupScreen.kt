@@ -355,7 +355,7 @@ fun SetupScreen(
                             AndroidOnboardingStep.PERSONALIZATION -> MainSetupStep(
                                 stepText = stepText(currentStep, steps.size),
                                 title = "Let's personalize the plan.",
-                                description = "Blankmind sends your answers with consent so your AI Focus Plan and Digital Wellness report can adapt.",
+                                description = "Blankmind uses your answers with consent to understand your routines and rest.",
                                 primaryText = "Personalize my plan",
                                 onPrimary = {
                                     submitPersonalization()
@@ -839,7 +839,7 @@ private fun TrialStep(
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Free includes basic blocking. Pro includes AI Focus Plans, Digital Wellness reports, Health context and adaptive plans.",
+            text = "Free includes basic blocking. Pro supports personalized rest plans and sleep context.",
             style = MaterialTheme.typography.bodyLarge,
             color = BlankGray,
             textAlign = TextAlign.Center,

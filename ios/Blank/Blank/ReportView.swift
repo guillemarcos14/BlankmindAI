@@ -16,12 +16,12 @@ struct ReportView: View {
             Group {
                 if let onClose {
                     SectionHeader(title: "progress",
-                        subtitle: "Understand how your rest changes.\nYour sleep, body and habits in context.",
+                        subtitle: "Understand how your rest changes.\nYour sleep and overnight recovery.",
                         action: { if showContext { showContext = false } else { onClose() } }, titleColor: headerPrimary, subtitleColor: headerSecondary)
                         .padding(.bottom, 12)
                 } else {
                     TopSheetHeader(title: "progress",
-                        subtitle: "Understand how your rest changes.\nYour sleep, body and habits in context.",
+                        subtitle: "Understand how your rest changes.\nYour sleep and overnight recovery.",
                         titleColor: headerPrimary, subtitleColor: headerSecondary)
                         .padding(.top, 16).padding(.bottom, 24)
                 }

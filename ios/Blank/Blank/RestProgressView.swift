@@ -38,9 +38,9 @@ struct RestProgressContent: View {
     }
     private var contextMetrics: [RestHealthMetric] {
         #if DEBUG && targetEnvironment(simulator)
-        if AssistantAppPreview.scenario.contains("progress") && !AssistantAppPreview.scenario.contains("empty") { return RestProgressFixture.metrics() }
+        if AssistantAppPreview.scenario.contains("progress") && !AssistantAppPreview.scenario.contains("empty") { return RestProgressFixture.metrics().filter { RestReportScope.includes($0.id) } }
         #endif
-        return sleep.syntheticSleepEnabled ? health.metrics.filter { $0.id != "blank.nightHeartRate" && !$0.id.contains("Sleep") } : health.metrics
+        return health.metrics.filter { RestReportScope.includes($0.id) }
     }
     private var sourceLabel: String? {
         if AppStoreScreenshotMode.enabled { return "example data" }
@@ -78,7 +78,7 @@ struct RestProgressContent: View {
             bodyCard
             disconnectionCard
             Button { showContext = true } label: {
-                HStack { Text("all health context"); Spacer(); Image(systemName: "chevron.right") }
+                HStack { Text("sleep context"); Spacer(); Image(systemName: "chevron.right") }
                     .font(.blankInter(size: 16, relativeTo: .body))
                     .frame(minHeight: 44)
                     .contentShape(Rectangle())
@@ -241,12 +241,12 @@ struct RestProgressContent: View {
         }.padding(16).frame(maxWidth: .infinity, alignment: .leading).reportFlatCard()
     }
     private var featuredMetrics: [RestHealthMetric] {
-        let ids = ["blank.nightHeartRate", "HKQuantityTypeIdentifierHeartRateVariabilitySDNN", "HKQuantityTypeIdentifierRespiratoryRate", "HKQuantityTypeIdentifierAppleSleepingWristTemperature", "HKQuantityTypeIdentifierOxygenSaturation", "HKQuantityTypeIdentifierTimeInDaylight"]
+        let ids = ["blank.nightHeartRate", "HKQuantityTypeIdentifierHeartRateVariabilitySDNN", "HKQuantityTypeIdentifierRespiratoryRate", "HKQuantityTypeIdentifierAppleSleepingWristTemperature", "HKQuantityTypeIdentifierOxygenSaturation"]
         return Array(ids.compactMap { id in contextMetrics.first { $0.id == id && !$0.points.isEmpty } }.prefix(3))
     }
     private var bodyCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            header("your body this week", icon: "waveform.path.ecg")
+            header("overnight recovery", icon: "waveform.path.ecg")
             ForEach(featuredMetrics) { row in metricRow(row) }
             if let minutes = RestProgressSnapshot.mean(snapshot.weeklyNights.map(\.sleepMinutes)) {
                 dataRow("sleep per night", value: duration(minutes), detail: sleepDelta)
@@ -306,8 +306,8 @@ struct RestProgressContent: View {
     }
     private var contextContent: some View {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("All health context").font(.blankInter(size: 26, relativeTo: .title3))
-                    caption("Last 35 days + available clinical history. Additional Health summaries are shared with AI only if you enable that option in permissions.")
+                    Text("Sleep context").font(.blankInter(size: 26, relativeTo: .title3))
+                    caption("Sleep and overnight recovery over the last 35 days. Shared with AI only with your permission.")
                     Button("Review Apple Health access") {
                         HealthKitStore.shared.requestAccess()
                     }.font(.blankInter(size: 16, relativeTo: .body)).frame(minHeight: 44)
@@ -316,13 +316,7 @@ struct RestProgressContent: View {
                     if let error = health.error { caption(error) }
                     if health.loading { ProgressView("Loading health context…").tint(ink) }
                     sleepDetails
-                    if !health.traits.isEmpty {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("Personal context").font(.blankInter(size: 20, relativeTo: .headline))
-                            ForEach(health.traits) { trait in dataRow(trait.title, value: trait.value, detail: "Apple Health") }
-                            caption("Available characteristics · no measurement timestamp supplied. Age is derived from your date of birth today.")
-                        }.padding(16).frame(maxWidth: .infinity, alignment: .leading).reportFlatCard()
-                    }
+
                     ForEach(Array(Set(contextMetrics.map(\.family))).sorted(), id: \.self) { family in
                         VStack(alignment: .leading, spacing: 14) {
                             Text(family).font(.blankInter(size: 20, relativeTo: .headline))
@@ -353,7 +347,7 @@ struct RestProgressContent: View {
                         }.padding(16).frame(maxWidth: .infinity, alignment: .leading).reportFlatCard()
                     }
                     if contextMetrics.isEmpty { caption("No additional records are available yet. Review Health access and refresh.") }
-                    caption("Availability depends on your device, region, records and permissions. Clinical documents and ECG waveforms can be reviewed in Apple Health.")
+                    caption("Availability depends on your Watch, records and permissions.")
                     Button("Back to Progress") { showContext = false }
                         .font(.blankInter(size: 16, relativeTo: .body)).frame(minHeight: 44)
                         .accessibilityIdentifier("progress-context-back")

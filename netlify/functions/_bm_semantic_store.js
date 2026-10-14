@@ -32,7 +32,7 @@ async function readSemanticConversation(anonymousUserId, now = Date.now()) {
 
 async function commitSemanticConversation({ anonymousUserId, channel, expectedVersion, state }) {
   const key = conversationKey(anonymousUserId);
-  if (!["whatsapp", "sms"].includes(channel)) throw new Error("semantic_store_invalid_channel");
+  if (channel !== "app") throw new Error("semantic_store_invalid_channel");
   if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0) throw new Error("semantic_store_missing_version");
   if (!state || typeof state !== "object" || Array.isArray(state) || !state.semantic_state) throw new Error("semantic_store_missing_state");
   if (Buffer.byteLength(JSON.stringify(state), "utf8") > 65536) throw new Error("semantic_store_oversized_state");
