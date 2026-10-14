@@ -14,6 +14,7 @@ const conversationStyle=require("./bm-conversation-style");
 const rest=require("./bmb-rest");
 // Punctuation only; never edit facts, evidence or structured authority.
 function cleanProse(text){return typeof text==='string'?text.replace(/:(?!\d{2}\b)/g,','):text;}
+function effectsIdentity(result){return JSON.stringify(Object.fromEntries(["memory","observations","followup_resolution","longitudinal_review","pending_request","rest_experiment","rest_preferences","rest_exclusions","rest_claim"].map(k=>[k,result[k]??null])));}
 const object=p=>({type:"object",additionalProperties:false,required:Object.keys(p),properties:p});
 const str={type:"string"}, num={type:"integer"}, nil=p=>({anyOf:[p,{type:"null"}]});
 const ACTIONS=[...require("./bm-pending-action").PENDING_ASSISTANT_ACTION_TYPES].filter(t=>t!=="apply_ai_plan");
@@ -35,6 +36,7 @@ const schema=object({phase:{type:"string",enum:["read","final"]},response_langua
   observations:{type:"array",items:longitudinal.observationSchema,maxItems:12},followup_resolution:longitudinal.followupSchema,longitudinal_review:longitudinal.reviewSchema,
   rest_experiment:nil(object({hypothesis:str,metric:{type:"string",enum:rest.METRICS},target_minutes:nil(num),reference_minute:nil(num),target_evidence:str,review_after_days:num,evidence_ids:{type:"array",items:str,maxItems:12}})),
   rest_preferences:nil(object({excluded_weekdays:{type:"array",items:num,maxItems:7},evidence:str})),
+  rest_exclusions:nil(object({experiment_id:str,dates:{type:"array",items:str,maxItems:5},evidence:str})),
   cited_sources:{type:"array",items:str,maxItems:12}});
 const INSTRUCTIONS=`${conversationStyle}
 Your sole product objective is to improve this user's Apple Watch measured sleep through control of their selected phone distractions. All recommendations and autonomous experiments must serve that objective. Do not optimize productivity, engagement, general wellness, screen minutes, block completion or subjective ratings as outcomes. Explain or execute direct phone-control requests within existing permissions, but never invent a sleep benefit for an unrelated requested control. For unrelated wellness/training/nutrition or general advice, briefly bring the conversation back to the user's rest and digital routine.
@@ -45,6 +47,7 @@ User preferences such as no weekend blocks, essential access or a paused plan ar
 An explicit new preference excluding blocking on named weekdays is recorded in rest_preferences with exact current-message evidence; otherwise null. Use Sunday=1 through Saturday=7; weekends are [1,7]. This can only narrow autonomous days. It never grants permission, removes an existing block by itself or silently expands the allowed days. Keep the same preference in personal memory/observations when appropriate.
 target_evidence is an exact substring of a current declaration or supplied personal memory containing the explicit duration/time target. Empty for sleep_continuity. Do not supply a measured average or generic norm as a desired target. At least seven valid Watch baseline nights with the chosen metric are needed to record an experiment; a useful first block can still be proposed while collecting an adequate baseline, with rest_experiment=null.
 When discussing efficacy of a specific intervention, rest_claim must identify its supplied experiment, fixed metric and exact deterministic evaluation status. Otherwise null. A personal feeling or a successful native receipt is not an improved status. Keep improvement claims consistent with this field and quote only the supplied metric delta, dates and coverage.
+For an explicit request to exclude measured nights from the current experiment (for example illness or travel), rest_exclusions may name its supplied ID and up to five supplied Watch record dates, with literal current-message evidence. Otherwise null. Do not silently discard inconvenient outcomes to manufacture improvement. Illness/travel declarations also remain ordinary source-tagged observations. Explain exclusions and uncertainty when reporting a comparison.
 For a one-time block starting now, including 'all day today', 'the rest of today', 'todo el dia de hoy', or 'desde ahora hasta medianoche', use apply_schedule, recurrence=once, start_mode=now, local_date=today in the supplied timezone, end_minute=0 for the next midnight. The server resolves the immediate start from its clock with a short delivery lead; never guess midnight as 1440, use a past start time, or turn today into a weekly schedule. start_mode=scheduled (or null) is for an exact future clock time. A complete explicit request to block the remainder of today is sufficient authorization; do not ask for today's known date, timezone or exact current time. An established pending request supplies its missing details across turns. Preserve start_mode when accepting a saved proposal.
 For longitudinal tracking, extract multiple explicit current-user observations into observations; otherwise return []. Never turn a usual routine into daily measurements; set measurement=routine_statement for habits, declared only for an actual occurrence. Preserve bedtime (going to bed), sleep_onset (falling asleep), wake_time, duration and perceived restfulness as different metrics. Only extract numeric observations with explicit digits you can verify in evidence; use HH:MM or numeric hours for clock values. Numeric observations MUST have value_text=null. Clock 23:00 is value_number=1380, unit=local_minute. Duration uses minutes. Scores use unit=score_0_10 and require an explicit 0–10 scale. Caffeine/alcohol use servings. All qualitative observations use value_number=null, unit=text and value_text copied literally from the user's message; use life_context for qualitative stress/rest descriptions without a numeric scale. Do not infer stress, health, less need for sleep, causality or a benefit from phone protection. Use measured_at only when the user explicitly establishes the date; null means statement date, not an invented historic night. Keep temporary context as observations rather than replacing stable memory. No third-party facts. Never extract observations from a question or hypothetical. Followup_resolution may answer/dismiss only the supplied open followup that the CURRENT reply actually addresses; a new topic or silence does not answer it. Evidence must be literal current-message text.
 Every reactive turn requires a nonempty useful reply and decision other than silent; silent belongs only to proactive assessment. If there is no action or new fact, acknowledge or answer naturally rather than returning silence. A request for sleep advice should receive a helpful, non-diagnostic suggestion, not an empty reply.
@@ -226,14 +229,14 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     /:(?!\d{2}\b)/.test(result.response_text||"")||(!proactive&&(!result.evidence?.trim()||!prompt.includes(result.evidence)))||
     (m&&(!m.evidence?.trim()||!prompt.includes(m.evidence)||(m.operation==="set"&&(!m.value?.trim()||!prompt.includes(m.value))))));
   if(needsRepair) {
-    const repairEffects=reactiveEmpty||syntheticCopy?JSON.stringify({memory:result.memory,observations:result.observations,followup_resolution:result.followup_resolution,longitudinal_review:result.longitudinal_review,pending_request:result.pending_request,rest_experiment:result.rest_experiment,rest_preferences:result.rest_preferences}):null;
+    const repairEffects=reactiveEmpty||syntheticCopy?effectsIdentity(result):null;
     const control={kind:result.message_kind,decision:reactiveEmpty&&result.decision==="silent"?"respond":result.decision,action:result.action?fingerprint(result.action):null,accepted:result.accepted_proposal};
     input.previous_generated_result=result;
     input.conformance_error=(syntheticCopy?"This reply uses simulated current_sleep. Briefly identify the sleep as simulated/sample data, including when the user asks for minutes only. Preserve the requested units and exact numeric facts. ":"")+(reactiveEmpty?"This reactive turn has no visible reply. Return a nonempty useful answer to current_message. Never use silent here. If the previous decision was silent, use respond with no action; otherwise preserve the decision. Preserve all device, memory and tracking authority. ":"")+"Repair copy/output conformance only. Remove narrative colons while preserving clock times. evidence and memory.evidence must be literal nonempty current_message substrings. memory.value must copy one exact meaningful contiguous substring, or memory=null. Preserve message_kind, decision (except the explicit silent-to-respond repair), accepted_proposal and every action parameter exactly. Return final, no reads. Keep the reply natural.";
     input.tool_budget_remaining=0;
     result=await run(input);
     if(result?.phase==='final')result.response_text=cleanProse(result.response_text);
-    if((reactiveEmpty||syntheticCopy)&&repairEffects!==JSON.stringify({memory:result.memory,observations:result.observations,followup_resolution:result.followup_resolution,longitudinal_review:result.longitudinal_review,pending_request:result.pending_request,rest_experiment:result.rest_experiment,rest_preferences:result.rest_preferences}))throw Error("bmb_repair_changed_effects");
+    if((reactiveEmpty||syntheticCopy)&&repairEffects!==effectsIdentity(result))throw Error("bmb_repair_changed_effects");
     if(result.message_kind!==control.kind||result.decision!==control.decision||result.accepted_proposal!==control.accepted||
       (result.action?fingerprint(result.action):null)!==control.action)throw Error("bmb_repair_changed_authority");
   }
@@ -354,6 +357,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
       ||repaired.response_language!==original.response_language||repaired.evidence!==original.evidence
       ||repaired.accepted_proposal!==original.accepted_proposal||repaired.pending_request!==original.pending_request
       ||actionIdentity(repaired.rest_experiment||{})!==actionIdentity(original.rest_experiment||{})||actionIdentity(repaired.rest_preferences||{})!==actionIdentity(original.rest_preferences||{})
+      ||actionIdentity(repaired.rest_exclusions||{})!==actionIdentity(original.rest_exclusions||{})||actionIdentity(repaired.rest_claim||{})!==actionIdentity(original.rest_claim||{})
       ||actionIdentity(repaired.action||{})!==actionIdentity(original.action||{})||actionIdentity(repaired.memory||{})!==actionIdentity(original.memory||{})
       ||!repaired.response_text?.trim()||/:(?!\d{2}\b)/.test(repaired.response_text))throw Error("bmb_tracking_repair_changed_authority");
     tracking=longitudinal.validateEffects(repaired,prompt,proactive,openFollowups);
@@ -390,6 +394,12 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     if(proactive||!["statement","action_request"].includes(result.message_kind)||!preference.evidence?.trim()||!prompt.includes(preference.evidence)
       ||!Array.isArray(preference.excluded_weekdays)||!preference.excluded_weekdays.length||preference.excluded_weekdays.some(d=>!Number.isInteger(d)||d<1||d>7))throw Error("rest_ungrounded_preferences");
     context.brain_memory_effect={...(context.brain_memory_effect||{}),rest_preferences:preference};
+  }
+  if(result.rest_exclusions){
+    const e=result.rest_exclusions,dates=new Set(restSource.rows.map(r=>r.date));
+    if(proactive||!["statement","action_request"].includes(result.message_kind)||e.experiment_id!==restSource.experiment?.id
+      ||!e.evidence?.trim()||!prompt.includes(e.evidence)||!Array.isArray(e.dates)||!e.dates.length||e.dates.some(d=>!dates.has(d)))throw Error("rest_ungrounded_exclusions");
+    context.brain_memory_effect={...(context.brain_memory_effect||{}),rest_exclusions:e};
   }
   if(!proactive&&!cancelled&&!execute&&!result.memory&&!result.observations?.length&&!bmbState.proposal&&!bmbState.pending_request&&(continuing||result.message_kind==='question')){
     const cited=sources.find(s=>s.source_id==='observations'&&result.cited_sources?.some(id=>id===s.source_id||s.rows?.some(r=>r.id===id)))||sources.find(s=>s.source_id==='current_sleep'&&result.cited_sources?.some(id=>id==='current_sleep'||s.rows?.some(r=>r.id===id)));

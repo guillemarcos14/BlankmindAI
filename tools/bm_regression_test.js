@@ -197,7 +197,7 @@ check("daily_limit_applies_screen_time_state", () => {
 });
 
 check("adaptive_schedule_appends_windows", () => {
-  const scheduleBlock = blockBetween(sessionStore, "func applyAdaptivePlan(", "func applyAIPlan(");
+  const scheduleBlock = blockBetween(sessionStore, "func applyAdaptivePlan(", "func enableVacationMode(");
   assert.match(scheduleBlock, /var windows = schedule\.windows/);
   assert.match(scheduleBlock, /windows\.append\(window\)/);
   assert.doesNotMatch(ios, /sessionStore\.schedule\.windows = \[window\]/);
@@ -208,7 +208,8 @@ check("why_now_layout_preserves_conversational_design", () => {
   assert.match(whyNowBlock, /ZStack\(alignment: \.bottomLeading\)/);
   assert.match(whyNowBlock, /frame\(maxWidth: \.infinity, maxHeight: \.infinity, alignment: \.leading\)/);
   assert.match(whyNowBlock, /VStack\(alignment: \.leading, spacing: -8\)/);
-  assert.match(home, /sessionStore\.recordRelapseReview\(reason\)[\s\S]{0,160}sessionStore\.applyAIPlan\(\)/);
+  assert.match(home, /sessionStore\.recordRelapseReview\(reason\)[\s\S]{0,160}BlankBrain\.shared\.sync\(\)/);
+  assert.doesNotMatch(home, /sessionStore\.applyAIPlan\(/, "A subjective review applied an unmeasured legacy plan");
 });
 
 check("assistant_actions_reuse_canonical_selection_and_ignore_stale_timer", () => {

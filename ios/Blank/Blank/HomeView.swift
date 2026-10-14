@@ -443,10 +443,10 @@ struct HomeView: View {
                     RelapseReviewSheet(
                         onSelect: { reason in
                             sessionStore.recordRelapseReview(reason)
-                            sessionStore.applyAIPlan()
+                            BlankBrain.shared.sync()
                             Task {
                                 await BlankFunnelAnalytics.track(
-                                    "ai_plan_applied",
+                                    "rest_context_recorded",
                                     properties: ["source": "relapse_review", "reason": reason.rawValue]
                                 )
                             }
@@ -1858,7 +1858,7 @@ struct HomeView: View {
         case .disablePause:
             return "Resume protection rules?"
         case .applyAIPlan:
-            return "Apply the recommended adaptive plan?"
+            return "This older plan needs an explicit rest window. Ask Blankmind to prepare one."
         case .openAppPicker:
             return "Open the app picker to choose what Blankmind can protect?"
         case .configureAndOpenAppPicker(_, let durationMinutes, _, let schedule):
@@ -2044,9 +2044,7 @@ struct HomeView: View {
             applyScreenTimeControls()
             finishPendingAssistantAction(status: sessionStore.isVacationModeActive ? "failed" : "verified", detail: "resume_state_checked")
         case .applyAIPlan:
-            sessionStore.applyAIPlan()
-            applyScreenTimeControls()
-            finishPendingAssistantAction(status: sessionStore.recurringScheduleRegistered ? "verified" : "failed", detail: sessionStore.recurringScheduleRegistered ? "ai_plan_registered" : "device_activity_registration_failed")
+            finishPendingAssistantAction(status: "failed", detail: "legacy_adaptive_plan_retired")
         case .openAppPicker(let appNames):
             sessionStore.requestBlockConfiguration(appNames: appNames)
         case .configureAndOpenAppPicker(let appNames, let durationMinutes, let hardMode, let schedule):

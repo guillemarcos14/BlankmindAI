@@ -51,7 +51,10 @@ function normalizeSnapshot(input,now=Date.now()) {
   const digital=normalizeDigital(input.digital,timezone,now);
   const schedule=input.schedule||{enabled:false,windows:[]};
   if(typeof schedule.enabled!=="boolean"||!Array.isArray(schedule.windows)||schedule.windows.length>20)throw Error("rest_invalid_schedule_snapshot");
-  return {schema_version:1,objective:OBJECTIVE,observed_at:input.observed_at,timezone,nights,checkins,
+  const phoneContext=input.phone_context||[];
+  if(!Array.isArray(phoneContext)||phoneContext.length>60||phoneContext.some(r=>r.source!=="user_selection"||!iso(r.occurred_at)
+    ||Date.parse(r.occurred_at)>now||!["bored","anxious","tired","neededApp","procrastinating","other"].includes(r.reason)))throw Error("rest_invalid_phone_context");
+  return {schema_version:1,objective:OBJECTIVE,observed_at:input.observed_at,timezone,nights,checkins,phone_context:phoneContext,
     health_context:health||null,schedule,protection_intervals:intervals.map(r=>({id:r.id,window_id:r.window_id,started_at:r.started_at,ended_at:r.ended_at||null,source:r.source})),digital};
 }
 function normalizeDigital(value,timezone,now=Date.now()) {
@@ -158,17 +161,26 @@ async function sync(userId,install,snapshot,db=supabaseFetch) {
   return db("rpc/bmb_sync_rest",{method:"POST",body:JSON.stringify({p_user:userId,p_install:install,p_snapshot:normalized})});
 }
 async function context(userId,db=supabaseFetch) {
-  const [nights,experiments,prior,snapshots,protection]=await Promise.all([
+  const [nights,experiments,prior,snapshots,protection,confounders]=await Promise.all([
     db(`bmb_rest_nights?auth_user_id=eq.${encodeURIComponent(userId)}&select=*&order=date.desc&limit=90`,{method:"GET"}),
     db(`bmb_rest_experiments?auth_user_id=eq.${encodeURIComponent(userId)}&status=in.(awaiting_execution,active,completed)&select=*&order=created_at.desc&limit=5`,{method:"GET"}),
     db("rpc/bmb_rest_global_prior",{method:"POST",body:JSON.stringify({p_user:userId})}),
     db(`bmb_rest_context?auth_user_id=eq.${encodeURIComponent(userId)}&select=snapshot,observed_at&limit=1`,{method:"GET"}),
-    db(`bmb_rest_protection?auth_user_id=eq.${encodeURIComponent(userId)}&select=*&order=started_at.desc&limit=140`,{method:"GET"})]);
+    db(`bmb_rest_protection?auth_user_id=eq.${encodeURIComponent(userId)}&select=*&order=started_at.desc&limit=140`,{method:"GET"}),
+    db(`bmb_observations?auth_user_id=eq.${encodeURIComponent(userId)}&status=eq.active&measurement=eq.declared&metric=in.(illness,travel)&select=id,metric,measured_at,timezone,source&order=measured_at.desc&limit=70`,{method:"GET"})]);
   const active=experiments.find(e=>["awaiting_execution","active"].includes(e.status))||null,snapshot=snapshots[0]?.snapshot;
+  if(active){
+    const exclusions=new Set(active.excluded_dates||[]);
+    for(const row of confounders.filter(r=>r.source==="user_statement"&&iso(r.measured_at))){
+      const d=localDay(row.measured_at,row.timezone||snapshot?.timezone||"UTC");
+      exclusions.add(d);exclusions.add(new Date(Date.parse(d+"T12:00:00Z")+86400000).toISOString().slice(0,10));
+    }
+    active.excluded_dates=[...exclusions];
+  }
   return {source_id:"rest_evidence",objective:OBJECTIVE,available:nights.some(measured),rows:nights,
     experiment:active,evaluation:active?evaluate(active,nights,{protection}):null,latest_outcome:experiments.find(e=>e.status==="completed")||null,global_prior:prior,
     health_catalog:(snapshot?.health_context?.metrics||[]).map(m=>({id:m.id,family:m.family,unit:m.unit,coverage:m.points?.length||0,latest:m.points?.at(-1),note:m.note})),
-    health_traits:snapshot?.health_context?.traits||[],subjective_context:snapshot?.checkins||[],
+    health_traits:snapshot?.health_context?.traits||[],subjective_context:snapshot?.checkins||[],phone_context:snapshot?.phone_context||[],
     digital_coverage:snapshot?.digital?.available===true?{available:true,rows:snapshot.digital.rows.length,observed_at:snapshot.digital.observed_at}:snapshot?.digital||{available:false,reason:"usage_access_unavailable"},
     digital_sleep_links:digitalSleepLinks(nights,snapshot?.digital),
     quality_definition:"A measured comparison of the experiment's fixed Watch sleep metric, not a universal sleep-quality score."};

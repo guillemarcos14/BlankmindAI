@@ -849,14 +849,6 @@ final class SessionStore: ObservableObject {
         }
     }
 
-    func applyAIPlan(durationMinutes: Int? = nil) {
-        let system = digitalWellnessV3
-        let startMinute = (system.plan.recommendedStartHour * 60 + (24 * 60 - 10)) % (24 * 60)
-        let duration = durationMinutes ?? system.plan.recommendedDurationMinutes
-        let endMinute = (startMinute + max(15, min(120, duration))) % (24 * 60)
-        applyAdaptivePlan(startMinute: startMinute, endMinute: endMinute, durationDays: 7)
-    }
-
     func enableVacationMode(hours: Int) {
         vacationModeUntil = Date().addingTimeInterval(TimeInterval(max(1, min(168, hours)) * 60 * 60))
         if isBlankActive, activeSessionStartedBySchedule {
@@ -886,14 +878,17 @@ final class SessionStore: ObservableObject {
     }
 
     func recordRelapseReview(_ reason: RelapseReviewReason) {
-        defaults.set(reason.rawValue, forKey: "blankLastRelapseReviewReason")
-        defaults.set(Date().timeIntervalSince1970, forKey: "blankLastRelapseReviewAt")
+        if let owner = AssistantAppSession.userID {
+            let key = "blankRestBreakContext.v1." + owner
+            var rows = defaults.array(forKey: key) as? [[String: Any]] ?? []
+            rows.append(["reason": reason.rawValue, "occurred_at": ISO8601DateFormatter().string(from: Date()), "source": "user_selection"])
+            defaults.set(Array(rows.suffix(60)), forKey: key)
+        }
         Task {
             await BlankFunnelAnalytics.track(
                 "relapse_review_submitted",
                 properties: [
-                    "reason": reason.rawValue,
-                    "adjustment": reason.planAdjustment
+                    "reason": reason.rawValue
                 ]
             )
         }

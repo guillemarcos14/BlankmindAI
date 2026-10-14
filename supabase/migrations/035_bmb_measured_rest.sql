@@ -79,6 +79,8 @@ begin
    end if;
    p_snapshot:=jsonb_set(p_snapshot,'{checkins}',coalesce((select jsonb_agg(value) from jsonb_array_elements(coalesce(p_snapshot->'checkins','[]'))
      where (value->>'date')::date>(cutoff at time zone tz)::date),'[]'));
+   p_snapshot:=jsonb_set(p_snapshot,'{phone_context}',coalesce((select jsonb_agg(value) from jsonb_array_elements(coalesce(p_snapshot->'phone_context','[]'))
+     where (value->>'occurred_at')::timestamptz>cutoff),'[]'));
    p_snapshot:=jsonb_set(p_snapshot,'{digital,rows}',coalesce((select jsonb_agg(value) from jsonb_array_elements(coalesce(p_snapshot#>'{digital,rows}','[]'))
      where (value->>'start_at')::timestamptz>cutoff),'[]'));
    p_snapshot:=jsonb_set(p_snapshot,'{protection_intervals}',coalesce((select jsonb_agg(value) from jsonb_array_elements(coalesce(p_snapshot->'protection_intervals','[]'))
@@ -141,6 +143,15 @@ begin
        where not (effect#>'{rest_preferences,excluded_weekdays}' @> jsonb_build_array(value))),'[]'))),version=version+1,updated_at=now()
    where auth_user_id=new.auth_user_id;
  end if;
+ if effect->'rest_exclusions' is not null and effect->'rest_exclusions'<>'null' then
+   if length(trim(effect#>>'{rest_exclusions,evidence}'))=0 or strpos(new.user_text,effect#>>'{rest_exclusions,evidence}')=0
+   or jsonb_array_length(effect#>'{rest_exclusions,dates}') not between 1 and 5
+   or exists(select 1 from jsonb_array_elements_text(effect#>'{rest_exclusions,dates}') d
+     where not exists(select 1 from bmb_rest_nights where auth_user_id=new.auth_user_id and date=d::date)) then raise exception 'rest_invalid_exclusion_evidence'; end if;
+   update bmb_rest_experiments set excluded_dates=(select jsonb_agg(d order by d) from
+     (select distinct value d from jsonb_array_elements(excluded_dates||(effect#>'{rest_exclusions,dates}'))) x),updated_at=now()
+   where auth_user_id=new.auth_user_id and id=(effect#>>'{rest_exclusions,experiment_id}')::uuid and status='active';
+ end if;
  if plan is null or plan='null' then return new; end if;
  a:=plan->'action';
  if plan->>'metric' not in ('sleep_continuity','sleep_duration_target','sleep_regularity') or length(trim(plan->>'hypothesis')) not between 1 and 600
@@ -177,6 +188,7 @@ begin
  or coalesce((p_evaluation->>'causal')::boolean,true) then raise exception 'rest_invalid_evaluation'; end if;
  update bmb_rest_experiments set evaluation=p_evaluation,status='completed',updated_at=now()
  where id=p_id and auth_user_id=p_user and status='active' and metric=p_evaluation->>'metric'
+ and excluded_dates <@ coalesce(p_evaluation->'excluded_dates','[]')
  and clock_timestamp()>=verified_at+make_interval(days=>review_after_days);
  return jsonb_build_object('saved',found);
 end $$;

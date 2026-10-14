@@ -205,7 +205,8 @@ async function main() {
   assert.equal(accountSnapshot.account.billing_details_available,false);assert.equal(accountSnapshot.account.token,undefined);
   const scrubbed=sources.sanitize({token:"secret",nested:{encrypted_access_token:"secret",goal:"sleep",applicationTokens:["private"]}});
   assert.deepEqual(scrubbed,{nested:{goal:"sleep"}});
-  assert(sources.SOURCE_NAMES.includes("onboarding")&&sources.SOURCE_NAMES.includes("learned_signals")&&sources.SOURCE_NAMES.includes("protection_statistics"));
+  assert(sources.SOURCE_NAMES.includes("onboarding")&&sources.SOURCE_NAMES.includes("rest_nights")&&sources.SOURCE_NAMES.includes("protection_statistics"));
+  assert(!sources.SOURCE_NAMES.includes("learned_signals")&&!sources.SOURCE_NAMES.includes("plan_outcomes"),"Legacy adherence pools remain learning inputs");
   let sourcePath;
   await sources.readSource("A",{anonymous_user_id:"verified-A"},{source:"wearable_connections",offset:0},null,async p=>{sourcePath=p;return [];});
   assert(!sourcePath.includes("encrypted")&&sourcePath.includes("anonymous_user_id=eq.verified-A"));

@@ -203,6 +203,7 @@ final class BlankBrain {
         guard let owner, owner == AssistantAppSession.userID, HealthKitStore.shared.restAIAvailable,
               var snapshot = RestHealthContext.shared.brainSnapshot() else { return }
         snapshot["schedule"] = store?.assistantScheduleContext() ?? ["enabled": false, "windows": []]
+        snapshot["phone_context"] = BlankSharedState.defaults.array(forKey: "blankRestBreakContext.v1." + owner) ?? []
         var stable = snapshot; stable.removeValue(forKey: "observed_at")
         stable["owner"] = owner
         guard let digest = try? JSONSerialization.data(withJSONObject: stable, options: [.sortedKeys]), digest != lastRestContent else { return }
