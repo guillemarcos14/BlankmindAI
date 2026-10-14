@@ -1,5 +1,7 @@
 # Estado del proyecto
 
+- 2026-10-14: Release integral vigente CORE bac0206/PR48, fuenteaa4f288; backend6acfc61acb76af6afeb41145 verificado78digests,036privada/historia/usuarios intactos,smokesdraft/live4/4PASS. Build1.9(119) CI26.4 y firmaMac app+3extensiones;Upload succeeded/EXPORT SUCCEEDED. Guillem confirma119 disponible enTestFlight. Sustituciones nuevas tools/retrieval/labelsOFF yledger40FINAL intacto. Guía docs/PRODUCTION_CORE_2026-10-14.md;recibos tmp/release-today/.
+
 - 2026-10-14: PR48 integra la release CORE/descanso vigente b664f83/PR47 con las correcciones posteriores de conversación. Dos herramientas, datos de cuenta separados de baseline Watch, clasificador bilingüe y fingerprints035/036; gatesOFF. Evaluación final: tools8pares/16dictámenes y consultas10pares/20dictámenes aceptados, sin certificado200/voz/coste/iPhone. Archive118 sinfirma disponible; acceso visual MacinCloud agotó tiempo de respuesta.
 
 - 2026-10-14: Plataforma exclusiva iOS/Apple Watch por orden de Guillem. Retirada la implementación de la otra plataforma, su toolchain, material de tienda, job CI y enlaces web. Conservados sin cambios todos los archivos ios/Blank y los workflows nativos. Corpus históricos filtrados sin heredar aprobación de sus agregados; originales recuperables en Git. Backend fingerprint regenerado para la nueva fuente; sin deploy/distribución ni gasto de proveedor.
