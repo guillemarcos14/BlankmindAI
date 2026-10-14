@@ -4,8 +4,13 @@ const legacy = require("./bm-retrieval-step");
 const { ENDPOINT, MODEL } = require("./bm-decisions");
 const METRICS = ["sleep_duration", "protection_duration", "protection_sessions", "protection_breaks", "none"];
 const PERIODS = ["yesterday", "this_week", "none"];
+const METRIC_MEANINGS={sleep_duration:"Recorded sleep time yesterday OR the mean/average/media/promedio of recorded sleep durations this calendar week. Both are this same metric. Excludes a weekly sum, sleep advice and phone use.",
+ protection_duration:"Total recorded blocking/protection time, in minutes/hours, yesterday or this calendar week. Not a session count, break count, phone usage or time saved.",
+ protection_sessions:"Number/count of recorded blocking/protection sessions; how many sessions/cuántas sesiones. Not their duration or breaks.",
+ protection_breaks:"Number/count of recorded interruptions/breaks in protection; cuántas interrupciones. Not their duration or sessions.",
+ none:"No single supported metric: ambiguous, multiple metrics, weekly sleep sum, advice, third-party records, phone use or time saved. An explicitly requested weekly average of sleep durations IS supported and belongs to sleep_duration."};
 const choice = (name, values, instructions) => ({ type: "choice", name, instructions,
-  choices: values.map(value => ({ value, description: value.replaceAll("_", " ") })) });
+  choices: values.map(value => ({ value, description: name==="metric"?METRIC_MEANINGS[value]:value.replaceAll("_", " ") })) });
 function candidate(text) {
   // Rejection only. The classifier, never a keyword, selects the actual read.
   return String(text).length <= 1500
