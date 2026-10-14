@@ -145,13 +145,14 @@ function evaluate(experiment,nights,{now=Date.now(),protection=[]}={}) {
     const comparable=baseline.filter(n=>n.source_bundle===night.source_bundle&&n.timezone===night.timezone
       &&weekday(localDay(n.start_at,n.timezone))===weekday(localDay(night.start_at,night.timezone)))
       .map(n=>({n,value:metricValue(n,experiment.metric,experiment.target_minutes,experiment.reference_minute)})).filter(n=>n.value!=null);
-    if(value!=null&&comparable.length>=2)pairs.push({night,reference:median(comparable.map(n=>n.value)),value,
+    if(value!=null&&comparable.length>=1)pairs.push({night,reference:median(comparable.map(n=>n.value)),value,
       duration_delta:night.sleep_minutes-median(comparable.map(n=>n.n.sleep_minutes)),baseline_ids:comparable.map(n=>n.n.id||n.n.date),execution_id:execution.id});
   }
-  const result={...empty,baseline_count:baseline.length,intervention_count:pairs.length,reason:"insufficient_comparable_watch_nights",
+  const result={...empty,baseline_count:baseline.length,intervention_count:pairs.length,
+    minimum_matched_reference_count:pairs.length?Math.min(...pairs.map(p=>p.baseline_ids.length)):0,reason:"insufficient_comparable_watch_nights",
     excluded_dates:[...excluded],evidence_ids:[...new Set(pairs.flatMap(p=>[p.night.id||p.night.date,p.execution_id,...p.baseline_ids]))]};
   if(now<Date.parse(experiment.verified_at)+experiment.review_after_days*86400000)return {...result,reason:"experiment_still_running"};
-  if(pairs.length<7)return {...result,status:"inconclusive"};
+  if(baseline.length<7||pairs.length<7)return {...result,status:"inconclusive"};
   const deltas=pairs.map(p=>p.value-p.reference),delta=median(deltas),durationDelta=median(pairs.map(p=>p.duration_delta));
   // Product decision thresholds, not a validated clinical score or significance test.
   const threshold=experiment.metric==="sleep_continuity"?2:15;

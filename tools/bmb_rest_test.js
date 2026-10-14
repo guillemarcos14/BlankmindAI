@@ -16,6 +16,10 @@ const result=R.evaluate(experiment,after,{now,protection});
 assert.equal(result.status,"improved");assert.equal(result.measured_improvement,true);assert.equal(result.causal,false);
 assert(Math.abs(result.delta-100*20/480)<1e-9,"Independent continuity oracle disagrees");
 assert.equal(result.intervention_count,14);assert(result.evidence_ids.includes(protection[0].id));
+const firstWeek=R.evaluate({...experiment,baseline:baseline.slice(0,7)},after,{now,protection});
+assert.equal(firstWeek.status,"improved","Accepted seven-night baseline became permanently unassessable after freezing");
+assert.equal(firstWeek.minimum_matched_reference_count,1,"Sparse weekday reference coverage was hidden");
+assert.equal(R.evaluate({...experiment,baseline:baseline.slice(0,6)},after,{now,protection}).status,"inconclusive","Short baseline certified improvement");
 for(const [name,records] of [["synthetic",after.map(n=>({...n,source:"synthetic"}))],["manual",after.map(n=>({...n,manual:true}))],
  ["other Health",after.map(n=>({...n,source:"apple_health"}))],["incomplete",after.map(n=>({...n,complete:false}))]]){
  assert.equal(R.evaluate(experiment,records,{now,protection}).measured_improvement,false,name+" certified efficacy");
