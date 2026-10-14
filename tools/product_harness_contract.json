@@ -431,6 +431,10 @@
       {
         "name": "rest_release_preservation",
         "run": "node tools/rest_production_release_test.js"
+      },
+      {
+        "name": "ios_distribution_entitlements",
+        "run": "python tools/ios_sign_existing_archive_test.py"
       }
     ]
   },

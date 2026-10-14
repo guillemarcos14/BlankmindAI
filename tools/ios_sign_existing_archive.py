@@ -30,6 +30,9 @@ def allowed(requested, available):
     if isinstance(requested, str):
         return isinstance(available, str) and fnmatch.fnmatchcase(requested, available)
     if isinstance(requested, list):
+        # Apple issues associated-domains profiles with a scalar wildcard.
+        if available == "*":
+            return True
         return isinstance(available, list) and all(
             any(allowed(value, candidate) for candidate in available) for value in requested
         )
