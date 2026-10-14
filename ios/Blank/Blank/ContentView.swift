@@ -98,7 +98,7 @@ struct AssistantContextSyncClient {
         for attempt in 0..<3 {
             do {
                 let (_, response) = try await AssistantAppClient().postAuthorized(
-                    path: "assistant-channel", payload: data, timeout: 8
+                    path: "assistant-device", payload: data, timeout: 8
                 )
                 if (200..<300).contains(response.statusCode) {
                     defaults.set(Date().timeIntervalSince1970, forKey: lastSuccessKey)

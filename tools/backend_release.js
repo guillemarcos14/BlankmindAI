@@ -251,7 +251,7 @@ function validate(args) {
   ], { inherit: true });
   run("git", ["diff", "--check"], { inherit: true });
   if (args.full) {
-    run(process.execPath, ["tools/bai_release_gate.js", "--save", "--count", "125"], { inherit: true });
+    run(process.execPath, ["tools/product_harness.js", "--contract", "tools/product_harness_contract.json", "--mode", "validate", "--enforce-scope"], { inherit: true });
   }
   const reportPath = writeReport("validation.json", {
     workflow: "backend-release",

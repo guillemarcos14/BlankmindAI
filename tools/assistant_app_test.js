@@ -239,7 +239,7 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
   assert.equal(memory.conversation_state.last_assistant_message, guarded.body.turn.assistant_text);
   const guardedId = guarded.body.turn.id;
   memory.last_assistant_action_outcome = { id: guarded.body.turn.action_id, status: "verified" };
-  // assistant-channel persists the validated native receipt before advancing
+  // assistant-device persists the validated native receipt before advancing
   // memory; its isolation and write-failure cases live in bm_app_receipt_test.
   rows.get(guardedId).action_status = "verified";
   delete memory.pending_assistant_action;

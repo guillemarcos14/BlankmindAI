@@ -36,7 +36,6 @@
 		8A0000010000000000000001 /* BlankApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000011 /* BlankApp.swift */; };
 		8A0000010000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000012 /* ContentView.swift */; };
 		8A0000010000000000000003 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000013 /* SessionStore.swift */; };
-		8A0000010000000000000004 /* NFCReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000014 /* NFCReader.swift */; };
 		8A0000010000000000000005 /* ScreenTimeBlocker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000015 /* ScreenTimeBlocker.swift */; };
 		8A0000010000000000000006 /* BlankColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000016 /* BlankColors.swift */; };
 		8A0000010000000000000007 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000017 /* SetupView.swift */; };
@@ -122,7 +121,6 @@
 		8A0000010000000000000011 /* BlankApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankApp.swift; sourceTree = "<group>"; };
 		8A0000010000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		8A0000010000000000000013 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
-		8A0000010000000000000014 /* NFCReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NFCReader.swift; sourceTree = "<group>"; };
 		8A0000010000000000000015 /* ScreenTimeBlocker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTimeBlocker.swift; sourceTree = "<group>"; };
 		8A0000010000000000000016 /* BlankColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankColors.swift; sourceTree = "<group>"; };
 		8A0000010000000000000017 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
@@ -213,7 +211,6 @@
 				BA10000000000000000000021 /* AssistantControl.swift */,
 				BA10000000000000000000031 /* BlankBrainMetrics.swift */,
 				8A0000010000000000000013 /* SessionStore.swift */,
-				8A0000010000000000000014 /* NFCReader.swift */,
 				8A0000010000000000000015 /* ScreenTimeBlocker.swift */,
 				8A0000010000000000000016 /* BlankColors.swift */,
 				8A0000010000000000000017 /* SetupView.swift */,
@@ -488,7 +485,6 @@
 				BA10000000000000000000022 /* AssistantControl.swift in Sources */,
 				BA10000000000000000000032 /* BlankBrainMetrics.swift in Sources */,
 				8A0000010000000000000003 /* SessionStore.swift in Sources */,
-				8A0000010000000000000004 /* NFCReader.swift in Sources */,
 				8A0000010000000000000005 /* ScreenTimeBlocker.swift in Sources */,
 				8A0000010000000000000006 /* BlankColors.swift in Sources */,
 				8A0000010000000000000007 /* SetupView.swift in Sources */,

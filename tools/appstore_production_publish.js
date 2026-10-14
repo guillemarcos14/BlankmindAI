@@ -5,7 +5,7 @@ const fs=require("node:fs"),path=require("node:path"),assert=require("node:asser
 const {execFileSync}=require("node:child_process");
 const ROOT=path.resolve(__dirname,".."),SITE="59955668-9a9b-4979-a283-63fbf3115fe5",PREVIOUS="6abe94a92bf201769389c075";
 const DIRECTORY=path.join(ROOT,"tmp/appstore-final/production-bundle"),RECEIPT=path.join(ROOT,"tmp/appstore-final/production-publication.json");
-const APP=["account-data","app-auth","assistant-app","assistant-app-stream","assistant-app-voice","assistant-channel","bmb-tick","bmb-worker-background"];
+const APP=["account-data","app-auth","assistant-app","assistant-app-stream","assistant-app-voice","assistant-device","bmb-tick","bmb-worker-background"];
 const FLAGS={BM_VOICE_ENABLED:"true",BM_VOICE_PROVIDER:"elevenlabs",ELEVENLABS_VOICE_ID_ES:"dNjJKg63Fr5AXwIdkATa",ELEVENLABS_VOICE_ID_EN:"WtA85syCrJwasGeHGH2p",BM_RETRIEVAL_STEP_ENABLED:"true",BM_DECISIONS_DATA_POLICY:"authenticated-account-records",BM_RETRIEVAL_STEP_QA_ENABLED:"false",BM_DECISIONS_QA_ENABLED:"false",BM_JEV_SHADOW_ENABLED:"false",BM_JEV_PREFETCH_EXPERIMENT:"false"};
 const DORMANT=new Set(["BM_RETRIEVAL_STEP_QA_ENABLED","BM_DECISIONS_QA_ENABLED","BM_JEV_SHADOW_ENABLED","BM_JEV_PREFETCH_EXPERIMENT"]);
 const DEFAULT_VOICE_IDS=new Set(["ELEVENLABS_VOICE_ID_ES","ELEVENLABS_VOICE_ID_EN"]);

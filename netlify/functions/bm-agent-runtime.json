@@ -2,6 +2,7 @@
   "version": 1,
   "hash_format": "utf8-lf-sha256",
   "source_hashes": {
+    "_app_onboarding_access.js": "c73c5dd1af086c195e1b4f59124898cebf527d9e8fe9096a11d15bd89a2fbf8c",
     "_apple_revoke.js": "09386711184a3b60e1982e34630a0fac0f27c4e8f04744519d22b06079cf9b30",
     "_assistant_memory.js": "f9150f353a47f12dab0a7542c7b712324dfbdbc262171f6ea3ff8a9f01d6e0fc",
     "_assistant_push.js": "951347b12c0dffce708cc778b06a055112e716623ac1e56823b838ce0c5e6091",
@@ -16,6 +17,7 @@
     "assistant-app-stream.mjs": "9ccf32fd1d090cbb5c4c546900e07b4da3098d0de09499a8272e72d37aa92669",
     "assistant-app-voice.mjs": "5744a2ec8bb22c1bc665b971df5b15dc497a07b4c0f680c9d32e2162776db713",
     "assistant-app.js": "7d141ac8bcc980538b35bf4c53a5ca58748dd5443f389aa19d28632e4ada41a0",
+    "assistant-device.js": "ee8af978169f8dd1c71cf69d1568ed34396c8781aef9328a3b461afb4d049bf3",
     "bm-agent-activation.js": "83b5029b1e914d5d648f00411fb288ccd5c2ba6109930b00620bdb056e5cd1ff",
     "bm-agent-authority.js": "5f3c1c49355cee34fc27e9a0a637c0c7cde7ed57ef19a679f0078a9566c4cc60",
     "bm-agent-calendar.js": "584250f744ccf137cc140bc2a9dc71b7e72eeb175962d51dcfbad646f8fd12c5",

@@ -105,7 +105,7 @@ async function run(config, output) {
       const prompt="Block my selected distractions now for 25 minutes, just once.";
       const turn=await send(a,prompt),replay=await send(a,prompt,{id:turn.id});
       expect(turn.auto_apply===true && turn.action_id===`app_${turn.id}` && replay.action_id===turn.action_id,"explicit_action_not_unique");
-      const inbox=ok(await request(config.netlify,"/.netlify/functions/assistant-channel",{method:"POST",
+      const inbox=ok(await request(config.netlify,"/.netlify/functions/assistant-device",{method:"POST",
         headers:{...config.extraHeaders,authorization:`Bearer ${a.token}`},body:{action:"poll_pending_action",connect_code:a.connect,app_install_id:a.install,preferred_channel:"app"}}),"inbox");
       expect(inbox.pending_action?.id===turn.action_id && inbox.pending_action.minutes===25,"inbox_action_mismatch");
       expect(!["verified","delayed"].includes(turn.action_status),"fabricated_native_success");

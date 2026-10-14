@@ -631,18 +631,7 @@ final class SessionStore: ObservableObject {
         }
     }
 
-    func forgetNfcTag() {
-        endActiveSession(entryMode: .app, endedReason: .unknown, broken: true)
-        nfcTagUid = nil
-        isBlankActive = false
-        hardBlankActive = false
-        blankActiveSince = nil
-        blankActiveUntil = nil
-        DeviceActivityTimerScheduler.stop(protectionId: Self.canonicalProtectionId)
-        deviceActivityTimerScheduled = false
-        schedulePausedUntil = nil
-        setupComplete = false
-    }
+
 
     func finishSetup() {
         setupComplete = true

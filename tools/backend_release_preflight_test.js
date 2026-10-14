@@ -72,7 +72,7 @@ assert.equal(readinessCalls(validateOnly).length, 0, "candidate validation stays
 assert.equal(validationCalls(validateOnly).length, 1);
 assert.equal(remoteCalls(validateOnly).length, 0);
 
-for (const options of [{ branch: "codex/feature-test" }, { dirty: " M netlify/functions/assistant-channel.js\n" }]) {
+for (const options of [{ branch: "codex/feature-test" }, { dirty: " M netlify/functions/assistant-device.js\n" }]) {
   const result = execute([...deploy, "--release-evidence", "tmp/bm-release/evidence.json"], options);
   assert.equal(result.exitCode, 1);
   assert.equal(remoteCalls(result).length, 0);

@@ -94,7 +94,7 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
     method: "POST", headers: { ...config.extraHeaders, ...(token ? { authorization: `Bearer ${token}` } : {}) },
     body: { app_install_id: user?.install, ...body },
   });
-  const inbox = (user, body) => request(config.netlify, "/.netlify/functions/assistant-channel", {
+  const inbox = (user, body) => request(config.netlify, "/.netlify/functions/assistant-device", {
     method: "POST", headers: { ...config.extraHeaders, authorization: `Bearer ${user.token}` },
     body: { connect_code: user.connect, app_install_id: user.install, preferred_channel: "app", ...body },
   });

@@ -13,7 +13,7 @@ const ROOT = path.resolve(__dirname, "..");
 const SITE_ID = "2ef5a74e-af70-4893-a5f6-63fb2537720d";
 const SITE_URL = "https://blank-product-staging-20260926.netlify.app";
 const SUPABASE_REF = "njqbovsmoowkhhsqmitn";
-const ENTRIES = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-app-stream", "assistant-app-voice", "assistant-channel", "blanked-agent", "bmb-tick", "bmb-worker-background", "waitlist-auth"]);
+const ENTRIES = Object.freeze(["account-data", "app-auth", "assistant-app", "assistant-app-stream", "assistant-app-voice", "assistant-device", "bmb-tick", "bmb-worker-background"]);
 const RELEASE_BRANCH = /^codex\/backend-release-[a-z0-9][a-z0-9-]*$/;
 const DEFAULT_CLI = path.resolve(ROOT, "../../tmp/netlify-cli-runtime/node_modules/netlify-cli/bin/run.js");
 

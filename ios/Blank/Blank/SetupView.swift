@@ -469,7 +469,7 @@ struct SetupView: View {
             "app_install_id": BlankSharedState.appInstallId,
         ])
         return try await AssistantAppClient().postAuthorizedJSON(
-            path: "assistant-channel", payload: payload, timeout: 12
+            path: "assistant-device", payload: payload, timeout: 12
         )
     }
 

@@ -46,7 +46,8 @@
       "netlify/functions/assistant-app-agent.js",
       "netlify/functions/_assistant_memory.js",
       "netlify/functions/bmb-rest.js",
-      "netlify/functions/bm-agent-tools.js"
+      "netlify/functions/bm-agent-tools.js",
+      "netlify/functions/assistant-device.js"
     ]
   },
   "validation": {
@@ -205,6 +206,18 @@
       {
         "name": "rest_release_preservation",
         "run": "node tools/rest_production_release_test.js"
+      },
+      {
+        "name": "app_onboarding_access",
+        "run": "node tools/onboarding_access_test.js"
+      },
+      {
+        "name": "app_receipts",
+        "run": "node tools/bm_app_receipt_test.js"
+      },
+      {
+        "name": "app_pending_lifecycle",
+        "run": "node tools/assistant_pending_lifecycle_test.js"
       }
     ]
   },

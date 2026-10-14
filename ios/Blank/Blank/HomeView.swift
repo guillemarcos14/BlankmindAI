@@ -301,7 +301,7 @@ struct AssistantActionInboxClient {
         if let environment, !environment.isEmpty { body["environment"] = environment }
         let payload = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await AssistantAppClient().postAuthorized(
-            path: "assistant-channel", payload: payload, timeout: requestTimeout
+            path: "assistant-device", payload: payload, timeout: requestTimeout
         )
         guard (200..<300).contains(response.statusCode) else {
             throw URLError(.badServerResponse)
@@ -336,8 +336,6 @@ struct HomeView: View {
     @State private var assistantNotificationsAuthorized = false
     @State private var showingContextualAppPicker = false
     @State private var contextualPlanSelection = FamilyActivitySelection()
-    @State private var showingRelink = false
-    @State private var showingForgetConfirm = false
     @StateObject private var healthKitStore = HealthKitStore.shared
     @State private var unblankHoldProgress = 0.0
     @State private var unblankHapticTask: Task<Void, Never>?
@@ -720,17 +718,8 @@ struct HomeView: View {
             SetupView(healthKitStore: healthKitStore) { showingRestSetup = false }
                 .environmentObject(sessionStore)
         }
-        .sheet(isPresented: $showingRelink) {
-            RelinkSheet(message: $message, messageAction: $messageAction)
-                .presentationDetents([.medium])
-        }
-        .sheet(isPresented: $showingForgetConfirm) {
-            ForgetBlankConfirmSheet {
-                sessionStore.forgetNfcTag()
-                screenTimeBlocker.clear()
-            }
-            .presentationDetents([.medium])
-        }
+
+
     }
 
     @ViewBuilder
@@ -2311,8 +2300,6 @@ struct HomeView: View {
                 message = approved ? nil : "Screen Time is still pending."
                 messageAction = approved ? nil : .screenTime
             }
-        case .relinkNfc:
-            showingRelink = true
         case .selectApps:
             showingPicker = true
         }
@@ -2476,7 +2463,6 @@ private struct GlassCornerHighlight: View {
 
 private enum HomeMessageAction {
     case screenTime
-    case relinkNfc
     case selectApps
 }
 
@@ -2885,10 +2871,7 @@ private struct ScheduleEditorContent: View {
                 }
                 .buttonStyle(.plain)
 
-                VacationModeCard(
-                    textColor: textColor,
-                    secondaryColor: secondaryColor
-                )
+
 
                 Text("manual exits pause only the current habit window.")
                     .font(.blankInter(size: 14, relativeTo: .footnote))
@@ -3019,66 +3002,7 @@ private struct ScheduleEditorContent: View {
     }
 }
 
-private struct VacationModeCard: View {
-    @EnvironmentObject private var sessionStore: SessionStore
-    let textColor: Color
-    let secondaryColor: Color
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("vacation mode")
-                        .font(.blankInter(size: 16, weight: .semibold, relativeTo: .headline))
-                        .foregroundStyle(textColor)
-                    Text(statusText)
-                        .font(.blankInter(size: 13, relativeTo: .caption))
-                        .foregroundStyle(secondaryColor)
-                }
-                Spacer()
-                if sessionStore.isVacationModeActive {
-                    Button("off") {
-                        sessionStore.disableVacationMode()
-                    }
-                    .font(.blankInter(size: 13, weight: .semibold, relativeTo: .caption))
-                    .foregroundStyle(textColor)
-                    .buttonStyle(.plain)
-                }
-            }
-
-            if !sessionStore.isVacationModeActive {
-                HStack(spacing: 10) {
-                    vacationButton("today", hours: 24)
-                    vacationButton("weekend", hours: 72)
-                    vacationButton("week", hours: 168)
-                }
-            }
-        }
-        .padding(16)
-        .blankGlassCard(cornerRadius: 18, tintOpacity: sessionStore.isVacationModeActive ? 0.32 : 0.20)
-    }
-
-    private var statusText: String {
-        guard let until = sessionStore.vacationModeUntil, until > Date() else {
-            return "pause routines and daily limits temporarily."
-        }
-        return "paused until \(formatMinute(minuteOfDay(from: until)))."
-    }
-
-    private func vacationButton(_ title: String, hours: Int) -> some View {
-        Button {
-            sessionStore.enableVacationMode(hours: hours)
-        } label: {
-            Text(title)
-                .font(.blankInter(size: 13, weight: .semibold, relativeTo: .caption))
-                .foregroundStyle(textColor)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 44)
-                .blankGlassCard(cornerRadius: 14, tintOpacity: 0.20)
-        }
-        .buttonStyle(.plain)
-    }
-}
 
 private struct HabitWindowCard: View {
     @Binding var window: BlankHabitWindow
@@ -3309,32 +3233,7 @@ private struct WheelTimePicker: View {
     }
 }
 
-private struct ForgetBlankConfirmSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    let onConfirm: () -> Void
 
-    var body: some View {
-        TechnicalSettingsSheetLayout {
-            TechnicalSheetTitle("I forgot my Blank")
-            TechnicalSheetDescription("This turns Blank off, removes the linked item, and returns to onboarding so you can register a new one.")
-            TechnicalSheetDescription("Your distraction list and protection settings stay saved.", emphasized: true)
-            TechnicalSheetActions {
-                Button("I forgot my Blank") {
-                    onConfirm()
-                    dismiss()
-                }
-                .buttonStyle(BlankPrimaryButtonStyle())
-
-                Button("Cancel") {
-                    dismiss()
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-}
 
 private struct RelapseReviewSheet: View {
     let onSelect: (RelapseReviewReason) -> Void
@@ -3557,45 +3456,7 @@ private struct EmergencyScreen: View {
     }
 }
 
-private struct RelinkSheet: View {
-    @EnvironmentObject private var sessionStore: SessionStore
-    @Environment(\.dismiss) private var dismiss
-    @Binding var message: String?
-    @Binding var messageAction: HomeMessageAction?
-    @State private var nfcReader = NFCReader()
 
-    var body: some View {
-        TechnicalSettingsSheetLayout {
-            TechnicalSheetTitle("New Blank")
-            TechnicalSheetDescription("Scan the new Blank to replace the one you linked. Your distraction list and protection settings stay saved.")
-            TechnicalSheetActions {
-                Button("Scan new Blank") {
-                    nfcReader.scan { result in
-                        Task { @MainActor in
-                            switch result {
-                            case .success(let uid):
-                                sessionStore.nfcTagUid = uid
-                                message = "New Blank linked."
-                                messageAction = nil
-                                dismiss()
-                            case .failure(let error):
-                                message = error.localizedDescription
-                                messageAction = nil
-                            }
-                        }
-                    }
-                }
-                .buttonStyle(BlankPrimaryButtonStyle())
-
-                Button("Cancel") {
-                    dismiss()
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-            }
-        }
-    }
-}
 
 private struct TechnicalSettingsSheetLayout<Content: View>: View {
     @EnvironmentObject private var sessionStore: SessionStore
