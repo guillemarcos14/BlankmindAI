@@ -434,7 +434,7 @@
       },
       {
         "name": "ios_distribution_entitlements",
-        "run": "python tools/ios_sign_existing_archive_test.py"
+        "run": "node tools/run_ios_distribution_tests.js"
       }
     ]
   },
