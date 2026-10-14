@@ -7,7 +7,7 @@ struct RestProgressContent: View {
     @ObservedObject private var health = RestHealthContext.shared
     @ObservedObject private var sleep = HealthKitStore.shared
     @State private var checkIns: [RestCheckIn] = []
-    @State private var metric: RestProgressMetric = .perceived
+    @State private var metric: RestProgressMetric = .duration
     @Binding var showContext: Bool
     @State private var checkInExpanded = false
     @State private var checkInError: String?
@@ -42,12 +42,6 @@ struct RestProgressContent: View {
         #endif
         return sleep.syntheticSleepEnabled ? health.metrics.filter { $0.id != "blank.nightHeartRate" && !$0.id.contains("Sleep") } : health.metrics
     }
-    private var historyStart: Date? {
-        guard let account else { return nil }
-        let timestamp = defaults.double(forKey: "blankRestHistoryStart." + account)
-        return timestamp > 0 ? Date(timeIntervalSince1970: timestamp) : nil
-    }
-
     private var sourceLabel: String? {
         if AppStoreScreenshotMode.enabled { return "example data" }
         if sleep.sampleSleepEnabled { return "sample sleep · not measured" }
@@ -109,9 +103,6 @@ struct RestProgressContent: View {
     private func reload() {
         checkIns = RestCheckInRepository.load(owner: account, defaults: defaults)
         checkInError = nil
-        if let account, defaults.object(forKey: "blankRestHistoryStart." + account) == nil {
-            defaults.set(Date().timeIntervalSince1970, forKey: "blankRestHistoryStart." + account)
-        }
         #if DEBUG && targetEnvironment(simulator)
         if AssistantAppPreview.scenario.contains("progress") && !AssistantAppPreview.scenario.contains("empty") { checkIns = RestProgressFixture.ratings() }
         if AssistantAppPreview.scenario.contains("progress-detail") { showContext = true }
@@ -134,15 +125,14 @@ struct RestProgressContent: View {
             Text(snapshot.headline)
                 .font(.blankInter(size: 26, relativeTo: .title3))
                 .tracking(-0.4).fixedSize(horizontal: false, vertical: true)
-            if let change = snapshot.restChange {
-                Text(String(format: "%+.1f points in your morning check-in", change))
-                    .font(.blankInter(size: 17, relativeTo: .body))
-                caption("\(snapshot.weeklyRatings.count) check-ins this week · \(snapshot.baselineRatings.count) in the previous 4 weeks")
-            } else {
-                caption("A personal comparison needs 3 check-ins this week and 7 in the previous 4 weeks.")
-            }
+            caption("\(snapshot.weeklyNights.filter { $0.watchMeasured && !$0.manual }.count) measured Watch nights this week. A block's benefit needs a comparison of measured sleep.")
+            caption("Longer sleep or more REM alone does not establish better rest.")
             Divider().overlay(ink.opacity(0.12))
             DisclosureGroup(isExpanded: $checkInExpanded) {
+            caption("Personal context · this does not measure whether the plan improved your sleep.")
+            if let change = snapshot.restChange {
+                caption(String(format: "%+.1f check-in points compared with your previous 4 weeks", change))
+            }
             Text("How rested do you feel after waking?").font(.blankInter(size: 17, relativeTo: .body))
             let layout = textSize.isAccessibilitySize
                 ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
@@ -296,15 +286,8 @@ struct RestProgressContent: View {
     private var disconnectionCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             header("disconnection & rest", icon: "square.stack.3d.up")
-            if !sleep.syntheticSleepEnabled, let link = snapshot.association(sessions: ownedSessions, historyStart: historyStart) {
-                Text(abs(link.delta) < 0.3 ? "Similar morning rest across both routines" : link.delta > 0 ? "Better morning rest on protected nights" : "Lower morning rest on protected nights")
-                    .font(.blankInter(size: 22, relativeTo: .title3)).fixedSize(horizontal: false, vertical: true)
-                caption(String(format: "%+.1f check-in points · %d protected nights · %d without recorded protection", link.delta, link.protected, link.other))
-                caption("45+ min of protection in the hour before sleep · observed association, not causality")
-            } else {
-                Text("Discover your own pattern").font(.blankInter(size: 22, relativeTo: .title3))
-                caption("A comparison needs at least 5 measured nights with 45+ min of protection and 5 without recorded protection, each with a morning check-in.")
-            }
+            Text("Measure your rest plan").font(.blankInter(size: 22, relativeTo: .title3))
+            caption("Blankmind compares a fixed Watch sleep metric across comparable nights with a verified plan. Ask in chat for the result and its coverage.")
             if let latest = snapshot.weeklyNights.last {
                 dataRow("before sleep", value: duration(snapshot.protectedMinutes(night: latest, sessions: ownedSessions, morning: false)), detail: "recorded protection in the hour before sleep")
                 dataRow("after waking", value: duration(snapshot.protectedMinutes(night: latest, sessions: ownedSessions, morning: true)), detail: "recorded protection in the first hour awake")
@@ -324,7 +307,7 @@ struct RestProgressContent: View {
     private var contextContent: some View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("All health context").font(.blankInter(size: 26, relativeTo: .title3))
-                    caption("Last 35 days + available clinical history · stays on this device. No additional data is sent to AI from Progress.")
+                    caption("Last 35 days + available clinical history. Additional Health summaries are shared with AI only if you enable that option in permissions.")
                     Button("Review Apple Health access") {
                         HealthKitStore.shared.requestAccess()
                     }.font(.blankInter(size: 16, relativeTo: .body)).frame(minHeight: 44)

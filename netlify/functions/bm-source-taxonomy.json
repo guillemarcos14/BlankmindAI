@@ -1,6 +1,5 @@
 {
-  "version": "blankmind-topics-1",
-  "model": "jev-1.13.0",
+  "version": "blankmind-rest-sources-1",
   "topics": {
     "sleep": "Sleep timing, falling asleep, waking, duration, or measured sleep. Rest without sleep is not sleep.",
     "rest": "Perceived restfulness, fatigue, energy, relaxation or taking a break.",

@@ -24,6 +24,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     private let dailyLimitStore = ManagedSettingsStore(named: ManagedSettingsStore.Name("BlankDailyLimitProtection"))
 
     override func intervalDidStart(for activity: DeviceActivityName) {
+        defer { recordRestProtection() }
         super.intervalDidStart(for: activity)
         log.info("DeviceActivity interval started: \(activity.rawValue)")
 
@@ -50,6 +51,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
+        defer { recordRestProtection() }
         super.intervalDidEnd(for: activity)
         log.info("DeviceActivity interval ended: \(activity.rawValue)")
 
@@ -138,6 +140,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     }
 
     private struct StoredWindow: Decodable {
+        let id: UUID
         let enabled: Bool
         let startMinute: Int
         let endMinute: Int
@@ -174,6 +177,18 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
               let schedule = try? JSONDecoder().decode(StoredSchedule.self, from: data),
               schedule.enabled else { return false }
         return schedule.windows.contains { $0.contains(date) }
+    }
+
+    private func recordRestProtection() {
+        let active = Self.recurringScheduleIsActive()
+        guard let data = Self.sharedDefaults.data(forKey: "blankFocusSchedule"),
+              let schedule = try? JSONDecoder().decode(StoredSchedule.self, from: data) else { return }
+        let ready = BlankSharedState.familyControlsApproved
+        let shielded = ready && (recurringStore.shield.applications?.isEmpty == false || recurringStore.shield.applicationCategories != nil || recurringStore.shield.webDomains?.isEmpty == false)
+        let windows = active && shielded ? schedule.windows.filter { $0.contains(Date()) } : []
+        let plans = Dictionary(uniqueKeysWithValues: windows.map { ($0.id.uuidString, ["start_minute": $0.startMinute,
+            "end_minute": $0.endMinute, "weekdays": $0.weekdays.sorted(), "timezone": $0.timeZoneIdentifier ?? TimeZone.current.identifier] as [String: Any]) })
+        BlankSharedState.recordRestProtection(activeWindowIDs: windows.map { $0.id.uuidString }, plans: plans, uncertain: !ready, defaults: Self.sharedDefaults)
     }
 
     private static var adultContentBlockingEnabled: Bool {

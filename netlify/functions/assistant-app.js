@@ -7,7 +7,7 @@ const { pendingActionFromPlan } = require("./bm-pending-action");
 const { callBlankedAgent, queuePendingAssistantAction } = require("./whatsapp-agent");
 const { normalizeUserContext } = require("./bm-context");
 const { persistCanonicalSnapshot } = require("./_bm_user_context");
-const { commitMemory } = require("./bm-brain");
+const { commitMemory } = require("./bm-memory");
 const { chatText, hasValidatedCopy } = require("./bm-conversation-copy");
 const timing = require("./bm-turn-timing");
 

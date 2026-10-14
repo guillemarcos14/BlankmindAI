@@ -136,8 +136,12 @@
         "run": "node tools/bm_latency_test.js"
       },
       {
-        "name": "bm_jev",
-        "run": "node tools/bm_jev_test.js"
+        "name": "measured_rest",
+        "run": "node tools/bmb_rest_test.js"
+      },
+      {
+        "name": "measured_rest_brain",
+        "run": "node tools/bmb_rest_brain_test.js"
       },
       {
         "name": "bmb_longitudinal",
@@ -269,7 +273,7 @@
       },
       {
         "name": "bm_central_brain",
-        "run": "node tools/bm_brain_test.js"
+        "run": "node tools/bm_memory_test.js"
       },
       {
         "name": "assistant_cloud_test_safety",

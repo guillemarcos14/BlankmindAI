@@ -32,12 +32,15 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.4.app
+          xcodebuild -version
+          swift -version
       - name: Validate bundle executable setting
         run: |
           /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" ios/Blank/Blank/Info.plist | grep -Fx '$(EXECUTABLE_NAME)'
@@ -110,6 +113,12 @@ jobs:
             -configuration Debug -destination "platform=iOS Simulator,id=$device" \
             -derivedDataPath tmp/ios-build -resultBundlePath tmp/home-ui-tests.xcresult \
             -only-testing:"$suite" "${extra_tests[@]}" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+      - name: Summarize native UI results
+        if: always()
+        run: |
+          if [ -d tmp/home-ui-tests.xcresult ]; then
+            xcrun xcresulttool get test-results summary --path tmp/home-ui-tests.xcresult --compact || true
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

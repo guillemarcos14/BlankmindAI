@@ -177,7 +177,7 @@ async function main() {
   const page=await brain.readSource("A",{anonymous_user_id:"verified-A"},{source:"history",term:"old",offset:0},null);
   assert.equal(page.next_offset,40);assert.equal(page.rows.length,40);
   assert(calls.at(-1).path.includes("auth_user_id=eq.A"));assert(!calls.at(-1).path.includes("eq.B"));
-  assert.equal((await brain.readSource("A",null,{source:"features",offset:0},null)).reason,"no_verified_account_link");history=[];
+  assert.equal((await brain.readSource("A",null,{source:"onboarding",offset:0},null)).reason,"no_verified_account_link");history=[];
   const once=action({type:"apply_schedule",minutes:null,start_minute:1350,end_minute:420,local_date:"2027-01-05",timezone:"Europe/Madrid"});
   const dated=brain.normalizeAction(once,Date.parse("2027-01-05T12:00:00Z"));
   assert.equal(dated.starts_at,"2027-01-05T21:30:00.000Z");assert.equal(dated.ends_at,"2027-01-06T06:00:00.000Z");assert.deepEqual(dated.weekdays,[]);
@@ -205,7 +205,8 @@ async function main() {
   assert.equal(accountSnapshot.account.billing_details_available,false);assert.equal(accountSnapshot.account.token,undefined);
   const scrubbed=sources.sanitize({token:"secret",nested:{encrypted_access_token:"secret",goal:"sleep",applicationTokens:["private"]}});
   assert.deepEqual(scrubbed,{nested:{goal:"sleep"}});
-  assert(sources.SOURCE_NAMES.includes("onboarding")&&sources.SOURCE_NAMES.includes("learned_signals")&&sources.SOURCE_NAMES.includes("protection_statistics"));
+  assert(sources.SOURCE_NAMES.includes("onboarding")&&sources.SOURCE_NAMES.includes("rest_nights")&&sources.SOURCE_NAMES.includes("protection_statistics"));
+  assert(!sources.SOURCE_NAMES.includes("learned_signals")&&!sources.SOURCE_NAMES.includes("plan_outcomes"),"Legacy adherence pools remain learning inputs");
   let sourcePath;
   await sources.readSource("A",{anonymous_user_id:"verified-A"},{source:"wearable_connections",offset:0},null,async p=>{sourcePath=p;return [];});
   assert(!sourcePath.includes("encrypted")&&sourcePath.includes("anonymous_user_id=eq.verified-A"));

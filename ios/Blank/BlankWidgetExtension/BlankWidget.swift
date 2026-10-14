@@ -17,7 +17,7 @@ struct StartQuickBlockIntent: AppIntent {
         let store = ManagedSettingsStore()
         if BlankSharedState.finishWidgetUnlockIfDue(defaults: defaults)
             || BlankSharedState.finishExpiredBlock(defaults: defaults) { store.clearAllSettings() }
-        guard AuthorizationCenter.shared.authorizationStatus == .approved else { return .result() }
+        guard BlankSharedState.familyControlsApproved else { return .result() }
         if BlankSharedState.loadActiveState(defaults: defaults).isActive {
             let previous = BlankSharedState.widgetUnlockDeadline(defaults: defaults)
             if let deadline = BlankSharedState.requestWidgetUnlock(defaults: defaults) {
@@ -88,7 +88,7 @@ struct BlankWidgetProvider: TimelineProvider {
             ?? (reblock > date.timeIntervalSince1970 ? Date(timeIntervalSince1970: reblock) : nil)
         return BlankWidgetEntry(date: date, activeState: state,
             hasConfiguration: BlankSharedState.hasConfiguredBlock(in: defaults)
-                && AuthorizationCenter.shared.authorizationStatus == .approved,
+                && BlankSharedState.familyControlsApproved,
             hardProtection: defaults.bool(forKey: "blankHardBlankActive"), cooldownUntil: cooldown)
     }
 }

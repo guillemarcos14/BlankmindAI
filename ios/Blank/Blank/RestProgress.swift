@@ -8,6 +8,7 @@ struct RestCheckIn: Codable, Equatable, Identifiable {
 }
 
 enum RestCheckInRepository {
+    static let didChange = Notification.Name("BlankRestCheckInDidChange")
     static func dayKey(_ date: Date, calendar: Calendar = .current) -> String {
         let formatter = DateFormatter()
         formatter.calendar = calendar
@@ -29,6 +30,7 @@ enum RestCheckInRepository {
         rows.append(RestCheckIn(day: day, recordedAt: now, score: score))
         guard let data = try? JSONEncoder().encode(Array(rows.sorted { $0.recordedAt < $1.recordedAt }.suffix(180))) else { return false }
         defaults.set(data, forKey: key(owner: owner))
+        NotificationCenter.default.post(name: didChange, object: nil)
         return true
     }
     static func delete(owner: String?, defaults: UserDefaults) {
@@ -59,6 +61,7 @@ struct RestSleepObservation {
     let value: Int
     let source: String
     let manual: Bool
+    var isAppleWatch: Bool = false
 }
 
 struct RestNight: Identifiable {
@@ -72,6 +75,7 @@ struct RestNight: Identifiable {
     let inBedMinutes: Double?
     let source: String
     let manual: Bool
+    var watchMeasured: Bool = false
     var sleepMinutes: Double { RestInterval.minutes(asleep) }
     static func build(_ observations: [RestSleepObservation], now: Date = Date(), calendar: Calendar = .current) -> [RestNight] {
         // SleepAnalysis: inBed=0, unspecified=1, awake=2, core=3, deep=4, REM=5.
@@ -103,18 +107,38 @@ struct RestNight: Identifiable {
                 let night = RestNight(date: calendar.startOfDay(for: end), start: start, end: end, asleep: intervals,
                     awakeMinutes: awake.isEmpty ? nil : RestInterval.minutes(awake), stageMinutes: stages,
                     inBedMinutes: bed.isEmpty ? nil : RestInterval.minutes(bed), source: source,
-                    manual: episode.contains { $0.manual })
+                    manual: episode.contains { $0.manual }, watchMeasured: episode.allSatisfy { $0.isAppleWatch && !$0.manual })
                 candidates[night.date, default: []].append(night)
             }
         }
         return candidates.compactMap { _, nights in
             nights.sorted {
                 if $0.manual != $1.manual { return !$0.manual }
+                if $0.watchMeasured != $1.watchMeasured { return $0.watchMeasured }
                 if $0.stageMinutes.isEmpty != $1.stageMinutes.isEmpty { return !$0.stageMinutes.isEmpty }
                 if $0.sleepMinutes != $1.sleepMinutes { return $0.sleepMinutes > $1.sleepMinutes }
                 return $0.source < $1.source
             }.first
         }.sorted { $0.date < $1.date }
+    }
+}
+
+extension RestNight {
+    func measuredPayload(calendar: Calendar = .current) -> [String: Any] {
+        let iso = ISO8601DateFormatter()
+        var row: [String: Any] = ["date": RestCheckInRepository.dayKey(date, calendar: calendar),
+            "start_at": iso.string(from: start), "end_at": iso.string(from: end),
+            "source": watchMeasured ? "apple_watch" : "apple_health", "source_bundle": source,
+            "sleep_minutes": sleepMinutes, "manual": manual,
+            // Ongoing episodes and unstaged/manual records cannot certify efficacy.
+            "complete": watchMeasured && !manual && !stageMinutes.isEmpty && end.timeIntervalSinceNow < -3600
+                && (sleepMinutes + (awakeMinutes ?? 0)) >= end.timeIntervalSince(start) / 60 * 0.95]
+        if let awakeMinutes { row["awake_minutes"] = awakeMinutes }
+        if let inBedMinutes { row["in_bed_minutes"] = inBedMinutes }
+        for (key, stage) in [("core_minutes", 3), ("deep_minutes", 4), ("rem_minutes", 5)] {
+            if let value = stageMinutes[stage] { row[key] = value }
+        }
+        return row
     }
 }
 
@@ -185,10 +209,7 @@ struct RestProgressSnapshot {
         return current - previous
     }
     var headline: String {
-        guard let change = restChange else { return "How rested do you feel?" }
-        if change >= 0.3 { return "You feel more rested" }
-        if change <= -0.3 { return "You feel less rested" }
-        return "Your morning rest is steady"
+        weeklyNights.contains { $0.watchMeasured && !$0.manual } ? "Your measured sleep" : "Your sleep data"
     }
     func chartValue(day: Date, metric: RestProgressMetric) -> Double? {
         let key = RestCheckInRepository.dayKey(day, calendar: calendar)
@@ -207,22 +228,6 @@ struct RestProgressSnapshot {
         let start = morning ? night.end : night.start.addingTimeInterval(-3600)
         let end = morning ? min(now, night.end.addingTimeInterval(3600)) : night.start
         return BlankBrainMetrics.protectedSeconds(sessions: sessions, from: start, to: end) / 60
-    }
-    func association(sessions: [BlankSession], historyStart: Date?) -> (delta: Double, protected: Int, other: Int)? {
-        // A night without a session is only a valid comparison after account history began.
-        guard let historyStart else { return nil }
-        var protected: [Double] = [], other: [Double] = []
-        for night in nights where night.date >= baselineStart && night.end <= now && !night.manual {
-            guard night.start.addingTimeInterval(-3600) >= historyStart,
-                  let rating = checkIns.first(where: { $0.day == RestCheckInRepository.dayKey(night.date, calendar: calendar) }),
-                  rating.recordedAt >= night.end else { continue }
-            let minutes = protectedMinutes(night: night, sessions: sessions, morning: false)
-            if minutes >= 45 { protected.append(Double(rating.score)) }
-            else if minutes == 0 { other.append(Double(rating.score)) }
-        }
-        guard protected.count >= 5, other.count >= 5,
-              let a = Self.mean(protected), let b = Self.mean(other) else { return nil }
-        return (a - b, protected.count, other.count)
     }
     static func make(nights: [RestNight], checkIns: [RestCheckIn], now: Date = Date(), calendar: Calendar = .current) -> Self {
         let today = calendar.startOfDay(for: now)

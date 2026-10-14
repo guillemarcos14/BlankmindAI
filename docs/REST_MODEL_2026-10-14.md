@@ -1,0 +1,43 @@
+# Blankmind: measured rest loop
+
+Objective: improve the authenticated user's Apple Watch measured sleep through management of the selected phone distractions. Phone protection, acceptance, engagement and perceived rest are not sleep outcomes. Conversation and broad Health context support this objective.
+
+The user authorized this implementation on 2026-10-14. Preserve Home/Progress styling, voice, account identity, canonical inbox, verification, revocation and sample exploration. Work starts from integrated release `2e4ec8f`; baseline is `tmp/product-harness/baseline.json`. No production mutation or Apple submission is part of this implementation branch.
+
+## Evidence
+
+Persist source-tagged complete sleep episodes grouped by wake date, Health context summaries, optional subjective check-ins and available digital observations. Separate measured Watch, other Health, declared and synthetic records. Only non-manual measured Watch nights evaluate outcomes. Never fabricate phone usage from protection. Use supported EU activity-data authorization where available; unsupported OS/region/permission remains unavailable, not zero. All incoming data is scoped to the authenticated installation and sharing consent; forgetting/revoking cancels pending assessment and prevents old data from returning.
+
+## Experiments
+
+One active hypothesis and one changed schedule parameter. A fixed Watch metric (sleep continuity, distance to an explicit sleep-duration target, or sleep-time regularity), frozen personal baseline, verified schedule activation, comparable weekdays, explicit exclusions and seven comparable measured nights are required. Observe daily; assess after 7–14 days, wait if coverage is insufficient. Show deltas and coverage, never a clinically validated quality score or causal proof. REM/HRV support context, not independent success claims. Subjective feedback can constrain acceptability but cannot certify efficacy.
+
+The model proposes hypotheses and explains evidence naturally. Deterministic code computes measurements, validates permissions and records outcomes. Recurring changes require a new, explicit rest-adjustment grant: days, time bounds, maximum shift, expiry and frequency. Keep direct user controls available; general wellness advice and non-rest learning objectives are retired from the assistant. Legacy global acceptance/adherence scores cannot seed the new loop. An optional global prior uses consented, deidentified measured experiment outcomes, never raw conversations, Health records or app identifiers; personal evidence takes precedence.
+
+## Validation and release
+
+Backend unit/integration and real SQL tests, native model tests, iOS simulator build, and the full harness with baseline/scope are required. Release needs migration, coordinated backend/cron publication, distribution entitlement for EU usage, signed app and iPhone verification. Test fixtures and simulator results do not certify real Watch collection, usage access or sleep improvement.
+
+Implementation removes the unused second router, Jev runtime/benchmarks, the native BAI wrapper, old local memory and 1,537 lines of unused feature/forecast/score code. Historical database migrations and external messaging transport contracts remain; legacy adherence pools are excluded from BMB's source catalog and daily assessment. No old benchmark is a certificate for this source.
+
+Watch nights use the local wake date, not the date sleep started. The chat's current-sleep adapter also uses reconciled main episodes and distinguishes estimated sleep onset from declared bedtime. Background Health delivery and foreground refresh synchronize episodes; iOS can defer delivery. Complete measured episodes require at least 95% scored coverage and an hour since the last sample. Continuity is observed sleep minutes divided by the observed main-episode span; unobserved gaps remain in its denominator and absent awake data is not zero. The monitor records actually applied schedule shield intervals, and only closed matching intervals credit intervention nights. Usage joins retain complete measured bins and exact timestamps; no prorating into fictitious pre-sleep minutes. Core outcomes use a 2-point continuity or 15-minute target/regularity threshold with at least 70% consistent nights, and reject a median sleep-duration loss over 30 minutes. These are explicit product heuristics, not clinical cutoffs or proof of causality. Global priors are grouped by metric and a 15-minute pre-sleep lead bucket, with at least 20 other consenting contributors per group.
+
+Native CI now compiles the actual export path with Xcode26.4/Swift6.3. The public `activitySegments` APIs are provided by the DeviceActivity/SwiftUI cross-import overlay: import both modules, without SPI or attempting to export from a report sandbox. The temporary SDK-interface diagnostic was removed after establishing this prerequisite.
+
+The legacy production publisher intentionally disables cron. A coordinated rest release must apply `035`, include the new runtime, update the published privacy/labels, obtain the app-and-website-usage and Health background capabilities, and explicitly enable the existing `bmb-tick` schedule. Do not run the previous voice-only publication script and infer the loop is active.
+
+Each recorded protection interval includes the exact schedule phase (window ID, start/end, weekdays, timezone). A changed/disabled/deleted plan cancels its active experiment; permission uncertainty cannot credit intervention coverage. Additional Health context requires a server-confirmed opt-in and is cleared atomically when withdrawn. Whole-assistant withdrawal is persisted locally for retry after connectivity returns; native automatic execution stops immediately and new uploads wait for server acknowledgement.
+
+A seven-night frozen baseline can supply one reference for each weekday; the evaluator reports the minimum matched reference count rather than requiring a second weekday sample that can never enter that frozen baseline. At least seven baseline nights and seven matched intervention nights still apply. More reference observations strengthen the comparison; the first-week heuristic is not statistical significance.
+
+Comparisons match the wake-date weekday; the permitted schedule day is the actual protection occurrence, including a Friday window crossing into Saturday. Crossing midnight when falling asleep does not silently discard a valid night or switch its baseline to a weekend routine.
+
+## Source validation receipt
+
+Runtime `4f1b453`: full harness90/90, baseline/scope enforced, `ph_1791980238663_b994a546`; disposable SQL passed, including the positive/negative twenty-contributor boundary. [Backend CI38562651365](https://github.com/guillemarcos14/BlankmindAI/actions/runs/38562651365) passed all three jobs (contracts/runtime, PostgreSQL15, Android).
+
+[Native CI38561348408](https://github.com/guillemarcos14/BlankmindAI/actions/runs/38561348408) passed the actual Swift tests, Xcode26.4 simulator build and complete nineteen-case UI suite. Tested source37a9df9 has exactly the same iOS tree as runtime4f1b453 (`c8df357d102121139a3ab924457abdbc2e71df78`); later commits change backend/tests/documentation only. Visual export is a separate CI step, not evidence of physical execution. Local machine-readable receipt: `tmp/rest-validation/receipt.json`; harness report: `tmp/product-harness/rest-final-source.json`.
+
+Progress retains the existing layout but opens on sleep duration, prioritizes Watch evidence, and keeps subjective check-in trends inside the optional check-in. Its old protection/check-in association and subjective improvement headline are retired. It does not present a new universal quality score. Automatic settings keep Save reachable at maximum text size. Other Health measurements remain available as context, not optimization targets. The legacy `apply_ai_plan` command and old feature/insight/adherence outputs are removed from the app/BMB pathway; historical migrations and external transport remain for compatibility.
+
+Validation uses independent deterministic metric oracles, provider mocks that inspect actual planner input/proposal acceptance, disposable PostgreSQL-compatible SQL with the real migrations, existing PostgreSQL15 CI contracts, native Swift tests, and Xcode26.4 simulator/UI CI. Mocked planner tests are not paid semantic evaluation of generated replies. No additional paid model calls, production migration/deploy/cron activation, signed archive, Apple submission or physical Watch/usage verification was performed here. Earlier release/model certificates do not cover this candidate.

@@ -213,7 +213,7 @@ struct SetupView: View {
             }
             VStack(spacing: 12) {
                 permissionButton(title: "Allow Screen Time",
-                    ready: screenTimeBlocker.authorizationStatus == .approved, action: authorizeScreenTime)
+                    ready: screenTimeBlocker.hasAuthorization, action: authorizeScreenTime)
                 permissionButton(title: "Connect Apple Health",
                     ready: !healthKitStore.syntheticSleepEnabled && healthKitStore.sleepAccess.hasData, action: healthKitStore.requestAccess)
                     .disabled(healthKitStore.state == .requesting || healthKitStore.sleepCheckInFlight)
@@ -249,7 +249,7 @@ struct SetupView: View {
                     .font(.blankBody).accessibilityIdentifier("onboarding-sleep-available")
             }
             if healthKitStore.sleepDataAvailable && !healthKitStore.aiSharingAllowed {
-                Text("To use Blankmind AI, your messages, protection history and selected sleep summaries are sent to our backend and OpenAI. For spoken replies, the response text is also sent to ElevenLabs to generate audio. This is separate from Apple Health read access. Broad Health context and clinical documents stay on this iPhone. Spoken replies are AI-generated.")
+                Text("To use Blankmind AI, your messages, protection history and selected sleep summaries are sent to our backend and OpenAI. For spoken replies, the response text is also sent to ElevenLabs to generate audio. This is separate from Apple Health read access. Additional Health context and phone-use data require separate optional choices in Automatic protection. Original clinical documents stay in Apple Health. Spoken replies are AI-generated.")
                     .font(.blankBody).fixedSize(horizontal: false, vertical: true)
                 Link("Privacy Policy", destination: URL(string: "https://blankmind.ai/privacy")!)
                     .padding(.vertical, 12)
@@ -257,7 +257,7 @@ struct SetupView: View {
                     .buttonStyle(OnboardingButtonStyle())
                     .accessibilityIdentifier("onboarding-ai-consent")
             }
-            if !completionInFlight && screenTimeBlocker.authorizationStatus == .approved {
+            if !completionInFlight && screenTimeBlocker.hasAuthorization {
                 if deviceReady && healthKitStore.aiSharingAllowed {
                     Button("Continue with Blankmind") { startCompletion() }
                         .buttonStyle(OnboardingButtonStyle())
@@ -336,7 +336,7 @@ struct SetupView: View {
 
     private var deviceReady: Bool {
         !assistantConnectCode.isEmpty && SleepAccessPolicy.canEnter(
-            screenTimeApproved: screenTimeBlocker.authorizationStatus == .approved,
+            screenTimeApproved: screenTimeBlocker.hasAuthorization,
             sleep: healthKitStore.onboardingSleepAccess)
     }
 
@@ -449,12 +449,12 @@ struct SetupView: View {
                 "sleep_data_checked_at": ISO8601DateFormatter().string(from: Date()),
                 "has_selected_apps": sessionStore.hasSelectedApps,
                 "selection_count": sessionStore.selectionCount,
-                "screen_time_authorized": screenTimeBlocker.authorizationStatus == .approved,
+                "screen_time_authorized": screenTimeBlocker.hasAuthorization,
                 "notification_authorized": notificationReady,
                 "device_execution_ready": deviceReady,
                 "protection_target": "selected_distractions",
                 "app_presence": BlankmindAppPresence.payload(
-                    appReady: sessionStore.hasSelectedApps && screenTimeBlocker.authorizationStatus == .approved
+                    appReady: sessionStore.hasSelectedApps && screenTimeBlocker.hasAuthorization
                 ),
             ]
         )

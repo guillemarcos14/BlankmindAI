@@ -49,3 +49,15 @@ enum RestAIConsent {
         NotificationCenter.default.post(name: didChange, object: nil)
     }
 }
+
+enum RestContextConsent {
+    static func allowed(owner: String?, defaults: UserDefaults = .standard) -> Bool {
+        guard let owner else { return false }
+        return defaults.bool(forKey: "blankRestContextConsent.v1." + owner)
+    }
+    static func set(_ allowed: Bool, owner: String?, defaults: UserDefaults = .standard) {
+        guard let owner else { return }
+        defaults.set(allowed, forKey: "blankRestContextConsent.v1." + owner)
+        NotificationCenter.default.post(name: RestAIConsent.didChange, object: nil)
+    }
+}

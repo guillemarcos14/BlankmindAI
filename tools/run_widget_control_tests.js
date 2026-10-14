@@ -17,6 +17,7 @@ assert(shared.includes('owner == date(forKey: Keys.blankActiveSince'));
 if (process.argv.includes('--source-only')) { console.log('Widget integration contracts passed; native execution requires macOS CI'); process.exit(0); }
 const model = read('ios/Blank/Blank/BlankDomainModels.swift');
 const source = 'import Foundation\n'
+    + 'enum TestAuthorizationStatus { case approved, approvedWithDataAccess, denied }; final class AuthorizationCenter { static let shared = AuthorizationCenter(); var authorizationStatus = TestAuthorizationStatus.approved }\n'
     + 'struct FamilyActivitySelection: Codable { var applicationTokens: Set<String> = []; var categoryTokens: Set<String> = []; var webDomainTokens: Set<String> = [] }\n'
     + between(model, 'enum BlankStrategyKind:', 'struct LegacyFocusMode:')
     + between(model, 'struct BlankSession:', 'struct BlankWeeklyReport:')

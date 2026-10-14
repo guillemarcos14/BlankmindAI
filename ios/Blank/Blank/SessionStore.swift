@@ -16,7 +16,6 @@ enum AssistantPendingAction: Equatable {
     case disableDailyLimit
     case pauseRules(hours: Int)
     case disablePause
-    case applyAIPlan
     case openAppPicker(appNames: [String])
     case configureAndOpenAppPicker(appNames: [String], durationMinutes: Int?, hardMode: Bool, schedule: PendingPlanSchedule?)
     case configureAndOpenDailyLimitPicker(appNames: [String], minutes: Int)
@@ -415,30 +414,6 @@ final class SessionStore: ObservableObject {
         }
     }
 
-    var digitalWellnessV3: DigitalWellnessV3System {
-        DigitalWellnessAI.v3System(
-            events: brainUsageEvents,
-            sessions: brainSessions,
-            selectionCount: selectionCount,
-            modeName: Self.canonicalProtectionName,
-            emergencyUnlocksRemaining: emergencyUnlocksRemaining
-        )
-    }
-
-    func digitalWellnessFeaturePayload(
-        healthSummaries: [HealthDaySummary],
-        now: Date = Date()
-    ) -> DigitalWellnessFeaturePayload {
-        DigitalWellnessFeatureBuilder.makePayload(
-            defaults: defaults,
-            healthSummaries: healthSummaries,
-            sessions: sessions,
-            events: usageEvents,
-            selectionCount: selectionCount,
-            selectionSnapshot: currentSelectionSnapshot,
-            now: now
-        )
-    }
 
     func activateBlank(
         forceStarted: Bool = false,
@@ -873,14 +848,6 @@ final class SessionStore: ObservableObject {
         }
     }
 
-    func applyAIPlan(durationMinutes: Int? = nil) {
-        let system = digitalWellnessV3
-        let startMinute = (system.plan.recommendedStartHour * 60 + (24 * 60 - 10)) % (24 * 60)
-        let duration = durationMinutes ?? system.plan.recommendedDurationMinutes
-        let endMinute = (startMinute + max(15, min(120, duration))) % (24 * 60)
-        applyAdaptivePlan(startMinute: startMinute, endMinute: endMinute, durationDays: 7)
-    }
-
     func enableVacationMode(hours: Int) {
         vacationModeUntil = Date().addingTimeInterval(TimeInterval(max(1, min(168, hours)) * 60 * 60))
         if isBlankActive, activeSessionStartedBySchedule {
@@ -910,14 +877,17 @@ final class SessionStore: ObservableObject {
     }
 
     func recordRelapseReview(_ reason: RelapseReviewReason) {
-        defaults.set(reason.rawValue, forKey: "blankLastRelapseReviewReason")
-        defaults.set(Date().timeIntervalSince1970, forKey: "blankLastRelapseReviewAt")
+        if let owner = AssistantAppSession.userID {
+            let key = "blankRestBreakContext.v1." + owner
+            var rows = defaults.array(forKey: key) as? [[String: Any]] ?? []
+            rows.append(["reason": reason.rawValue, "occurred_at": ISO8601DateFormatter().string(from: Date()), "source": "user_selection"])
+            defaults.set(Array(rows.suffix(60)), forKey: key)
+        }
         Task {
             await BlankFunnelAnalytics.track(
                 "relapse_review_submitted",
                 properties: [
-                    "reason": reason.rawValue,
-                    "adjustment": reason.planAdjustment
+                    "reason": reason.rawValue
                 ]
             )
         }
@@ -1188,8 +1158,16 @@ final class SessionStore: ObservableObject {
             guard ["weekly","continuous"].contains(command.recurrence ?? ""), let weekdays = command.weekdays, !weekdays.isEmpty else { return false }
             var calendar = Calendar(identifier:.gregorian); calendar.timeZone = TimeZone(identifier:timezone)!
             let expiry = command.recurrence == "continuous" ? nil : calendar.date(byAdding:.day,value:command.durationDays ?? 7,to:Date())
-            window = BlankHabitWindow(id:targetID ?? id,name:"Protection",enabled:true,startMinute:startMinute,endMinute:endMinute,
-                weekdays:weekdays,expiresAt:expiry,timeZoneIdentifier:timezone)
+            if command.autonomous == true, let targetID, let existing = previous.windows.first(where: { $0.id == targetID }) {
+                guard existing.startsAt == nil, existing.weekdays == weekdays, existing.endMinute == endMinute,
+                      existing.timeZoneIdentifier == timezone else { return false }
+                window = BlankHabitWindow(id: targetID, name: existing.name, enabled: existing.enabled,
+                    startMinute: startMinute, endMinute: existing.endMinute, weekdays: existing.weekdays,
+                    expiresAt: existing.expiresAt, timeZoneIdentifier: existing.timeZoneIdentifier)
+            } else {
+                window = BlankHabitWindow(id:targetID ?? id,name:"Protection",enabled:true,startMinute:startMinute,endMinute:endMinute,
+                    weekdays:weekdays,expiresAt:expiry,timeZoneIdentifier:timezone)
+            }
         }
         schedule = BlankFocusSchedule(enabled: true, windows: previous.windows.filter { $0.id != targetID } + [window])
         guard recurringScheduleRegistered else {

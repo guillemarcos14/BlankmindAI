@@ -7,7 +7,7 @@ ios
 
 ## Product Purpose
 
-Blankmind ayuda a proteger las distracciones seleccionadas mediante Screen Time y conversación con BMB. Blank Brain es la memoria operativa y fuente de verdad empresarial.
+Blankmind tiene un único objetivo: mejorar el descanso medido por Apple Watch mediante el control de las distracciones del móvil. BMB cruza noches medidas, datos digitales disponibles, contexto Health consentido y declaraciones personales; propone una ventana, verifica su ejecución y evalúa experimentos estables antes de ajustarlos dentro de permisos explícitos. Sensaciones, cumplimiento, tiempo bloqueado y engagement no acreditan eficacia. Blank Brain es la memoria operativa empresarial. Contrato: [Measured rest](docs/REST_MODEL_2026-10-14.md).
 
 ## Confirmed constraints
 
