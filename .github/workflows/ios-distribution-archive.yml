@@ -1,5 +1,10 @@
 name: iOS distribution archive
 on:
+  workflow_call:
+    inputs:
+      build:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       build:
@@ -23,7 +28,8 @@ jobs:
         run: |
           [[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] && [ "$BUILD_NUMBER" -gt 116 ]
           mkdir -p tmp/distribution
-          xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank -configuration Release -destination 'generic/platform=iOS' -archivePath "$PWD/tmp/distribution/Blankmind.xcarchive" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" MARKETING_VERSION=1.9 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO archive > tmp/distribution/archive.log 2>&1
+          sed "s/CURRENT_PROJECT_VERSION = 112/CURRENT_PROJECT_VERSION = $BUILD_NUMBER/" ios/Blank/config/AppStore112.xcconfig > tmp/distribution/AppStore.xcconfig
+          xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank -configuration Release -destination 'generic/platform=iOS' -xcconfig "$PWD/tmp/distribution/AppStore.xcconfig" -archivePath "$PWD/tmp/distribution/Blankmind.xcarchive" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO archive > tmp/distribution/archive.log 2>&1
           grep -F '** ARCHIVE SUCCEEDED **' tmp/distribution/archive.log
       - name: Bind archive to source and production configuration
         env:
@@ -36,7 +42,9 @@ jobs:
           assert info['CFBundleVersion']==os.environ['BUILD_NUMBER']
           assert info['CFBundleShortVersionString']=='1.9'
           assert info['CFBundleIdentifier']=='com.blanknfc.app.ios'
-          assert info.get('BlankPrivateStageCookie','')==''
+          assert info.get('BlankPrivateQAAuthenticationCookie','')==''
+          assert info['BlankMembershipAPIBaseURL']=='https://getblank.netlify.app/.netlify/functions'
+          assert info['CFBundleDevelopmentRegion']=='en'
           report={'source':os.environ['GITHUB_SHA'],'ios_tree':subprocess.check_output(['git','rev-parse','HEAD:ios']).decode().strip(),'build':info['CFBundleVersion'],'version':'1.9','signed':False,'uploaded':False,'info':info,'files':{str(f.relative_to(app)):hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(app.rglob('*')) if f.is_file()}}
           pathlib.Path('tmp/distribution/receipt.json').write_text(json.dumps(report,indent=2,default=str))
           PY
