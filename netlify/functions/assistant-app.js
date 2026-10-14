@@ -279,7 +279,12 @@ async function prepare(auth, row, leaseOwner, prompt, deviceContext, onDraft) {
   return prepared.turn;
 }
 
-async function send(auth, body, onDraft) {
+async function send(auth, body, onDraft, afterCommit) {
+  const scheduleLabels = row => {
+    // The host owns the lifetime; rejected optional metadata work cannot fail
+    // or repeat the completed conversational transaction.
+    try { Promise.resolve(afterCommit?.({userId:auth.user.id,turnId:row.id})).catch(()=>null); } catch (_) {}
+  };
   const turnId = body.turn_id;
   const prompt = typeof body.text === "string" ? body.text.trim() : "";
   if (typeof turnId !== "string" || !UUID.test(turnId) || !prompt || prompt.length > 4000) {
@@ -293,7 +298,8 @@ async function send(auth, body, onDraft) {
   const claim = Array.isArray(result) ? result[0] : result;
   if (!claim?.claimed) {
     if (claim?.status === "completed") {
-      return json(200, { ok: true, turn: await presentWithMemory(auth, claim.turn), idempotent: true });
+      const turn=await presentWithMemory(auth, claim.turn); scheduleLabels(claim.turn);
+      return json(200, { ok: true, turn, idempotent: true });
     }
     if (claim?.status === "processing") return json(202, { ok: true, turn: presentTurn(claim.turn), retry_after: 3 });
     if (claim?.status === "payload_conflict") return json(409, { error: "turn_payload_conflict" });
@@ -335,12 +341,18 @@ async function send(auth, body, onDraft) {
         prepared_payload: null }),
     }));
     if (!rows[0]) throw new Error("assistant_lease_lost");
-    return json(200, { ok: true, turn: await timing.span("presentation", () => presentWithMemory(auth, rows[0])) });
+    const presented=await timing.span("presentation", () => presentWithMemory(auth, rows[0]));
+    // Optional metadata work starts only after durable facts have committed.
+    // The callback schedules host-owned background work and must not delay or
+    // fail the reply. It never receives client-supplied identity or source text.
+    scheduleLabels(rows[0]);
+    return json(200, { ok: true, turn: presented });
   } catch (error) {
     // A lost commit response must recover the saved reply, not repeat its action.
     const recovered = await readTurn(auth.user.id, turnId).catch(() => null);
     if (recovered?.status === "completed") {
-      return json(200, { ok: true, turn: await presentWithMemory(auth, recovered), idempotent: true });
+      const turn=await presentWithMemory(auth, recovered); scheduleLabels(recovered);
+      return json(200, { ok: true, turn, idempotent: true });
     }
     await supabaseFetch(ownedPath, {
       method: "PATCH", headers: { prefer: "return=minimal" },
@@ -350,7 +362,7 @@ async function send(auth, body, onDraft) {
   }
 }
 
-async function handle(event, _context, { onDraft } = {}) {
+async function handle(event, _context, { onDraft, afterCommit } = {}) {
   const methodError = requireMethod(event, "POST");
   if (methodError) return methodError;
   let body;
@@ -372,7 +384,7 @@ async function handle(event, _context, { onDraft } = {}) {
       const result = await timing.span("transcription", () => require("./bm-audio-input").transcribe(body));
       return json(result.status, result.error ? { error: result.error } : { ok: true, text: result.text });
     }
-    if (body.action === "send") return await send(auth, body, onDraft);
+    if (body.action === "send") return await send(auth, body, onDraft, afterCommit);
     return json(400, { error: "unsupported_action" });
   } catch (error) {
     // Diagnostic codes only: never log messages, tokens or provider payloads.
@@ -386,6 +398,7 @@ async function handle(event, _context, { onDraft } = {}) {
 }
 
 exports.handler = async (event, context, options = {}) => {
+  if(!options.afterCommit&&context?.waitUntil) options={...options,afterCommit:ids=>context.waitUntil(require("./bm-agent-labels").organize(ids).catch(()=>null))};
   let body;
   try { body = parseJsonBody(event); } catch (_) { /* Original handler owns errors. */ }
   if (!["send", "transcribe"].includes(body?.action)) return handle(event, context, options);

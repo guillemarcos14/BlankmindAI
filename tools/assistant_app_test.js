@@ -175,8 +175,16 @@ whatsapp.callBlankedAgent = async (_prompt, _user, _connection, { onDraft } = {}
 };
 const { handler, actionStatus } = require("../netlify/functions/assistant-app");
 const event = (body, token = "valid") => ({ httpMethod: "POST", headers: { authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+const metadataHooks=[];
+let metadataReject=false;
 const request = async (body, token) => {
-  const response = await handler(event({ app_install_id: "verified-install", ...body }, token));
+  const response = await handler(event({ app_install_id: "verified-install", ...body }, token),null,{afterCommit:ids=>{
+    const row=rows.get(ids.turnId);assert.equal(row.status,"completed");assert.equal(ids.userId,row.auth_user_id);
+    assert(!memoryCommitUnavailable,"Metadata started before the memory checkpoint");
+    assert.deepEqual(Object.keys(ids).sort(),["turnId","userId"]);
+    metadataHooks.push(ids);
+    if(metadataReject)return Promise.reject(Error("optional_metadata_failure"));
+  }});
   return { status: response.statusCode, body: JSON.parse(response.body) };
 };
 const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ action: "send", turn_id: id, text }, token);
@@ -449,11 +457,16 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
   assert.equal((await send(memoryId, "Estudiar")).status, 503);
   assert.equal(rows.get(memoryId).status, "completed");
   assert.equal(memoryCommitCount, 0);
+  assert(!metadataHooks.some(ids=>ids.turnId===memoryId),"Failed memory commit scheduled metadata");
   memoryCommitUnavailable = false;
   assert.equal((await send(memoryId, "Estudiar")).status, 200);
   assert.equal((await send(memoryId, "Estudiar")).status, 200);
   assert.equal(memoryCommitCount, 1, "Recovered memory committed twice");
+  assert(metadataHooks.some(ids=>ids.turnId===memoryId),"Completed recovery did not resume optional metadata");
   assert.equal(effects.planner - beforeMemory, 1, "Memory recovery regenerated the turn");
+  metadataReject=true;
+  assert.equal((await send(memoryId,"Estudiar")).status,200,"Optional metadata rejection failed completed reply");
+  metadataReject=false;
   brainContext = { brain_request: { execute: true }, brain_snapshot: {}, has_selected_apps: true, screen_time_authorized: true };
   actions = [{ type: "start_protection", minutes: 30 }];
   let automatic = await send(crypto.randomUUID());

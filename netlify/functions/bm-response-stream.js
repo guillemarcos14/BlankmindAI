@@ -44,6 +44,13 @@ async function readModelStream({ request, timeoutMs, errorPrefix, onDraft, fetch
   const headersMs = Date.now() - started;
   const reader = response.body.getReader(), decoder = new TextDecoder();
   let buffer = "", output = "", lastDraft = "", completed = null, firstTextMs = null;
+  const managementCalls = new Map();
+  const publishDraft = text => {
+    if (text != null && text !== lastDraft) {
+      if (firstTextMs == null && text) firstTextMs = Date.now() - started;
+      lastDraft = text; onDraft(text);
+    }
+  };
   const consume = frame => {
     const data = frame.split("\n").filter(line => line.startsWith("data:")).map(line => line.slice(5).trimStart()).join("\n");
     if (!data || data === "[DONE]") return;
@@ -52,10 +59,14 @@ async function readModelStream({ request, timeoutMs, errorPrefix, onDraft, fetch
       output += event.delta;
       if (output.length > 128000) throw Error(`${errorPrefix}_stream_oversized`);
       const text = draftText(output);
-      if (text != null && text !== lastDraft) {
-        if (firstTextMs == null && text) firstTextMs = Date.now() - started;
-        lastDraft = text; onDraft(text);
-      }
+      publishDraft(text);
+    } else if (event.type === "response.output_item.added" && event.item?.type === "function_call" && event.item.name === "gestionar") {
+      managementCalls.set(event.item.id, "");
+    } else if (event.type === "response.function_call_arguments.delta" && managementCalls.has(event.item_id)) {
+      const argumentsText = managementCalls.get(event.item_id) + event.delta;
+      if (argumentsText.length > 128000) throw Error(`${errorPrefix}_stream_oversized`);
+      managementCalls.set(event.item_id, argumentsText);
+      if (argumentsText.startsWith("{")) publishDraft(draftText('{"phase":"final",' + argumentsText.slice(1)));
     } else if (event.type === "response.completed") completed = event.response;
     else if (["error", "response.failed", "response.incomplete"].includes(event.type)) throw Error(`${errorPrefix}_stream_failed`);
   };
