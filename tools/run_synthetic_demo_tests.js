@@ -23,7 +23,7 @@ for (const name of ["ContentView.swift", "HomeView.swift", "ReportView.swift"]) 
 assert.match(read("HealthKitStore.swift"), /self.refreshRequestID == requestID, owner == AssistantAppSession.userID/);
 assert.match(read("HealthKitStore.swift"), /self.sourceGeneration == generation/);
 assert.match(read("BlankBrain.swift"), /health.sleepProvenance/);
-assert.match(read("SetupView.swift"), /postAssistantChannel\("complete_onboarding"\)/);
+assert.match(read("SetupView.swift"), /postAssistantChannel\("complete_onboarding", connectCode: activatedCode\)/);
 const test = `
 enum BlankSharedState { static let defaults = UserDefaults.standard }
 func check(_ condition: @autoclosure () -> Bool, _ message: String) {

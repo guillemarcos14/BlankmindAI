@@ -52,6 +52,7 @@ jobs:
           node tools/run_synthetic_demo_tests.js
           node tools/run_rest_progress_tests.js
           node tools/run_assistant_client_tests.js
+          node tools/run_rest_setup_tests.js
           swiftc -swift-version 5 -parse-as-library ios/Blank/Blank/AssistantWritingHaptics.swift tools/assistant_writing_haptics_test.swift -o tmp/native-tests/writing-haptics
           tmp/native-tests/writing-haptics
           swiftc -swift-version 5 -parse-as-library ios/Blank/Blank/AssistantVoicePlayback.swift tools/assistant_voice_playback_test.swift -o tmp/native-tests/voice-playback

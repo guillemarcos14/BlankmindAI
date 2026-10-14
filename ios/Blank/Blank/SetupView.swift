@@ -31,6 +31,7 @@ struct SetupView: View {
 
     @State private var currentStep: OnboardingStep = .account
     @State private var completionInFlight = false
+    @State private var completionTask: Task<Void, Never>?
     @State private var automaticCompletionAttempted = false
     @State private var notificationReady = false
     @State private var message: String?
@@ -124,6 +125,7 @@ struct SetupView: View {
                 currentStep = .device
             }
             await refreshDeviceState()
+            startAutomaticCompletion()
             BlankFunnelAnalytics.trackStepOnce(currentStep.analyticsName, properties: analyticsProperties)
             await BlankFunnelAnalytics.track("onboarding_started", step: currentStep.analyticsName)
         }
@@ -137,13 +139,12 @@ struct SetupView: View {
             savedStepRaw = step.rawValue
             BlankFunnelAnalytics.trackStepOnce(step.analyticsName, properties: analyticsProperties)
         }
-        .task(id: canAutomaticallyComplete) {
-            #if DEBUG && targetEnvironment(simulator)
-            if AssistantAppPreview.scenario == "product-onboarding-device-sample" { return }
-            #endif
-            guard canAutomaticallyComplete, !automaticCompletionAttempted else { return }
-            automaticCompletionAttempted = true
-            await completeSetup()
+        .onChange(of: canAutomaticallyComplete) { ready in
+            if ready { startAutomaticCompletion() }
+        }
+        .onDisappear {
+            completionTask?.cancel()
+            completionTask = nil
         }
         .onChange(of: deviceReady) { ready in
             if !ready { automaticCompletionAttempted = false }
@@ -155,6 +156,27 @@ struct SetupView: View {
             Text("This creates fictional sleep nights on this iPhone so you can explore rest features without recorded sleep. It does not write to Apple Health. AI still requires your separate permission to share with OpenAI and ElevenLabs. Turn it off in Control > Data & Permissions > Sample sleep.")
         }
 
+    }
+
+    @MainActor
+    private func startAutomaticCompletion() {
+        #if DEBUG && targetEnvironment(simulator)
+        if AssistantAppPreview.scenario == "product-onboarding-device-sample" { return }
+        #endif
+        guard canAutomaticallyComplete, !automaticCompletionAttempted else { return }
+        automaticCompletionAttempted = true
+        startCompletion()
+    }
+
+    @MainActor
+    private func startCompletion() {
+        guard completionTask == nil, !completionInFlight, canAutomaticallyComplete else { return }
+        // A readiness/scene update must not cancel a request started by consent.
+        // Only leaving setup cancels this operation; backend verification stays mandatory.
+        completionTask = Task {
+            await completeSetup()
+            completionTask = nil
+        }
     }
 
     private var functionalStep: some View {
@@ -170,7 +192,7 @@ struct SetupView: View {
                     .padding(.top, 24)
                     .accessibilityAddTraits(.updatesFrequently)
                 if deviceReady && automaticCompletionAttempted {
-                    Button { Task { await completeSetup() } } label: {
+                    Button { startCompletion() } label: {
                         HStack { Text("Retry"); Spacer(minLength: 8) }
                     }
                     .buttonStyle(OnboardingButtonStyle())
@@ -236,6 +258,11 @@ struct SetupView: View {
                     .accessibilityIdentifier("onboarding-ai-consent")
             }
             if !completionInFlight && screenTimeBlocker.authorizationStatus == .approved {
+                if deviceReady && healthKitStore.aiSharingAllowed {
+                    Button("Continue with Blankmind") { startCompletion() }
+                        .buttonStyle(OnboardingButtonStyle())
+                        .accessibilityIdentifier("onboarding-continue-blankmind")
+                }
                 Button("Continue with basic blocking") {
                     healthOnboardingVersion = 6
                     sessionStore.finishSetup()
@@ -361,20 +388,28 @@ struct SetupView: View {
         completionInFlight = true
         message = nil
         defer { completionInFlight = false }
-        await refreshDeviceState()
-        guard deviceReady && healthKitStore.aiSharingAllowed else {
-            message = "Allow Screen Time and connect sleep records to continue."
-            return
-        }
         do {
-            _ = try await AssistantAppClient().activate()
+            await refreshDeviceState()
+            try Task.checkCancellation()
+            guard deviceReady && healthKitStore.aiSharingAllowed else {
+                message = "Allow Screen Time and choose measured or sample sleep to continue."
+                return
+            }
+            guard let setupOwner, setupOwner == AssistantAppSession.userID else {
+                throw AssistantAppError.authenticationRequired
+            }
+            let activatedCode = try await AssistantAppClient().activate()
+            try Task.checkCancellation()
             guard setupOwner == AssistantAppSession.userID else { return }
-            guard await syncAssistantContext(deviceReady: false) else {
+            guard await syncAssistantContext(deviceReady: false, connectCode: activatedCode) else {
+                try Task.checkCancellation()
                 message = "Could not save this iPhone's setup. Try again."
                 return
             }
+            try Task.checkCancellation()
             guard setupOwner == AssistantAppSession.userID else { return }
-            let completed = try await postAssistantChannel("complete_onboarding")
+            let completed = try await postAssistantChannel("complete_onboarding", connectCode: activatedCode)
+            try Task.checkCancellation()
             guard setupOwner == AssistantAppSession.userID else { return }
             guard completed["ready"] as? Bool == true else {
                 message = "Blankmind is still checking this iPhone. Try again in a moment."
@@ -383,19 +418,27 @@ struct SetupView: View {
             savedStepRaw = OnboardingStep.account.rawValue
             await purchaseStore.registerReferredActivation(referredUserId: currentAnonymousUserId())
             guard deviceReady, AssistantAppSession.userID == setupOwner else { return }
-            if let setupOwner { healthKitStore.completeRestSetup(owner: setupOwner) }
+            healthKitStore.completeRestSetup(owner: setupOwner)
+            BlankSharedState.defaults.removeObject(forKey: "blankRestSetupLastError")
             healthOnboardingVersion = 6
             sessionStore.finishSetup()
             onFinishForQA?()
+        } catch is CancellationError {
+            automaticCompletionAttempted = false
+        } catch let error as AssistantAppError {
+            guard setupOwner == AssistantAppSession.userID else { return }
+            message = error.localizedDescription
+            BlankSharedState.defaults.set(error.code, forKey: "blankRestSetupLastError")
         } catch {
-            message = "Could not prepare Blankmind on this iPhone. Try again."
+            guard !Task.isCancelled, setupOwner == AssistantAppSession.userID else { return }
+            message = "Could not prepare Blankmind. Tap Continue with Blankmind to try again."
         }
     }
 
     @MainActor
-    private func syncAssistantContext(deviceReady: Bool) async -> Bool {
+    private func syncAssistantContext(deviceReady: Bool, connectCode: String) async -> Bool {
         await AssistantContextSyncClient().sync(
-            connectCode: assistantConnectCode,
+            connectCode: connectCode,
             channel: "app",
             payload: [
                 "locale": Locale.current.identifier,
@@ -418,21 +461,16 @@ struct SetupView: View {
     }
 
     @MainActor
-    private func postAssistantChannel(_ action: String) async throws -> [String: Any] {
+    private func postAssistantChannel(_ action: String, connectCode: String) async throws -> [String: Any] {
         let payload = try JSONSerialization.data(withJSONObject: [
             "action": action,
-            "connect_code": assistantConnectCode,
+            "connect_code": connectCode,
             "preferred_channel": "app",
             "app_install_id": BlankSharedState.appInstallId,
         ])
-        let (data, response) = try await AssistantAppClient().postAuthorized(
+        return try await AssistantAppClient().postAuthorizedJSON(
             path: "assistant-channel", payload: payload, timeout: 12
         )
-        guard (200..<300).contains(response.statusCode),
-              let result = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw URLError(.badServerResponse)
-        }
-        return result
     }
 
     private func currentAnonymousUserId() -> String {

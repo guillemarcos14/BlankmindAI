@@ -684,6 +684,14 @@ struct AssistantAppClient {
         return try await postAuthorized(base: base, path: path, payload: payload, timeout: timeout)
     }
 
+    func postAuthorizedJSON(path: String, payload: Data, timeout: TimeInterval = 12) async throws -> [String: Any] {
+        let response = try await postAuthorized(path: path, payload: payload, timeout: timeout)
+        try validate(response)
+        guard let result = try? JSONSerialization.jsonObject(with: response.0) as? [String: Any],
+              result["ok"] as? Bool == true else { throw AssistantAppError.invalidResponse }
+        return result
+    }
+
     private func postAuthorized(base: URL, path: String, payload: Data, timeout: TimeInterval) async throws -> (Data, HTTPURLResponse) {
         guard let access = AssistantAppSession.token("access"), let userID = AssistantAppSession.userID else {
             throw AssistantAppError.authenticationRequired

@@ -70,6 +70,21 @@ struct AssistantClientTests {
         let session = URLSession(configuration: config)
         let client = AssistantAppClient(session: session, baseURL: URL(string: "https://blank.test/api")!,
             sessionRefresh: AssistantAppSessionRefresh())
+        AssistantAppSession.save(accessToken: "valid#A", refreshToken: "refresh-A")
+        let setupPayload = Data(#"{"action":"complete_onboarding"}"#.utf8)
+        TransportStub.respond = { _ in .init(body: #"{"ok":true,"ready":true}"#) }
+        let setup = try await client.postAuthorizedJSON(path: "assistant-channel", payload: setupPayload)
+        check(setup["ready"] as? Bool == true, "Authenticated setup receipt is preserved")
+        TransportStub.respond = { _ in .init(status: 403, body: #"{"error":"installation_not_verified"}"#) }
+        do {
+            _ = try await client.postAuthorizedJSON(path: "assistant-channel", payload: setupPayload)
+            fatalError("Foreign installation must not finish setup")
+        } catch AssistantAppError.installationNotVerified { }
+        TransportStub.respond = { _ in .init(body: #"{"ok":false,"ready":true}"#) }
+        do {
+            _ = try await client.postAuthorizedJSON(path: "assistant-channel", payload: setupPayload)
+            fatalError("An unsuccessful JSON result cannot finish setup")
+        } catch AssistantAppError.invalidResponse { }
         var clock = 10.0
         let timing = AssistantLatencyTiming(turnID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", clock: { clock })
         clock = 10.1; timing.prepared(); timing.using("stream")
