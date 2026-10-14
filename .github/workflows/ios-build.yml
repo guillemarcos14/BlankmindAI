@@ -32,12 +32,15 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.4.app
+          xcodebuild -version
+          swift -version
       - name: Validate bundle executable setting
         run: |
           /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" ios/Blank/Blank/Info.plist | grep -Fx '$(EXECUTABLE_NAME)'

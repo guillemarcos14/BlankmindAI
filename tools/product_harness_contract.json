@@ -140,6 +140,10 @@
         "run": "node tools/bmb_rest_test.js"
       },
       {
+        "name": "measured_rest_brain",
+        "run": "node tools/bmb_rest_brain_test.js"
+      },
+      {
         "name": "bmb_longitudinal",
         "run": "node tools/bmb_longitudinal_test.js"
       },

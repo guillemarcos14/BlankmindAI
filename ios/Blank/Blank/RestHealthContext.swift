@@ -481,7 +481,8 @@ final class RestDigitalContext: ObservableObject {
                 }
                 guard owner == AssistantAppSession.userID, token == requestID, HealthKitStore.shared.aiSharingAllowed else { return }
                 refreshedAt = now
-                snapshot = ["available": true, "source": "apple_activity_data", "observed_at": iso.string(from: now), "rows": Array(rows.suffix(840))]
+                snapshot = rows.isEmpty ? ["available": false, "reason": "no_current_phone_usage_records", "rows": []]
+                    : ["available": true, "source": "apple_activity_data", "observed_at": iso.string(from: now), "rows": Array(rows.suffix(840))]
             } catch {
                 guard owner == AssistantAppSession.userID, token == requestID else { return }
                 snapshot = ["available": false, "reason": "usage_access_query_failed", "rows": []]
