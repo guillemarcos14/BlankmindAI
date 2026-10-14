@@ -16,7 +16,6 @@ enum AssistantPendingAction: Equatable {
     case disableDailyLimit
     case pauseRules(hours: Int)
     case disablePause
-    case applyAIPlan
     case openAppPicker(appNames: [String])
     case configureAndOpenAppPicker(appNames: [String], durationMinutes: Int?, hardMode: Bool, schedule: PendingPlanSchedule?)
     case configureAndOpenDailyLimitPicker(appNames: [String], minutes: Int)

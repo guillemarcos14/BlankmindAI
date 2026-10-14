@@ -1857,8 +1857,6 @@ struct HomeView: View {
             return "Pause protection rules for \(hours) hours?"
         case .disablePause:
             return "Resume protection rules?"
-        case .applyAIPlan:
-            return "This older plan needs an explicit rest window. Ask Blankmind to prepare one."
         case .openAppPicker:
             return "Open the app picker to choose what Blankmind can protect?"
         case .configureAndOpenAppPicker(_, let durationMinutes, _, let schedule):
@@ -2043,8 +2041,6 @@ struct HomeView: View {
             sessionStore.disableVacationMode()
             applyScreenTimeControls()
             finishPendingAssistantAction(status: sessionStore.isVacationModeActive ? "failed" : "verified", detail: "resume_state_checked")
-        case .applyAIPlan:
-            finishPendingAssistantAction(status: "failed", detail: "legacy_adaptive_plan_retired")
         case .openAppPicker(let appNames):
             sessionStore.requestBlockConfiguration(appNames: appNames)
         case .configureAndOpenAppPicker(let appNames, let durationMinutes, let hardMode, let schedule):
@@ -2083,7 +2079,7 @@ struct HomeView: View {
     private func assistantActionRequiresScreenTime(_ action: AssistantPendingAction) -> Bool {
         switch action {
         case .startProtection, .setDailyLimit, .allowOnly, .adultFilter,
-             .applySchedule, .updateSchedule, .disablePause, .applyAIPlan,
+             .applySchedule, .updateSchedule, .disablePause,
              .openAppPicker, .configureAndOpenAppPicker, .configureAndOpenDailyLimitPicker:
             return true
         case .deleteSchedule, .deleteAllSchedules, .pauseRules, .requestScreenTimePermission:

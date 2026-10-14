@@ -132,7 +132,7 @@ struct ProtectionTests {
             .setDailyLimit(minutes: 20, appNames: []), .allowOnly, .adultFilter,
             .applySchedule(name: "Work", startMinute: 540, endMinute: 600, weekdays: [2], durationDays: 7, appNames: []),
             .updateSchedule(windowId: "window", name: "Work", startMinute: 540, endMinute: 600, weekdays: [2]),
-            .disablePause, .applyAIPlan, .openAppPicker(appNames: []),
+            .disablePause, .openAppPicker(appNames: []),
             .configureAndOpenAppPicker(appNames: [], durationMinutes: 30, hardMode: false, schedule: nil),
             .configureAndOpenAppPicker(appNames: [], durationMinutes: nil, hardMode: false, schedule: requestedSchedule),
             .configureAndOpenDailyLimitPicker(appNames: [], minutes: 20)

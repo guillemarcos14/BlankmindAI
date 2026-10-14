@@ -159,9 +159,6 @@ async function dailyReview(a,identity,context,brain,db=supabaseFetch,now=Date.no
     // The assessment gets a bounded digest. Full account sources remain queryable
     // by the same planner; coverage is never upgraded by summarisation.
     const digest=sources.map(s=>({...s,rows:(s.rows||[]).slice(0,s.source==="observations"||s.source==="native_daily"?200:20).map(r=>{
-      if(s.source==="features")return {id:r.id,created_at:r.created_at,period_start:r.period_start,period_end:r.period_end,
-        profile:r.payload?.profile,weekly:r.payload?.weekly,correlations:r.payload?.correlations,
-        note:"Daily sleep metrics are in native_daily; aggregates do not establish causation."};
       if(s.source==="reviews")return {id:r.id,local_day:r.local_day,summary:r.report?.summary,hypotheses:r.report?.hypotheses,recommendation:r.report?.recommendation};
       return r;
     }),digest_truncated:(s.rows||[]).length>(s.source==="observations"||s.source==="native_daily"?200:20)}));
