@@ -9,3 +9,9 @@ The app has an independent adapter for context and durable actions; no webhook o
 Historical SQL migrations and account deletion identifiers remain for existing data. Removing feature source must not destroy user data or break deletion. Prior deployments, credentials and historical QA receipts are unchanged; they do not certify this candidate. Production publishing must explicitly omit retired functions instead of using the old publisher that preserves every legacy function.
 
 Validation: product harness baseline tmp/product-harness/baseline.json; core launch audit, retained runtime tests and macOS/Android CI. Real iPhone/Watch execution, signing and TestFlight distribution are separate evidence. No production deploy or provider spend is part of this change.
+
+## Validation closure
+
+Source c1be6e9: 42/42 product harness checks with initial baseline and scope enforcement. PostgreSQL, Android compilation/unit tests and runtime gate pass in 38594580984. iOS tree d30e9bb4e4fdad422464365606cb0494e4fe295a is identical to f77f39d: production-source Swift tests, Xcode 26.4 simulator build and the full UI suite pass in 38592443407. Screenshot export remains in progress and physical execution is untested. Receipt: tmp/core-launch-receipt.json.
+
+The next release must coordinate assistant-device with its compatible native client and omit retired endpoints. Existing production and older distributed clients are not evidence for this cleanup.
