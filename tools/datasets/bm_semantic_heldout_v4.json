@@ -488,108 +488,13 @@
           }
         }
       ]
-    },
-    {
-      "id": "reserved_v4_exact_pair",
-      "channel": "android",
-      "context": {
-        "selected_app_names": [
-          "Instagram",
-          "Reddit"
-        ],
-        "has_selected_apps": true,
-        "screen_time_authorized": true,
-        "language": "en",
-        "app_presence": {
-          "app_present": true,
-          "app_ready": true,
-          "last_seen_at": "2026-09-15T16:00:00Z"
-        }
-      },
-      "turns": [
-        {
-          "input": "Block Instagram and Reddit now for 23 minutes, once.",
-          "expect": {
-            "state": {
-              "intent": "block",
-              "action_type": "strict_block",
-              "hard_mode": null,
-              "requested_capability": null,
-              "apps": [
-                "Instagram",
-                "Reddit"
-              ],
-              "app_category": null,
-              "moment": null,
-              "start": {
-                "type": "now"
-              },
-              "end": null,
-              "duration_minutes": 23,
-              "recurrence": {
-                "type": "once",
-                "weekdays": []
-              },
-              "schedule_horizon_days": null,
-              "confirmation": null,
-              "pending_slots": [
-                "confirmation"
-              ],
-              "status": "awaiting_confirmation",
-              "next_question": "confirmation"
-            },
-            "decision": {
-              "type": "confirm",
-              "slot": "confirmation"
-            },
-            "actions": [],
-            "language": "en"
-          }
-        },
-        {
-          "input": "Yes",
-          "expect": {
-            "state": {
-              "intent": "block",
-              "action_type": "strict_block",
-              "hard_mode": null,
-              "requested_capability": null,
-              "apps": [
-                "Instagram",
-                "Reddit"
-              ],
-              "app_category": null,
-              "moment": null,
-              "start": {
-                "type": "now"
-              },
-              "end": null,
-              "duration_minutes": 23,
-              "recurrence": {
-                "type": "once",
-                "weekdays": []
-              },
-              "schedule_horizon_days": null,
-              "confirmation": "confirmed",
-              "pending_slots": [],
-              "status": "ready",
-              "next_question": null
-            },
-            "decision": {
-              "type": "ready",
-              "slot": null
-            },
-            "actions": [
-              {
-                "type": "start_protection",
-                "minutes": 23,
-                "hard_mode": false
-              }
-            ],
-            "language": "en"
-          }
-        }
-      ]
     }
-  ]
+  ],
+  "platform_cleanup": {
+    "date": "2026-10-14",
+    "original_utf8_lf_sha256": "5db9a90ba5ee8ae4d154525127af0169f72b40b912c0255f8aae0f9f37fa503a",
+    "removed_conversations": 1,
+    "status": "filtered_not_evaluated",
+    "note": "Retained authored cases preserve their gold values. Prior aggregate evaluations and frozen manifests apply to the original artifact in Git history, not this subset."
+  }
 }

@@ -27,6 +27,6 @@ qa106.xcconfig derivada deqa105 cambiando solo CURRENT_PROJECT_VERSION; cmp norm
 
 Auditoria de todas las ramas locales/remotas desde6oct: ningun commit nativo reciente queda fuera de la release. Incluye lectura/scroll de respuestas Home, haptico continuo0.55, retirada de CTA duplicada/carreras y contexto del seguimiento por notificacion. El arbol iOS es identico en ccb0ba9 y27ebbd0.
 
-CI37603825452 en ccb0ba9 completa correctamente pruebas nativas, compilacion Simulator, siete XCTest Home y capturas uniformes/compactas/texto grande. Otro intento37602516549 fallo solo por timeout de capturas; no se modificaron los checks. Backend/PostgreSQL15/Android37602516707 correctos para el desarrollo previo. Evidencia Mac `tmp/longitudinal-release/native106-verified.jpg`; capturas CI en `ios-visual/`.
+CI37603825452 en ccb0ba9 completa correctamente pruebas nativas, compilacion Simulator, siete XCTest Home y capturas uniformes/compactas/texto grande. Otro intento37602516549 fallo solo por timeout de capturas; no se modificaron los checks. Backend/PostgreSQL1537602516707 correctos para el desarrollo previo. Evidencia Mac `tmp/longitudinal-release/native106-verified.jpg`; capturas CI en `ios-visual/`.
 
 Pendientes: distribucion106, notificacion y respuesta en iPhone, ritmo diario/ingestion consentida y efecto real de planes. Produccion conserva su gate separado de modelo/judge/build firmada y20 casos fisicos; esta publicacion QA no acredita esas condiciones.

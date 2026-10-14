@@ -2,7 +2,7 @@
 
 ## Reality Check
 
-iOS cannot use the Android Accessibility blocking model. Production app blocking must use Apple's Screen Time stack:
+Production app blocking must use Apple's Screen Time stack:
 
 - `FamilyControls` for authorization and app/category selection.
 - `ManagedSettings` for shielding selected apps and domains.

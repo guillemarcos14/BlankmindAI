@@ -146,7 +146,7 @@ Keep both private experiment flags off and retain the synthetic allowlist/normal
 
 ## Validation closure
 
-Clean evidence/tool source `bff047b`: harness **79/79**, `ph_1791463747482_8edd8915`, baseline `baseline-wide.json`, enforced full commit scope against frozen `3e8362c` (24 paths, zero violations). The earlier dirty-tree release-gate failure is preserved as an intermediate validation, not a runtime regression. [CI37779447701](https://github.com/guillemarcos14/BlankmindAI/actions/runs/37779447701) passes PostgreSQL recovery, runtime/contracts and Android compile/unit tests. This final closure only records documentation; source runtime and measured answers remain frozen. Latest draft-PR checks show any subsequent documentation-head validation separately.
+Clean evidence/tool source `bff047b`: harness **79/79**, `ph_1791463747482_8edd8915`, baseline `baseline-wide.json`, enforced full commit scope against frozen `3e8362c` (24 paths, zero violations). The earlier dirty-tree release-gate failure is preserved as an intermediate validation, not a runtime regression. [CI37779447701](https://github.com/guillemarcos14/BlankmindAI/actions/runs/37779447701) passes PostgreSQL recovery, runtime/contracts. This final closure only records documentation; source runtime and measured answers remain frozen. Latest draft-PR checks show any subsequent documentation-head validation separately.
 
 ## Human feedback received after closure
 
