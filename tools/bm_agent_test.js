@@ -51,6 +51,13 @@ async function main(){
  r=await turn(p,[fn("gestionar",management(p,{memory:{operation:"set",key:"bedtime",value:"23:00",evidence:p}}))]);
  assert.equal(r.calls,1);assert.equal(r.result.context.brain_memory_effect.value,"23:00");
  assert.deepEqual(r.result.plan.actions,[]);assert(!paths.some(p=>p.startsWith("rpc/")),"Tool interpretation wrote state before leased commit");
+ p="My personal preference for winding down is reading on paper.";
+ const paraphrased=management(p,{memory:{operation:"set",key:"preferences",value:"For winding down, prefers reading on paper.",evidence:p}});
+ const repaired=management(p,{memory:{operation:"set",key:"preferences",value:"reading on paper",evidence:p}});
+ r=await turn(p,[fn("gestionar",paraphrased),fn("gestionar",repaired)]);
+ assert.equal(r.calls,2);assert.deepEqual(r.requests[1].tool_choice,{type:"function",name:"gestionar"});
+ assert.equal(r.result.context.brain_memory_effect.value,"reading on paper","Repair lost the explicitly requested preference");
+ await assert.rejects(()=>turn(p,[fn("gestionar",paraphrased),{...compact(p,"Lo recordaré."),message_kind:"statement"}]),/repair_changed_memory/);
  for(const operation of ["forget","forget_all"]){
   p="Olvida mis preferencias";
   r=await turn(p,[fn("gestionar",management(p,{memory:{operation,key:operation==="forget"?"preferences":null,value:null,evidence:p}}))]);
