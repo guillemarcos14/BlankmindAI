@@ -10,6 +10,10 @@ Las respuestas y la gestión completas requieren una generación cuando no hace 
 
 El contexto automático reciente se reduce a ocho turnos al activar tools; el resto sigue accesible desde offset 8. Las memorias, los límites de olvido y la recuperación de propuestas conservan sus controles.
 
+Las herramientas nuevas se limitan a turnos reactivos. El modo proactivo conserva su contrato generativo previo y la decisión silent, aunque tools esté habilitado en QA. Una regresión explícita comprueba esa separación del modelo central.
+
+Las reparaciones de una gestión conservan la herramienta gestionar y la operación/clave de memoria. El schema exige valores y evidencias literales para evitar resumir un valor y tener que regenerarlo. pause_rules tiene una variante con horas enteras obligatorias (1–168) y minutes=null; el validador final conserva sus comprobaciones. No se añade otra llamada para clasificar esas acciones.
+
 ## Acciones disponibles
 
 Las acciones de dispositivo conservan exactamente el catálogo nativo actual. No se incorporan comandos que el iPhone no pueda ejecutar.
@@ -23,6 +27,8 @@ Las acciones de dispositivo conservan exactamente el catálogo nativo actual. No
 | Abrir selección de distracciones o solicitar Screen Time | open_app_picker, request_screen_time_permission |
 
 Además, gestionar guarda/corrige/olvida hechos explícitos, guarda propuestas completas y solicitudes pendientes, registra observaciones y resuelve seguimientos con el validador longitudinal existente. Una petición explícita puede ejecutarse sin confirmación redundante; una propuesta requiere aceptación de sus parámetros exactos. Las acciones de configuración que requieren UI abren esa UI.
+
+El borrado conserva la política previa de 028: un tombstone corta la personalización histórica y redacta observaciones, revisiones y seguimientos anteriores. forget selecciona una clave estable; no debe presentarse como un borrado preciso de cualquier categoría de hábitos. forget_all no desactiva la recogida futura, no cambia el consentimiento y no elimina la cuenta. Las peticiones ambiguas necesitan aclaración del alcance. Esta rama no modifica esa política de privacidad.
 
 Terminar/extender una sesión, saltar una única ocurrencia, activar/desactivar individualmente una ventana y modificar permisos autónomos por conversación requieren capacidades nativas o contratos adicionales: no se anuncian como ejecutables. apply_ai_plan sigue siendo un comando histórico ajeno al catálogo del agente nuevo. No se puede exportar uso real por app desde DeviceActivityReport; las estadísticas de protección no equivalen a uso del móvil.
 
@@ -49,7 +55,7 @@ Las tres sustituciones se validan independientemente. bm-agent-activation.json l
 | BM_AGENT_ENABLED=true | Solo activa features con manifiesto aprobado, modelo y hashes coincidentes |
 | BM_AGENT_LABEL_DAILY_USD | Tope diario explícito mayor que 0 y menor o igual a 5; sin valor no hay clasificación |
 
-La migración 035_bm_agent_labels.sql es aditiva y no depende de 029/030. Aplicarla aisladamente en integración, después de 028 y 034; nunca ejecutar db push de todo el historial por este cambio. RLS y RPC son exclusivos de service_role. Reserva conservadora de 0,01 USD antes del proveedor; consumo conocido ajusta la reserva y un intento cobrado sin uso conocido conserva el máximo. Sin reintentos automáticos. Estos límites no amplían el presupuesto de evaluación previamente autorizado.
+La migración 035_bm_agent_labels.sql es aditiva y no depende de 029/030. Aplicarla aisladamente en integración, después de 028 y 034; nunca ejecutar db push de todo el historial por este cambio. PR41 utiliza también la versión 035, con 035_bmb_measured_rest.sql: la release debe inspeccionar el historial, resolver la numeración y actualizar referencias/fingerprint antes de aplicar ambas. RLS y RPC son exclusivos de service_role. Reserva conservadora de 0,01 USD antes del proveedor; consumo conocido ajusta la reserva y un intento cobrado sin uso conocido conserva el máximo. Sin reintentos automáticos. Estos límites no amplían el presupuesto de evaluación previamente autorizado.
 
 ## Validación reproducible
 
@@ -57,7 +63,15 @@ Evidencia local de esta implementación en tmp/agent-eval: tools-200.json conser
 
 Las revisiones del juez son de modelo, no humanas. Las versiones de contexto se conservan: V1 carecía de parte del estado del dispositivo; V2 distingue la fuente actual de las observaciones de cuenta; V3 aclara qué filas estaban sembradas antes y qué cambió realmente el commit. Nunca sustituir los primeros dictámenes por otros sin registrar esa versión. La muestra corregida tiene 12/12 respuestas candidatas aceptadas en V2; sus 12 pares no cumplen el mínimo de 200 ni la cobertura de voz del gate.
 
-El último intento del etiquetador recibió 429 credit_balance_exhausted, request req_65a6bc75b57943e3b6b95b2703e91984. Quedan pendientes la repetición de la rúbrica temática refinada y los dictámenes V3; el presupuesto autorizado conserva margen. El fallo no se convierte en aprobación ni dispara reintentos automáticos. Las tres features siguen apagadas en producción.
+Guillem repuso el saldo API; se superó el antiguo 429 sin ampliar el techo de 34 USD. Las revisiones V3 pendientes finalizaron: piloto de consultas 16/16 candidatos aceptados y regresión previa 12/12. Se repitió el etiquetador con cuatro llamadas reales: persistencia, deduplicación, corrección, olvido y lote de 26 preguntas correctos; bedtime siguió como other con el umbral conservador. Esto no acredita calidad temática completa ni una generación retirada.
+
+tools-final-200.json conserva otra ejecución de los mismos 200 casos pareados en 3283b8d: 200/200 respuestas candidatas y 50/50 acciones con parámetros correctos. La auditoría detectó preferencias/objetivos no guardados: una reparación podía devolver respuesta compacta y perder los efectos. La revisión independiente se detuvo en 224/400 ante ese fallo confirmado; los cuatro intentos en vuelo mantienen 0,184865 USD de reserva desconocida. Sus métricas no acreditan la versión corregida.
+
+cc56090 corrigió la pérdida y obtuvo 20/20 hechos persistidos en una generación. La muestra final final-regression-v2.json, runtime f21399b, contiene 60 pares/120 turnos: 60/60 respuestas candidatas, 20/20 hechos guardados y los 15 comandos nativos en ES/EN, incluidas ambas pausas de dos horas. El juez independiente revisó los 120 turnos: acepta 58/60 candidatos y 52/60 controles. Conserva dos dictámenes negativos del candidato, sobre una promesa de aviso futuro y el alcance de un borrado de hábitos; necesitan revisión/corrección. Los fallos anteriores y el timeout de la muestra intermedia se preservan.
+
+El aislamiento posterior del modo proactivo se comprueba localmente y con final-guard.json en b8219fc: cuatro pares/ocho turnos, cuatro respuestas candidatas aceptadas por el juez y una generación por candidato. La muestra de 60 pares precede ese guard y no se presenta como evaluación íntegra del hash posterior. No hay certificado de los tres objetivos: faltan 200 pares del runtime final por sustitución, cobertura por grupo/idioma y primer audio pareado, además de integración y prueba física. Las tres features siguen apagadas.
+
+El corpus nuevo exige comprobar el commit aplicado y la lectura posterior de cada preferencia/objetivo esperado; una confirmación textual o un dictamen positivo del juez no sustituyen la escritura. El evaluador admite --candidate-first y --stop-file para parar entre lotes conservando las peticiones y reservas. Los informes originales no se sobrescriben.
 
 1. node tools/bm_agent_runtime.js verifica el fingerprint de todos los módulos de Functions, usado como constante de compilación para esbuild/nft. Después de cambiar runtime, regenerarlo con --write y repetir evaluación; el manifiesto anterior deja de coincidir.
 2. node tools/bm_agent_test.js y node tools/bm_response_stream_test.js cubren las herramientas, acciones, memoria/olvido, paginación, lecturas agrupadas, separación de cuentas y SSE fragmentado. node tools/bm_agent_evidence_test.js comprueba rechazos de evidencia defectuosa; sus fixtures inventados nunca se instalan como aprobación.
@@ -66,3 +80,11 @@ El último intento del etiquetador recibió 429 credit_balance_exhausted, reques
 5. Integrar y desplegar únicamente desde la conversación/rama de release según BACKEND_INTEGRATION_WORKFLOW.md. Confirmar bundles/hashes, aplicar solo 035, probar cuentas aisladas y acciones en iPhone. Un PASS local o SQL no acredita eficacia física ni ahorro.
 
 El comando de harness de cierre usa --baseline tmp/product-harness/baseline.json --enforce-scope. La evaluación semántica exige un árbol limpio: un source_dirty mantiene su fallo original y se repite tras commit, sin debilitar el gate. No se ha alterado el generador principal gpt-5.6-luna ni las voces de ElevenLabs.
+
+## Entrega a integración
+
+- Rama: codex/conversational-agentic-2026-10-14, PR42. Runtime final: b8219fc; los commits posteriores de cierre/documentación deben conservar sus Functions y SQL. Recibo de esta reanudación: tmp/agent-eval/credit-resume-receipt.json.
+- Superficies: BMB reactivo, dos herramientas, contratos de parámetros, stream y callback de clasificación; tests, evaluador y SQL de etiquetas. La app nativa y el contrato proactivo conservan su comportamiento previo.
+- Migración: 035_bm_agent_labels.sql, posterior a 028/034, con colisión de número frente a PR41. Resolver en la release, actualizar referencias/fingerprint y validar de nuevo la fuente integrada; aplicar solo la migración aditiva tras comprobar el historial remoto.
+- Variables: BM_AGENT_QA_ENABLED y BM_AGENT_QA_FEATURES en la QA conocida; BM_AGENT_LABEL_DAILY_USD para su reserva. BM_AGENT_ENABLED no activa un manifiesto sin aprobación real. No ampliar cuotas de proveedor ni el techo de evaluación de 34 USD.
+- Pendiente: adjudicar/corregir los dos dictámenes negativos, completar comparación del runtime integrado con voz pareada y los grupos/idiomas requeridos, y verificar acciones/permisos/selección en iPhone. Los paquetes locales y las muestras de software no sustituyen esas comprobaciones ni autorizan producción.
