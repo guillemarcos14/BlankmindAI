@@ -40,6 +40,8 @@ async function main(){
  const result=prior||{version:1,input_version:3,model,source_sha256:sha(report),source_run_id:report.run_id,complete:false,model_review_not_human:true,reviews:[]};
  const save=()=>{fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(result,null,2)+"\n");};
  const pending=report.records.filter(row=>!result.reviews.some(r=>r.id===row.variant+":"+row.pair+":"+row.step));
+ if(process.argv.includes("--candidate-first"))pending.sort((a,b)=>Number(b.variant==="decisions")-Number(a.variant==="decisions"));
+ const stopFile=arg("--stop-file");
  const concurrency=Number(arg("--concurrency",4));if(!Number.isSafeInteger(concurrency)||concurrency<1||concurrency>4)throw Error("Concurrency 1..4 required");
  async function reviewOne(row){
   const data=input(row,report),id=row.variant+":"+row.pair+":"+row.step;
@@ -60,7 +62,10 @@ async function main(){
   if(result.reviews.length%20===0)console.log(JSON.stringify({reviewed:result.reviews.length,total:report.records.length}));
   return error;
  }
- for(let i=0;i<pending.length;i+=concurrency){const errors=await Promise.all(pending.slice(i,i+concurrency).map(reviewOne));if(errors.some(e=>["shared_budget_spend_limit","provider_credit_exhausted","provider_rate_limited","provider_auth_unavailable"].includes(e)))break;}
+ for(let i=0;i<pending.length;i+=concurrency){
+  if(stopFile&&fs.existsSync(stopFile)){result.stopped_at=new Date().toISOString();result.stop_reason="requested_between_batches";break;}
+  const errors=await Promise.all(pending.slice(i,i+concurrency).map(reviewOne));if(errors.some(e=>["shared_budget_spend_limit","provider_credit_exhausted","provider_rate_limited","provider_auth_unavailable"].includes(e)))break;
+ }
  result.complete=result.reviews.length===report.records.length&&result.reviews.every(r=>r.review);save();
  console.log(JSON.stringify({complete:result.complete,reviewed:result.reviews.length,failed:result.reviews.filter(r=>!r.review||!r.review.response_ok||!r.review.action_ok||!r.review.memory_ok).length}));
  if(!result.complete)process.exitCode=1;

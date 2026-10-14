@@ -40,4 +40,16 @@ stored.records[0].committed_effect=[{brain_memory_effect:{operation:"set",key:fa
 assert.equal(adapt(stored,reviewed(stored))[0].quality.memory_ok,false,"An unapplied planned effect counted as persisted");
 stored.records[0].committed_effect[0].brain_memory_applied_at="2026-10-14T00:00:00Z";
 assert.equal(adapt(stored,reviewed(stored))[0].quality.memory_ok,true);
+// An explicit stop must finish without a provider call or budget reservation.
+const fs=require("node:fs"),path=require("node:path"),os=require("node:os"),cp=require("node:child_process");
+const temp=fs.mkdtempSync(path.join(os.tmpdir(),"bm-agent-review-stop-")),file=name=>path.join(temp,name);
+try{
+ fs.writeFileSync(file("source.json"),JSON.stringify(report));fs.writeFileSync(file("rates.json"),JSON.stringify({...report.rates,model:"gpt-5.6-luna"}));
+ const budget=JSON.stringify({limit_usd:1,known_usd:0,reserved_upper_usd:0,requests:0});fs.writeFileSync(file("budget.json"),budget);
+ fs.writeFileSync(file("stop"),"");fs.writeFileSync(file("offline.js"),"globalThis.fetch=async()=>{throw Error('unexpected_network_call')}");
+ const run=cp.spawnSync(process.execPath,["--require",file("offline.js"),path.join(__dirname,"bm_agent_quality.js"),"--run","--input",file("source.json"),"--output",file("review.json"),"--rates",file("rates.json"),"--budget-file",file("budget.json"),"--stop-file",file("stop"),"--candidate-first"],{env:{...process.env,OPENAI_API_KEY:"offline-fixture"},encoding:"utf8",windowsHide:true});
+ assert.equal(run.status,1);const stopped=JSON.parse(fs.readFileSync(file("review.json")));
+ assert.equal(stopped.stop_reason,"requested_between_batches");assert.equal(stopped.reviews.length,0);assert.equal(stopped.complete,false);
+ assert.equal(fs.readFileSync(file("budget.json"),"utf8"),budget);
+}finally{for(const name of fs.readdirSync(temp))fs.unlinkSync(file(name));fs.rmdirSync(temp);}
 console.log("PASS real-receipt adapter: exact source/review binding, independent blind judge, actual action, full cost, missing state audits and no invented audio");
