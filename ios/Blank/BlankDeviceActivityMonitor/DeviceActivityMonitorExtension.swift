@@ -183,8 +183,12 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         let active = Self.recurringScheduleIsActive()
         guard let data = Self.sharedDefaults.data(forKey: "blankFocusSchedule"),
               let schedule = try? JSONDecoder().decode(StoredSchedule.self, from: data) else { return }
-        let shielded = recurringStore.shield.applications != nil || recurringStore.shield.applicationCategories != nil || recurringStore.shield.webDomains != nil
-        BlankSharedState.recordRestProtection(activeWindowIDs: active && shielded ? schedule.windows.filter { $0.contains(Date()) }.map { $0.id.uuidString } : [], defaults: Self.sharedDefaults)
+        let ready = BlankSharedState.familyControlsApproved
+        let shielded = ready && (recurringStore.shield.applications?.isEmpty == false || recurringStore.shield.applicationCategories != nil || recurringStore.shield.webDomains?.isEmpty == false)
+        let windows = active && shielded ? schedule.windows.filter { $0.contains(Date()) } : []
+        let plans = Dictionary(uniqueKeysWithValues: windows.map { ($0.id.uuidString, ["start_minute": $0.startMinute,
+            "end_minute": $0.endMinute, "weekdays": $0.weekdays.sorted(), "timezone": $0.timeZoneIdentifier ?? TimeZone.current.identifier] as [String: Any]) })
+        BlankSharedState.recordRestProtection(activeWindowIDs: windows.map { $0.id.uuidString }, plans: plans, uncertain: !ready, defaults: Self.sharedDefaults)
     }
 
     private static var adultContentBlockingEnabled: Bool {

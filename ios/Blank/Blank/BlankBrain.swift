@@ -200,6 +200,9 @@ final class BlankBrain {
     }
 
     private func syncRest(owner: String?) async {
+        if !BlankSharedState.familyControlsApproved || store?.hasSelectedApps == false {
+            BlankSharedState.recordRestProtection(activeWindowIDs: [], uncertain: true, defaults: BlankSharedState.defaults)
+        }
         guard let owner, owner == AssistantAppSession.userID, HealthKitStore.shared.restAIAvailable,
               var snapshot = RestHealthContext.shared.brainSnapshot() else { return }
         snapshot["schedule"] = store?.assistantScheduleContext() ?? ["enabled": false, "windows": []]
@@ -211,7 +214,10 @@ final class BlankBrain {
         if let (_, response) = try? await AssistantAppClient().postAuthorized(path: "assistant-app", payload: data, timeout: 15),
            response.statusCode == 200, owner == AssistantAppSession.userID, !Task.isCancelled { lastRestContent = digest }
     }
-    func syncMeasuredRest() async { await syncRest(owner: AssistantAppSession.userID) }
+    func syncMeasuredRest() async {
+        if store == nil { backgroundStore = SessionStore(); store = backgroundStore }
+        await syncRest(owner: AssistantAppSession.userID)
+    }
 
     private func sharingChanged() {
         lastRestContent = nil

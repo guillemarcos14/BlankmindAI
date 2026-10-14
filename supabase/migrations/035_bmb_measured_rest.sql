@@ -38,6 +38,8 @@ create unique index bmb_rest_one_active on public.bmb_rest_experiments(auth_user
 create table public.bmb_rest_protection (
  auth_user_id uuid not null references auth.users(id) on delete cascade, id uuid not null, window_id uuid not null,
  started_at timestamptz not null, ended_at timestamptz, source text not null check(source='native_schedule_shield'),
+ plan jsonb not null default '{}',
+ uncertain boolean not null default false,
  observed_at timestamptz not null, primary key(auth_user_id,id), check(ended_at is null or ended_at>=started_at)
 );
 alter table public.bmb_rest_protection enable row level security;
@@ -121,17 +123,25 @@ begin
    if cutoff is not null and (n->>'started_at')::timestamptz<=cutoff then continue; end if;
    if n->>'source'<>'native_schedule_shield' or (n->>'started_at')::timestamptz>clock_timestamp()
    or (n->>'ended_at')::timestamptz>clock_timestamp() then raise exception 'rest_invalid_protection_interval'; end if;
-   insert into bmb_rest_protection(auth_user_id,id,window_id,started_at,ended_at,source,observed_at)
-   values(p_user,(n->>'id')::uuid,(n->>'window_id')::uuid,(n->>'started_at')::timestamptz,(n->>'ended_at')::timestamptz,n->>'source',observed)
-   on conflict(auth_user_id,id) do update set ended_at=excluded.ended_at,observed_at=excluded.observed_at
+   insert into bmb_rest_protection(auth_user_id,id,window_id,started_at,ended_at,source,observed_at,plan,uncertain)
+   values(p_user,(n->>'id')::uuid,(n->>'window_id')::uuid,(n->>'started_at')::timestamptz,(n->>'ended_at')::timestamptz,n->>'source',observed,coalesce(n->'plan','{}'),coalesce((n->>'uncertain')::boolean,false))
+   on conflict(auth_user_id,id) do update set ended_at=excluded.ended_at,observed_at=excluded.observed_at,uncertain=bmb_rest_protection.uncertain or excluded.uncertain
    where bmb_rest_protection.observed_at<excluded.observed_at and bmb_rest_protection.started_at=excluded.started_at
-   and bmb_rest_protection.window_id=excluded.window_id and (bmb_rest_protection.ended_at is null or bmb_rest_protection.ended_at=excluded.ended_at);
+   and bmb_rest_protection.window_id=excluded.window_id and bmb_rest_protection.plan=excluded.plan
+   and (bmb_rest_protection.ended_at is null or bmb_rest_protection.ended_at=excluded.ended_at);
  end loop;
  p_snapshot:=jsonb_set(p_snapshot,'{nights}',coalesce((select jsonb_agg(value) from jsonb_array_elements(p_snapshot->'nights')
    where value->>'source'<>'synthetic' and (cutoff is null or (value->>'end_at')::timestamptz>cutoff)),'[]'));
  insert into bmb_rest_context(auth_user_id,app_install_id,observed_at,snapshot,forgotten_after) values(p_user,p_install,observed,p_snapshot,cutoff)
  on conflict(auth_user_id) do update set app_install_id=excluded.app_install_id,observed_at=excluded.observed_at,snapshot=excluded.snapshot,forgotten_after=excluded.forgotten_after,updated_at=now();
  insert into bmb_accounts(auth_user_id,app_install_id,settings) values(p_user,p_install,jsonb_build_object('timezone',tz)) on conflict(auth_user_id) do nothing;
+ update bmb_rest_experiments e set status='cancelled',evaluation='{"reason":"plan_changed_during_measurement","measured_improvement":false}',updated_at=now()
+ where e.auth_user_id=p_user and e.status='active' and observed>e.verified_at+interval '60 seconds'
+ and not exists(select 1 from jsonb_array_elements(coalesce(p_snapshot#>'{schedule,windows}','[]')) w
+   where lower(w->>'id')=lower(coalesce(e.action->>'window_id',substr(e.action_id,5)))
+   and coalesce((w->>'enabled')::boolean,false) and (w->>'start_minute')::int=(e.action->>'start_minute')::int
+   and (w->>'end_minute')::int=(e.action->>'end_minute')::int
+   and (w->'weekdays') @> (e.action->'weekdays') and (e.action->'weekdays') @> (w->'weekdays'));
  update bmb_accounts set settings=jsonb_set(settings,'{rest}',coalesce(settings->'rest','{}')||'{"sharing_revoked":false}'::jsonb)
  where auth_user_id=p_user and coalesce((settings#>>'{rest,sharing_revoked}')::boolean,false);
  return jsonb_build_object('synced',true);

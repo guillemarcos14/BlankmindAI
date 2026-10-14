@@ -10,15 +10,20 @@ enum BlankSharedState {
         #endif
         return false
     }
-    static func recordRestProtection(activeWindowIDs: [String], defaults: UserDefaults, now: Date = Date()) {
+    static func recordRestProtection(activeWindowIDs: [String], plans: [String: [String: Any]] = [:], uncertain: Bool = false, defaults: UserDefaults, now: Date = Date()) {
         guard let owner = defaults.string(forKey: "blankBMBSignalOwner"), !owner.isEmpty else { return }
         let iso = ISO8601DateFormatter()
         var rows = defaults.array(forKey: "blankRestProtectionIntervals") as? [[String: Any]] ?? []
         for index in rows.indices where rows[index]["owner"] as? String == owner && rows[index]["ended_at"] == nil {
-            if !activeWindowIDs.contains(rows[index]["window_id"] as? String ?? "") { rows[index]["ended_at"] = iso.string(from: now) }
+            let id = rows[index]["window_id"] as? String ?? ""
+            let old = rows[index]["plan"] as? [String: Any] ?? [:]
+            if !activeWindowIDs.contains(id) || !NSDictionary(dictionary: old).isEqual(to: plans[id] ?? [:]) {
+                rows[index]["ended_at"] = iso.string(from: now)
+                if uncertain { rows[index]["uncertain"] = true }
+            }
         }
         for id in activeWindowIDs where !rows.contains(where: { $0["owner"] as? String == owner && $0["window_id"] as? String == id && $0["ended_at"] == nil }) {
-            rows.append(["id": UUID().uuidString, "owner": owner, "window_id": id, "started_at": iso.string(from: now), "source": "native_schedule_shield"])
+            rows.append(["id": UUID().uuidString, "owner": owner, "window_id": id, "started_at": iso.string(from: now), "source": "native_schedule_shield", "plan": plans[id] ?? [:], "uncertain": false])
         }
         defaults.set(Array(rows.suffix(140)), forKey: "blankRestProtectionIntervals")
     }

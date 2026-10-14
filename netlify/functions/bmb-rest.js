@@ -6,7 +6,7 @@ const {zone}=require("./bmb-policy");
 const OBJECTIVE="improve_apple_watch_measured_sleep";
 const METRICS=["sleep_continuity","sleep_duration_target","sleep_regularity"];
 const iso=v=>typeof v==="string"&&Number.isFinite(Date.parse(v));
-const date=v=>typeof v==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&new Date(v+"T12:00:00Z").toISOString().slice(0,10)===v;
+const date=v=>typeof v==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v+"T12:00:00Z"))&&new Date(v+"T12:00:00Z").toISOString().slice(0,10)===v;
 const number=(v,lo,hi)=>typeof v==="number"&&Number.isFinite(v)&&v>=lo&&v<=hi;
 const median=v=>{const a=v.filter(Number.isFinite).sort((a,b)=>a-b);return a.length?(a[Math.floor((a.length-1)/2)]+a[Math.floor(a.length/2)])/2:null;};
 const localDay=(v,tz)=>new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(v));
@@ -16,7 +16,7 @@ const hash=v=>crypto.createHash("sha256").update(JSON.stringify(v)).digest("hex"
 function normalizeSnapshot(input,now=Date.now()) {
   if(!input||input.schema_version!==1||!iso(input.observed_at)||Date.parse(input.observed_at)>now+30000
     ||Date.parse(input.observed_at)<now-24*3600000)throw Error("rest_stale_snapshot");
-  const timezone=zone(input.timezone);
+  let timezone;try{if(typeof input.timezone!=="string")throw Error();timezone=zone(input.timezone);}catch(_){throw Error("rest_invalid_timezone");}
   if(!Array.isArray(input.nights)||input.nights.length>35)throw Error("rest_invalid_nights");
   const seen=new Set(),today=localDay(now,timezone);
   const nights=input.nights.map(n=>{
@@ -55,7 +55,7 @@ function normalizeSnapshot(input,now=Date.now()) {
   if(!Array.isArray(phoneContext)||phoneContext.length>60||phoneContext.some(r=>r.source!=="user_selection"||!iso(r.occurred_at)
     ||Date.parse(r.occurred_at)>now||!["bored","anxious","tired","neededApp","procrastinating","other"].includes(r.reason)))throw Error("rest_invalid_phone_context");
   return {schema_version:1,objective:OBJECTIVE,observed_at:input.observed_at,timezone,nights,checkins,phone_context:phoneContext,
-    health_context:health||null,schedule,protection_intervals:intervals.map(r=>({id:r.id,window_id:r.window_id,started_at:r.started_at,ended_at:r.ended_at||null,source:r.source})),digital};
+    health_context:health||null,schedule,protection_intervals:intervals.map(r=>({id:r.id,window_id:r.window_id,started_at:r.started_at,ended_at:r.ended_at||null,source:r.source,plan:r.plan||{},uncertain:r.uncertain===true})),digital};
 }
 function normalizeDigital(value,timezone,now=Date.now()) {
   if(!value||value.available!==true)return {available:false,reason:String(value?.reason||"usage_access_unavailable").slice(0,120),rows:[]};
@@ -136,7 +136,9 @@ function evaluate(experiment,nights,{now=Date.now(),protection=[]}={}) {
     &&!baselineKeys.has(n.date)&&!excluded.has(n.date)&&days.includes(weekday(localDay(n.start_at,n.timezone))));
   const pairs=[];
   for(const night of intervention){
-    const execution=protection.find(p=>p.window_id.toLowerCase()===window.toLowerCase()&&p.source==="native_schedule_shield"&&iso(p.ended_at)
+    const execution=protection.find(p=>p.window_id.toLowerCase()===window.toLowerCase()&&p.source==="native_schedule_shield"&&p.uncertain!==true&&iso(p.ended_at)
+      &&p.plan?.start_minute===experiment.action.start_minute&&p.plan?.end_minute===experiment.action.end_minute
+      &&p.plan?.timezone===experiment.action.timezone&&JSON.stringify([...(p.plan?.weekdays||[])].sort())===JSON.stringify([...days].sort())
       &&Date.parse(p.started_at)<=Date.parse(night.start_at)-5*60000&&Date.parse(p.ended_at)>=Date.parse(night.start_at));
     if(!execution)continue;
     const value=metricValue(night,experiment.metric,experiment.target_minutes,experiment.reference_minute);
@@ -217,6 +219,8 @@ function adjustment(experiment,policy,context) {
   if(!policy.rest?.adjustments_enabled||!experiment?.evaluation||experiment.evaluation.status==="improved")return null;
   const id=experiment.action.window_id||experiment.action_id?.slice(4),window=context.schedule?.windows?.find(w=>w.id?.toLowerCase()===id?.toLowerCase());
   if(!window||window.starts_at||!window.enabled)return null;
+  if(window.start_minute!==experiment.action.start_minute||window.end_minute!==experiment.action.end_minute
+    ||JSON.stringify([...(window.weekdays||[])].sort())!==JSON.stringify([...(experiment.action.weekdays||[])].sort()))return null;
   const max=policy.rest.max_shift_minutes;
   // One bounded schedule variable. Worsening moves back toward less intervention;
   // no effect tries a slightly earlier start. The next result must be measured.

@@ -8,9 +8,10 @@ function night(start,sleep=440,awake=40,extra={}){
 }
 const baseline=Array.from({length:28},(_,i)=>night(new Date(Date.parse("2026-09-03T23:00:00Z")+i*86400000).toISOString()));
 const after=Array.from({length:14},(_,i)=>night(new Date(Date.parse("2026-10-02T23:00:00Z")+i*86400000).toISOString(),460,20));
-const protection=after.map(n=>({id:"execution:"+n.date,window_id:window,source:"native_schedule_shield",started_at:new Date(Date.parse(n.start_at)-30*60000).toISOString(),ended_at:n.end_at}));
+const protection=after.map(n=>({id:"execution:"+n.date,window_id:window,source:"native_schedule_shield",started_at:new Date(Date.parse(n.start_at)-30*60000).toISOString(),ended_at:n.end_at,
+ plan:{start_minute:1350,end_minute:420,weekdays:[1,2,3,4,5,6,7],timezone:"UTC"}}));
 const experiment={id:"experiment",action_id:"app_"+window,status:"active",metric:"sleep_continuity",review_after_days:14,
- verified_at:"2026-10-02T20:00:00Z",baseline,action:{weekdays:[1,2,3,4,5,6,7]},excluded_dates:[]};
+ verified_at:"2026-10-02T20:00:00Z",baseline,action:{start_minute:1350,end_minute:420,weekdays:[1,2,3,4,5,6,7],timezone:"UTC"},excluded_dates:[]};
 const result=R.evaluate(experiment,after,{now,protection});
 assert.equal(result.status,"improved");assert.equal(result.measured_improvement,true);assert.equal(result.causal,false);
 assert(Math.abs(result.delta-100*20/480)<1e-9,"Independent continuity oracle disagrees");
@@ -21,6 +22,8 @@ for(const [name,records] of [["synthetic",after.map(n=>({...n,source:"synthetic"
 }
 assert.equal(R.evaluate(experiment,after,{now}).status,"inconclusive","Registration alone credited nightly execution");
 assert.equal(R.evaluate(experiment,after,{now,protection:protection.map(p=>({...p,window_id:"other"}))}).measured_improvement,false,"Another window credited");
+assert.equal(R.evaluate(experiment,after,{now,protection:protection.map(p=>({...p,plan:{...p.plan,start_minute:1300}}))}).measured_improvement,false,"Another plan version credited");
+assert.equal(R.evaluate(experiment,after,{now,protection:protection.map(p=>({...p,uncertain:true}))}).measured_improvement,false,"Revoked or uncertain shield coverage credited");
 assert.equal(R.evaluate({...experiment,status:"awaiting_execution"},after,{now,protection}).status,"awaiting");
 assert.equal(R.evaluate(experiment,after.slice(0,6),{now,protection}).status,"inconclusive");
 assert.equal(R.evaluate(experiment,after,{now:Date.parse("2026-10-06"),protection}).status,"awaiting");
