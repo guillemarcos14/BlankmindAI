@@ -229,6 +229,10 @@
       {
         "name": "ios_distribution_entitlements",
         "run": "node tools/run_ios_distribution_tests.js"
+      },
+      {
+        "name": "bm_agent_paired_voice",
+        "run": "node tools/bm_agent_paired_voice_test.js"
       }
     ]
   },
