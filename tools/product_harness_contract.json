@@ -218,6 +218,10 @@
       {
         "name": "app_pending_lifecycle",
         "run": "node tools/assistant_pending_lifecycle_test.js"
+      },
+      {
+        "name": "ios_distribution_entitlements",
+        "run": "node tools/run_ios_distribution_tests.js"
       }
     ]
   },

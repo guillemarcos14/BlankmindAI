@@ -99,7 +99,7 @@ function validateCommand(command, label) {
   if (!value) fail(`empty_command:${label}`);
   if (SHELL_OPERATOR.test(value)) fail(`shell_operator_not_allowed:${label}`);
   if (DANGEROUS_COMMAND.test(value)) fail(`dangerous_command_not_allowed:${label}`);
-  if (!SAFE_COMMAND.test(value) && !/^python(?:3|\.exe)? tools\/ios_sign_existing_archive_test\.py$/.test(value)) fail(`command_not_allowlisted:${label}:${value}`);
+  if (!SAFE_COMMAND.test(value)) fail(`command_not_allowlisted:${label}:${value}`);
   return value;
 }
 
