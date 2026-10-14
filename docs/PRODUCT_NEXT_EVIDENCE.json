@@ -140,7 +140,7 @@
       "worktree": "Codigo-product-next",
       "path": "tmp/ci-a6f9e50/bm-run.json",
       "sha256": "83e0f50e28f5ee101cb61e0e99ae84b21ae7fae26d220c9734cdaadbc65a9211",
-      "scope": "Final runtime CI BM success: 62/62 scope, PostgreSQL 15 and Android."
+      "scope": "Final runtime CI BM success: 62/62 scope, PostgreSQL 15."
     },
     {
       "worktree": "Codigo-product-next",
@@ -476,7 +476,7 @@
       "worktree": "Codigo-product-next",
       "path": "tmp/ci-fcf5f9b/bm-run.json",
       "sha256": "13c3ba34913c2f20f49e581890c0a50014983d66d6ca5fb8eb540e3976d8252e",
-      "scope": "Exact fcf CI success:PostgreSQL conversation recovery, contract/runtime gate,Android compile and unit tests."
+      "scope": ""
     },
     {
       "worktree": "Codigo-product-next",
@@ -1008,5 +1008,10 @@
     },
     "provider_cancellation_and_billing_verified": false,
     "private_deploy_manifest": "Codigo-product-release/tmp/cloud-stage/private-8227095e645a-final-evidence.json"
+  },
+  "platform_cleanup": {
+    "date": "2026-10-14",
+    "original_utf8_lf_sha256": "5e1c621144eda279dbca9ac07094cbb2d93fb6effceac1c0454563d64f35e7a2",
+    "note": "Historical results are unchanged; retired-platform job entries and commentary omitted. Original artifact remains in Git history. No new evaluation or certification."
   }
 }

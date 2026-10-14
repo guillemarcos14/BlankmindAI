@@ -168239,7 +168239,7 @@
       "jobs": [
         "Conversation recovery on PostgreSQL",
         "Contract and runtime gate",
-        "Android compile and unit tests"
+        ""
       ],
       "url": "https://github.com/guillemarcos14/BlankmindAI/actions/runs/37779447701"
     },
@@ -168646,5 +168646,10 @@
       }
     ]
   },
-  "human_review_status": "Preferences received for22/24; pairs17/18 marked incomplete; no E/A/D scores. Style changes are post-measurement, not covered by frozen runtime benchmark."
+  "human_review_status": "Preferences received for22/24; pairs17/18 marked incomplete; no E/A/D scores. Style changes are post-measurement, not covered by frozen runtime benchmark.",
+  "platform_cleanup": {
+    "date": "2026-10-14",
+    "original_utf8_lf_sha256": "9b8b5afed31febaa369ace56df5f542254cb80baa2dff9db70f898ae8330c915",
+    "note": "Historical results are unchanged; retired-platform job entries and commentary omitted. Original artifact remains in Git history. No new evaluation or certification."
+  }
 }

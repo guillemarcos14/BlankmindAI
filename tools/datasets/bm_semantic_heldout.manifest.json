@@ -1,10 +1,19 @@
 {
-  "file": "tools\\datasets\\bm_semantic_heldout.json",
-  "sha256": "5ffd5f1940e11b2d6f5a35957b8a1a1a8e15db438b7bb500a78410c954513a84",
-  "conversations": 12,
-  "turns": 30,
-  "status": "frozen_before_execution",
-  "pre_execution_correction": "Presence timestamp changed to past UTC before any run, preserving all expected semantics.",
+  "file": "tools/datasets/bm_semantic_heldout.json",
+  "sha256": "dae888f4949a9b576b55725f41af416fb97fec11862591843f88f8506c5de542",
+  "conversations": 11,
+  "turns": 27,
+  "status": "platform_filtered_not_evaluated",
   "hash_kind": "utf8_lf_sha256",
-  "line_endings_note": "Frozen with LF. Windows Git may materialize CRLF; normalize CRLF to LF before comparing this original SHA256. No JSON content changes."
+  "original_manifest": {
+    "file": "tools\\datasets\\bm_semantic_heldout.json",
+    "sha256": "5ffd5f1940e11b2d6f5a35957b8a1a1a8e15db438b7bb500a78410c954513a84",
+    "conversations": 12,
+    "turns": 30,
+    "status": "frozen_before_execution",
+    "pre_execution_correction": "Presence timestamp changed to past UTC before any run, preserving all expected semantics.",
+    "hash_kind": "utf8_lf_sha256",
+    "line_endings_note": "Frozen with LF. Windows Git may materialize CRLF; normalize CRLF to LF before comparing this original SHA256. No JSON content changes."
+  },
+  "note": "This subset was not frozen before the historical evaluation and inherits no evaluation approval."
 }

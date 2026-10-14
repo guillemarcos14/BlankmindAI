@@ -87,7 +87,7 @@ There is no cross-account cache in either candidate.
 
 Native CI 37620146205 passed client/timing/recovery tests, Simulator build and
 the complete Home UI suite. Screenshot capture is separate. Backend CI
-37620145979 passed contract/runtime, PostgreSQL recovery and Android checks.
+37620145979 passed contract/runtime, PostgreSQL recovery.
 The initial local harness was run before a clean commit (72/73, scope clear);
 Final clean-source harness passed 73/73 with no scope violations, report
 `ph_1791376110422_9d14568f`. Private bundling produced all nine functions with

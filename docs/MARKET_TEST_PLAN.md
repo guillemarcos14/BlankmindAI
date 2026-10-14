@@ -35,7 +35,7 @@ If a practical product test is needed, recruit from:
 
 Tester requirements:
 
-- Android NFC phone for first reliable beta.
+
 - iPhone users can join iOS beta only if Family Controls entitlement/TestFlight path is available.
 - Willing to use one physical NFC tag for at least 7 days.
 
@@ -82,7 +82,7 @@ Weak signal:
 ## Feedback Form Fields
 
 - Device model.
-- Android/iOS version.
+- iOS version.
 - Did setup complete?
 - Apps blocked.
 - Number of Blank sessions used.

@@ -2,7 +2,7 @@
 
 Bloqueo observado: inventario de navegador del 9 de octubre, sin pestaña MacinCloud. No se ha compilado ni distribuido una build nueva en esta conversación.
 
-Fuente exacta evaluada: `e21affb8db35237f31836deda998616e41b0d28b`, disponible en origin `codex/backend-release-decisions-production-2026-10-09`. CI37954718650 pasa contrato/runtime, PostgreSQL y Android. `git diff a96e699 HEAD -- ios` no muestra cambios nativos; eso no sustituye la identidad de una build ni sus pruebas físicas.
+Fuente exacta evaluada: `e21affb8db35237f31836deda998616e41b0d28b`, disponible en origin `codex/backend-release-decisions-production-2026-10-09`. CI37954718650 pasa contrato/runtime, PostgreSQL. `git diff a96e699 HEAD -- ios` no muestra cambios nativos; eso no sustituye la identidad de una build ni sus pruebas físicas.
 
 Referencia Mac probada: FF368, repo `/Users/user301201/blankmind-bmb-qa`; configuración privada conservada `/Users/user301201/blank-testflight-105/qa107.xcconfig`; proyecto `ios/Blank/Blank.xcodeproj`, scheme `Blank`, destino `generic/platform=iOS`.
 

@@ -21,7 +21,7 @@ const MAX_REPAIR_ATTEMPTS = 3;
 
 const DANGEROUS_COMMAND = /(?:\bgit\s+(?:reset|checkout|restore|clean|push)|\b(?:rm|del|erase|remove-item)\b|\bdrop\s+(?:table|database)|\bsupabase\s+(?:db\s+push|functions\s+deploy)|\bnetlify\s+deploy|\bnpm\s+publish|\bxcodebuild\s+.*(?:archive|exportArchive)|\bnode(?:\.exe)?\s+(?:-e|--eval|-r|--require|--loader)\b)/i;
 const SHELL_OPERATOR = /(?:&&|\|\||[|;&<>])/;
-const SAFE_COMMAND = /^(?:node(?:\.exe)?\s|npm(?:\.cmd)?\s|npx(?:\.cmd)?\s|\.\\gradlew(?:\.bat)?(?:\s|$)|gradlew(?:\.bat)?(?:\s|$)|git\s+(?:diff\s+--check|status\s+--porcelain(?:=v1)?|rev-parse\s+--show-toplevel)|swiftlint(?:\s|$)|xcodebuild\s+-project\s+[^ ]+\s+-sdk\s+iphonesimulator\s+-configuration\s+debug\s+build(?:\s|$))/i;
+const SAFE_COMMAND = /^(?:node(?:\.exe)?\s|npm(?:\.cmd)?\s|npx(?:\.cmd)?\s|git\s+(?:diff\s+--check|status\s+--porcelain(?:=v1)?|rev-parse\s+--show-toplevel)|swiftlint(?:\s|$)|xcodebuild\s+-project\s+[^ ]+\s+-sdk\s+iphonesimulator\s+-configuration\s+debug\s+build(?:\s|$))/i;
 
 function nowIso() {
   return new Date().toISOString();

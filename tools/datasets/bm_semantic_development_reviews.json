@@ -282,15 +282,6 @@
     "language": "en"
   },
   {
-    "response_sha256": "8622bc5344668d6982aa092a39f77d43b35d5cf9af024068bc243191c58a1562",
-    "expectation_sha256": "d6056096814e3cd2acc89fc6548f35f32fb45a18c462ffd59ce00d4d14913269",
-    "reviewer": "Codex /root/release_audit independent agent, 2026-09-26",
-    "rationale": "After the explicit correction from 30 to 45 minutes, Yes preserves the immediate, one-time request for the canonical distraction selection. The prior turn emitted that exact action and the unchanged fingerprint suppresses a duplicate; actions and followup are empty. Message, response and speech restate 45 minutes and direct continuation in Blankmind, without claiming physical execution, notification delivery or cancellation. Device-neutral wording also fits Android and channels without platform evidence. Title and Continue/Not now controls remain compatible with a pending request. Reviewed all five channel instances, their previous turns, state and app context; this is equivalence of the local fixture, not proof of delivery or native success.",
-    "verdict": "equivalent",
-    "language": "en",
-    "review_scope": "Exact message, response, speech, title, primary/secondary labels and bullets, plus empty followup, emitted actions, prior state and app context in final-neutral-copy-review.json. Independent agent review; no human certification or active-model evaluation."
-  },
-  {
     "response_sha256": "171891e8187577d2923e04765962b455b7269a3a0a847025fa4c0d176d893e87",
     "expectation_sha256": "7a79705f1cf6a897cddbced194418de583b2ae47c7f5c58b3c2259961b490565",
     "reviewer": "Codex /root/release_audit independent agent, 2026-09-26",
