@@ -1,5 +1,26 @@
 # Sistema conversacional y agéntico
 
+## Integración final de esta continuación (2026-10-14)
+
+PR48 reúne CORE32fa44c, retirada iOS-only0af4c63, las correcciones posteriores de PR42 y la separación explícita entre registros de sueño de la cuenta y baseline Watch. Se conservan exactamente dos herramientas, los 15 comandos nativos y el contrato proactivo. El runtime se vincula ahora a ambas migraciones: descanso035 y etiquetas036. Las tres optimizaciones permanecen OFF; los pilotos no son el certificado de 200 pares.
+
+Se eliminó la modificación obligatoria de dos puntos en el planner y en la entrega de texto generado. Las comprobaciones de evidencia, datos simulados, permisos y efectos permanecen; no son reparaciones de estilo. La salida natural no tiene una plantilla nueva.
+
+El aviso futuro del dictamen action-es-start-30 no estaba garantizado: la cola reactiva y su recibo no equivalen a una notificación programada. La herramienta ya describe ese límite y nuevas respuestas reales no prometen el aviso. El dictamen memory-es-forget-4 infravaloraba la redacción transversal de observaciones/revisiones/seguimientos de SQL028, pero eso tampoco prueba el borrado preciso de una categoría que podría abarcar otras claves estables. Se conserva el dictamen original y se aclara el alcance ante ambigüedad; ninguna política de privacidad cambió.
+
+Los primeros dictámenes V3 del piloto integrado criticaron la falta de noches Watch al ver tres observaciones genéricas. V4 añade el rest_evidence realmente enviado al modelo, procedencia y reloj de turno: las mediciones genéricas native_health no acreditan Watch ni siete noches de baseline. Los resultados originales no se sobrescriben ni se convierten en PASS por adjudicación. En otro piloto apareció una ausencia de sueño de cuenta incorrecta; la instrucción final exige consultar observations antes de inferir ausencia desde current_sleep/rest_evidence.
+
+QA njqbovsmoowkhhsqmitn carecía de descanso035 y etiquetas036. Después de inspeccionar versiones/objetos se aplicaron únicamente esas dos migraciones, en una transacción; historia previa y usuarios preservados. No se reaplicaron026–028 ni029/030. La migración productiva035 existente y TestFlight117 pertenecen a la release de descanso anterior; esta continuación no publicó producción.
+
+El medidor admite --paired-voice y mide el reloj continuo desde la entrada del turno hasta el primer PCM de la voz autenticada, después del commit real. Se obtuvo voz ES/EN real en una versión intermedia. Un coste de voz desconocido mantiene cost_usd=null en el informe y retiene la reserva conservadora; nunca se contabiliza como audio gratuito. No hubo reproducción física acreditada ni ampliación de claves, cuotas o suscripción.
+
+El techo acumulado FINAL es40USD en ../Codigo-retrieval/tmp/retrieval-wide/budget.json, compartido y sin contadores reiniciados. Solo un proceso pagado simultáneo; reservas desconocidas conservadas. Las tablas de pruebas SQL se ejecutaron en PostgreSQL desechable; las pruebas pagadas usan identidades sintéticas aisladas con limpieza.
+
+Guillem confirma MacinCloud en el navegador Codex y build117 instalada. Los accesos a navegador y ventanas agotaron tiempo de respuesta repetidamente. Hace falta restaurar ese acceso, distribuir una build compatible con assistant-device y medir permisos, selección, acciones y recibos en iPhone; no se declara probado por disponibilidad del dispositivo.
+
+Evidencia nueva: tmp/agent-eval, tmp/product-harness/final40-baseline.json y final40-integrated.json; paquetes privados de ocho funciones en tmp/cloud-stage. El cierre detalla hashes, gasto, validaciones y los motivos exactos de no activar cada sustitución. Las notas siguientes conservan evidencia histórica y quedan subordinadas a esta integración.
+
+
 Implementación del esquema aprobado el 14 de octubre de 2026, conservado literalmente en Blank Brain/REFERENCIAS/modelo_conversacional_agentico_fuente_de_verdad.md. Esta guía describe el código y su activación; no redefine el esquema ni el modelo central de descanso.
 
 ## Flujo implementado
@@ -55,7 +76,7 @@ Las tres sustituciones se validan independientemente. bm-agent-activation.json l
 | BM_AGENT_ENABLED=true | Solo activa features con manifiesto aprobado, modelo y hashes coincidentes |
 | BM_AGENT_LABEL_DAILY_USD | Tope diario explícito mayor que 0 y menor o igual a 5; sin valor no hay clasificación |
 
-La migración 036_bm_agent_labels.sql es aditiva y no depende de 029/030. Aplicarla aisladamente en integración, después de 028 y 034; nunca ejecutar db push de todo el historial por este cambio. PR41 utiliza también la versión 035, con 035_bmb_measured_rest.sql: la release debe inspeccionar el historial, resolver la numeración y actualizar referencias/fingerprint antes de aplicar ambas. RLS y RPC son exclusivos de service_role. Reserva conservadora de 0,01 USD antes del proveedor; consumo conocido ajusta la reserva y un intento cobrado sin uso conocido conserva el máximo. Sin reintentos automáticos. Estos límites no amplían el presupuesto de evaluación previamente autorizado.
+La migración 036_bm_agent_labels.sql es aditiva y no depende de 029/030. Aplicar036 aisladamente tras028/034 y descanso035 en integración; nunca ejecutar db push de todo el historial por este cambio. PR41 utiliza también la versión 035, con 035_bmb_measured_rest.sql: la release debe inspeccionar el historial, resolver la numeración y actualizar referencias/fingerprint antes de aplicar ambas. RLS y RPC son exclusivos de service_role. Reserva conservadora de 0,01 USD antes del proveedor; consumo conocido ajusta la reserva y un intento cobrado sin uso conocido conserva el máximo. Sin reintentos automáticos. Estos límites no amplían el presupuesto de evaluación previamente autorizado.
 
 ## Validación reproducible
 
@@ -77,7 +98,7 @@ El corpus nuevo exige comprobar el commit aplicado y la lectura posterior de cad
 2. node tools/bm_agent_test.js y node tools/bm_response_stream_test.js cubren las herramientas, acciones, memoria/olvido, paginación, lecturas agrupadas, separación de cuentas y SSE fragmentado. node tools/bm_agent_evidence_test.js comprueba rechazos de evidencia defectuosa; sus fixtures inventados nunca se instalan como aprobación.
 3. El workflow BM Harness Gate aplica 035 en PostgreSQL 15 desechable y ejecuta tools/bm_agent_database_test.sql, junto a las regresiones de transacciones, voz y memoria. Los scripts SQL de pruebas nunca se ejecutan en Supabase.
 4. node tools/bm_agent_acceptance.js measured-pairs.json report.json exige al menos 200 casos pareados por feature, ES/EN, conversación/consulta/acción/memoria, voz real, recibos de proveedor, revisión independiente, coste completo de background/reintentos y hashes actuales. Compara p50/p95 de primer texto/audio y calidad tanto agregada como por idioma/grupo. Es un evaluador de recibos: no llama a proveedores ni activa flags.
-5. Integrar y desplegar únicamente desde la conversación/rama de release según BACKEND_INTEGRATION_WORKFLOW.md. Confirmar bundles/hashes, aplicar solo 035, probar cuentas aisladas y acciones en iPhone. Un PASS local o SQL no acredita eficacia física ni ahorro.
+5. Integrar y desplegar únicamente desde la conversación/rama de release según BACKEND_INTEGRATION_WORKFLOW.md. Confirmar bundles/hashes, aplicar solo035/036 pendientes tras comprobar historial, probar cuentas aisladas y acciones en iPhone. Un PASS local o SQL no acredita eficacia física ni ahorro.
 
 El comando de harness de cierre usa --baseline tmp/product-harness/baseline.json --enforce-scope. La evaluación semántica exige un árbol limpio: un source_dirty mantiene su fallo original y se repite tras commit, sin debilitar el gate. No se ha alterado el generador principal gpt-5.6-luna ni las voces de ElevenLabs.
 
@@ -86,6 +107,6 @@ El comando de harness de cierre usa --baseline tmp/product-harness/baseline.json
 - Rama: codex/conversational-agentic-2026-10-14, PR42. Runtime final: b8219fc; los commits posteriores de cierre/documentación deben conservar sus Functions y SQL. Recibo de esta reanudación: tmp/agent-eval/credit-resume-receipt.json.
 - Superficies: BMB reactivo, dos herramientas, contratos de parámetros, stream y callback de clasificación; tests, evaluador y SQL de etiquetas. La app nativa y el contrato proactivo conservan su comportamiento previo.
 - Migración: 036_bm_agent_labels.sql, posterior a 028/034, con colisión de número frente a PR41. Resolver en la release, actualizar referencias/fingerprint y validar de nuevo la fuente integrada; aplicar solo la migración aditiva tras comprobar el historial remoto.
-- Variables: BM_AGENT_QA_ENABLED y BM_AGENT_QA_FEATURES en la QA conocida; BM_AGENT_LABEL_DAILY_USD para su reserva. BM_AGENT_ENABLED no activa un manifiesto sin aprobación real. No ampliar cuotas de proveedor ni el techo de evaluación de 34 USD.
+- Variables: BM_AGENT_QA_ENABLED y BM_AGENT_QA_FEATURES en la QA conocida; BM_AGENT_LABEL_DAILY_USD para su reserva. BM_AGENT_ENABLED no activa un manifiesto sin aprobación real. No ampliar cuotas de proveedor ni el techo FINAL de evaluación de 40 USD.
 - Pendiente: adjudicar/corregir los dos dictámenes negativos, completar comparación del runtime integrado con voz pareada y los grupos/idiomas requeridos, y verificar acciones/permisos/selección en iPhone. Los paquetes locales y las muestras de software no sustituyen esas comprobaciones ni autorizan producción.
 
