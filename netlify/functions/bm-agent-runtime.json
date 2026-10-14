@@ -21,7 +21,7 @@
     "bm-agent-activation.js": "83b5029b1e914d5d648f00411fb288ccd5c2ba6109930b00620bdb056e5cd1ff",
     "bm-agent-authority.js": "5f3c1c49355cee34fc27e9a0a637c0c7cde7ed57ef19a679f0078a9566c4cc60",
     "bm-agent-calendar.js": "584250f744ccf137cc140bc2a9dc71b7e72eeb175962d51dcfbad646f8fd12c5",
-    "bm-agent-decisions.js": "269e972dafc47da82db746318a451c6b9d205e2b945806f3dc868daa6a0a8a62",
+    "bm-agent-decisions.js": "a4a5629733986ba35b76c98a43b932bb4d70c5c0a39fb24fcd73fc004f6ce0bb",
     "bm-agent-evidence.js": "a5912582d1238d2c9bdb268a18ca7f54909fd141a7fbf333afd21e21a145c469",
     "bm-agent-labels.js": "189fe3920cebf6e73b6aca6ae0b0d7eb261ec2b7eff9778d2cc65599a9d865e4",
     "bm-agent-tools.js": "3a60a822e70d5ee6ca237135d730b23b127e1909eac8ec13aaaca9e4c5bae0d9",
@@ -44,7 +44,7 @@
     "bm-voice-alignment.js": "2e1297dbd3508478377076a7e2cdb39ff0b79a2dd34c0ae64e02eebd9f502733",
     "bm-voice-elevenlabs.js": "a1a0debcd51c42f62924238fc59d2024e64215015bb87731705ad76c4b4a6b06",
     "bm-voice-output.js": "900f0b286b1ecce9346a90014c16966f08e952c526c334b2771d8700cfb91652",
-    "bmb-brain.js": "c1bbd4540e5e9cd348c69a34af4fd149c0aed6a881b37b3254c98ae11a8d9500",
+    "bmb-brain.js": "b42cdf06ca458811161b5fef0657b3e3a7a39bde35bcc854760f059f9e550a64",
     "bmb-factual-copy.js": "32ac925152844d6f8d7df69764b29153c54886cf4d203f2ced82f39ff9e4cd1e",
     "bmb-greeting.js": "733acd075e0ea7a7cccd43e20afda16c5b603390fdae3a040efc502c00aebff7",
     "bmb-longitudinal.js": "b5cf4094ddc48b781918c8eb0a03c6c617badbeda2b31bbe74f5db27b2c11e6d",
@@ -67,6 +67,7 @@
     "referrals.js": "f697c9db5854cc3d22574e8f607c1e970a201a500497801001530d0c046c67d5",
     "shopify-order-activation-code.js": "05b3b7417163cb16c0263c62354ee7a4630787badf9082343ba25fcfb9bedc2e",
     "shopify-orders-paid.js": "9ac479367bf9200a2c2d83adfa83d1f98e2e0520fd32ff1abadc72d75bdc1327",
+    "supabase/migrations/035_bmb_measured_rest.sql": "ad6c5634cc235f3c0f52df3dad06676663283d1b667f0e95a6df913ce9e72f2e",
     "supabase/migrations/036_bm_agent_labels.sql": "f611c07efca9a1fdeca0acff90f2e9915e0cb6a8d2f1d03cf384d9448347644f"
   }
 }

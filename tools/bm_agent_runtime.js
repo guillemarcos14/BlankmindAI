@@ -5,6 +5,7 @@ const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypt
 const root=path.resolve(__dirname,"../netlify/functions"),output=path.join(root,"bm-agent-runtime.json");
 function actual(){
  const files=fs.readdirSync(root).filter(n=>/\.(?:js|mjs)$/.test(n)).sort().map(n=>[n,path.join(root,n)]);
+ files.push(["supabase/migrations/035_bmb_measured_rest.sql",path.resolve(root,"../../supabase/migrations/035_bmb_measured_rest.sql")]);
  files.push(["supabase/migrations/036_bm_agent_labels.sql",path.resolve(root,"../../supabase/migrations/036_bm_agent_labels.sql")]);
  return {version:1,hash_format:"utf8-lf-sha256",source_hashes:Object.fromEntries(files.map(([n,file])=>[n,crypto.createHash("sha256").update(fs.readFileSync(file,"utf8").replace(/\r\n/g,"\n")).digest("hex")]))};
 }
