@@ -88,6 +88,7 @@ final class BlankBrain {
         notificationsAuthorized = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional || settings.authorizationStatus == .ephemeral
         blocker?.refreshAuthorizationStatus()
         store?.applyScheduleWindow()
+        guard await flushRestRevocation(owner: owner) else { return nil }
         await syncRest(owner: owner)
         return snapshot()
     }
@@ -170,6 +171,7 @@ final class BlankBrain {
             let settings = await UNUserNotificationCenter.current().notificationSettings()
             guard owner == AssistantAppSession.userID, !Task.isCancelled else { return }
             notificationsAuthorized = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional || settings.authorizationStatus == .ephemeral
+            guard await flushRestRevocation(owner: owner) else { return }
             await syncRest(owner: owner)
             // Observing published changes must not mutate those same publishers.
             // Fresh turn snapshots reconcile native state separately.
@@ -217,7 +219,21 @@ final class BlankBrain {
     }
     func syncMeasuredRest() async {
         if store == nil { backgroundStore = SessionStore(); store = backgroundStore }
+        guard await flushRestRevocation(owner: AssistantAppSession.userID) else { return }
         await syncRest(owner: AssistantAppSession.userID)
+    }
+
+    // Persist withdrawal across an offline session or process restart. A fresh
+    // opt-in may upload new evidence only after the previous withdrawal lands.
+    private func flushRestRevocation(owner: String?) async -> Bool {
+        guard let owner, owner == AssistantAppSession.userID else { return false }
+        let key = "blankRestPendingRevocation.v1." + owner
+        guard BlankSharedState.defaults.bool(forKey: key) else { return true }
+        guard let data = try? JSONSerialization.data(withJSONObject: ["action": "bmb_revoke_rest", "app_install_id": BlankSharedState.appInstallId]),
+              let (_, response) = try? await AssistantAppClient().postAuthorized(path: "assistant-app", payload: data, timeout: 10),
+              response.statusCode == 200, owner == AssistantAppSession.userID else { return false }
+        BlankSharedState.defaults.removeObject(forKey: key)
+        return true
     }
 
     private func sharingChanged() {
@@ -229,11 +245,8 @@ final class BlankBrain {
         } else {
             syncTask?.cancel()
             RestDigitalContext.shared.clear()
-            Task {
-                guard let owner, owner == AssistantAppSession.userID,
-                      let data = try? JSONSerialization.data(withJSONObject: ["action": "bmb_revoke_rest", "app_install_id": BlankSharedState.appInstallId]) else { return }
-                _ = try? await AssistantAppClient().postAuthorized(path: "assistant-app", payload: data, timeout: 10)
-            }
+            if let owner { BlankSharedState.defaults.set(true, forKey: "blankRestPendingRevocation.v1." + owner) }
+            sync()
         }
     }
 
@@ -272,6 +285,7 @@ final class BlankBrain {
     func executeAutonomous(actionID: String? = nil) async -> Bool {
         guard HealthKitStore.shared.restAIAvailable else { return false }
         guard !executionInFlight, let owner = AssistantAppSession.userID else { return false }
+        guard await flushRestRevocation(owner: owner) else { return false }
         executionInFlight = true
         defer { executionInFlight = false }
         if store == nil {
@@ -316,19 +330,11 @@ final class BlankBrain {
             receipt = AssistantActionReceipt(actionId:action.id,status:result.status,detail:result.detail,executionStarted:true,
                 requestedAt:iso.string(from:result.requestedAt),startedAt:iso.string(from:result.startedAt),requestedDurationMinutes:result.requestedDurationMinutes,
                 effectiveUntil:result.effectiveUntil.map(iso.string(from:)) ?? "",origin:"assistant_remote",result:result.result,startDelaySeconds:result.startDelaySeconds,mergedWithExisting:result.mergedWithExisting)
-        } else if action.type == "set_daily_limit", let minutes = action.minutes {
-            store.dailyLimitMinutes = minutes; store.dailyLimitEnabled = true; store.refreshDailyLimitMonitoring()
-            receipt = AssistantActionReceipt(actionId:action.id,status:store.dailyLimitRegistered ? "verified":"failed",detail:"daily_limit_native_checked",executionStarted:true)
         } else if action.type == "update_schedule" {
             let registered = store.applyBMBProtectionSchedule(action)
             blocker.updateSelection(store.selection, isBlankActive: store.isBlankActive)
             receipt = AssistantActionReceipt(actionId: action.id, status: registered ? "verified" : "failed",
                 detail: registered ? "dated_schedule_registered" : store.bmbScheduleFailure, executionStarted: true)
-        } else if action.type == "enable_adult_filter" {
-            store.adultContentBlockingEnabled = true
-            blocker.updateAdvancedControls(allowOnlyModeEnabled:store.allowOnlyModeEnabled,adultContentBlockingEnabled:true)
-            blocker.apply(isBlankActive:store.isBlankActive)
-            receipt = AssistantActionReceipt(actionId:action.id,status:"verified",detail:"adult_filter_native_checked",executionStarted:true)
         } else { receipt = AssistantActionReceipt(actionId:action.id,status:"failed",detail:"unsupported_background_action",executionStarted:true) }
         AssistantActionReceiptStore.save(actionId:receipt.actionId,status:receipt.status,detail:receipt.detail,executionStarted:receipt.executionStarted,
             requestedAt:receipt.requestedAt,startedAt:receipt.startedAt,requestedDurationMinutes:receipt.requestedDurationMinutes,

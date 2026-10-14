@@ -113,6 +113,12 @@ jobs:
             -configuration Debug -destination "platform=iOS Simulator,id=$device" \
             -derivedDataPath tmp/ios-build -resultBundlePath tmp/home-ui-tests.xcresult \
             -only-testing:"$suite" "${extra_tests[@]}" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+      - name: Summarize native UI results
+        if: always()
+        run: |
+          if [ -d tmp/home-ui-tests.xcresult ]; then
+            xcrun xcresulttool get test-results summary --path tmp/home-ui-tests.xcresult --compact || true
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
