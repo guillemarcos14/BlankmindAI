@@ -4,6 +4,9 @@
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto"),{performance}=require("node:perf_hooks");
 const {configuration,memoryIdentity}=require("./assistant_app_cloud_test"),{percentile}=require("./bm_latency_benchmark");
 const CASES=require('./datasets/bm_retrieval_step_cases_2026-10-08.json').cases;
+function nativeQueued(turn,spec){
+ return Boolean(turn.action_id&&(turn.auto_apply||["open_app_picker","request_screen_time_permission"].includes(spec.expected_action?.type)));
+}
 // Explicit rates required: no guessed price for the selected generative model.
 function cost(usage,rates) {
   if(!rates)return null;
@@ -118,7 +121,7 @@ async function main(){
      if(agentFeature)await Promise.allSettled(background.splice(0));
      const value=JSON.parse(response.body),t=value.turn||{},noAction=!t.action_id&&!t.auto_apply;
      const row={...active,agent_feature:agentFeature,foreground_ms:foregroundMs,case_id:spec.id,eligible:spec.eligible,expected:{...expected,criterion:spec.expectation,history:[...history]},transport:args.includes('--all-ndjson')||pair%8===0?"local-ndjson-handler":"local-json-handler",profile:spec.profile,language,start:undefined,status:response.statusCode,elapsed_ms:performance.now()-active.start,
-       passed:response.statusCode===200&&t.status==="completed"&&typeof t.assistant_text==="string"&&Boolean(t.assistant_text.trim())&&(["action","actions_combined"].includes(group)?Boolean(t.action_id&&t.auto_apply):noAction),
+       passed:response.statusCode===200&&t.status==="completed"&&typeof t.assistant_text==="string"&&Boolean(t.assistant_text.trim())&&(["action","actions_combined"].includes(group)?nativeQueued(t,spec):noAction),
        // Synthetic text is kept for semantic review, never live-user transcripts.
        synthetic_input:text,synthetic_response:t.assistant_text||null,action_id_present:Boolean(t.action_id),auto_apply:Boolean(t.auto_apply)};
      if(group==="habits")row.passed=row.passed&&/sleep|dorm/i.test(t.assistant_text||"");
@@ -135,6 +138,10 @@ async function main(){
        row.canonical_observations=await request('/rest/v1/bmb_observations?auth_user_id=eq.'+user+'&select=metric,value_number,value_text,unit,measurement,evidence,measured_at',undefined,service,'GET');
        row.committed_effect=await request('/rest/v1/assistant_app_turns?auth_user_id=eq.'+user+'&id=eq.'+turn+'&select=brain_memory_effect,brain_memory_applied_at',undefined,service,'GET');
        if(spec.expected_memory)row.passed=row.passed&&row.canonical_memories.some(m=>m.key===spec.expected_memory.key&&typeof m.value==="string"&&m.value.includes(spec.expected_memory.value));
+       if(spec.expected_fact){
+        row.fact_persisted=require('./bm_agent_report').committedFact(row,spec.expected_fact);
+        row.passed=row.passed&&row.fact_persisted;
+       }
        if(spec.forbid_memory)row.passed=row.passed&&row.canonical_memories.length===0;
      }
      if(group==="forget"&&response.statusCode===200){
@@ -170,4 +177,4 @@ async function main(){
  console.log(JSON.stringify({report:file,complete:report.complete,summary:report.summary,cleanup,gates_passed:false}));
 }
 if(require.main===module)main().catch(e=>{console.error(/^decisions_[a-z0-9_]+$/.test(e.message)?e.message:"decisions_benchmark_failed");process.exitCode=1;});
-module.exports={cost,summarize,CASES};
+module.exports={cost,summarize,CASES,nativeQueued};

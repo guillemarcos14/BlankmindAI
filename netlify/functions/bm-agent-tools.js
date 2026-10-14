@@ -13,16 +13,22 @@ function contract(legacy, citations = []) {
   // Literal fields must stay literal inside function arguments too. A natural
   // paraphrase belongs in the reply, not in the persisted source value.
   const literal = "Exact contiguous substring of current_message. Keep original words, pronouns and verb forms; never summarize or translate.";
-  const memory = structuredClone(p.memory), observations = structuredClone(p.observations);
+  const memory = structuredClone(p.memory), observations = structuredClone(p.observations), action = structuredClone(p.action);
+  const actionIndex=action.anyOf.findIndex(s=>s.type==="object"), otherAction=action.anyOf[actionIndex], pauseAction=structuredClone(otherAction);
+  otherAction.properties.type.enum=otherAction.properties.type.enum.filter(t=>t!=="pause_rules");
+  pauseAction.properties.type.enum=["pause_rules"];
+  pauseAction.properties.hours={type:"integer",minimum:1,maximum:168,description:"Required pause duration in whole hours. A request for 2 hours uses hours=2, never minutes=120. Ask for a supported duration rather than rounding."};
+  pauseAction.properties.minutes={type:"null"};
+  action.anyOf.splice(actionIndex,1,otherAction,pauseAction);
   const memoryFields = memory.anyOf.find(s=>s.type==="object").properties;
-  memoryFields.operation.description="forget deletes only key; forget_all clears all personal memory, not the account. For a category spanning multiple keys, ask for a precise supported scope before deleting. Never claim a wider deletion than this operation.";
+  memoryFields.operation.description="forget deletes only key; forget_all forgets existing personal memory. Neither disables future collection, changes consent nor deletes the account; never promise those unsupported effects. For a category spanning multiple keys, ask for a precise supported scope before deleting. Never claim a wider deletion than this operation.";
   memoryFields.value.anyOf.find(s=>s.type==="string").description=literal;
   memoryFields.evidence.description=literal;
   observations.items.properties.value_text.anyOf.find(s=>s.type==="string").description=literal;
   observations.items.properties.evidence.description=literal;
   const identity = { response_language: p.response_language, message_kind: p.message_kind, evidence: {...str,description:literal} };
   const management = { ...identity, decision: p.decision, accepted_proposal: p.accepted_proposal,
-    pending_request: p.pending_request, action: p.action, memory, observations,
+    pending_request: p.pending_request, action, memory, observations,
     followup_resolution: p.followup_resolution, longitudinal_review: p.longitudinal_review,
     response_text: str, cited_sources: cited };
   return {
