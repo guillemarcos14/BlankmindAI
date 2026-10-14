@@ -20,7 +20,7 @@ async function turn(prompt,responses,{ctx=context(),memories=[]}={}){
   run:input=>brain.generate(input,{model:async ({request})=>{requests.push(request);const response=responses[calls++];assert(response,"Unexpected extra generation");return {body:response.output?response:{status:"completed",output_text:JSON.stringify(response)}};}})});
  return {result,calls,requests};
 }
-function provider(payload,answers){return {model:"gpt-6-luna",usage:{input_tokens:120},answers:payload.questions.map(q=>q.type==="predicate"?{name:q.name,type:q.type,probability:q.name.startsWith("metric_")?(q.name==="metric_"+answers.metric?.toString()?.trim()?.replaceAll(" ","_")?.toString()? .99:.01):answers[q.name]??.99}:{name:q.name,type:q.type,choice:answers[q.name]||q.choices[0].value,probabilities:q.choices.map(c=>({value:c.value,probability:c.value===(answers[q.name]||q.choices[0].value)?1:0}))})};}
+function provider(payload,answers){return {model:"gpt-6-luna",usage:{input_tokens:120},answers:payload.questions.map(q=>q.type==="predicate"?{name:q.name,type:q.type,probability:q.name.startsWith("metric_")?(q.name==="metric_"+answers.metric? .99:.01):answers[q.name]??.99}:{name:q.name,type:q.type,choice:answers[q.name]||q.choices[0].value,probabilities:q.choices.map(c=>({value:c.value,probability:c.value===(answers[q.name]||q.choices[0].value)?1:0}))})};}
 async function main(){
  let p="Hola",r=await turn(p,[compact(p,"¡Hola! ¿Qué tal vas?")]);
  assert.equal(r.calls,1);assert.deepEqual(r.requests[0].tools.map(t=>t.name),["consultar_contexto","gestionar"]);

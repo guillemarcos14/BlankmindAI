@@ -67,6 +67,7 @@
     "referrals.js": "f697c9db5854cc3d22574e8f607c1e970a201a500497801001530d0c046c67d5",
     "shopify-order-activation-code.js": "05b3b7417163cb16c0263c62354ee7a4630787badf9082343ba25fcfb9bedc2e",
     "shopify-orders-paid.js": "9ac479367bf9200a2c2d83adfa83d1f98e2e0520fd32ff1abadc72d75bdc1327",
+    "supabase/migrations/035_bmb_measured_rest.sql": "ad6c5634cc235f3c0f52df3dad06676663283d1b667f0e95a6df913ce9e72f2e",
     "supabase/migrations/036_bm_agent_labels.sql": "f611c07efca9a1fdeca0acff90f2e9915e0cb6a8d2f1d03cf384d9448347644f"
   }
 }
