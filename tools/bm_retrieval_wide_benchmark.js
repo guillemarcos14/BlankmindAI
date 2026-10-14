@@ -15,9 +15,11 @@ function cost(usage,rates) {
 }
 function summarize(records,rates) {
  return Object.fromEntries(['optimized','decisions'].map(variant=>{
- const rows=records.filter(r=>r.variant===variant),good=rows.filter(r=>r.passed),requests=rows.flatMap(r=>r.provider_requests),costs=requests.map(r=>require('./bm_decisions_meter').estimate(r,rates));
+ const rows=records.filter(r=>r.variant===variant),good=rows.filter(r=>r.passed),requests=rows.flatMap(r=>r.provider_requests),voiced=rows.filter(r=>r.audio_requested),costs=[...requests.map(r=>require('./bm_decisions_meter').estimate(r,rates)),...voiced.map(r=>Number.isFinite(r.voice_cost_usd)?r.voice_cost_usd:null)];
  return [variant,{samples:rows.length,passed:good.length,errors:rows.length-good.length,
  first_text_ms:{p50:percentile(good.map(r=>r.first_text_ms),.5),p95:percentile(good.map(r=>r.first_text_ms),.95)},
+ first_audio_ms:{p50:percentile(voiced.filter(r=>r.voice?.passed).map(r=>r.first_audio_ms),.5),p95:percentile(voiced.filter(r=>r.voice?.passed).map(r=>r.first_audio_ms),.95)},
+ cost_scope:voiced.length?"All model requests plus voice; null total when provider USD is unknown":"All metered foreground/background/retry model requests",
  final_ms:{p50:percentile(good.map(r=>r.elapsed_ms),.5),p95:percentile(good.map(r=>r.elapsed_ms),.95)},
  database_calls_p50:percentile(rows.map(r=>r.database_calls),.5),model_calls:rows.reduce((s,r)=>s+r.model_calls,0),decisions_calls:rows.reduce((s,r)=>s+r.decisions_calls,0),
  known_estimated_cost_usd:costs.reduce((s,c)=>s+(c||0),0),unknown_billed_requests:costs.filter(c=>c===null).length,total_estimated_cost_usd:costs.every(c=>c!==null)?costs.reduce((s,c)=>s+c,0):null,
