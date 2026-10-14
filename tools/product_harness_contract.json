@@ -427,6 +427,10 @@
         "name": "release_gate_quick",
         "run": "node tools/bai_release_gate.js --quick",
         "timeout_ms": 180000
+      },
+      {
+        "name": "rest_release_preservation",
+        "run": "node tools/rest_production_release_test.js"
       }
     ]
   },
