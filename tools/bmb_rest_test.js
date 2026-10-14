@@ -20,6 +20,10 @@ const firstWeek=R.evaluate({...experiment,baseline:baseline.slice(0,7)},after,{n
 assert.equal(firstWeek.status,"improved","Accepted seven-night baseline became permanently unassessable after freezing");
 assert.equal(firstWeek.minimum_matched_reference_count,1,"Sparse weekday reference coverage was hidden");
 assert.equal(R.evaluate({...experiment,baseline:baseline.slice(0,6)},after,{now,protection}).status,"inconclusive","Short baseline certified improvement");
+const lateFriday={...after[0],start_at:"2026-10-03T00:30:00.000Z",sleep_minutes:350,awake_minutes:40};
+const fridayProof={...protection[0],plan:{...protection[0].plan,weekdays:[6]}};
+assert.equal(R.evaluate({...experiment,action:{...experiment.action,weekdays:[6]}},[lateFriday],{now,protection:[fridayProof]}).intervention_count,1,
+ "Friday overnight protection lost the Saturday sleep episode when onset crossed midnight");
 for(const [name,records] of [["synthetic",after.map(n=>({...n,source:"synthetic"}))],["manual",after.map(n=>({...n,manual:true}))],
  ["other Health",after.map(n=>({...n,source:"apple_health"}))],["incomplete",after.map(n=>({...n,complete:false}))]]){
  assert.equal(R.evaluate(experiment,records,{now,protection}).measured_improvement,false,name+" certified efficacy");

@@ -11,6 +11,12 @@ const number=(v,lo,hi)=>typeof v==="number"&&Number.isFinite(v)&&v>=lo&&v<=hi;
 const median=v=>{const a=v.filter(Number.isFinite).sort((a,b)=>a-b);return a.length?(a[Math.floor((a.length-1)/2)]+a[Math.floor(a.length/2)])/2:null;};
 const localDay=(v,tz)=>new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(v));
 const weekday=d=>new Date(d+"T12:00:00Z").getUTCDay()+1;
+function scheduleDay(timestamp,action) {
+  const parts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{timeZone:action.timezone,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(timestamp)).map(x=>[x.type,x.value]));
+  const day=localDay(timestamp,action.timezone);
+  return action.start_minute>=action.end_minute&&+parts.hour*60 + +parts.minute<action.end_minute
+    ?new Date(Date.parse(day+"T12:00:00Z")-86400000).toISOString().slice(0,10):day;
+}
 const circle=(a,b)=>((a-b+2160)%1440)-720;
 const hash=v=>crypto.createHash("sha256").update(JSON.stringify(v)).digest("hex");
 function normalizeSnapshot(input,now=Date.now()) {
@@ -133,17 +139,18 @@ function evaluate(experiment,nights,{now=Date.now(),protection=[]}={}) {
   const baselineKeys=new Set(baseline.map(n=>n.date));
   const window=experiment.action.window_id||String(experiment.action_id||"").slice(4);
   const intervention=nights.filter(n=>measured(n)&&Date.parse(n.start_at)>=Date.parse(experiment.verified_at)
-    &&!baselineKeys.has(n.date)&&!excluded.has(n.date)&&days.includes(weekday(localDay(n.start_at,n.timezone))));
+    &&!baselineKeys.has(n.date)&&!excluded.has(n.date));
   const pairs=[];
   for(const night of intervention){
     const execution=protection.find(p=>p.window_id.toLowerCase()===window.toLowerCase()&&p.source==="native_schedule_shield"&&p.uncertain!==true&&iso(p.ended_at)
       &&p.plan?.start_minute===experiment.action.start_minute&&p.plan?.end_minute===experiment.action.end_minute
       &&p.plan?.timezone===experiment.action.timezone&&JSON.stringify([...(p.plan?.weekdays||[])].sort())===JSON.stringify([...days].sort())
+      &&days.includes(weekday(scheduleDay(p.started_at,experiment.action)))
       &&Date.parse(p.started_at)<=Date.parse(night.start_at)-5*60000&&Date.parse(p.ended_at)>=Date.parse(night.start_at));
     if(!execution)continue;
     const value=metricValue(night,experiment.metric,experiment.target_minutes,experiment.reference_minute);
     const comparable=baseline.filter(n=>n.source_bundle===night.source_bundle&&n.timezone===night.timezone
-      &&weekday(localDay(n.start_at,n.timezone))===weekday(localDay(night.start_at,night.timezone)))
+      &&weekday(n.date)===weekday(night.date))
       .map(n=>({n,value:metricValue(n,experiment.metric,experiment.target_minutes,experiment.reference_minute)})).filter(n=>n.value!=null);
     if(value!=null&&comparable.length>=1)pairs.push({night,reference:median(comparable.map(n=>n.value)),value,
       duration_delta:night.sleep_minutes-median(comparable.map(n=>n.n.sleep_minutes)),baseline_ids:comparable.map(n=>n.n.id||n.n.date),execution_id:execution.id});
