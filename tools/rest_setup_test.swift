@@ -23,7 +23,7 @@ enum BlankmindAppPresence {
     func sleepContextProfile() -> [String: Any] { ["sleep_source": "synthetic_qa"] }
     func completeRestSetup(owner: String) { completedOwner = owner }
 }
-@MainActor final class ScreenTimeFixture { var authorizationStatus = Authorization.approved }
+@MainActor final class ScreenTimeFixture { var authorizationStatus = Authorization.approved; var hasAuthorization: Bool { authorizationStatus == .approved } }
 @MainActor final class SessionFixture {
     var hasSelectedApps = false
     var selectionCount = 0

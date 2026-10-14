@@ -11,11 +11,19 @@ final class ScreenTimeBlocker: ObservableObject {
     private var selection = FamilyActivitySelection()
     private var allowOnlyModeEnabled = false
     private var adultContentBlockingEnabled = false
+    var hasAuthorization: Bool {
+        if authorizationStatus == .approved { return true }
+        #if compiler(>=6.3)
+        if #available(iOS 26.4, *) { return authorizationStatus == .approvedWithDataAccess }
+        #endif
+        return false
+    }
     #if DEBUG
     private var usesPreviewAuthorizationStatus = false
     #endif
 
     var authorizationStatusLabel: String {
+        if hasAuthorization { return "approved" }
         switch authorizationStatus {
         case .notDetermined:
             return "notDetermined"
@@ -38,14 +46,14 @@ final class ScreenTimeBlocker: ObservableObject {
     func requestAuthorization() async -> Bool {
         #if DEBUG
         if usesPreviewAuthorizationStatus {
-            return authorizationStatus == .approved
+            return hasAuthorization
         }
         #endif
         do {
             try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
             await refreshAuthorizationStatusUntilSettled()
             lastErrorMessage = nil
-            return authorizationStatus == .approved
+            return hasAuthorization
         } catch {
             await refreshAuthorizationStatusUntilSettled()
             lastErrorMessage = error.localizedDescription
@@ -56,7 +64,7 @@ final class ScreenTimeBlocker: ObservableObject {
     func refreshAuthorizationStatusUntilSettled() async {
         for _ in 0..<10 {
             refreshAuthorizationStatus()
-            if authorizationStatus == .approved {
+            if hasAuthorization {
                 return
             }
             try? await Task.sleep(nanoseconds: 250_000_000)

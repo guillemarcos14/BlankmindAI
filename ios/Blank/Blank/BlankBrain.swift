@@ -18,6 +18,7 @@ final class BlankBrain {
     private var archiveOwner: String?
     private var syncedSessionPages: [Int: Data] = [:]
     private var syncedSignalIDs = Set<String>()
+    private var lastRestContent: Data?
     var chatIsOpen = false
     private var executionInFlight = false
     private var backgroundStore: SessionStore?
@@ -39,7 +40,19 @@ final class BlankBrain {
         HealthKitStore.shared.objectWillChange
             .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .sink { [weak self] _ in self?.sync() }.store(in: &subscriptions)
+        RestHealthContext.shared.objectWillChange
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.sync() }.store(in: &subscriptions)
+        RestDigitalContext.shared.objectWillChange
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.sync() }.store(in: &subscriptions)
+        NotificationCenter.default.publisher(for: RestCheckInRepository.didChange)
+            .sink { [weak self] _ in self?.sync() }.store(in: &subscriptions)
+        NotificationCenter.default.publisher(for: RestAIConsent.didChange)
+            .sink { [weak self] _ in self?.sharingChanged() }.store(in: &subscriptions)
         HealthKitStore.shared.refresh()
+        RestHealthContext.shared.refresh()
+        Task { await RestDigitalContext.shared.refresh() }
         sync()
     }
 
@@ -75,13 +88,14 @@ final class BlankBrain {
         notificationsAuthorized = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional || settings.authorizationStatus == .ephemeral
         blocker?.refreshAuthorizationStatus()
         store?.applyScheduleWindow()
+        guard await flushRestRevocation(owner: owner) else { return nil }
+        await syncRest(owner: owner)
         return snapshot()
     }
 
     func snapshot(now: Date = Date()) -> [String: Any]? {
         guard HealthKitStore.shared.restAIAvailable else { return nil }
         guard let store, let blocker, let owner = AssistantAppSession.userID else { return nil }
-        let system = store.digitalWellnessV3
         let defaults = BlankSharedState.defaults
         defaults.set(owner, forKey:"blankBMBSignalOwner")
         let currentRevision = Int64(now.timeIntervalSince1970 * 1_000_000)
@@ -122,32 +136,30 @@ final class BlankBrain {
             "profile_name": defaults.string(forKey: "blankBrainFirstHistoryOwner") == owner ? (defaults.string(forKey: "blankOnboardingName") ?? "") : "",
             "age_range": defaults.string(forKey: "blankBrainFirstHistoryOwner") == owner ? (defaults.string(forKey: "blankOnboardingAgeRange") ?? "") : "",
             "is_blank_active": store.isBlankActive, "has_selected_apps": store.hasSelectedApps,
-            "selection_count": store.selectionCount, "screen_time_authorized": blocker.authorizationStatus == .approved,
+            "selection_count": store.selectionCount, "screen_time_authorized": blocker.hasAuthorization,
             "notification_authorized": notificationsAuthorized,
             "emergency_unlocks_remaining": store.emergencyUnlocksRemaining,
             "vacation_mode_active": store.isVacationModeActive,
-            "adherence_score": system.profile.adherenceScore,
-            "weekly_protected_minutes": system.profile.weeklyProtectedMinutes,
-            "weekly_break_count": system.profile.weeklyBreakCount,
-            "risk_window": system.forecast.riskWindow,
-            "recommended_duration_minutes": system.plan.recommendedDurationMinutes,
-            "weekly_goal": system.plan.weeklyGoal, "single_distraction_block": true,
+            "single_distraction_block": true,
             "protection_target": "selected_distractions",
-            "app_presence": BlankmindAppPresence.payload(appReady: store.hasSelectedApps && blocker.authorizationStatus == .approved),
-            "device_execution_ready": store.hasSelectedApps && blocker.authorizationStatus == .approved,
+            "app_presence": BlankmindAppPresence.payload(appReady: store.hasSelectedApps && blocker.hasAuthorization),
+            "device_execution_ready": store.hasSelectedApps && blocker.hasAuthorization,
             "schedule": store.assistantScheduleContext(), "allow_only_mode_enabled": store.allowOnlyModeEnabled,
             "adult_content_blocking_enabled": store.adultContentBlockingEnabled,
             "daily_limit_enabled": store.dailyLimitEnabled, "daily_limit_minutes": store.dailyLimitMinutes,
-            "memory": ["weak_hours": BlankedAgentMemory.rememberedWeakHours(system: system), "last_plan_outcome": ""], "brain_snapshot": history]
+            "brain_snapshot": history]
         let health = HealthKitStore.shared
         health.reconcileSleepSource()
         payload["sleep_data_available"] = health.sleepDataAvailable
         payload["sleep_data_checked_at"] = iso.string(from: now)
         payload["health_signal_reasons"] = health.sleepProvenance
         payload["personal_profile"] = health.sleepContextProfile(now: now)
+        if let rest = RestHealthContext.shared.brainSnapshot(now: now), var profile = payload["personal_profile"] as? [String: Any] {
+            profile["rest_snapshot"] = ["schema_version": 1, "observed_at": rest["observed_at"] ?? "", "digital": RestDigitalContext.shared.snapshot.filter { $0.key != "rows" }]
+            payload["personal_profile"] = profile
+        }
         // Explicit zero plus availability=false overwrites a previous source on disable; omission would retain old context.
         payload["sleep_minutes"] = health.summaries.last(where: { $0.sleepMinutes != nil })?.sleepMinutes ?? 0
-        if let value = system.profile.strongestWindow { payload["strongest_hour"] = value }
         return payload
     }
 
@@ -159,6 +171,8 @@ final class BlankBrain {
             let settings = await UNUserNotificationCenter.current().notificationSettings()
             guard owner == AssistantAppSession.userID, !Task.isCancelled else { return }
             notificationsAuthorized = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional || settings.authorizationStatus == .ephemeral
+            guard await flushRestRevocation(owner: owner) else { return }
+            await syncRest(owner: owner)
             // Observing published changes must not mutate those same publishers.
             // Fresh turn snapshots reconcile native state separately.
             guard let payload = snapshot() else { return }
@@ -184,6 +198,56 @@ final class BlankBrain {
             let synced = await AssistantContextSyncClient().sync(connectCode: code, channel: "app", payload: payload)
             guard !Task.isCancelled, owner == AssistantAppSession.userID else { return }
             if synced { lastSyncedContent = digest; lastSyncedAt = Date(); await syncAllSessions(owner: owner) }
+        }
+    }
+
+    private func syncRest(owner: String?) async {
+        guard store != nil else { return }
+        if !BlankSharedState.familyControlsApproved || store?.hasSelectedApps == false {
+            BlankSharedState.recordRestProtection(activeWindowIDs: [], uncertain: true, defaults: BlankSharedState.defaults)
+        }
+        guard let owner, owner == AssistantAppSession.userID, HealthKitStore.shared.restAIAvailable,
+              var snapshot = RestHealthContext.shared.brainSnapshot() else { return }
+        snapshot["schedule"] = store?.assistantScheduleContext() ?? ["enabled": false, "windows": []]
+        snapshot["phone_context"] = BlankSharedState.defaults.array(forKey: "blankRestBreakContext.v1." + owner) ?? []
+        var stable = snapshot; stable.removeValue(forKey: "observed_at")
+        stable["owner"] = owner
+        guard let digest = try? JSONSerialization.data(withJSONObject: stable, options: [.sortedKeys]), digest != lastRestContent else { return }
+        guard let data = try? JSONSerialization.data(withJSONObject: ["action": "bmb_sync_rest", "app_install_id": BlankSharedState.appInstallId, "snapshot": snapshot]) else { return }
+        if let (_, response) = try? await AssistantAppClient().postAuthorized(path: "assistant-app", payload: data, timeout: 15),
+           response.statusCode == 200, owner == AssistantAppSession.userID, !Task.isCancelled { lastRestContent = digest }
+    }
+    func syncMeasuredRest() async {
+        if store == nil { backgroundStore = SessionStore(); store = backgroundStore }
+        guard await flushRestRevocation(owner: AssistantAppSession.userID) else { return }
+        await syncRest(owner: AssistantAppSession.userID)
+    }
+
+    // Persist withdrawal across an offline session or process restart. A fresh
+    // opt-in may upload new evidence only after the previous withdrawal lands.
+    private func flushRestRevocation(owner: String?) async -> Bool {
+        guard let owner, owner == AssistantAppSession.userID else { return false }
+        let key = "blankRestPendingRevocation.v1." + owner
+        guard let withdrawal = BlankSharedState.defaults.string(forKey: key) else { return true }
+        guard let data = try? JSONSerialization.data(withJSONObject: ["action": "bmb_revoke_rest", "app_install_id": BlankSharedState.appInstallId]),
+              let (_, response) = try? await AssistantAppClient().postAuthorized(path: "assistant-app", payload: data, timeout: 10),
+              response.statusCode == 200, owner == AssistantAppSession.userID else { return false }
+        guard BlankSharedState.defaults.string(forKey: key) == withdrawal else { return false }
+        BlankSharedState.defaults.removeObject(forKey: key)
+        return true
+    }
+
+    private func sharingChanged() {
+        lastRestContent = nil
+        let owner = AssistantAppSession.userID
+        if HealthKitStore.shared.aiSharingAllowed {
+            RestHealthContext.shared.refresh(force: true)
+            sync()
+        } else {
+            syncTask?.cancel()
+            RestDigitalContext.shared.clear()
+            if let owner { BlankSharedState.defaults.set(UUID().uuidString, forKey: "blankRestPendingRevocation.v1." + owner) }
+            sync()
         }
     }
 
@@ -222,6 +286,7 @@ final class BlankBrain {
     func executeAutonomous(actionID: String? = nil) async -> Bool {
         guard HealthKitStore.shared.restAIAvailable else { return false }
         guard !executionInFlight, let owner = AssistantAppSession.userID else { return false }
+        guard await flushRestRevocation(owner: owner) else { return false }
         executionInFlight = true
         defer { executionInFlight = false }
         if store == nil {
@@ -240,7 +305,7 @@ final class BlankBrain {
               let action = maybeAction, action.autonomous == true, action.id.hasPrefix("bmb_"),
               actionID == nil || actionID == action.id, owner == AssistantAppSession.userID else { return false }
         blocker.refreshAuthorizationStatus()
-        guard blocker.authorizationStatus == .approved, store.hasSelectedApps, !store.isVacationModeActive,
+        guard blocker.hasAuthorization, store.hasSelectedApps, !store.isVacationModeActive,
               store.schedulePausedUntil.map({ $0 <= Date() }) ?? true else {
             let receipt = AssistantActionReceipt(actionId:action.id,status:"failed",detail:"native_permission_selection_or_pause",executionStarted:false)
             AssistantActionReceiptStore.save(actionId:receipt.actionId,status:receipt.status,detail:receipt.detail,executionStarted:false)
@@ -266,14 +331,11 @@ final class BlankBrain {
             receipt = AssistantActionReceipt(actionId:action.id,status:result.status,detail:result.detail,executionStarted:true,
                 requestedAt:iso.string(from:result.requestedAt),startedAt:iso.string(from:result.startedAt),requestedDurationMinutes:result.requestedDurationMinutes,
                 effectiveUntil:result.effectiveUntil.map(iso.string(from:)) ?? "",origin:"assistant_remote",result:result.result,startDelaySeconds:result.startDelaySeconds,mergedWithExisting:result.mergedWithExisting)
-        } else if action.type == "set_daily_limit", let minutes = action.minutes {
-            store.dailyLimitMinutes = minutes; store.dailyLimitEnabled = true; store.refreshDailyLimitMonitoring()
-            receipt = AssistantActionReceipt(actionId:action.id,status:store.dailyLimitRegistered ? "verified":"failed",detail:"daily_limit_native_checked",executionStarted:true)
-        } else if action.type == "enable_adult_filter" {
-            store.adultContentBlockingEnabled = true
-            blocker.updateAdvancedControls(allowOnlyModeEnabled:store.allowOnlyModeEnabled,adultContentBlockingEnabled:true)
-            blocker.apply(isBlankActive:store.isBlankActive)
-            receipt = AssistantActionReceipt(actionId:action.id,status:"verified",detail:"adult_filter_native_checked",executionStarted:true)
+        } else if action.type == "update_schedule" {
+            let registered = store.applyBMBProtectionSchedule(action)
+            blocker.updateSelection(store.selection, isBlankActive: store.isBlankActive)
+            receipt = AssistantActionReceipt(actionId: action.id, status: registered ? "verified" : "failed",
+                detail: registered ? "dated_schedule_registered" : store.bmbScheduleFailure, executionStarted: true)
         } else { receipt = AssistantActionReceipt(actionId:action.id,status:"failed",detail:"unsupported_background_action",executionStarted:true) }
         AssistantActionReceiptStore.save(actionId:receipt.actionId,status:receipt.status,detail:receipt.detail,executionStarted:receipt.executionStarted,
             requestedAt:receipt.requestedAt,startedAt:receipt.startedAt,requestedDurationMinutes:receipt.requestedDurationMinutes,

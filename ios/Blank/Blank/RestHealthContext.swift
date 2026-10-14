@@ -1,8 +1,12 @@
 import Foundation
 import HealthKit
 import Combine
+import DeviceActivity
+import FamilyControls
+import UIKit
+import SwiftUI // Loads the public DeviceActivity SwiftUI overlay (activitySegments).
 
-// Broad context stays on-device. Progress never enables cloud/AI consent.
+// Progress never enables cloud sharing; summaries require a separate explicit opt-in.
 enum RestHealthCatalog {
     static var quantities: [HKQuantityType] {
         var identifiers: [HKQuantityTypeIdentifier] = [
@@ -138,6 +142,7 @@ final class RestHealthContext: ObservableObject {
     @Published private(set) var loading = false
     @Published private(set) var error: String?
     @Published private(set) var loadedAt: Date?
+    private var sleepLoadedAt: Date?
     private let health = HKHealthStore()
     private var request = UUID()
     private var queries: [HKQuery] = []
@@ -156,7 +161,7 @@ final class RestHealthContext: ObservableObject {
         request = UUID()
         queries.forEach(health.stop)
         queries = []
-        metrics = []; nights = []; traits = []; heartSamples = []; loading = false; error = nil; loadedAt = nil
+        metrics = []; nights = []; traits = []; heartSamples = []; loading = false; error = nil; loadedAt = nil; sleepLoadedAt = nil
         owner = AssistantAppSession.userID
     }
     func refresh(force: Bool = false) {
@@ -169,7 +174,8 @@ final class RestHealthContext: ObservableObject {
         let token = request, account = owner, now = Date(), calendar = Calendar.current
         let start = calendar.date(byAdding: .day, value: -35, to: calendar.startOfDay(for: now))!
         // Query a bounded number concurrently; each query has a timeout and a latest-sample cap.
-        let types = RestHealthCatalog.sampleTypes
+        let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)
+        let types = (sleep.map { [$0 as HKSampleType] } ?? []) + RestHealthCatalog.sampleTypes.filter { $0.identifier != sleep?.identifier }
         readCharacteristics(now: now)
         health.preferredUnits(for: Set(RestHealthCatalog.quantities)) { [weak self] units, unitError in
             DispatchQueue.main.async {
@@ -243,8 +249,10 @@ final class RestHealthContext: ObservableObject {
                         self.nights = RestNight.build((rows as? [HKCategorySample] ?? []).map {
                             RestSleepObservation(start: $0.startDate, end: $0.endDate, value: $0.value,
                                 source: $0.sourceRevision.source.bundleIdentifier,
-                                manual: $0.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
+                                manual: $0.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true,
+                                isAppleWatch: $0.device?.model?.lowercased().contains("watch") == true || $0.sourceRevision.productType?.hasPrefix("Watch") == true)
                         }, now: now, calendar: calendar)
+                        self.sleepLoadedAt = now
                     }
                     if let quantity = type as? HKQuantityType, let unit = units[quantity], let values = rows as? [HKQuantitySample] {
                         let cumulative = quantity.aggregationStyle == .cumulative
@@ -281,6 +289,31 @@ final class RestHealthContext: ObservableObject {
         }
     }
     private var heartSamples: [HKQuantitySample] = []
+    @MainActor func brainSnapshot(now: Date = Date()) -> [String: Any]? {
+        guard owner == AssistantAppSession.userID, owner != nil, let observedAt = loadedAt ?? sleepLoadedAt,
+              now.timeIntervalSince(observedAt) < 86400, HealthKitStore.shared.aiSharingAllowed else { return nil }
+        let iso = ISO8601DateFormatter()
+        let calendar = Calendar.current
+        let context: [String: Any] = ["observed_at": iso.string(from: observedAt), "partial": error != nil || loading,
+            "metrics": metrics.map { metric in
+                ["id": metric.id, "family": metric.family, "unit": metric.unit, "note": metric.note,
+                 "points": metric.points.suffix(35).map { point in
+                    ["date": RestCheckInRepository.dayKey(point.date, calendar: calendar), "value": point.value,
+                     "sample_count": point.count, "sources": point.sources] as [String: Any]
+                 }, "entries": metric.entries.prefix(20).map { entry in
+                    ["date": iso.string(from: entry.date), "title": entry.title, "detail": entry.detail, "source": entry.source]
+                 }] as [String: Any]
+            }, "traits": traits.map { ["id": $0.id, "value": $0.value, "source": "apple_health_characteristic", "measurement_date_known": false] as [String: Any] }]
+        let checkins = RestCheckInRepository.load(owner: owner, defaults: BlankSharedState.defaults, now: now)
+            .suffix(35).map { ["date": $0.day, "score": $0.score] as [String: Any] }
+        return ["schema_version": 1, "observed_at": iso.string(from: now), "timezone": calendar.timeZone.identifier,
+            "nights": HealthKitStore.shared.syntheticSleepEnabled ? [] : nights.suffix(35).map { $0.measuredPayload(calendar: calendar) },
+            "checkins": checkins,
+            "protection_intervals": (BlankSharedState.defaults.array(forKey: "blankRestProtectionIntervals") as? [[String: Any]] ?? [])
+                .filter { $0["owner"] as? String == owner }.map { $0.filter { $0.key != "owner" } },
+            "health_context": RestContextConsent.allowed(owner: owner, defaults: BlankSharedState.defaults) ? context : NSNull(),
+            "digital": RestDigitalContext.shared.snapshot]
+    }
     private func rebuildNightHeartRate(calendar: Calendar) {
         metrics.removeAll { $0.id == "blank.nightHeartRate" }
         let unit = HKUnit.count().unitDivided(by: .minute())
@@ -387,5 +420,77 @@ final class RestHealthContext: ObservableObject {
             note: (type is HKClinicalType ? "Available clinical history, including records older than 35 days. " : "")
                 + "Recorded entries; their presence does not diagnose a condition. Clinical documents and ECG waveforms remain in Apple Health." + (capped ? " Latest 10,000 records only." : ""),
             isCategory: unit == "records", entries: entries)
+    }
+}
+
+@MainActor
+final class RestDigitalContext: ObservableObject {
+    static let shared = RestDigitalContext()
+    @Published private(set) var snapshot: [String: Any] = ["available": false, "reason": "usage_access_not_connected", "rows": []]
+    private var requestID = UUID()
+    private var refreshedAt = Date.distantPast
+    func clear() { requestID = UUID(); refreshedAt = .distantPast; snapshot = ["available": false, "reason": "usage_access_not_connected", "rows": []] }
+    func connect() async {
+        guard let owner = AssistantAppSession.userID, HealthKitStore.shared.aiSharingAllowed else { return }
+        #if compiler(>=6.3)
+        if #available(iOS 26.4, *) {
+            do {
+                try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+                guard owner == AssistantAppSession.userID,
+                      AuthorizationCenter.shared.authorizationStatus == .approvedWithDataAccess else {
+                    snapshot = ["available": false, "reason": "usage_access_region_or_permission_unavailable", "rows": []]; return
+                }
+                BlankSharedState.defaults.set(true, forKey: "blankRestUsageConsent.v1." + owner)
+                await refresh(force: true)
+                return
+            } catch { snapshot = ["available": false, "reason": "usage_access_not_authorized", "rows": []]; return }
+        }
+        #endif
+        snapshot = ["available": false, "reason": "usage_access_requires_supported_ios_sdk", "rows": []]
+    }
+    func disconnect() {
+        if let owner = AssistantAppSession.userID { BlankSharedState.defaults.removeObject(forKey: "blankRestUsageConsent.v1." + owner) }
+        clear()
+    }
+    func refresh(force: Bool = false) async {
+        guard let owner = AssistantAppSession.userID, HealthKitStore.shared.aiSharingAllowed,
+              BlankSharedState.defaults.bool(forKey: "blankRestUsageConsent.v1." + owner) else { clear(); return }
+        guard force || Date().timeIntervalSince(refreshedAt) > 300 else { return }
+        let token = UUID(); requestID = token
+        #if compiler(>=6.3)
+        if #available(iOS 26.4, *) {
+            guard AuthorizationCenter.shared.authorizationStatus == .approvedWithDataAccess else {
+                snapshot = ["available": false, "reason": "usage_access_revoked_or_region_unavailable", "rows": []]; return
+            }
+            let now = Date(), start = now.addingTimeInterval(-35 * 86400), iso = ISO8601DateFormatter()
+            let filter = DeviceActivityFilter(segment: .hourly(during: DateInterval(start: start, end: now)))
+            var rows: [[String: Any]] = []
+            do {
+                for try await data in DeviceActivityData.activityData(filteredBy: filter, using: .cached) {
+                    // Only this phone; no names or app/domain identifiers leave the device.
+                    guard data.device.name == UIDevice.current.name else { continue }
+                    for await segment in data.activitySegments {
+                        guard segment.dateInterval.end <= now else { continue }
+                        var pickups = segment.totalPickupsWithoutApplicationActivity
+                        for await category in segment.categories {
+                            for await app in category.applications { pickups += app.numberOfPickups }
+                        }
+                        rows.append(["start_at": iso.string(from: segment.dateInterval.start),
+                            "end_at": iso.string(from: segment.dateInterval.end),
+                            "usage_minutes": segment.totalActivityDuration / 60, "pickups": pickups])
+                    }
+                }
+                guard owner == AssistantAppSession.userID, token == requestID, HealthKitStore.shared.aiSharingAllowed else { return }
+                refreshedAt = now
+                snapshot = rows.isEmpty ? ["available": false, "reason": "no_current_phone_usage_records", "rows": []]
+                    : ["available": true, "source": "apple_activity_data", "observed_at": iso.string(from: now), "rows": Array(rows.suffix(840))]
+            } catch {
+                guard owner == AssistantAppSession.userID, token == requestID else { return }
+                snapshot = ["available": false, "reason": "usage_access_query_failed", "rows": []]
+            }
+            return
+        }
+        #endif
+        snapshot = ["available": false, "reason": "usage_access_requires_supported_ios_sdk", "rows": []]
     }
 }

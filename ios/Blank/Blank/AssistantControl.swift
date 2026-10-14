@@ -90,8 +90,6 @@ struct AssistantInboxAction: Decodable {
             return .pauseRules(hours: min(max(hours ?? 168, 1), 168))
         case "disable_pause":
             return .disablePause
-        case "apply_ai_plan":
-            return .applyAIPlan
         case "open_app_picker":
             let pickerName = name ?? ""
             let pickerSchedule: PendingPlanSchedule?

@@ -2,7 +2,7 @@
 // Experimental read-ahead only. Existing planner retains all action/memory authority.
 const {performance}=require("node:perf_hooks");
 const {readSource}=require("./bmb-sources");
-const {sources}=require("./bm-jev-taxonomy.json");
+const {sources}=require("./bm-source-taxonomy.json");
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ENDPOINT="https://api.openai.com/v1/decisions",MODEL="gpt-6-luna";
 const QA="https://njqbovsmoowkhhsqmitn.supabase.co";

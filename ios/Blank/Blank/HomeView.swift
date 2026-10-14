@@ -370,9 +370,6 @@ struct HomeView: View {
         self.onOpenOnboardingDemo = onOpenOnboardingDemo
     }
 
-    private var aiSystem: DigitalWellnessV3System {
-        sessionStore.digitalWellnessV3
-    }
 
     private var healthPermissionLabel: String {
         if healthKitStore.sampleSleepEnabled { return "sample sleep · not measured" }
@@ -446,10 +443,10 @@ struct HomeView: View {
                     RelapseReviewSheet(
                         onSelect: { reason in
                             sessionStore.recordRelapseReview(reason)
-                            sessionStore.applyAIPlan()
+                            BlankBrain.shared.sync()
                             Task {
                                 await BlankFunnelAnalytics.track(
-                                    "ai_plan_applied",
+                                    "rest_context_recorded",
                                     properties: ["source": "relapse_review", "reason": reason.rawValue]
                                 )
                             }
@@ -550,7 +547,7 @@ struct HomeView: View {
             healthKitStore.refresh()
             processPendingBlockConfigurationIfNeeded()
             showPendingBAIProactiveAlertIfNeeded()
-            evaluateBAIProactiveSignals()
+            BlankBrain.shared.sync()
             syncAssistantContext()
             refreshAssistantNotificationAuthorization()
             pollPendingAssistantActionIfNeeded(force: true)
@@ -577,7 +574,7 @@ struct HomeView: View {
             healthKitStore.refresh()
             processPendingBlockConfigurationIfNeeded()
             showPendingBAIProactiveAlertIfNeeded()
-            evaluateBAIProactiveSignals()
+            BlankBrain.shared.sync()
             syncAssistantContext()
             refreshAssistantNotificationAuthorization()
             pollPendingAssistantActionIfNeeded(force: true)
@@ -644,7 +641,7 @@ struct HomeView: View {
                 var assistantActionApplied = false
                 var assistantProtectionExecution: AssistantProtectionExecution?
                 screenTimeBlocker.refreshAuthorizationStatus()
-                let permissionApproved = screenTimeBlocker.authorizationStatus == .approved
+                let permissionApproved = screenTimeBlocker.hasAuthorization
                 let selectionConfirmed = permissionApproved && contextualPlanSelection.blankedSelectionCount > 0 && sessionStore.canEditSelectedDistractions
                 if selectionConfirmed {
                     sessionStore.selection = contextualPlanSelection
@@ -1101,7 +1098,7 @@ struct HomeView: View {
             stopBlockHoldHaptics()
             guard !sessionStore.isBlankActive else { return }
             screenTimeBlocker.refreshAuthorizationStatus()
-            guard screenTimeBlocker.authorizationStatus == .approved else {
+            guard screenTimeBlocker.hasAuthorization else {
                 message = "Allow Screen Time in settings to block distractions."
                 messageAction = nil
                 showingHomeBlockError = true
@@ -1638,24 +1635,6 @@ struct HomeView: View {
         sessionStore.refreshDailyLimitMonitoring()
     }
 
-    private func evaluateBAIProactiveSignals() {
-        guard healthKitStore.restAIAvailable else { return }
-        let system = aiSystem
-        let summaries = healthKitStore.summaries
-        let selectionCount = sessionStore.selectionCount
-        let screenTimeAuthorized = screenTimeBlocker.authorizationStatus == .approved
-        let isBlankActive = sessionStore.isBlankActive
-
-        Task {
-            await BAIProactiveSignalEngine.evaluate(
-                system: system,
-                healthSummaries: summaries,
-                selectionCount: selectionCount,
-                screenTimeAuthorized: screenTimeAuthorized,
-                isBlankActive: isBlankActive
-            )
-        }
-    }
 
     private var isSimulatorBuild: Bool {
         #if targetEnvironment(simulator)
@@ -1878,8 +1857,6 @@ struct HomeView: View {
             return "Pause protection rules for \(hours) hours?"
         case .disablePause:
             return "Resume protection rules?"
-        case .applyAIPlan:
-            return "Apply the recommended adaptive plan?"
         case .openAppPicker:
             return "Open the app picker to choose what Blankmind can protect?"
         case .configureAndOpenAppPicker(_, let durationMinutes, _, let schedule):
@@ -1897,7 +1874,7 @@ struct HomeView: View {
     private func confirmPendingAssistantAction() {
         guard let pendingAction = sessionStore.pendingAssistantAction else { return }
         screenTimeBlocker.refreshAuthorizationStatus()
-        if assistantActionRequiresScreenTime(pendingAction), screenTimeBlocker.authorizationStatus != .approved {
+        if assistantActionRequiresScreenTime(pendingAction), !screenTimeBlocker.hasAuthorization {
             assistantActionExecutionInFlight = true
             let code = assistantConnectCode.trimmingCharacters(in: .whitespacesAndNewlines)
             let channel = "app"
@@ -1908,7 +1885,7 @@ struct HomeView: View {
                 await MainActor.run {
                     guard assistantIdentityMatches(code: code, channel: channel, owner: accountID),
                           pendingAssistantActionId == actionID else { return }
-                    if screenTimeBlocker.authorizationStatus == .approved {
+                    if screenTimeBlocker.hasAuthorization {
                         confirmPendingAssistantAction()
                     } else {
                         sessionStore.clearAssistantActionConfirmation()
@@ -2064,10 +2041,6 @@ struct HomeView: View {
             sessionStore.disableVacationMode()
             applyScreenTimeControls()
             finishPendingAssistantAction(status: sessionStore.isVacationModeActive ? "failed" : "verified", detail: "resume_state_checked")
-        case .applyAIPlan:
-            sessionStore.applyAIPlan()
-            applyScreenTimeControls()
-            finishPendingAssistantAction(status: sessionStore.recurringScheduleRegistered ? "verified" : "failed", detail: sessionStore.recurringScheduleRegistered ? "ai_plan_registered" : "device_activity_registration_failed")
         case .openAppPicker(let appNames):
             sessionStore.requestBlockConfiguration(appNames: appNames)
         case .configureAndOpenAppPicker(let appNames, let durationMinutes, let hardMode, let schedule):
@@ -2095,7 +2068,7 @@ struct HomeView: View {
                           pendingAssistantActionId == actionID else { return }
                     applyScreenTimeControls()
                     finishPendingAssistantAction(
-                        status: screenTimeBlocker.authorizationStatus == .approved ? "verified" : "failed",
+                        status: screenTimeBlocker.hasAuthorization ? "verified" : "failed",
                         detail: "screen_time_authorization_checked"
                     )
                 }
@@ -2106,7 +2079,7 @@ struct HomeView: View {
     private func assistantActionRequiresScreenTime(_ action: AssistantPendingAction) -> Bool {
         switch action {
         case .startProtection, .setDailyLimit, .allowOnly, .adultFilter,
-             .applySchedule, .updateSchedule, .disablePause, .applyAIPlan,
+             .applySchedule, .updateSchedule, .disablePause,
              .openAppPicker, .configureAndOpenAppPicker, .configureAndOpenDailyLimitPicker:
             return true
         case .deleteSchedule, .deleteAllSchedules, .pauseRules, .requestScreenTimePermission:
@@ -2191,9 +2164,6 @@ struct HomeView: View {
         return "Choose every app, category or website that distracts you. You can edit this one list later."
     }
 
-    private var riskWindowText: String {
-        aiSystem.forecast.riskWindow
-    }
 
     private func syncAssistantContext() {
         guard healthKitStore.restAIAvailable else { return }
@@ -2343,37 +2313,9 @@ struct HomeView: View {
     }
 
     private var relapseIntervention: RelapseIntervention {
-        guard let recoveryScore = homeRecoveryScore(), recoveryScore < 45 else {
-            return aiSystem.relapseIntervention
-        }
-        return RelapseIntervention(
-            headline: "Make this easier, not broken.",
-            cost: "Low recovery days are when automatic scrolling wins faster.",
-            alternative: "Hold 5 more minutes, then do a shorter next block."
-        )
-    }
-
-    private func homeRecoveryScore() -> Int? {
-        let recent = Array(healthKitStore.summaries.suffix(7))
-        var scoreParts: [Int] = []
-        let sleepValues = recent.compactMap(\.sleepMinutes)
-        let stepValues = recent.compactMap(\.steps)
-        let workoutValues = recent.compactMap(\.workoutMinutes)
-
-        if let averageSleep = average(sleepValues) {
-            scoreParts.append(min(100, max(0, Int(Double(averageSleep) / (8 * 60) * 100))))
-        }
-        if let averageSteps = average(stepValues) {
-            scoreParts.append(min(100, max(0, Int(Double(averageSteps) / 8000 * 100))))
-        }
-        if let averageWorkout = average(workoutValues) {
-            scoreParts.append(min(100, max(0, Int(Double(averageWorkout) / 30 * 100))))
-        }
-        return average(scoreParts)
-    }
-
-    private func average(_ values: [Int]) -> Int? {
-        values.isEmpty ? nil : values.reduce(0, +) / values.count
+        RelapseIntervention(headline: "Your rest window is protected.",
+            cost: "A break helps us understand what made this window difficult.",
+            alternative: "We will assess the plan with measured Watch sleep, within your preferences.")
     }
 
     private func resolve(_ action: HomeMessageAction) {
@@ -4555,6 +4497,14 @@ private struct BMBSettingsView: View {
     @State private var active = false
     @State private var enabled = false
     @State private var allowedTypes = Set(["start_protection"])
+    @State private var restAdjustments = false
+    @State private var globalLearning = false
+    @State private var restDays = Set([1,2,3,4,5,6,7])
+    @State private var restStart = 1260
+    @State private var restEnd = 480
+    @State private var restShift = 15
+    @State private var restReviewDays = 14
+    @State private var shareHealthContext = false
     @State private var actionStart = 0
     @State private var actionEnd = 0
     @State private var quietStart = 480
@@ -4584,18 +4534,40 @@ private struct BMBSettingsView: View {
                 if section == .automaticProtection {
                   Section("Permission") {
                     Toggle("Allow automatic protection", isOn:$active)
-                    Text("Blankmind may make only the changes you allow, within your limits. iOS may delay delivery. Existing blocks keep their release rules.").font(.blankInter(size: 14, relativeTo: .footnote))
-                  }
-                  Section("Allowed changes") {
-                    ForEach([("start_protection","Block selected distractions"),("set_daily_limit","Set daily limit"),("enable_adult_filter","Enable adult filter")], id: \.0) { type,label in
-                        Toggle(label,isOn:Binding(get:{ allowedTypes.contains(type) },set:{ if $0 { allowedTypes.insert(type) } else { allowedTypes.remove(type) } }))
-                    }
-                    Text("Daily limits and the adult filter stay on until you change them. Revoking permission stops future automatic changes.").font(.blankInter(size: 14, relativeTo: .footnote))
-                  }
-                  Section("When and for how long") {
+                    Text("Blankmind uses measured Apple Watch sleep to assess whether protecting your rest helps. Changes stay within your limits. Existing blocks keep their release rules.").font(.blankInter(size: 14, relativeTo: .footnote))
                     DatePicker("Allowed from",selection:clock($actionStart),displayedComponents:.hourAndMinute)
                     DatePicker("Allowed until",selection:clock($actionEnd),displayedComponents:.hourAndMinute)
                     Text("Set the same start and end time to allow any hour.").font(.blankInter(size: 14, relativeTo: .footnote))
+                  }
+                  Section("Allowed changes") {
+                    ForEach([("start_protection","Block selected distractions"),("update_schedule","Adjust my rest window")], id: \.0) { type,label in
+                        Toggle(label,isOn:Binding(get:{ allowedTypes.contains(type) },set:{ if $0 { allowedTypes.insert(type) } else { allowedTypes.remove(type) } }))
+                    }
+                    Text("A rest window changes only after enough comparable Watch nights. Revoking permission stops future automatic changes.").font(.blankInter(size: 14, relativeTo: .footnote))
+                  }
+                  Section("Rest plan limits") {
+                    Toggle("Allow measured rest adjustments", isOn: $restAdjustments)
+                    DisclosureGroup("Allowed days") {
+                        ForEach(Array(zip(1...7, ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"])), id: \.0) { day, label in
+                            Toggle(label, isOn: Binding(get: { restDays.contains(day) }, set: { if $0 { restDays.insert(day) } else { restDays.remove(day) } }))
+                        }
+                    }
+                    DatePicker("Rest window from", selection: clock($restStart), displayedComponents: .hourAndMinute)
+                    DatePicker("Rest window until", selection: clock($restEnd), displayedComponents: .hourAndMinute)
+                    Stepper("Maximum time adjustment: \(restShift) min", value: $restShift, in: 5...30, step: 5)
+                    Stepper("Evaluate after \(restReviewDays) days", value: $restReviewDays, in: 7...14)
+                    Text("The plan stays stable during evaluation. Feelings and completing a block provide context; measured Watch sleep determines the outcome.").font(.blankInter(size: 14, relativeTo: .footnote))
+                  }
+                  Section("Rest data") {
+                    Toggle("Share additional Health context", isOn: $shareHealthContext)
+                    Text("Optional Health summaries, including available body signals and clinical context, are sent to our backend and OpenAI to understand your rest. Original documents stay in Apple Health.").font(.blankInter(size: 14, relativeTo: .footnote))
+                    Button("Connect phone-use data") { Task { await RestDigitalContext.shared.connect(); BlankBrain.shared.sync() } }
+                    Button("Stop sharing phone-use data") { RestDigitalContext.shared.disconnect(); BlankBrain.shared.sync() }
+                    Text("Phone-use data requires supported iOS, Apple permission and an eligible EU device and account. Missing access remains unknown.").font(.blankInter(size: 14, relativeTo: .footnote))
+                    Toggle("Help improve rest recommendations", isOn: $globalLearning)
+                    Text("Optional anonymous summaries of measured experiment outcomes can inform other users after enough people contribute. Conversations, Health records and phone-use histories are never pooled.").font(.blankInter(size: 14, relativeTo: .footnote))
+                  }
+                  Section("When and for how long") {
                     Stepper("Maximum block: \(maxMinutes) min",value:$maxMinutes,in:5...240,step:5)
                   }
                   Section {
@@ -4641,7 +4613,6 @@ private struct BMBSettingsView: View {
                   }
                 }
                 Section {
-                    Button("Save preferences") { Task { await save() } }
                     if !status.isEmpty { Text(status).font(.blankInter(size: 14, relativeTo: .footnote)) }
                 }
                 if section == .automaticProtection && !events.isEmpty {
@@ -4664,6 +4635,15 @@ private struct BMBSettingsView: View {
             .scrollContentBackground(.hidden)
             .background(BlankColors.canvas)
             .foregroundStyle(BlankColors.foreground)
+            .safeAreaInset(edge: .bottom) {
+                if loaded {
+                    Button("Save preferences") { Task { await save() } }
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .padding(.horizontal, 16).padding(.vertical, 8)
+                        .background(BlankColors.canvas)
+                        .disabled(busy)
+                }
+            }
             .disabled(busy || !loaded)
             .opacity(loaded ? 1 : 0)
             .accessibilityHidden(!loaded)
@@ -4722,6 +4702,7 @@ private struct BMBSettingsView: View {
             let grant=settings["grant"] as? [String:Any] ?? [:], notifications=settings["notifications"] as? [String:Any] ?? [:]
             active=grant["active"] as? Bool ?? false; enabled=notifications["enabled"] as? Bool ?? false
             allowedTypes=Set(grant["action_types"] as? [String] ?? ["start_protection"])
+            allowedTypes.formIntersection(["start_protection", "update_schedule"])
             if allowedTypes.isEmpty { allowedTypes=["start_protection"] }
             actionStart=grant["start_minute"] as? Int ?? 0; actionEnd=grant["end_minute"] as? Int ?? 0
             maxMinutes=grant["max_minutes"] as? Int ?? 30
@@ -4732,6 +4713,13 @@ private struct BMBSettingsView: View {
             notifyDaily=notifications["max_per_day"] as? Int ?? 1; notifyWeekly=notifications["max_per_week"] as? Int ?? 3
             opportunities=notifications["opportunities"] as? Bool ?? true; interventions=notifications["interventions"] as? Bool ?? true; failures=notifications["failures"] as? Bool ?? true
             pausedUntil=settings["paused_until"] as? String
+            let rest=settings["rest"] as? [String: Any] ?? [:]
+            restAdjustments=rest["adjustments_enabled"] as? Bool ?? false
+            globalLearning=rest["global_learning_enabled"] as? Bool ?? false
+            restDays=Set(rest["weekdays"] as? [Int] ?? [1,2,3,4,5,6,7])
+            restStart=rest["start_minute"] as? Int ?? 1260; restEnd=rest["end_minute"] as? Int ?? 480
+            restShift=rest["max_shift_minutes"] as? Int ?? 15; restReviewDays=rest["review_after_days"] as? Int ?? 14
+            shareHealthContext=rest["health_context_shared"] as? Bool ?? false
             loaded=true
             status=""
             if section == .automaticProtection {
@@ -4747,11 +4735,19 @@ private struct BMBSettingsView: View {
         #endif
         busy=true; defer { busy=false }
         let settings: [String:Any] = ["timezone":TimeZone.current.identifier,"paused_until":pausedUntil as Any? ?? NSNull(),
+            "rest": ["adjustments_enabled": restAdjustments, "global_learning_enabled": globalLearning, "health_context_shared": shareHealthContext,
+                "weekdays": Array(restDays).sorted(), "start_minute": restStart, "end_minute": restEnd,
+                "max_shift_minutes": restShift, "review_after_days": restReviewDays],
             "grant":["active":active,"action_types":Array(allowedTypes).sorted(),"start_minute":actionStart,"end_minute":actionEnd,
                 "max_minutes":maxMinutes,"max_per_day":actionDaily,"max_per_week":actionWeekly,"min_interval_minutes":intervalMinutes,"expires_at":ISO8601DateFormatter().string(from:expires)],
             "notifications":["enabled":enabled,"start_minute":quietStart,"end_minute":quietEnd,"max_per_day":notifyDaily,"max_per_week":notifyWeekly,
                 "opportunities":opportunities,"interventions":interventions,"failures":failures]]
-        do { let response=try await request(["action":"bmb_save_settings","settings":settings,"version":version]); version=response["version"] as? Int ?? version; status="Saved." }
+        do {
+            let response=try await request(["action":"bmb_save_settings","settings":settings,"version":version])
+            version=response["version"] as? Int ?? version
+            RestContextConsent.set(shareHealthContext, owner: AssistantAppSession.userID, defaults: BlankSharedState.defaults)
+            status="Saved."
+        }
         catch { status="Could not save. Reopen to refresh preferences and retry." }
     }
     private func feedback(_ event: [String:Any],_ value: String) async {

@@ -8,6 +8,12 @@ async function account(userId) {
   return rows[0]||{auth_user_id:userId,version:0,settings:settings()};
 }
 async function api(auth,body) {
+  if(body.action==="bmb_sync_rest"){
+    try {const result=await require("./bmb-rest").sync(auth.user.id,auth.identity.app_install_id,body.snapshot);return json(200,{ok:true,...(Array.isArray(result)?result[0]:result)});}
+    catch(error){if(/^rest_(invalid|stale|missing)/.test(error.message))return json(400,{error:error.message});throw error;}
+  }
+  if(body.action==="bmb_rest_evidence")return json(200,{ok:true,evidence:await require("./bmb-rest").context(auth.user.id)});
+  if(body.action==="bmb_revoke_rest"){await supabaseFetch("rpc/bmb_revoke_rest",{method:"POST",body:JSON.stringify({p_user:auth.user.id})});return json(200,{ok:true});}
   if(body.action==="bmb_followup") {
     if(typeof body.event_id!=="string"||!/^[-\da-f]{36}$/i.test(body.event_id))return json(400,{error:"invalid_event_id"});
     const followup=await longitudinal.greetingContext(auth.user.id,supabaseFetch,body.event_id);
@@ -62,11 +68,17 @@ function opportunities(events,now=Date.now()) {
 }
 async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./_assistant_push").sendAssistantActionPush,notify=require("./_assistant_push").sendBMBNotification,
   db=supabaseFetch,identityLookup=require("./_identity").identityForAuthUser,getMemory=require("./_assistant_channel").getAssistantMemory,getContext=require("./_bm_user_context").enrichAssistantContext}={}) {
+  if(a.settings.rest?.sharing_revoked)return {skipped:"rest_sharing_revoked"};
   const identity=await identityLookup(a.auth_user_id);
   if(!identity||identity.app_install_id!==a.app_install_id)return {skipped:"installation_changed"};
   const memory=await getMemory("app",a.auth_user_id,{requireSemantic:true});
   const context=await getContext({},identity.assistant_connect_code);
   context.memory=memory;context.language=memory.language||"en";
+  let restEvidence=null;
+  if(context.personal_profile?.rest_snapshot?.schema_version===1){
+    await require("./bmb-rest").assess(a.auth_user_id,db);
+    restEvidence=await require("./bmb-rest").context(a.auth_user_id,db);
+  }
   await longitudinal.dailyReview(a,identity,context,brain,db);
   const events=await db(`bmb_events?auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&created_at=gte.${encodeURIComponent(new Date(Date.now()-7*86400000).toISOString())}&select=*&order=created_at.desc`,{method:"GET"});
   // Resume a reservation after worker interruption using the same action ID and
@@ -101,6 +113,12 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
     &&(!e.outcome.next_retry_at||Date.parse(e.outcome.next_retry_at)<=Date.now()));
   if(retry)return deliverNotice(retry);
   const candidates=opportunities(events);
+  if(restEvidence?.latest_outcome&&!restEvidence.experiment){
+    const previous=restEvidence.latest_outcome,adjustment=require("./bmb-rest").adjustment(previous,a.settings,context);
+    if(adjustment)candidates.push({kind:"opportunity",priority:65,event_key:`rest:${previous.id}`,meaning_key:`rest:${previous.id}`,
+      expires_at:new Date(Date.now()+24*3600000).toISOString(),facts:{source:"measured_rest_iteration",experiment_id:previous.id,
+        evaluation:previous.evaluation,authorized_adjustment:adjustment}});
+  }
   candidates.push(...await longitudinal.reviewOpportunities(a.auth_user_id,a.settings.timezone,db));
   for(const f of await longitudinal.followups(a.auth_user_id,db))candidates.push({kind:"opportunity",priority:45,
     event_key:`followup:${f.id}`,meaning_key:`followup:${f.id}`,expires_at:new Date(Date.parse(f.created_at)+7*86400000).toISOString(),
@@ -115,7 +133,8 @@ async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./
     ||c.kind==="opportunity"&&a.settings.grant?.active&&budgetGate("action",c,a.settings,events).allowed);
   if(!selected)return {skipped:"policy_or_budget"};
   const canNotify=notificationGate(selected,a.settings,context).allowed&&budgetGate("notification",selected,a.settings,events).allowed;
-  const canAct=selected.facts.source!=="longitudinal_followup"&&selected.kind==="opportunity"&&a.settings.grant?.active&&actionGate({type:a.settings.grant.action_types[0],minutes:Math.min(30,a.settings.grant.max_minutes)},a.settings,context).allowed&&budgetGate("action",selected,a.settings,events).allowed;
+  const candidateAction=selected.facts.authorized_adjustment||{type:"start_protection",minutes:Math.min(30,a.settings.grant?.max_minutes||30)};
+  const canAct=selected.facts.source!=="longitudinal_followup"&&selected.kind==="opportunity"&&a.settings.grant?.active&&actionGate(candidateAction,a.settings,context).allowed&&budgetGate("action",selected,a.settings,events).allowed;
   if(!canNotify&&!canAct)return {skipped:"policy"};
   const prior=await db(`bmb_events?auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&event_key=eq.${encodeURIComponent(selected.event_key)}&select=id,kind`,{method:"GET"});
   if(prior.some(e=>e.kind==="notification")&&(!canAct||prior.some(e=>e.kind==="action")))return {skipped:"duplicate"};

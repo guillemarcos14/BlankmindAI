@@ -102,7 +102,7 @@ const pickerStart = home.indexOf(".onChange(of: showingContextualAppPicker)");
 const pickerEnd = home.indexOf(".fullScreenCover", pickerStart);
 assert.ok(pickerStart >= 0 && pickerEnd > pickerStart, "native picker outcome handler must exist");
 const pickerOutcome = home.slice(pickerStart, pickerEnd);
-assert.match(pickerOutcome, /refreshAuthorizationStatus\(\)[\s\S]*?let permissionApproved = screenTimeBlocker\.authorizationStatus == \.approved[\s\S]*?let selectionConfirmed = permissionApproved &&[\s\S]*?if selectionConfirmed \{\s*sessionStore\.selection =/, "permission must be refreshed and approved before selection can mutate native state");
+assert.match(pickerOutcome, /refreshAuthorizationStatus\(\)[\s\S]*?let permissionApproved = screenTimeBlocker\.hasAuthorization[\s\S]*?let selectionConfirmed = permissionApproved &&[\s\S]*?if selectionConfirmed \{\s*sessionStore\.selection =/, "permission must be refreshed and approved before selection can mutate native state");
 assert.match(pickerOutcome, /assistantActionApplied \? "verified" : \(!permissionApproved \|\| selectionConfirmed \? "failed" : "dismissed"\)/, "denied permission and native registration failure are failed; ordinary picker cancellation is dismissed; only applied state is verified");
 assert.match(pickerOutcome, /!permissionApproved \? "screen_time_permission_denied" : \(assistantActionApplied \? "native_state_applied_after_selection" : \(selectionConfirmed \? "device_activity_registration_failed" : "app_selection_cancelled"\)\)/, "each picker terminal status must preserve its distinct reason");
 assert.match(pickerOutcome, /executionStarted: selectionConfirmed/, "permission denial and picker cancellation must not claim execution started");
