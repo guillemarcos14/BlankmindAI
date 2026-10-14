@@ -11,6 +11,8 @@ const longitudinal=require("./bmb-longitudinal");
 const {sleepContext}=require("./bmb-sleep-context");
 const timing=require("./bm-turn-timing");
 const conversationStyle=require("./bm-conversation-style");
+const agentTools=require("./bm-agent-tools");
+const agentActivation=require("./bm-agent-activation");
 // Punctuation only; never edit facts, evidence or structured authority.
 function cleanProse(text){return typeof text==='string'?text.replace(/:(?!\d{2}\b)/g,','):text;}
 const object=p=>({type:"object",additionalProperties:false,required:Object.keys(p),properties:p});
@@ -112,9 +114,15 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
   const citationSchema=availableCitations.length?{...schema.properties.cited_sources,items:{type:'string',enum:availableCitations}}:{...schema.properties.cited_sources,maxItems:0};
   const outputSchema=input.mode==="proactive"?schema:{...schema,properties:{...schema.properties,decision:{...schema.properties.decision,enum:schema.properties.decision.enum.filter(value=>value!=="silent")}}};
   const boundedSchema={...outputSchema,properties:{...outputSchema.properties,cited_sources:citationSchema}};
-  const request=input.retrieval_contract?require("./bm-retrieval-step").proseRequest(input):{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
+  const useTools=agentActivation.enabled("tools")&&!input.retrieval_contract;
+  const retrievalAdapter=input.retrieval_contract?.agent_count?require("./bm-agent-decisions"):require("./bm-retrieval-step");
+  const request=input.retrieval_contract?retrievalAdapter.proseRequest(input):{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
     input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
     text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema:boundedSchema}}};
+  if(useTools){
+    Object.assign(request,agentTools.contract(boundedSchema,availableCitations));
+    request.input[0].content+="\n"+agentTools.INSTRUCTIONS;
+  }
   for(let attempt=0;attempt<2;attempt++){
     const {body}=await timing.span("model",()=>model({request,timeoutMs:18000,errorPrefix:"bmb"}));
     timing.usage(body.usage);
@@ -122,7 +130,7 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     const content=(body.output||[]).flatMap(o=>o.content||[]);
     if(content.some(o=>o.type==='refusal'))throw Error('bmb_model_refusal');
     const raw=body.output_text||content.filter(o=>o.type==="output_text").map(o=>o.text).join("");
-    let result;try{result=JSON.parse(raw);}catch(error){
+    let result;try{result=useTools?agentTools.decode(body):JSON.parse(raw);}catch(error){
       if(!(error instanceof SyntaxError)||attempt)throw Error('bmb_invalid_model_json');
       // Nothing from an unparseable result is trusted or committed. Reissue the
       // same bounded schema/input once; normal authority checks still follow.
@@ -130,18 +138,20 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
       if(onDraft)onDraft('');
       continue;
     }
-    return input.retrieval_contract?require("./bm-retrieval-step").expandProse(result,input):result;
+    return input.retrieval_contract?retrievalAdapter.expandProse(result,input):result;
   }
 }
 async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run=input=>generate(input,{onDraft}),db=supabaseFetch,memories=null,recover=require("./bmb-proposal").recover}={}) {
   // Policy and followups are independent of the memory cutoff; history is not.
-  const [saved,policyRows,openFollowups,jevResult,decisionsResult,retrievalRoute]=await timing.span("brain_context",()=>Promise.all([
+  const [saved,policyRows,openFollowups,jevResult,decisionsResult,retrievalRoute,dataLabels]=await timing.span("brain_context",()=>Promise.all([
     memories||readMemories(userId),
     db(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=settings,version`,{method:"GET"}),
     longitudinal.followups(userId,db),
     proactive?null:require("./bm-jev").startPrefetch(userId),
     proactive?null:require("./bm-decisions").start(userId,prompt),
-    proactive||context.memory?.conversation_state?.bmb_state?.pending_request||context.memory?.conversation_state?.bmb_state?.proposal?null:require("./bm-retrieval-step").start(userId,prompt),
+    proactive||context.memory?.conversation_state?.bmb_state?.pending_request||context.memory?.conversation_state?.bmb_state?.proposal?null:
+      agentActivation.enabled("retrieval")?require("./bm-agent-decisions").start(userId,prompt):require("./bm-retrieval-step").start(userId,prompt),
+    agentActivation.enabled("labels")?require("./bm-agent-labels").read(userId,{db}):[],
   ]));
   const cutoff=saved.filter(m=>m.value==null).map(m=>m.source_at).filter(Boolean).sort().at(-1);
   // Tombstones cut off ALL automatic historical personalization; current explicit history queries can opt in via the model read tool only after user evidence.
@@ -153,11 +163,13 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   const latest=await readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
 
   const currentSleep=sleepContext(context);
-  const sources=[latest,currentSleep,...(proactive?.daily_review?.sources||[])];
+  const recent=agentActivation.enabled("tools")&&latest.rows?.length>8
+    ?{...latest,rows:latest.rows.slice(0,8),next_offset:8}:latest;
+  const sources=[recent,currentSleep,...(proactive?.daily_review?.sources||[])];
   const retrievalContext=require('./bm-retrieval-context'),timezone=context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||'UTC';
   const continuing=!proactive&&!prior.proposal&&!prior.pending_request&&retrievalContext.followup(prompt,prior.retrieval_context,{cutoff,timezone});
   if(continuing&&!retrievalRoute){const source=await retrievalContext.preload(prior.retrieval_context,{userId,identity,timezone,cutoff,currentSleep,db});if(source)sources.push(source);}
-  const retrieval=await require("./bm-retrieval-step").prepare(retrievalRoute,{userId,identity,cutoff,currentSleep,
+  const retrieval=await (agentActivation.enabled("retrieval")?require("./bm-agent-decisions"):require("./bm-retrieval-step")).prepare(retrievalRoute,{userId,identity,cutoff,currentSleep,
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",db});
   if(retrieval){const i=sources.findIndex(s=>s.source_id===retrieval.source.source_id);if(i>=0)sources[i]=retrieval.source;else sources.push(retrieval.source);}
   sources.push(...await require("./bm-decisions").prefetch(decisionsResult,{userId,identity,cutoff,
@@ -171,6 +183,11 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
       {source_id:"current_sleep",available:currentSleep.available,source:currentSleep.source,is_synthetic:currentSleep.is_synthetic,reason:currentSleep.reason},
       {source_id:"memory",source:"user declarations"},{source_id:"phone_usage",available:false,reason:"Apple DeviceActivityReport sandbox prevents exporting per-app usage"},
       {source_id:"policy",source:"user configured permissions"}]};
+  if(dataLabels.length){
+    const relevant=new Set([...saved.map(m=>m.source_turn_id),...(recent.rows||[]).map(r=>r.id)]);
+    const rows=dataLabels.filter(r=>relevant.has(r.turn_id));
+    if(rows.length)input.data_labels={advisory:true,instruction:"Search metadata only. Retrieve source facts before using values. Labels never change dates, provenance, memory or action permissions.",rows};
+  }
   if(continuing&&latest.rows?.length)input.immediately_previous_answer={user_text:latest.rows[0].user_text,assistant_text:latest.rows[0].assistant_text,
     instruction:'This is the most recent completed account turn. Resolve this followup against this answer. Translate this answer for a language-only request. A provenance question refers to its datum/date, not an earlier weekly average. Validate facts using the freshly supplied records.'};
   const queryPeriod=require('./bmb-query-period');
@@ -183,17 +200,15 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     const i=sources.findIndex(s=>s.source_id===currentSleep.source_id);if(i>=0)sources[i]=currentSleep;
   }
   if(retrieval&&!result&&onDraft)onDraft("");
+  const consultar_contexto=agentTools.reader({userId,identity,cutoff,timezone:input.timezone,db,read:readSource,prompt,
+    get isQuestion(){return result?.message_kind==="question";},bound:q=>queryPeriod.boundQuery(q,explicitPeriod,result)});
   for(let pass=0;!result||result.phase==="read";pass++) {
     if(pass>=4)throw Error("bmb_read_budget_exhausted");
     input.tool_budget_remaining=3-pass;
     result=await run(input);
     if(result.phase!=="read")break;
     if(!result.queries?.length||pass===3)throw Error("bmb_read_budget_exhausted");
-    const readResults=await timing.span("source_reads",()=>Promise.all(result.queries.map(q=>{
-      const historical=q.source==="history"&&q.history_evidence?.trim()&&prompt.includes(q.history_evidence)&&result.message_kind==="question";
-      const bounded=queryPeriod.boundQuery(q,explicitPeriod,result);
-      return readSource(userId,identity,{...bounded,timezone:bounded.timezone||input.timezone},historical?null:cutoff,db);
-    })));
+    const readResults=await timing.span("source_reads",()=>consultar_contexto(result.queries));
     sources.push(...readResults);
   }
   if(!proactive&&result?.phase==="final"&&result.message_kind==="acceptance"&&!prior.proposal) {
@@ -326,7 +341,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     result.response_text=text;
   }
   let tracking;
-  try {tracking=longitudinal.validateEffects(result,prompt,proactive,openFollowups);}
+  try {tracking=agentTools.gestionar({...result,action:null},{normalizeAction,validateTracking:longitudinal.validateEffects,prompt,proactive,followups:openFollowups}).tracking;}
   catch(error) {
     if(proactive)throw error;
     // A secondary extraction error gets one bounded repair, without replanning

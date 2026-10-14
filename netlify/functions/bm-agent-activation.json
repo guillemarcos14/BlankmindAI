@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "features": {
+    "tools": { "approved": false },
+    "retrieval": { "approved": false },
+    "labels": { "approved": false }
+  }
+}
