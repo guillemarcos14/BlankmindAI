@@ -3,6 +3,14 @@ name: iOS Build
 on:
   workflow_dispatch:
     inputs:
+      distribution:
+        description: Prepare unsigned production archive only
+        type: boolean
+        default: false
+      build:
+        description: TestFlight build for distribution preparation
+        type: string
+        default: '117'
       capture:
         description: Native screenshot coverage
         type: choice
@@ -31,7 +39,13 @@ on:
       - ".github/workflows/ios-build.yml"
 
 jobs:
+  distribution:
+    if: ${{ inputs.distribution == true }}
+    uses: ./.github/workflows/ios-distribution-archive.yml
+    with:
+      build: ${{ inputs.build }}
   build:
+    if: ${{ inputs.distribution != true }}
     runs-on: macos-26
     timeout-minutes: 45
     steps:

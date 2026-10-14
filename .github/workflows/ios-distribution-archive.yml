@@ -1,0 +1,63 @@
+name: iOS distribution archive
+on:
+  workflow_call:
+    inputs:
+      build:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      build:
+        description: Unique TestFlight build number
+        required: true
+        default: '117'
+jobs:
+  archive:
+    runs-on: macos-26
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select distribution SDK
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.4.app
+          xcodebuild -version
+          swift -version
+      - name: Prepare unsigned production archive
+        env:
+          BUILD_NUMBER: ${{ inputs.build }}
+        run: |
+          [[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] && [ "$BUILD_NUMBER" -gt 116 ]
+          mkdir -p tmp/distribution
+          sed "s/CURRENT_PROJECT_VERSION = 112/CURRENT_PROJECT_VERSION = $BUILD_NUMBER/" ios/Blank/config/AppStore112.xcconfig > tmp/distribution/AppStore.xcconfig
+          xcodebuild -project ios/Blank/Blank.xcodeproj -scheme Blank -configuration Release -destination 'generic/platform=iOS' -xcconfig "$PWD/tmp/distribution/AppStore.xcconfig" -archivePath "$PWD/tmp/distribution/Blankmind.xcarchive" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO archive > tmp/distribution/archive.log 2>&1
+          grep -F '** ARCHIVE SUCCEEDED **' tmp/distribution/archive.log
+      - name: Bind archive to source and production configuration
+        env:
+          BUILD_NUMBER: ${{ inputs.build }}
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, plistlib, hashlib, json, subprocess
+          app=pathlib.Path('tmp/distribution/Blankmind.xcarchive/Products/Applications/Blank.app')
+          info=plistlib.loads((app/'Info.plist').read_bytes())
+          assert info['CFBundleVersion']==os.environ['BUILD_NUMBER']
+          assert info['CFBundleShortVersionString']=='1.9'
+          assert info['CFBundleIdentifier']=='com.blanknfc.app.ios'
+          assert info.get('BlankPrivateQAAuthenticationCookie','')==''
+          assert info['BlankMembershipAPIBaseURL']=='https://getblank.netlify.app/.netlify/functions'
+          assert info['CFBundleDevelopmentRegion']=='en'
+          report={'source':os.environ['GITHUB_SHA'],'ios_tree':subprocess.check_output(['git','rev-parse','HEAD:ios']).decode().strip(),'build':info['CFBundleVersion'],'version':'1.9','signed':False,'uploaded':False,'info':info,'files':{str(f.relative_to(app)):hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(app.rglob('*')) if f.is_file()}}
+          pathlib.Path('tmp/distribution/receipt.json').write_text(json.dumps(report,indent=2,default=str))
+          PY
+          cp ios/Blank/Blank/Blank.entitlements tmp/distribution/main.entitlements
+          for ext in BlankDeviceActivityMonitor BlankWidgetExtension BlankShieldConfiguration BlankShieldAction; do cp "ios/Blank/$ext/$ext.entitlements" "tmp/distribution/$ext.entitlements"; done
+          tar -czf tmp/distribution/unsigned-archive.tar.gz -C tmp/distribution Blankmind.xcarchive receipt.json main.entitlements BlankDeviceActivityMonitor.entitlements BlankWidgetExtension.entitlements BlankShieldConfiguration.entitlements BlankShieldAction.entitlements
+          shasum -a 256 tmp/distribution/unsigned-archive.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: distribution-archive-${{ inputs.build }}-${{ github.sha }}
+          path: |
+            tmp/distribution/unsigned-archive.tar.gz
+            tmp/distribution/receipt.json
+            tmp/distribution/archive.log
+          retention-days: 14
