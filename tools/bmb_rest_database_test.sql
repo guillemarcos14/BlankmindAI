@@ -2,7 +2,7 @@ begin;
 insert into auth.users(id) values ('cccccccc-cccc-4ccc-8ccc-cccccccccccc'),('dddddddd-dddd-4ddd-8ddd-dddddddddddd');
 insert into blankmind_identity_links values ('cccccccc-cccc-4ccc-8ccc-cccccccccccc','rest-install-C'),('dddddddd-dddd-4ddd-8ddd-dddddddddddd','rest-install-D');
 do $$
-declare u uuid:='cccccccc-cccc-4ccc-8ccc-cccccccccccc'; snap jsonb; r jsonb; observed timestamptz:=clock_timestamp(); c int; test_experiment_id uuid:=gen_random_uuid();
+declare u uuid:='cccccccc-cccc-4ccc-8ccc-cccccccccccc'; snap jsonb; r jsonb; observed timestamptz:=clock_timestamp(); c int; test_experiment_id uuid:=gen_random_uuid(); prefs jsonb; version_now bigint;
 begin
  select jsonb_build_object('schema_version',1,'objective','improve_apple_watch_measured_sleep','observed_at',observed,'timezone','UTC',
    'nights',jsonb_agg(jsonb_build_object('date',((now() at time zone 'UTC')::date-i),
@@ -22,6 +22,17 @@ begin
    raise exception 'Foreign installation was allowed';
  exception when others then if sqlerrm<>'rest_installation_mismatch' then raise; end if; end;
  if (bmb_rest_global_prior(u)->>'available')::boolean then raise exception 'Pooling without consent'; end if;
+ snap:=jsonb_set(jsonb_set(snap,'{observed_at}',to_jsonb(clock_timestamp())),'{health_context}','{"metrics":[{"id":"pulse","unit":"bpm","points":[]}]}');
+ perform bmb_sync_rest(u,'rest-install-C',snap);
+ if (select snapshot->'health_context' from bmb_rest_context where auth_user_id=u)<>'null' then raise exception 'Client-only consent uploaded broad Health'; end if;
+ select version into version_now from bmb_accounts where auth_user_id=u;
+ prefs:='{"timezone":"UTC","grant":{"active":false},"rest":{"health_context_shared":true}}';
+ perform bmb_save_settings(u,'rest-install-C',prefs,version_now);
+ snap:=jsonb_set(snap,'{observed_at}',to_jsonb(clock_timestamp()));
+ perform bmb_sync_rest(u,'rest-install-C',snap);
+ if (select snapshot#>>'{health_context,metrics,0,id}' from bmb_rest_context where auth_user_id=u)<>'pulse' then raise exception 'Explicit broad Health consent ignored'; end if;
+ perform bmb_save_settings(u,'rest-install-C',jsonb_set(prefs,'{rest,health_context_shared}','false'),version_now+1);
+ if (select snapshot->'health_context' from bmb_rest_context where auth_user_id=u)<>'null' then raise exception 'Broad Health withdrawal did not clear context atomically'; end if;
  insert into bmb_rest_experiments(id,auth_user_id,action_id,hypothesis,metric,review_after_days,action,baseline,evidence_ids)
  values(test_experiment_id,u,'app_rest-test','Test pre-sleep protection','sleep_continuity',14,'{"weekdays":[2,3,4,5,6]}','[]','[]');
  perform bmb_rest_execution('dddddddd-dddd-4ddd-8ddd-dddddddddddd','app_rest-test','verified','{"valid":true}');

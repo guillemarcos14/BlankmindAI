@@ -74,6 +74,9 @@ begin
  perform pg_advisory_xact_lock(hashtextextended('brain-memory:'||p_user::text,0));
  if not exists(select 1 from blankmind_identity_links where auth_user_id=p_user and app_install_id=p_install) then raise exception 'rest_installation_mismatch'; end if;
  observed:=(p_snapshot->>'observed_at')::timestamptz; tz:=p_snapshot->>'timezone';
+ if not exists(select 1 from bmb_accounts where auth_user_id=p_user and coalesce((settings#>>'{rest,health_context_shared}')::boolean,false)) then
+   p_snapshot:=jsonb_set(p_snapshot,'{health_context}','null');
+ end if;
  if p_snapshot->>'schema_version'<>'1' or p_snapshot->>'objective'<>'improve_apple_watch_measured_sleep'
  or observed>clock_timestamp()+interval '30 seconds' or observed<clock_timestamp()-interval '24 hours'
  or not exists(select 1 from pg_timezone_names where name=tz)
@@ -192,6 +195,17 @@ begin
  return new;
 end $$;
 create trigger bmb_rest_completed_turn after update of brain_memory_applied_at on public.assistant_app_turns for each row execute function public.bmb_rest_capture_turn();
+
+create function public.bmb_rest_health_consent_changed() returns trigger
+language plpgsql security definer set search_path=public as $$
+begin
+ if not coalesce((new.settings#>>'{rest,health_context_shared}')::boolean,false) then
+   update bmb_rest_context set snapshot=jsonb_set(snapshot,'{health_context}','null'),updated_at=now() where auth_user_id=new.auth_user_id;
+ end if;
+ return new;
+end $$;
+create trigger bmb_rest_health_consent after update of settings on public.bmb_accounts for each row execute function public.bmb_rest_health_consent_changed();
+revoke all on function public.bmb_rest_health_consent_changed() from public,anon,authenticated;
 
 create function public.bmb_rest_execution(p_user uuid,p_action_id text,p_status text,p_evidence jsonb) returns jsonb
 language plpgsql security definer set search_path=public as $$

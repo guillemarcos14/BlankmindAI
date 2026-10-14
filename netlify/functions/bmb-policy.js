@@ -18,7 +18,7 @@ function settings(input = {}) {
       max_minutes: integer(grant.max_minutes,30,5,240), max_per_day: integer(grant.max_per_day,1,0,10),
       max_per_week: integer(grant.max_per_week,3,0,30), min_interval_minutes: integer(grant.min_interval_minutes,1440,15,10080),
       expires_at: grant.expires_at || null },
-    rest: { adjustments_enabled:rest.adjustments_enabled===true,global_learning_enabled:rest.global_learning_enabled===true,
+    rest: { adjustments_enabled:rest.adjustments_enabled===true,global_learning_enabled:rest.global_learning_enabled===true,health_context_shared:rest.health_context_shared===true,
       weekdays:[...new Set(rest.weekdays||[1,2,3,4,5,6,7])],start_minute:integer(rest.start_minute,1260,0,1439),end_minute:integer(rest.end_minute,480,0,1439),
       max_shift_minutes:integer(rest.max_shift_minutes,15,5,30),review_after_days:integer(rest.review_after_days,14,7,14)},
     notifications: { enabled: notifications.enabled === true, start_minute: integer(notifications.start_minute,480,0,1439),

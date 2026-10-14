@@ -4559,7 +4559,6 @@ private struct BMBSettingsView: View {
                   }
                   Section("Rest data") {
                     Toggle("Share additional Health context", isOn: $shareHealthContext)
-                        .onChange(of: shareHealthContext) { value in if loaded { RestContextConsent.set(value, owner: AssistantAppSession.userID, defaults: BlankSharedState.defaults) } }
                     Text("Optional Health summaries, including available body signals and clinical context, are sent to our backend and OpenAI to understand your rest. Original documents stay in Apple Health.").font(.blankInter(size: 14, relativeTo: .footnote))
                     Button("Connect phone-use data") { Task { await RestDigitalContext.shared.connect(); BlankBrain.shared.sync() } }
                     Button("Stop sharing phone-use data") { RestDigitalContext.shared.disconnect(); BlankBrain.shared.sync() }
@@ -4714,7 +4713,7 @@ private struct BMBSettingsView: View {
             restDays=Set(rest["weekdays"] as? [Int] ?? [1,2,3,4,5,6,7])
             restStart=rest["start_minute"] as? Int ?? 1260; restEnd=rest["end_minute"] as? Int ?? 480
             restShift=rest["max_shift_minutes"] as? Int ?? 15; restReviewDays=rest["review_after_days"] as? Int ?? 14
-            shareHealthContext=RestContextConsent.allowed(owner: AssistantAppSession.userID, defaults: BlankSharedState.defaults)
+            shareHealthContext=rest["health_context_shared"] as? Bool ?? false
             loaded=true
             status=""
             if section == .automaticProtection {
@@ -4730,14 +4729,19 @@ private struct BMBSettingsView: View {
         #endif
         busy=true; defer { busy=false }
         let settings: [String:Any] = ["timezone":TimeZone.current.identifier,"paused_until":pausedUntil as Any? ?? NSNull(),
-            "rest": ["adjustments_enabled": restAdjustments, "global_learning_enabled": globalLearning,
+            "rest": ["adjustments_enabled": restAdjustments, "global_learning_enabled": globalLearning, "health_context_shared": shareHealthContext,
                 "weekdays": Array(restDays).sorted(), "start_minute": restStart, "end_minute": restEnd,
                 "max_shift_minutes": restShift, "review_after_days": restReviewDays],
             "grant":["active":active,"action_types":Array(allowedTypes).sorted(),"start_minute":actionStart,"end_minute":actionEnd,
                 "max_minutes":maxMinutes,"max_per_day":actionDaily,"max_per_week":actionWeekly,"min_interval_minutes":intervalMinutes,"expires_at":ISO8601DateFormatter().string(from:expires)],
             "notifications":["enabled":enabled,"start_minute":quietStart,"end_minute":quietEnd,"max_per_day":notifyDaily,"max_per_week":notifyWeekly,
                 "opportunities":opportunities,"interventions":interventions,"failures":failures]]
-        do { let response=try await request(["action":"bmb_save_settings","settings":settings,"version":version]); version=response["version"] as? Int ?? version; status="Saved." }
+        do {
+            let response=try await request(["action":"bmb_save_settings","settings":settings,"version":version])
+            version=response["version"] as? Int ?? version
+            RestContextConsent.set(shareHealthContext, owner: AssistantAppSession.userID, defaults: BlankSharedState.defaults)
+            status="Saved."
+        }
         catch { status="Could not save. Reopen to refresh preferences and retry." }
     }
     private func feedback(_ event: [String:Any],_ value: String) async {

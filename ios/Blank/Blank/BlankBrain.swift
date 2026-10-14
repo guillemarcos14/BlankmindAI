@@ -200,6 +200,7 @@ final class BlankBrain {
     }
 
     private func syncRest(owner: String?) async {
+        guard store != nil else { return }
         if !BlankSharedState.familyControlsApproved || store?.hasSelectedApps == false {
             BlankSharedState.recordRestProtection(activeWindowIDs: [], uncertain: true, defaults: BlankSharedState.defaults)
         }
