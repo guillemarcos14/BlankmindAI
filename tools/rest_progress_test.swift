@@ -1,4 +1,17 @@
 import Foundation
+// Watch provenance remains distinct from other Health sources and manual entries.
+let measuredStart = Date(timeIntervalSince1970: 1_600_000_000)
+let watchRows = [RestSleepObservation(start: measuredStart, end: measuredStart.addingTimeInterval(7 * 3600), value: 3,
+    source: "watch-source", manual: false, isAppleWatch: true)]
+let watchNights = RestNight.build(watchRows, now: measuredStart.addingTimeInterval(12 * 3600))
+assert(watchNights.first?.watchMeasured == true)
+assert(watchNights.first?.measuredPayload()["source"] as? String == "apple_watch")
+let otherRows = [RestSleepObservation(start: measuredStart, end: measuredStart.addingTimeInterval(7 * 3600), value: 3,
+    source: "phone-source", manual: false)]
+assert(RestNight.build(otherRows, now: measuredStart.addingTimeInterval(12 * 3600)).first?.watchMeasured == false)
+let manualRows = [RestSleepObservation(start: measuredStart, end: measuredStart.addingTimeInterval(7 * 3600), value: 3,
+    source: "watch-source", manual: true, isAppleWatch: true)]
+assert(RestNight.build(manualRows, now: measuredStart.addingTimeInterval(12 * 3600)).first?.watchMeasured == false)
 
 func check(_ value: @autoclosure () -> Bool, _ message: String) {
     if !value() { fatalError(message) }

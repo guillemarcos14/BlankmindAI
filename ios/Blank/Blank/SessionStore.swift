@@ -415,30 +415,6 @@ final class SessionStore: ObservableObject {
         }
     }
 
-    var digitalWellnessV3: DigitalWellnessV3System {
-        DigitalWellnessAI.v3System(
-            events: brainUsageEvents,
-            sessions: brainSessions,
-            selectionCount: selectionCount,
-            modeName: Self.canonicalProtectionName,
-            emergencyUnlocksRemaining: emergencyUnlocksRemaining
-        )
-    }
-
-    func digitalWellnessFeaturePayload(
-        healthSummaries: [HealthDaySummary],
-        now: Date = Date()
-    ) -> DigitalWellnessFeaturePayload {
-        DigitalWellnessFeatureBuilder.makePayload(
-            defaults: defaults,
-            healthSummaries: healthSummaries,
-            sessions: sessions,
-            events: usageEvents,
-            selectionCount: selectionCount,
-            selectionSnapshot: currentSelectionSnapshot,
-            now: now
-        )
-    }
 
     func activateBlank(
         forceStarted: Bool = false,
@@ -1188,8 +1164,16 @@ final class SessionStore: ObservableObject {
             guard ["weekly","continuous"].contains(command.recurrence ?? ""), let weekdays = command.weekdays, !weekdays.isEmpty else { return false }
             var calendar = Calendar(identifier:.gregorian); calendar.timeZone = TimeZone(identifier:timezone)!
             let expiry = command.recurrence == "continuous" ? nil : calendar.date(byAdding:.day,value:command.durationDays ?? 7,to:Date())
-            window = BlankHabitWindow(id:targetID ?? id,name:"Protection",enabled:true,startMinute:startMinute,endMinute:endMinute,
-                weekdays:weekdays,expiresAt:expiry,timeZoneIdentifier:timezone)
+            if command.autonomous == true, let targetID, let existing = previous.windows.first(where: { $0.id == targetID }) {
+                guard existing.startsAt == nil, existing.weekdays == weekdays, existing.endMinute == endMinute,
+                      existing.timeZoneIdentifier == timezone else { return false }
+                window = BlankHabitWindow(id: targetID, name: existing.name, enabled: existing.enabled,
+                    startMinute: startMinute, endMinute: existing.endMinute, weekdays: existing.weekdays,
+                    expiresAt: existing.expiresAt, timeZoneIdentifier: existing.timeZoneIdentifier)
+            } else {
+                window = BlankHabitWindow(id:targetID ?? id,name:"Protection",enabled:true,startMinute:startMinute,endMinute:endMinute,
+                    weekdays:weekdays,expiresAt:expiry,timeZoneIdentifier:timezone)
+            }
         }
         schedule = BlankFocusSchedule(enabled: true, windows: previous.windows.filter { $0.id != targetID } + [window])
         guard recurringScheduleRegistered else {

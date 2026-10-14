@@ -1,7 +1,7 @@
 "use strict";
 const fs=require("node:fs"),crypto=require("node:crypto"),{performance}=require("node:perf_hooks"),d=require("../netlify/functions/bm-decisions"),dataset=require("./datasets/bm_jev_v1.json");
 function summarize(records){return Object.fromEntries(["es","en"].map(language=>{
- const rows=records.filter(r=>r.language===language),per_source=Object.fromEntries(Object.keys(require("../netlify/functions/bm-jev-taxonomy.json").sources).map(s=>[s,{tp:0,fp:0,fn:0}]));
+ const rows=records.filter(r=>r.language===language),per_source=Object.fromEntries(Object.keys(require("../netlify/functions/bm-source-taxonomy.json").sources).map(s=>[s,{tp:0,fp:0,fn:0}]));
  for(const r of rows)for(const [s,v]of Object.entries(per_source)){if(r.selected.includes(s))v[r.expected.includes(s)?"tp":"fp"]++;else if(r.expected.includes(s))v.fn++;}
  const totals=Object.values(per_source).reduce((a,v)=>({tp:a.tp+v.tp,fp:a.fp+v.fp,fn:a.fn+v.fn}),{tp:0,fp:0,fn:0}),div=(a,b)=>b?a/b:0;
  return [language,{samples:rows.length,errors:rows.filter(r=>r.error).length,source_precision:div(totals.tp,totals.tp+totals.fp),source_recall:div(totals.tp,totals.tp+totals.fn),exact_source_match:div(rows.filter(r=>r.selected.slice().sort().join()===r.expected.slice().sort().join()).length,rows.length),per_source,...totals}];

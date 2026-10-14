@@ -30,11 +30,7 @@ async function main(){
  const resolution={id:f.id,status:"answered",evidence:"Ahora salgo más tarde del trabajo"};
  assert(L.validateEffects({...base(),followup_resolution:resolution},prompt,false,[f],now).followup_resolution);
  assert.throws(()=>L.validateEffects({...base(),followup_resolution:resolution},prompt,false,[],now),/ungrounded/);
- const payload={privacy:{raw_health_samples_sent:false},daily:[{date:"2026-10-05T00:00:00Z",bedtime_local:"23:00",wake_time_local:"07:00",sleep_total_minutes:440}]};
- const native=L.nativeDaily([{id:"old",created_at:"2026-10-06",payload},{id:"new",created_at:"2026-10-07",payload}],"Europe/Madrid");
- assert.equal(native.length,3);assert(native.every(r=>r.id.startsWith("new:")));assert.equal(native.find(r=>r.metric==="sleep_onset").value_number,1380);
- assert.equal(L.nativeDaily([{payload:{common_features:{sleep:440}},id:"aggregate"}],"UTC").length,0,"Averages fabricated exact nights");
- assert.equal(L.nativeDaily([{id:"old",payload}],"UTC","2026-10-06").length,0,"Forgotten health summaries resurfaced");
+ assert.equal(Object.hasOwn(L,"nativeDaily"),false,"Retired aggregate-to-night projection remains available");
  // Same generative authority: reactive reply captures multiple observations and resolves a pending question.
  const db=async path=>path.startsWith("bmb_followups?")?[f]:path.startsWith("bmb_accounts?")?[]:[];
  const result=await brain.plan({prompt,context:{memory:{},brain_snapshot:{generated_at:new Date().toISOString(),timezone:"Europe/Madrid"}},userId:"A",identity:{}},
@@ -94,7 +90,9 @@ async function main(){
  ledger[0].outcome.next_retry_at="2020-01-01";await tickAccount(a,deps);assert.equal(notices,2);assert.equal(modelCalls,1);assert.equal(ledger.length,1);
  await tickAccount(a,deps);assert.equal(notices,2);assert.equal(modelCalls,1,"Accepted delivery or topic repeated");
  const insight={id:"review-A",created_at:new Date().toISOString(),report:{confidence:.8,question:null,evidence_ids:["row-A"],
-   recommendation:{kind:"experiment",summary:"Try a shorter evening protection once.",success_metric:"restfulness",review_after_days:4}}};
+   recommendation:{kind:"experiment",summary:"Measure a stable pre-sleep window.",success_metric:"sleep_continuity",review_after_days:14}}};
+ assert.equal((await L.reviewOpportunities(a.auth_user_id,"UTC",async()=>[{...insight,report:{...insight.report,
+   recommendation:{...insight.report.recommendation,success_metric:"restfulness"}}}])).length,0,"Subjective rest cannot drive the outcome loop");
  assert.equal((await L.reviewOpportunities(a.auth_user_id,"UTC",async()=>[insight])).length,1);
  assert.equal((await L.reviewOpportunities(a.auth_user_id,"UTC",async()=>[{...insight,report:{...insight.report,question:"Need more context"}}])).length,0);
  assert.equal((await L.reviewOpportunities(a.auth_user_id,"UTC",async()=>[{...insight,report:{...insight.report,confidence:.4}}])).length,0);

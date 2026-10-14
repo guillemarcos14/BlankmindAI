@@ -49,7 +49,6 @@
 		8A0000010000000000000026 /* BlankSharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000025 /* BlankSharedState.swift */; };
 		8A0000010000000000000028 /* StoreKitPurchaseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000027 /* StoreKitPurchaseStore.swift */; };
 		8A000001000000000000002A /* HealthKitStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000029 /* HealthKitStore.swift */; };
-		8A000001000000000000002C /* BAIProactiveSignalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000002B /* BAIProactiveSignalEngine.swift */; };
 		8A000001000000000000000D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000001F /* Assets.xcassets */; };
 		8A000001000000000000000E /* instrument_serif_regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000021 /* instrument_serif_regular.ttf */; };
 		8A000001000000000000000F /* inter_variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000022 /* inter_variable.ttf */; };
@@ -161,7 +160,6 @@
 		8A0000010000000000000025 /* BlankSharedState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankSharedState.swift; sourceTree = "<group>"; };
 		8A0000010000000000000027 /* StoreKitPurchaseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitPurchaseStore.swift; sourceTree = "<group>"; };
 		8A0000010000000000000029 /* HealthKitStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitStore.swift; sourceTree = "<group>"; };
-		8A000001000000000000002B /* BAIProactiveSignalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BAIProactiveSignalEngine.swift; sourceTree = "<group>"; };
 		8A0000020000000000000010 /* BlankDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BlankDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A0000020000000000000011 /* DeviceActivityMonitorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityMonitorExtension.swift; sourceTree = "<group>"; };
 		8A0000020000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -268,7 +266,6 @@
 				8A0000010000000000000027 /* StoreKitPurchaseStore.swift */,
 				8A0000010000000000000029 /* HealthKitStore.swift */,
 				8B0710010000000000000002 /* SleepAccessPolicy.swift */,
-				8A000001000000000000002B /* BAIProactiveSignalEngine.swift */,
 				8A0000010000000000000025 /* BlankSharedState.swift */,
 				8A000001000000000000001E /* DeviceActivityTimerScheduler.swift */,
 				8A000001000000000000001F /* Assets.xcassets */,
@@ -588,7 +585,6 @@
 				8A0000010000000000000028 /* StoreKitPurchaseStore.swift in Sources */,
 				8A000001000000000000002A /* HealthKitStore.swift in Sources */,
 				8B0710010000000000000001 /* SleepAccessPolicy.swift in Sources */,
-				8A000001000000000000002C /* BAIProactiveSignalEngine.swift in Sources */,
 				8A000001000000000000000C /* DeviceActivityTimerScheduler.swift in Sources */,
 				8A0000010000000000000026 /* BlankSharedState.swift in Sources */,
 			);

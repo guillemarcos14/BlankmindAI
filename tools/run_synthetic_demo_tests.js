@@ -80,7 +80,7 @@ print("Sleep source: completed nights/DST, real activity, exclusive source, acco
 
 try {
     const source = path.join(directory, "main.swift"), binary = path.join(directory, "tests");
-    fs.writeFileSync(source, domain.slice(0, domain.indexOf("struct DigitalWellnessPlanItem")) + "\n" + metrics + "\n" + test);
+    fs.writeFileSync(source, domain.slice(0, domain.indexOf("struct RelapseIntervention")) + "\n" + metrics + "\n" + test);
     for (const flags of [["-D", "DEBUG"], ["-D", "BLANK_PRIVATE_STAGE_QA"], []]) {
     const compile = spawnSync("swiftc", ["-swift-version", "5", ...flags, source, "-o", binary], { encoding: "utf8" });
     if (compile.error || compile.status !== 0) throw new Error(compile.stderr || compile.error?.message || "Swift compilation failed");

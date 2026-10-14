@@ -2,6 +2,7 @@
 // Longitudinal evidence, not a second planner. BMB remains the only decision maker.
 const {supabaseFetch}=require("./_membership");
 const {fingerprint,zone}=require("./bmb-policy");
+const REST_METRICS=require("./bmb-rest").METRICS;
 const METRICS={
   bedtime:[0,1439,"local_minute"],sleep_onset:[0,1439,"local_minute"],wake_time:[0,1439,"local_minute"],
   sleep_duration:[0,1440,"minutes"],restfulness:[0,10,"score_0_10"],energy:[0,10,"score_0_10"],
@@ -20,7 +21,7 @@ const reviewSchema=nil(object({summary:str,confidence:{type:"number",minimum:0,m
     evidence_ids:{type:"array",items:str,maxItems:12}})},
   missing_information:{type:"array",items:str,maxItems:5},question:nil(str),
   recommendation:nil(object({kind:{type:"string",enum:["maintain","experiment"]},summary:str,
-    success_metric:{type:"string",enum:Object.keys(METRICS)},review_after_days:{type:"integer",minimum:1,maximum:14}})),
+    success_metric:{type:"string",enum:REST_METRICS},review_after_days:{type:"integer",minimum:7,maximum:14}})),
   question_metric:nil({type:"string",enum:Object.keys(METRICS)}),evidence_ids:{type:"array",items:str,maxItems:20}}));
 function validateEffects(result,prompt,proactive,followups=[],now=Date.now()) {
   const observations=result.observations||[];
@@ -57,28 +58,6 @@ function validateEffects(result,prompt,proactive,followups=[],now=Date.now()) {
 const day=(now,timezone)=>new Intl.DateTimeFormat("en-CA",{timeZone:zone(timezone),year:"numeric",month:"2-digit",day:"2-digit"}).format(now);
 const circularDelta=(a,b)=>((a-b+2160)%1440)-720;
 const median=values=>{const v=[...values].sort((a,b)=>a-b),m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2;};
-function nativeDaily(rows,timezone,cutoff=null) {
-  const byKey=new Map();
-  for(const row of [...rows].sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at))) {
-    const payload=row.payload||{};
-    // These are pre-existing consented daily summaries, not raw HealthKit samples.
-    if(payload.privacy?.raw_health_samples_sent===true||payload.privacy?.raw_sleep_stage_timestamps_sent===true)continue;
-    for(const d of payload.daily||[]) {
-      if(!Number.isFinite(Date.parse(d.date))||cutoff&&Date.parse(d.date)<=Date.parse(cutoff))continue;
-      for(const [metric,value] of [["sleep_duration",d.sleep_total_minutes],["sleep_onset",d.bedtime_local],["wake_time",d.wake_time_local]]) {
-        if(value===null||value===undefined)continue;
-        const clock=metric!=="sleep_duration",match=clock&&/^(\d{2}):(\d{2})$/.exec(value);
-        const numeric=clock?match&&Number(match[1])*60+Number(match[2]):value;
-        if(!Number.isFinite(numeric)||numeric<0||numeric>METRICS[metric][1])continue;
-        const key=[day(Date.parse(d.date),timezone),metric].join(":");
-        byKey.set(key,{id:`${row.id}:${key}`,metric,value_number:numeric,value_text:null,unit:METRICS[metric][2],
-          measured_at:d.date,timezone,source:"native_health_daily_summary",measurement:"daily_summary_estimate",status:"active",created_at:row.created_at,
-          evidence:"Existing on-device daily sleep summary; timing is an estimate, not a raw timestamp or a clinical measurement.",confidence:.65});
-      }
-    }
-  }
-  return [...byKey.values()];
-}
 function reference(values,clock) {
   if(!clock)return median(values);
   const anchor=values[0];return (anchor+median(values.map(v=>circularDelta(v,anchor)))+1440)%1440;
@@ -132,7 +111,8 @@ async function reviewOpportunities(userId,timezone,db=supabaseFetch,now=Date.now
   let rows;
   try {rows=await db(`bmb_daily_reviews?auth_user_id=eq.${encodeURIComponent(userId)}&status=eq.completed&local_day=eq.${day(now,timezone)}&select=id,report,created_at&limit=1`,{method:"GET"});}
   catch(e){if(/404|does not exist|column|relation/.test(e.message))return [];throw e;}
-  return rows.filter(r=>r.report?.recommendation?.kind==="experiment"&&!r.report.question&&r.report.confidence>=.7&&r.report.evidence_ids?.length)
+  return rows.filter(r=>r.report?.recommendation?.kind==="experiment"&&REST_METRICS.includes(r.report.recommendation.success_metric)
+    &&r.report.recommendation.review_after_days>=7&&!r.report.question&&r.report.confidence>=.7&&r.report.evidence_ids?.length)
     .map(r=>({kind:"opportunity",priority:40,event_key:`insight:${r.id}`,meaning_key:`insight:${r.report.recommendation.success_metric}`,
       expires_at:new Date(Date.parse(r.created_at)+24*3600000).toISOString(),facts:{source:"longitudinal_insight",review_id:r.id,
         recommendation:r.report.recommendation,evidence_ids:r.report.evidence_ids,confidence:r.report.confidence}}));
@@ -162,7 +142,7 @@ async function dailyReview(a,identity,context,brain,db=supabaseFetch,now=Date.no
   try {
     const {readSource}=require("./bmb-sources");
     const from=new Date(Math.max(now-35*86400000,Date.parse(claimed.cutoff)||0)).toISOString(),sources=[];
-    for(const source of ["observations","features","onboarding","wellness","wearables","sessions","events","plan_outcomes","recommendation_feedback","learning_changes","reviews","history"]) {
+    for(const source of ["observations","rest_nights","rest_experiments","onboarding","wellness","wearables","sessions","events","reviews","history"]) {
       for(let offset=0;offset<(source==="observations"?2000:80);offset+=40) {
         const s=await readSource(a.auth_user_id,identity,{source,from,to:null,offset},claimed.cutoff,db);sources.push(s);
         if(s.next_offset===null||s.next_offset===undefined)break;
@@ -171,7 +151,9 @@ async function dailyReview(a,identity,context,brain,db=supabaseFetch,now=Date.no
     const memoryRows=await db(`bm_brain_memories?auth_user_id=eq.${encodeURIComponent(a.auth_user_id)}&value=not.is.null&select=key,value,source_text,source_at&limit=8`,{method:"GET"});
     sources.push({source:"personal_memories",source_id:"personal_memories",available:memoryRows.length>0,rows:memoryRows.map(m=>({...m,id:"memory:"+m.key})),coverage:"current_explicit_memories"});
     const observations=sources.filter(s=>s.source==="observations").flatMap(s=>s.rows||[]);
-    const native=nativeDaily(sources.filter(s=>s.source==="features").flatMap(s=>s.rows||[]),a.settings.timezone,claimed.cutoff);
+    const native=sources.filter(s=>s.source==="rest_nights").flatMap(s=>s.rows||[]).filter(require("./bmb-rest").measured).map(r=>({
+      id:r.id,metric:"sleep_duration",value_number:r.sleep_minutes,unit:"minutes",measured_at:r.end_at,timezone:r.timezone,
+      source:"apple_watch",measurement:"measured",status:"active",created_at:r.observed_at}));
     observations.push(...native);
     sources.push({source:"native_daily",source_id:"native_daily",available:native.length>0,rows:native,coverage:"available_consented_daily_summaries"});
     // The assessment gets a bounded digest. Full account sources remain queryable
@@ -195,8 +177,8 @@ async function dailyReview(a,identity,context,brain,db=supabaseFetch,now=Date.no
     if(!report.summary?.trim()||report.summary.length>2000||!Number.isFinite(report.confidence)||report.confidence<0||report.confidence>1
       ||report.evidence_ids.some(id=>!ids.has(id))||report.hypotheses.some(h=>h.evidence_ids.some(id=>!ids.has(id))||h.status==="supported"&&!h.evidence_ids.length)
       ||report.question&&(!report.evidence_ids.length||!Object.hasOwn(METRICS,report.question_metric))
-      ||report.recommendation&&(!report.evidence_ids.length||!report.recommendation.summary?.trim()||!Object.hasOwn(METRICS,report.recommendation.success_metric)
-        ||!Number.isInteger(report.recommendation.review_after_days)||report.recommendation.review_after_days<1||report.recommendation.review_after_days>14))throw Error("bmb_ungrounded_review");
+      ||report.recommendation&&(!report.evidence_ids.length||!report.recommendation.summary?.trim()||!REST_METRICS.includes(report.recommendation.success_metric)
+        ||!Number.isInteger(report.recommendation.review_after_days)||report.recommendation.review_after_days<7||report.recommendation.review_after_days>14))throw Error("bmb_ungrounded_review");
     const saved=await db("rpc/bmb_finish_daily_review",{method:"POST",body:JSON.stringify({p_user:a.auth_user_id,p_day:localDay,p_token:claimed.token,
       p_report:{...report,sources:sources.map(s=>({source:s.source,available:s.available,coverage:s.coverage,next_offset:s.next_offset,reason:s.reason})),changes}})});
     const committed=Array.isArray(saved)?saved[0]:saved;
@@ -204,4 +186,4 @@ async function dailyReview(a,identity,context,brain,db=supabaseFetch,now=Date.no
     return committed;
   }catch(e){await db("rpc/bmb_fail_daily_review",{method:"POST",body:JSON.stringify({p_user:a.auth_user_id,p_day:localDay,p_token:claimed.token})}).catch(()=>{});throw e;}
 }
-module.exports={METRICS,observationSchema,followupSchema,reviewSchema,validateEffects,day,variations,nativeDaily,followups,greetingContext,dailyReview,reviewOpportunities};
+module.exports={METRICS,observationSchema,followupSchema,reviewSchema,validateEffects,day,variations,followups,greetingContext,dailyReview,reviewOpportunities};

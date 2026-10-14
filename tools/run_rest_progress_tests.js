@@ -10,7 +10,7 @@ try {
     const source = path.join(directory, "main.swift"), binary = path.join(directory, "rest-tests");
     // Compile the actual models and analytics; UI and HealthKit are exercised by the simulator build.
     fs.writeFileSync(source, "import Foundation\nenum BlankSharedState { static let defaults = UserDefaults.standard }\n" +
-        domain.slice(0, domain.indexOf("struct DigitalWellnessPlanItem")) + "\n" +
+        domain.slice(0, domain.indexOf("struct RelapseIntervention")) + "\n" +
         read("ios/Blank/Blank/BlankBrainMetrics.swift") + "\n" + read("ios/Blank/Blank/RestProgress.swift") + "\n" +
         read("tools/rest_progress_test.swift"));
     const compile = spawnSync("swiftc", ["-swift-version", "5", source, "-o", binary], { encoding: "utf8" });

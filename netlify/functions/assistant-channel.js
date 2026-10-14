@@ -610,6 +610,8 @@ async function acknowledgePendingAction(body, appAuth = null) {
     return json(200, { ok: true, acknowledged: false, reason: "delayed_status_without_measured_delay" });
   }
   if (terminal) await persistAppActionReceipt(result, body, actionId, status);
+  if (terminal && result.appAuth && memory.user_context?.personal_profile?.rest_snapshot?.schema_version===1)
+    await require("./bmb-rest").receipt(result.appAuth.user.id,actionId,status,execution);
   if (terminal && actionId.startsWith("bmb_") && result.appAuth) await require("./bmb-service").receipt(result.appAuth.user.id,actionId,status,execution);
   const timestampKey = status === "confirmed" ? "confirmed_at"
     : status === "execution_started" ? "execution_started_at"

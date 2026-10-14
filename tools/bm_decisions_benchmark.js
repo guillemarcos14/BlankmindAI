@@ -172,7 +172,7 @@ async function main(){
    const r=await originalFetch(c.supabase+route,{method,headers:{"content-type":"application/json",...headers},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(90000)});
    const data=await r.json().catch(()=>null);if(!r.ok)throw Error("decisions_qa_http_"+r.status);return data;
  };
- const sourceHashes=Object.fromEntries(Object.entries(roots).map(([key,root])=>[key,Object.fromEntries(["assistant-app.js","bmb-brain.js","bm-decisions.js","bm-jev-taxonomy.json"].flatMap(n=>{const f=path.join(root,"netlify/functions",n);return fs.existsSync(f)?[[n,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]]:[]}))]));
+ const sourceHashes=Object.fromEntries(Object.entries(roots).map(([key,root])=>[key,Object.fromEntries(["assistant-app.js","bmb-brain.js","bm-decisions.js","bm-source-taxonomy.json"].flatMap(n=>{const f=path.join(root,"netlify/functions",n);return fs.existsSync(f)?[[n,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]]:[]}))]));
  const report={schema_version:1,run_id:runId,provider_real:true,decisions_real:true,database_real:true,netlify_transport_tested:false,physical_device_tested:false,native_actions_executed:0,source_commits:{optimized:"29c0b0686e73d4e5258795f6cb80cb881b8039f2",decisions:require("node:child_process").execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim()},
    order:"paired AB/BA alternation; independent identical fixtures",from_pair:fromPair,pair_count:pairs,sourceHashes,generative_model:process.env.OPENAI_MODEL||"gpt-5.6-luna",rates,records,cleanup,complete:false,gates_passed:false};
  const save=()=>fs.writeFileSync(file,JSON.stringify({...report,summary:summarize(records,rates)},null,2));

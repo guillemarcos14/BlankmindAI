@@ -24,6 +24,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     private let dailyLimitStore = ManagedSettingsStore(named: ManagedSettingsStore.Name("BlankDailyLimitProtection"))
 
     override func intervalDidStart(for activity: DeviceActivityName) {
+        defer { recordRestProtection() }
         super.intervalDidStart(for: activity)
         log.info("DeviceActivity interval started: \(activity.rawValue)")
 
@@ -50,6 +51,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
+        defer { recordRestProtection() }
         super.intervalDidEnd(for: activity)
         log.info("DeviceActivity interval ended: \(activity.rawValue)")
 
@@ -138,6 +140,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     }
 
     private struct StoredWindow: Decodable {
+        let id: UUID
         let enabled: Bool
         let startMinute: Int
         let endMinute: Int
@@ -174,6 +177,14 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
               let schedule = try? JSONDecoder().decode(StoredSchedule.self, from: data),
               schedule.enabled else { return false }
         return schedule.windows.contains { $0.contains(date) }
+    }
+
+    private func recordRestProtection() {
+        let active = Self.recurringScheduleIsActive()
+        guard let data = Self.sharedDefaults.data(forKey: "blankFocusSchedule"),
+              let schedule = try? JSONDecoder().decode(StoredSchedule.self, from: data) else { return }
+        let shielded = recurringStore.shield.applications != nil || recurringStore.shield.applicationCategories != nil || recurringStore.shield.webDomains != nil
+        BlankSharedState.recordRestProtection(activeWindowIDs: active && shielded ? schedule.windows.filter { $0.contains(Date()) }.map { $0.id.uuidString } : [], defaults: Self.sharedDefaults)
     }
 
     private static var adultContentBlockingEnabled: Bool {

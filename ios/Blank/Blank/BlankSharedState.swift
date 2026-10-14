@@ -2,6 +2,26 @@ import FamilyControls
 import Foundation
 
 enum BlankSharedState {
+    static var familyControlsApproved: Bool {
+        let status = AuthorizationCenter.shared.authorizationStatus
+        if status == .approved { return true }
+        #if compiler(>=6.3)
+        if #available(iOS 26.4, *) { return status == .approvedWithDataAccess }
+        #endif
+        return false
+    }
+    static func recordRestProtection(activeWindowIDs: [String], defaults: UserDefaults, now: Date = Date()) {
+        guard let owner = defaults.string(forKey: "blankBMBSignalOwner"), !owner.isEmpty else { return }
+        let iso = ISO8601DateFormatter()
+        var rows = defaults.array(forKey: "blankRestProtectionIntervals") as? [[String: Any]] ?? []
+        for index in rows.indices where rows[index]["owner"] as? String == owner && rows[index]["ended_at"] == nil {
+            if !activeWindowIDs.contains(rows[index]["window_id"] as? String ?? "") { rows[index]["ended_at"] = iso.string(from: now) }
+        }
+        for id in activeWindowIDs where !rows.contains(where: { $0["owner"] as? String == owner && $0["window_id"] as? String == id && $0["ended_at"] == nil }) {
+            rows.append(["id": UUID().uuidString, "owner": owner, "window_id": id, "started_at": iso.string(from: now), "source": "native_schedule_shield"])
+        }
+        defaults.set(Array(rows.suffix(140)), forKey: "blankRestProtectionIntervals")
+    }
     static let appGroupIdentifier = "group.com.blanknfc.app.ios"
     static let canonicalProtectionId = UUID(uuidString: "A1E43B14-22E6-4B55-8E89-5E2A3C100001")!
     static let canonicalProtectionName = "Distractions"

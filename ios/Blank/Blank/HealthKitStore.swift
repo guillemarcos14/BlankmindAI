@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import HealthKit
+import UIKit
 
 private struct HealthSleepSummary {
     var inBedMinutes: Int?
@@ -29,6 +30,7 @@ final class HealthKitStore: ObservableObject {
     private var refreshRequestID = UUID()
     private(set) var sourceGeneration = UUID()
     private var identityObserver: NSObjectProtocol?
+    private var sleepObserver: HKObserverQuery?
 
     var canUseSyntheticSleep: Bool { SyntheticSleepSource.allowed && AssistantAppSession.userID != nil }
     var canUseSampleSleep: Bool { AssistantAppSession.userID != nil }
@@ -233,6 +235,7 @@ final class HealthKitStore: ObservableObject {
     }
 
     func refresh(days: Int = 35) {
+        observeSleepChanges()
         reconcileSleepSource()
         let owner = sourceOwner
         let requestID = UUID()
@@ -427,6 +430,34 @@ final class HealthKitStore: ObservableObject {
                 : loadedSummaries.filter(\.hasSignals)
             if self.sleepAccess.hasData { self.state = .connected }
         }
+    }
+
+    private func observeSleepChanges() {
+        guard sleepObserver == nil, HKHealthStore.isHealthDataAvailable(),
+              defaults.bool(forKey: requestedKey), let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return }
+        let query = HKObserverQuery(sampleType: type, predicate: nil) { [weak self] _, completion, error in
+            guard error == nil else { completion(); return }
+            DispatchQueue.main.async {
+                guard let self else { completion(); return }
+                self.refresh()
+                RestHealthContext.shared.refresh(force: true)
+                Task { @MainActor in
+                    let owner = AssistantAppSession.userID
+                    let taskID = UIApplication.shared.beginBackgroundTask(withName: "BlankMeasuredRestSync", expirationHandler: nil)
+                    defer { if taskID != .invalid { UIApplication.shared.endBackgroundTask(taskID) }; completion() }
+                    // Wait for the bounded Health read to publish a consistent snapshot.
+                    for _ in 0..<25 where RestHealthContext.shared.loading {
+                        guard owner == AssistantAppSession.userID else { return }
+                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    }
+                    guard owner == AssistantAppSession.userID else { return }
+                    await BlankBrain.shared.syncMeasuredRest()
+                }
+            }
+        }
+        sleepObserver = query
+        healthStore.execute(query)
+        healthStore.enableBackgroundDelivery(for: type, frequency: .immediate) { _, _ in }
     }
 
     private var readTypes: Set<HKObjectType> {

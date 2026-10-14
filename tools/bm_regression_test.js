@@ -165,7 +165,7 @@ check("schedule_review_preserves_native_permission_preflight", () => {
   assert.match(policy, /case \.startProtection, \.setDailyLimit, \.allowOnly, \.adultFilter,[\s\S]*?\.applySchedule, \.updateSchedule,[\s\S]*?return true/, "native schedule activation must require permission");
   assert.match(policy, /case \.deleteSchedule, \.deleteAllSchedules, \.pauseRules, \.requestScreenTimePermission:\s*return false/, "removal and permission setup must remain available without authorization");
   const confirmation = blockBetween(home, "private func confirmPendingAssistantAction()", "switch pendingAction");
-  assert.match(confirmation, /if assistantActionRequiresScreenTime\(pendingAction\), screenTimeBlocker\.authorizationStatus != \.approved[\s\S]*?await screenTimeBlocker\.requestAuthorization\(\)/, "permission preflight must precede native application");
+  assert.match(confirmation, /if assistantActionRequiresScreenTime\(pendingAction\), !screenTimeBlocker\.hasAuthorization[\s\S]*?await screenTimeBlocker\.requestAuthorization\(\)/, "permission preflight must precede native application");
   assert.match(confirmation, /status: "failed",\s*detail: "screen_time_permission_denied",\s*executionStarted: false/, "denied permission must fail without claiming execution");
 });
 
