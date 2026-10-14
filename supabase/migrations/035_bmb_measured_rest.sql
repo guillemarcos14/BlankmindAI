@@ -343,7 +343,7 @@ begin
 end $$;
 
 create or replace function public.bmb_enqueue_event(p_user uuid,p_id uuid,p_action jsonb)
-returns jsonb language plpgsql security definer set search_path=public as $$
+returns jsonb language plpgsql security definer set search_path=public,extensions as $$
 declare a public.bmb_accounts%rowtype; ev public.bmb_events%rowtype; pending jsonb; memory_key text;
 begin
  perform pg_advisory_xact_lock(hashtextextended('bmb:'||p_user::text,0));
