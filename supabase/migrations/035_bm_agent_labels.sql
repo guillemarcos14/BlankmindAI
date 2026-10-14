@@ -35,7 +35,7 @@ begin
  e:=t.brain_memory_effect;
  if e->>'operation' in ('forget','forget_all') then return jsonb_build_object('claimed',false); end if;
  if e->>'operation'='set' and exists(select 1 from public.bm_brain_memories where auth_user_id=p_user and key=e->>'key' and source_turn_id=p_turn and value=e->>'value') then
-  fragments:=fragments||jsonb_build_array(jsonb_build_object('id','memory:'||(e->>'key'),'text',e->>'value'));
+  fragments:=fragments||jsonb_build_array(jsonb_build_object('id','memory:'||(e->>'key'),'text',t.user_text,'value',e->>'value'));
  end if;
  for o in select value from jsonb_array_elements(case when jsonb_typeof(e->'observations')='array' then e->'observations' else '[]'::jsonb end) loop
   -- Existing commit validation establishes literal evidence, canonical units

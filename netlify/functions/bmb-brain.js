@@ -55,6 +55,10 @@ An action must have all needed parameters; ask only genuinely missing details. s
 function normalizeAction(a, now=Date.now()) {
   if (!a || !ACTIONS.includes(a.type)) throw Error("bmb_unsupported_action");
   const result={...a,app_names:[]};
+  // start_mode describes dated schedules only. Providers may populate that
+  // optional field on an immediate duration command; it must not turn its
+  // response into an unrelated clock-based schedule.
+  if(!["apply_schedule","update_schedule"].includes(a.type))delete result.start_mode;
   const within=(v,lo,hi)=>Number.isInteger(v)&&v>=lo&&v<=hi;
   if (["start_protection","set_daily_limit"].includes(a.type)&&!within(a.minutes,5,240)) throw Error("bmb_missing_duration");
   if (["apply_schedule","update_schedule"].includes(a.type)) {

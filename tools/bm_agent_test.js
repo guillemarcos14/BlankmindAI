@@ -33,6 +33,10 @@ async function main(){
   assert.equal(r.calls,1,type);assert.equal(r.result.plan.actions[0].type,type);assert.equal(r.result.context.brain_request.execute,true);
  }
  p="Me acuesto a las 23:00";
+ r=await turn("Bloquea 30 minutos",[fn("gestionar",management("Bloquea 30 minutos",{message_kind:"action_request",decision:"execute",action:{...action(),start_mode:"now",end_minute:null},response_text:"Voy a intentar bloquear tus distracciones durante 30 minutos."}))]);
+ assert.equal(r.result.plan.actions[0].type,"start_protection");assert.equal(r.result.plan.actions[0].minutes,30);
+ assert(!r.result.plan.response_text.includes("00:00"),"Duration command was described as a clock schedule");
+ p="Me acuesto a las 23:00";
  r=await turn(p,[fn("gestionar",management(p,{memory:{operation:"set",key:"bedtime",value:"23:00",evidence:p}}))]);
  assert.equal(r.calls,1);assert.equal(r.result.context.brain_memory_effect.value,"23:00");
  assert.deepEqual(r.result.plan.actions,[]);assert(!paths.some(p=>p.startsWith("rpc/")),"Tool interpretation wrote state before leased commit");

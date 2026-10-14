@@ -9,7 +9,7 @@ const choice = (name, values, instructions) => ({ type: "choice", name, instruct
 function candidate(text) {
   // Rejection only. The classifier, never a keyword, selects the actual read.
   return String(text).length <= 1500
-    && /\?|\b(?:show|tell|dime|consulta|muéstrame)\b/iu.test(text)
+    && /\?|\b(?:show|tell|retrieve|dime|consulta|muéstrame)\b/iu.test(text)
     && /\b(?:yesterday|ayer|this week|esta semana)\b/iu.test(text)
     && /\b(?:sleep|slept|sueño|dormí|protecci[oó]n|protection|sesiones|sessions|breaks|interrupciones|bloqueos)\b/iu.test(text)
     && !/\b(?:bloquea|activa|desactiva|programa|elimina|olvida|forget|delete|translate|traduce|hypothetical|hipotético)\b/iu.test(text);

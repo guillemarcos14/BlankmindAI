@@ -15,7 +15,7 @@ begin
  if (bm_agent_labels_reserve(u,t,0)->>'claimed')::boolean then raise exception 'Missing budget accepted'; end if;
  if (bm_agent_labels_reserve(u,t,0.005)->>'claimed')::boolean then raise exception 'Upper bound not reserved'; end if;
  r:=bm_agent_labels_reserve(u,t,0.03);tok:=(r->>'token')::uuid;
- if not (r->>'claimed')::boolean or r->'fragments'->0->>'text'<>'23:00' then raise exception 'Committed fact not reserved'; end if;
+ if not (r->>'claimed')::boolean or r->'fragments'->0->>'value'<>'23:00' or r->'fragments'->0->>'text'<>'Me acuesto a las 23:00' then raise exception 'Committed fact not reserved'; end if;
  if (bm_agent_labels_reserve(u,t,0.03)->>'claimed')::boolean then raise exception 'Replay reserved twice'; end if;
  if (bm_agent_labels_finish(u,t,gen_random_uuid(),r->>'source_hash',result,true)->>'saved')::boolean then raise exception 'Wrong token accepted'; end if;
  begin

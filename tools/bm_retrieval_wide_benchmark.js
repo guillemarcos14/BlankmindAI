@@ -91,7 +91,7 @@ async function main(){
     token=(await request("/auth/v1/token?grant_type=password",{email,password},{apikey:c.anonKey})).access_token;
     for(const variant of (Math.floor(pair/2)+Math.floor(pair/CASES.length))%2?["decisions","optimized"]:["optimized","decisions"]){
      await Promise.all([...["assistant_app_turns","bmb_events","bmb_followups","bmb_observations","bm_brain_memories","bmb_sessions"].map(table=>request(`/rest/v1/${table}?auth_user_id=eq.${user}`,undefined,service,"DELETE")),...["assistant_semantic_conversations","digital_wellness_feature_payloads"].map(table=>request(`/rest/v1/${table}?anonymous_user_id=eq.${memoryIdentity("app",user)}`,undefined,service,"DELETE"))]);
-     const spec=CASES[pair%CASES.length],{language}=spec,group=spec.route;
+     const spec=CASES[pair%CASES.length],{language}=spec,group=agentFeature?(spec.group||spec.route):spec.route;
      const expected=await seed(spec,{request,user,service,now:fixtureNow});
      process.env.BM_DECISIONS_QA_ENABLED="false";process.env.BM_RETRIEVAL_STEP_QA_ENABLED=!args.includes('--account-policy')&&variant==="decisions"&&!args.includes("--retrieval-off")?"true":"false";
      process.env.BM_RETRIEVAL_STEP_ENABLED=args.includes('--account-policy')&&variant==="decisions"&&!args.includes('--retrieval-off')?'true':'false';
