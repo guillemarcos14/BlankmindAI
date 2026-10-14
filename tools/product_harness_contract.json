@@ -14,8 +14,6 @@
     "PRODUCTION_CHECKLIST.md",
     "ios/Blank/**",
     "ios/Blank/Blank.xcodeproj/**",
-    "app/src/main/**",
-    "app/src/test/**",
     "web/app-preview/**",
     "web/landing/**",
     "Blank Brain/**",
@@ -25,7 +23,16 @@
     "netlify.toml",
     "PRODUCT.md",
     "DESIGN.md",
-    ".impeccable/design.json"
+    ".impeccable/design.json",
+    "README.md",
+    "ios/README.md",
+    "app/**",
+    "gradle/**",
+    "build.gradle.kts",
+    "settings.gradle.kts",
+    "gradle.properties",
+    "gradlew",
+    "gradlew.bat"
   ],
   "acceptance": [
     "El cambio tiene contexto mínimo de Blank Brain y del proceso de desarrollo.",

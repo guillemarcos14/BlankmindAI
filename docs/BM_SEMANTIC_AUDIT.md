@@ -34,7 +34,7 @@ input → extracción de memoria por canal → posible reescritura del input Met
 | Dispositivo | SMS usaba rutas directas y defaults; iOS tenía fallback ejecutable ante error de red | Acción prematura o ejecución sin el contrato del backend |
 | Persistencia | Últimos 20 eventos, deduplicación por mensaje sin CAS de conversación | Pérdida por concurrencia, orden o expulsión del historial |
 
-La matriz completa por WhatsApp Meta, WhatsApp Twilio/SMS, web, iOS y Android está en [BM_CHANNEL_AUDIT.md](BM_CHANNEL_AUDIT.md).
+La matriz completa por WhatsApp Meta, WhatsApp Twilio/SMS, web, iOS está en [BM_CHANNEL_AUDIT.md](BM_CHANNEL_AUDIT.md).
 
 ## 2. Por qué la conversación directa con Luna puede ser mejor
 
@@ -96,7 +96,7 @@ WhatsApp/SMS conservan el estado canónico; web e iOS lo devuelven en el turno s
 
 El CAS evita sobrescribir una versión que cambió durante una llamada. No demuestra orden cronológico de entrega entre proveedores: mensajes distintos que llegan fuera de orden siguen necesitando una política de orden/reconciliación y pruebas reales. Los mocks verifican conflictos y reintentos, no reemplazan esas pruebas.
 
-Los enlaces se comparten entre Meta y SMS, abren revisión y preservan los valores. iOS conserva el estado con TTL de dos horas, evita recortar el texto canónico y falla con cero acciones cuando el backend no responde. Android no tiene un chat BM equivalente en este repositorio: las pruebas con `channel=android` validan el contrato backend, no una pantalla nativa inexistente.
+Los enlaces se comparten entre Meta y SMS, abren revisión y preservan los valores. iOS conserva el estado con TTL de dos horas, evita recortar el texto canónico y falla con cero acciones cuando el backend no responde.
 
 ## 4. Límites reales del contrato nativo
 
@@ -155,7 +155,7 @@ Los informes extensos están en `tmp/bm-semantic/` y `tmp/bm-audit/`; [BM_EVALUA
 | Holdout independiente | V4: **11/11** turnos de cinco conversaciones, correctos desde su primera ejecución y revisados por otro agente. V3 reparado: 12/12; sus tres fallos iniciales permanecen. V1/V2 también conservan resultados originales y adjudicación. |
 | Corpus observado | Replay local **7/7**. Se trata de tres extractos construidos a partir del texto observado, con contexto de prueba explícito; no se presenta como reconstrucción íntegra de conversaciones humanas verificadas. |
 | Luna activo, schema tipado | **56/56** turnos: 24 de desarrollo (dos guiones × tres repeticiones), 21 del corpus observado (siete turnos × tres repeticiones) y 11 del v4 en una pasada activa adicional. Todas las respuestas acreditan `gpt-5.6-luna:semantic`; cero errores de fallback y cero turnos sin revisar. Informes `typed-final-live-24.json`, `typed-final-production-live-21.json` y `typed-final-heldout-v4-live-11.json`. |
-| Clientes | Web: build de 18 rutas y lint del archivo pasan. Lint general encuentra artefactos generados preexistentes. iOS: revisión estática, **sin compilación ni prueba física**. Android: contrato backend, sin chat nativo equivalente. |
+| Clientes | Web: build de 18 rutas y lint del archivo pasan. Lint general encuentra artefactos generados preexistentes. iOS: revisión estática, **sin compilación ni prueba física**.
 
 Las repeticiones activas y sus versiones de schema se detallan por separado en el informe de evaluación. El ensayo anterior al schema tipado aprobó 24 turnos de desarrollo y falló dos de 21 turnos observados por la segunda decodificación JSON. Ese fallo no se convirtió en aprobación por conservar un fallback correcto; el informe posterior verifica la corrección sobre las mismas expectativas.
 

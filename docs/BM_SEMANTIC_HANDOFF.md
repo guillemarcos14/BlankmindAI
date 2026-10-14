@@ -20,7 +20,7 @@ Web: repo separado `C:\Users\Guillem\Desktop\Blanked\blanked-landing`, rama `cod
 2. Validar en PostgreSQL la migración `015_assistant_semantic_conversations.sql`, después de la 014. Verificar permisos de `service_role`, CAS concurrente, TTL y liberación del lease de reintento. Este trabajo solo ha ejecutado mocks y revisión estática del SQL.
 3. Configurar `BM_SEMANTIC_PERSISTENCE=required` después de preparar la tabla/RPC y antes de publicar el backend. Producción/Netlify ya exigen persistencia por defecto. `legacy` existe para compatibilidad local y no satisface los criterios de release. Sin migración, el modo requerido falla cerrado.
 4. Comprobar `OPENAI_MODEL` y `OPENAI_API_KEY` de la futura release. El valor por defecto y ejemplo es `gpt-5.6-luna`; las pruebas activas locales verifican el modelo devuelto. No se imprimen ni versionan credenciales.
-5. Compilar el cliente iOS y probar revisión, permisos, selección exacta y ejecución física en app/WhatsApp/SMS. Android no dispone de chat BM equivalente en este repo. Integrar y desplegar únicamente en la tarea de release tras petición explícita.
+5. Compilar el cliente iOS y probar revisión, permisos, selección exacta y ejecución física en app/WhatsApp/SMS. Integrar y desplegar únicamente en la tarea de release tras petición explícita.
 
 ## Reproducción local
 

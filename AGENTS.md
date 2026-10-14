@@ -1,5 +1,9 @@
 # Gestion de estado del proyecto
 
+## Plataforma vigente
+
+Trabajar exclusivamente en iOS y Apple Watch. Cualquier ampliación de plataforma requiere una nueva decisión explícita de Guillem. Usar solo las validaciones y herramientas de la plataforma activa.
+
 ## Al inicio de cada sesion
 1. Lee `ESTADO.md` en la raiz del repo antes de hacer nada.
 2. Si no existe, crealo con la estructura definida abajo antes de empezar la tarea.

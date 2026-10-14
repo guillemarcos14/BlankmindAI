@@ -12,7 +12,7 @@ This is the native iOS MVP for Blank.
 
 ## Important Apple limitations
 
-The Android app uses Accessibility events to detect and cover blocked apps. iOS does not allow that model. App blocking on iPhone must use Apple's Screen Time APIs:
+App blocking on iPhone uses Apple's Screen Time APIs:
 
 - `FamilyControls`
 - `ManagedSettings`

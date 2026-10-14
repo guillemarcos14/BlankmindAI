@@ -1,12 +1,4 @@
-.gradle/
 build/
-app/build/
-local.properties
-keystore.properties
-*.iml
-.idea/
-*.keystore
-*.jks
 
 # Local Netlify folder
 .netlify
