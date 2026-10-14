@@ -119,7 +119,7 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
   const citationSchema=availableCitations.length?{...schema.properties.cited_sources,items:{type:'string',enum:availableCitations}}:{...schema.properties.cited_sources,maxItems:0};
   const outputSchema=input.mode==="proactive"?schema:{...schema,properties:{...schema.properties,decision:{...schema.properties.decision,enum:schema.properties.decision.enum.filter(value=>value!=="silent")}}};
   const boundedSchema={...outputSchema,properties:{...outputSchema.properties,cited_sources:citationSchema}};
-  const useTools=agentActivation.enabled("tools")&&!input.retrieval_contract;
+  const useTools=agentActivation.enabled("tools")&&input.mode!=="proactive"&&!input.retrieval_contract;
   const retrievalAdapter=input.retrieval_contract?.agent_count?require("./bm-agent-decisions"):require("./bm-retrieval-step");
   const request=input.retrieval_contract?retrievalAdapter.proseRequest(input):{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
     input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
@@ -248,7 +248,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     /:(?!\d{2}\b)/.test(result.response_text||"")||(!proactive&&(!result.evidence?.trim()||!prompt.includes(result.evidence)))||
     (m&&(!m.evidence?.trim()||!prompt.includes(m.evidence)||(m.operation==="set"&&(!m.value?.trim()||!prompt.includes(m.value))))));
   if(needsRepair) {
-    const preserveMemory=agentActivation.enabled("tools")&&m;
+    const preserveMemory=agentActivation.enabled("tools")&&!proactive&&m;
     const repairEffects=reactiveEmpty||syntheticCopy?JSON.stringify({memory:result.memory,observations:result.observations,followup_resolution:result.followup_resolution,longitudinal_review:result.longitudinal_review,pending_request:result.pending_request}):null;
     const control={kind:result.message_kind,decision:reactiveEmpty&&result.decision==="silent"?"respond":result.decision,action:result.action?fingerprint(result.action):null,accepted:result.accepted_proposal};
     input.previous_generated_result=result;
