@@ -36,6 +36,12 @@ async function main(){
  r=await turn("Bloquea 30 minutos",[fn("gestionar",management("Bloquea 30 minutos",{message_kind:"action_request",decision:"execute",action:{...action(),start_mode:"now",end_minute:null},response_text:"Voy a intentar bloquear tus distracciones durante 30 minutos."}))]);
  assert.equal(r.result.plan.actions[0].type,"start_protection");assert.equal(r.result.plan.actions[0].minutes,30);
  assert(!r.result.plan.response_text.includes("00:00"),"Duration command was described as a clock schedule");
+ const isoSchedule={...action("apply_schedule"),weekdays:[1,2,3,4,5]};
+ assert.deepEqual(brain.normalizeAction(isoSchedule,Date.now(),"Crea un bloqueo de lunes a viernes").weekdays,[2,3,4,5,6]);
+ assert.deepEqual(brain.normalizeAction(isoSchedule,Date.now(),"Create a block Monday through Friday").weekdays,[2,3,4,5,6]);
+ assert.deepEqual(brain.normalizeAction(isoSchedule,Date.now(),"Not Monday through Friday, instead Tuesday").weekdays,[1,2,3,4,5]);
+ assert.deepEqual(brain.normalizeAction(isoSchedule,Date.now(),"Monday through Friday and Sunday").weekdays,[1,2,3,4,5]);
+ assert.deepEqual(brain.normalizeAction(isoSchedule).weekdays,[1,2,3,4,5],"Saved proposal was reinterpreted without new evidence");
  p="Me acuesto a las 23:00";
  r=await turn(p,[fn("gestionar",management(p,{memory:{operation:"set",key:"bedtime",value:"23:00",evidence:p}}))]);
  assert.equal(r.calls,1);assert.equal(r.result.context.brain_memory_effect.value,"23:00");
