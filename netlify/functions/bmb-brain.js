@@ -314,7 +314,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   result.response_text=cleanCitations(result.response_text||"",{quotedIn:prompt});
   text=result.response_text.trim();
   if(result.decision==="execute"&&!action) {
-    if(!result.memory)throw Error("bmb_missing_action");
+    if(!result.memory&&!result.observations?.length&&!result.followup_resolution)throw Error("bmb_missing_action");
     // A generated memory operation is committed with the turn, not sent to the
     // device inbox. Its exact evidence and operation are still validated below.
     result={...result,decision:"respond"};

@@ -42,6 +42,11 @@ async function main(){
  assert.deepEqual(brain.normalizeAction(isoSchedule,Date.now(),"Not Monday through Friday, instead Tuesday").weekdays,[1,2,3,4,5]);
  assert.deepEqual(brain.normalizeAction(isoSchedule,Date.now(),"Monday through Friday and Sunday").weekdays,[1,2,3,4,5]);
  assert.deepEqual(brain.normalizeAction(isoSchedule).weekdays,[1,2,3,4,5],"Saved proposal was reinterpreted without new evidence");
+ p="I normally wake up at 06:00.";
+ const observation={metric:"wake_time",value_number:360,value_text:null,unit:"local_minute",measurement:"routine_statement",measured_at:null,timezone:"Europe/Madrid",evidence:p};
+ r=await turn(p,[fn("gestionar",management(p,{response_language:"en",decision:"execute",observations:[observation],response_text:"I will keep your usual wake-up time in mind."}))]);
+ assert.equal(r.result.context.brain_memory_effect.observations[0].value_number,360);assert.deepEqual(r.result.plan.actions,[]);
+ assert.equal(r.result.context.brain_request.execute,false,"Observation-only management acquired device authority");
  p="Me acuesto a las 23:00";
  r=await turn(p,[fn("gestionar",management(p,{memory:{operation:"set",key:"bedtime",value:"23:00",evidence:p}}))]);
  assert.equal(r.calls,1);assert.equal(r.result.context.brain_memory_effect.value,"23:00");
