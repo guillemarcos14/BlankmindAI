@@ -45,3 +45,7 @@ Physical Watch collection, eligible EU usage, shields, playback and withdrawal r
 `node tools/rest_production_release.js --rollback --authorized-production` restores6ace0be5d1774a17ce921165, its cronOFF configuration and original publication-lock state. Environment/ElevenLabs settings stay intact.035's private tables/data and compatible RPCs remain; no down migration or data deletion. Normal readiness/semantic/physical gates are unchanged and not falsely certified. The old runtime's authenticated smoke with035 passes4/4 and12/12cleanup.
 
 Signed/unsigned artifacts and original receipts remain recoverable. Rollback stops new automatic work; it does not certify the old runtime for new measured-rest endpoints or authorize deleting evidence.
+
+## Final closure
+
+Harness ph_1791993256685_0c6d9e59:92/92 with baseline/enforce-scope. PR45 merged8bbf5379d728468912a105e6c0c9986bcabaca54. TestFlight117 saved notes/group verified again on a fresh ASC page; evidence tmp/rest-release/testflight117.jpg. Consolidated receipt tmp/rest-release/closure.json. Blank Brain updated; physical checks and sleep efficacy remain pending.
