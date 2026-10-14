@@ -38,7 +38,7 @@ function contract(legacy, citations = []) {
         description: "Read this account's evidence, configuration or history. Batch independent reads. Never changes memory, proposals or device state.",
         parameters: object({ ...identity, queries: p.queries }) },
       { type: "function", name: "gestionar", strict: true,
-        description: "Prepare a device change, durable proposal, memory change or followup. Supply a natural reply describing an attempt or proposal, never unverified success. The server validates and commits it once.",
+        description: "Prepare a device change, durable proposal, memory change or followup. Supply a natural reply describing an attempt or proposal, never unverified success. Reactive actions are polled by the app; they do not schedule a guaranteed future notification. Never promise a future alert unless the supplied context confirms one. The server validates and commits it once.",
         parameters: object(management) }
     ],
     text: { format: { type: "json_schema", name: "bm_agent_reply", strict: true,

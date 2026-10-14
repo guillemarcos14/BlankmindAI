@@ -92,7 +92,8 @@ async function main(){
     // Long paired runs can exceed the one-hour access-token lifetime. Renew
     // before each pair; keep authentication failures as explicit failures.
     token=(await request("/auth/v1/token?grant_type=password",{email,password},{apikey:c.anonKey})).access_token;
-    for(const variant of (Math.floor(pair/2)+Math.floor(pair/CASES.length))%2?["decisions","optimized"]:["optimized","decisions"]){
+    if(args.includes("--stop-file")&&fs.existsSync(get("--stop-file")))break;
+    for(const variant of args.includes("--candidate-first")?["decisions","optimized"]:(Math.floor(pair/2)+Math.floor(pair/CASES.length))%2?["decisions","optimized"]:["optimized","decisions"]){
      await Promise.all([...["assistant_app_turns","bmb_events","bmb_followups","bmb_observations","bm_brain_memories","bmb_sessions"].map(table=>request(`/rest/v1/${table}?auth_user_id=eq.${user}`,undefined,service,"DELETE")),...["assistant_semantic_conversations","digital_wellness_feature_payloads"].map(table=>request(`/rest/v1/${table}?anonymous_user_id=eq.${memoryIdentity("app",user)}`,undefined,service,"DELETE"))]);
      const spec=CASES[pair%CASES.length],{language}=spec,group=agentFeature?(spec.group||spec.route):spec.route;
      const expected=await seed(spec,{request,user,service,now:fixtureNow});
@@ -159,6 +160,7 @@ async function main(){
        row.passed=row.passed&&unchanged;
      }
      history.push({role:"user",content:text},{role:"assistant",content:t.assistant_text||""}); records.push(row);for(const req of row.provider_requests){const measured=meter.estimate(req,rates);if(measured!==null){budget.known_usd+=measured;budget.reserved_upper_usd-=req.reserved_upper_usd-measured;}}saveBudget();active=null;console.info=originalInfo;save();
+     if(args.includes("--fail-fast")&&!row.passed)throw Error("agent_hard_failure_"+row.case_id+"_"+variant);
      if(records.length%20===0)console.log(JSON.stringify({turns:records.length,pairs:pair+1,errors:records.filter(r=>!r.passed).length}));
    }
    }
