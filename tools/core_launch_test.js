@@ -11,6 +11,9 @@ for(const name of fs.readdirSync(functions).filter(n=>/\.(js|mjs)$/.test(n))){
  }
  assert(!/TWILIO_|WHATSAPP_|WEARABLE_OAUTH_|sendSmsMessage|sendWhatsAppMessage/.test(source),name+" retains provider transport");
 }
+const example=fs.readFileSync(path.join(root,".env.membership.example"),"utf8");
+for(const name of ["BM_RETRIEVAL_STEP_ENABLED","BM_AGENT_ENABLED","BM_VOICE_ENABLED","ELEVENLABS_API_KEY"])assert(example.includes(name+"="),name+" lost from core configuration");
+assert(!/TWILIO_|WHATSAPP_|WEARABLE_OAUTH_|STRAVA_CLIENT_/.test(example));
 const memory=require("../netlify/functions/_assistant_memory");
 assert.equal(memory.cleanChannel("app"),"app");
 assert.equal(memory.cleanChannel("whatsapp"),"");assert.equal(memory.cleanChannel("sms"),"");
