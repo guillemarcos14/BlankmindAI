@@ -9,18 +9,24 @@ function adapt(report,quality){
  if(quality.model===report.generative_model)throw Error("Independent reviewer required");
  if(new Set(quality.reviews.map(r=>r.id)).size!==quality.reviews.length)throw Error("Duplicate review receipts");
  return report.records.map(r=>{
+  const spec=report.case_manifest.cases.find(c=>c.id===r.case_id);
   const review=quality.reviews.find(q=>q.id===r.variant+":"+r.pair+":"+r.step);
   if(!review||review.input_sha256!==sha(input(r,report)))throw Error("Review does not match original turn");
   const parts=r.provider_requests.map(p=>estimate(p,report.rates)),cost=parts.length&&parts.every(n=>Number.isFinite(n)&&n>=0)?parts.reduce((a,b)=>a+b,0):null;
   const group=["sleep_yesterday","sleep_week","protection_yesterday","protection_week","query"].includes(r.group)?"query":
    ["memory","bedtime","forget","habits"].includes(r.group)?"memory":r.group==="action"||r.group==="actions_combined"?"action":"chat";
+  const actionMatches=spec.expected_action?Boolean(r.action_id_present&&r.pending_action&&Object.entries(spec.expected_action).every(([k,v])=>{
+    const actual=r.pending_action[k];return k==="weekdays"&&Array.isArray(actual)?JSON.stringify([...actual].sort())===JSON.stringify([...v].sort()):JSON.stringify(actual)===JSON.stringify(v);
+  })):!r.action_id_present;
+  const memoryMatches=(!spec.expected_memory||(r.canonical_memories||[]).some(m=>m.key===spec.expected_memory.key&&typeof m.value==="string"&&m.value.includes(spec.expected_memory.value)))
+    &&(!spec.forbid_memory||r.canonical_memories?.length===0)&&(r.group!=="forget"||r.forgetting_committed===true);
   return {feature:r.agent_feature||report.agent_feature,variant:r.variant==="decisions"?"candidate":"baseline",case_id:r.case_id+":"+r.step,
    language:r.language,group,model:report.generative_model,source_hashes:report.agent_source_hashes,
    provider_measured:report.provider_real===true,provider_request_ids:r.provider_requests.map(p=>p.provider_request_id),
    first_text_ms:r.first_text_ms,audio_requested:r.audio_requested===true,first_audio_ms:r.audio_requested===true?r.first_audio_ms:null,
    cost_usd:cost,background_cost_usd:0,cost_scope:"All metered foreground/background/retry provider requests combined",
-   error:r.status!==200,quality:{response_ok:review.review?.response_ok===true&&review.review?.naturalness>=3,memory_ok:review.review?.memory_ok===true,
-    action_ok:review.review?.action_ok===true,reviewed:!review.error&&Boolean(review.review)&&Array.isArray(r.canonical_observations)&&Array.isArray(r.committed_effect),reviewer:quality.model}};
+   error:r.status!==200,quality:{response_ok:review.review?.response_ok===true&&review.review?.naturalness>=3,memory_ok:review.review?.memory_ok===true&&memoryMatches,
+    action_ok:review.review?.action_ok===true&&actionMatches,reviewed:!review.error&&Boolean(review.review)&&Array.isArray(r.canonical_observations)&&Array.isArray(r.committed_effect),reviewer:quality.model}};
  });
 }
 if(require.main===module){
