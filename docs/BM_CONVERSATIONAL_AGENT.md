@@ -36,6 +36,10 @@ Las etiquetas son metadatos compartidos en la misma base, vinculados a los hecho
 
 ## Activación y presupuesto
 
+El etiquetado está implementado como capacidad de organización. El generador sigue extrayendo valores y acreditando su procedencia; esta rama no ha acreditado una generación eliminada mediante esas etiquetas. Mantener labels apagado hasta demostrar una sustitución efectiva y coste total no superior, incluida su reutilización posterior. No atribuirle ahorro por desplazar el coste a background.
+
+Las pruebas reales detectaron tres defectos: start_mode contaminaba la copia de bloques por duración, los días laborables podían codificarse como ISO en vez de Calendar nativo, y execute sin acción rechazaba observaciones válidas. La normalización conserva la duración, convierte el rango literal lunes a viernes a [2,3,4,5,6] y permite gestión de observaciones sin autoridad de dispositivo. Las transformaciones de texto autocontenidas cierran las herramientas de efectos; su contenido no se convierte en orden. Se conservan los primeros fallos como evidencia.
+
 Las tres sustituciones se validan independientemente. bm-agent-activation.json las mantiene desactivadas en producción hasta disponer de evidencia del runtime exacto. La vía vigente sigue siendo el fallback.
 
 | Configuración | Efecto |
@@ -48,6 +52,12 @@ Las tres sustituciones se validan independientemente. bm-agent-activation.json l
 La migración 035_bm_agent_labels.sql es aditiva y no depende de 029/030. Aplicarla aisladamente en integración, después de 028 y 034; nunca ejecutar db push de todo el historial por este cambio. RLS y RPC son exclusivos de service_role. Reserva conservadora de 0,01 USD antes del proveedor; consumo conocido ajusta la reserva y un intento cobrado sin uso conocido conserva el máximo. Sin reintentos automáticos. Estos límites no amplían el presupuesto de evaluación previamente autorizado.
 
 ## Validación reproducible
+
+Evidencia local de esta implementación en tmp/agent-eval: tools-200.json conserva 200 pares/400 turnos del primer candidato y sus fallos; focused-final.json verifica las correcciones en 12 pares/24 turnos; retrieval-pilot.json prueba la preparación ampliada con 16 pares/32 turnos. Las cifras del primer candidato no acreditan el runtime corregido. voice-provider.json registra 8 síntesis ES/EN reales desde respuestas guardadas; no son una comparación pareada hasta primer audio desde la entrada ni una prueba de reproducción en iPhone.
+
+Las revisiones del juez son de modelo, no humanas. Las versiones de contexto se conservan: V1 carecía de parte del estado del dispositivo; V2 distingue la fuente actual de las observaciones de cuenta; V3 aclara qué filas estaban sembradas antes y qué cambió realmente el commit. Nunca sustituir los primeros dictámenes por otros sin registrar esa versión. La muestra corregida tiene 12/12 respuestas candidatas aceptadas en V2; sus 12 pares no cumplen el mínimo de 200 ni la cobertura de voz del gate.
+
+El último intento del etiquetador recibió 429 credit_balance_exhausted, request req_65a6bc75b57943e3b6b95b2703e91984. Quedan pendientes la repetición de la rúbrica temática refinada y los dictámenes V3; el presupuesto autorizado conserva margen. El fallo no se convierte en aprobación ni dispara reintentos automáticos. Las tres features siguen apagadas en producción.
 
 1. node tools/bm_agent_runtime.js verifica el fingerprint de todos los módulos de Functions, usado como constante de compilación para esbuild/nft. Después de cambiar runtime, regenerarlo con --write y repetir evaluación; el manifiesto anterior deja de coincidir.
 2. node tools/bm_agent_test.js y node tools/bm_response_stream_test.js cubren las herramientas, acciones, memoria/olvido, paginación, lecturas agrupadas, separación de cuentas y SSE fragmentado. node tools/bm_agent_evidence_test.js comprueba rechazos de evidencia defectuosa; sus fixtures inventados nunca se instalan como aprobación.
