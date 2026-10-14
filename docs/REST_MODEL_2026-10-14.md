@@ -32,6 +32,12 @@ A seven-night frozen baseline can supply one reference for each weekday; the eva
 
 Comparisons match the wake-date weekday; the permitted schedule day is the actual protection occurrence, including a Friday window crossing into Saturday. Crossing midnight when falling asleep does not silently discard a valid night or switch its baseline to a weekend routine.
 
+## Source validation receipt
+
+Runtime `4f1b453`: full harness90/90, baseline/scope enforced, `ph_1791980238663_b994a546`; disposable SQL passed, including the positive/negative twenty-contributor boundary. [Backend CI38562651365](https://github.com/guillemarcos14/BlankmindAI/actions/runs/38562651365) passed all three jobs (contracts/runtime, PostgreSQL15, Android).
+
+[Native CI38561348408](https://github.com/guillemarcos14/BlankmindAI/actions/runs/38561348408) passed the actual Swift tests, Xcode26.4 simulator build and complete nineteen-case UI suite. Tested source37a9df9 has exactly the same iOS tree as runtime4f1b453 (`c8df357d102121139a3ab924457abdbc2e71df78`); later commits change backend/tests/documentation only. Visual export is a separate CI step, not evidence of physical execution. Local machine-readable receipt: `tmp/rest-validation/receipt.json`; harness report: `tmp/product-harness/rest-final-source.json`.
+
 Progress retains the existing layout but opens on sleep duration, prioritizes Watch evidence, and keeps subjective check-in trends inside the optional check-in. Its old protection/check-in association and subjective improvement headline are retired. It does not present a new universal quality score. Automatic settings keep Save reachable at maximum text size. Other Health measurements remain available as context, not optimization targets. The legacy `apply_ai_plan` command and old feature/insight/adherence outputs are removed from the app/BMB pathway; historical migrations and external transport remain for compatibility.
 
 Validation uses independent deterministic metric oracles, provider mocks that inspect actual planner input/proposal acceptance, disposable PostgreSQL-compatible SQL with the real migrations, existing PostgreSQL15 CI contracts, native Swift tests, and Xcode26.4 simulator/UI CI. Mocked planner tests are not paid semantic evaluation of generated replies. No additional paid model calls, production migration/deploy/cron activation, signed archive, Apple submission or physical Watch/usage verification was performed here. Earlier release/model certificates do not cover this candidate.
