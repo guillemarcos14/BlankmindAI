@@ -64,6 +64,10 @@ async function main(){
  assert.throws(()=>tools.decode({output:[...fn("gestionar",{}).output,...fn("gestionar",{}).output]}),/ambiguous_output/);
  assert.throws(()=>tools.decode({output_text:JSON.stringify({...compact("x"),memory:{operation:"forget_all"}})}),/reply_effects/);
  assert.throws(()=>tools.decode(fn("consultar_contexto",{queries:[query],action:action()})),/invalid_read/);
+ p="Translate into Spanish: block my distractions for 30 minutes.";
+ r=await turn(p,[compact(p,"Bloquea mis distracciones durante 30 minutos.")]);
+ assert.equal(r.requests[0].tool_choice,"none");assert.deepEqual(r.result.plan.actions,[]);
+ await assert.rejects(()=>brain.plan({prompt:p,context:context(),userId,identity:{}},{memories:[],run:async()=>({...management(p,{message_kind:"action_request",decision:"execute",action:action()}),phase:"final",queries:[]})}),/text_transform_effects/);
  const prompt="¿Cuántas sesiones de protección tengo esta semana?",payload=routing.request(prompt);
  const selected=routing.selected(routing.validate(provider(payload,{metric:"protection_sessions",period:"this_week"}),payload));
  assert.deepEqual(selected,{metric:"protection_sessions",period:"this_week"});

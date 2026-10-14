@@ -113,7 +113,7 @@ async function main(){
      console.info=line=>{try{const m=JSON.parse(line);if(["bm_stream_timing","bm_token_usage"].includes(m.event)&&Number.isSafeInteger(m.usage?.input_tokens)&&Number.isSafeInteger(m.usage?.output_tokens)){
        active.usage_records++;for(const [k,v]of Object.entries(m.usage))active.metered_usage[k]=(active.metered_usage[k]||0)+v;
      }if(m.event?.startsWith("bm_agent_"))active.agent_trace.push(m);if(m.event==="bm_decisions_timing")active.decisions_trace.push(m);if(m.event.startsWith("bm_retrieval_step_"))active.retrieval_trace.push(m);if(m.event==="bm_turn_timing"){active.usage=m.usage;active.stages=m.stages;active.decisions=m.decisions||[];}}catch(_){};};
-     let response;try{response=await (args.includes('--all-ndjson')||pair%8===0?invokeStream:invoke)(variant,{action:"send",turn_id:turn,text,context:{...context(),...nativeContext,language,locale:language}});}catch(_){response={statusCode:503,body:"{}"};}
+     let response;try{response=await (args.includes('--all-ndjson')||pair%8===0?invokeStream:invoke)(variant,{action:"send",turn_id:turn,text,context:{...context(),...nativeContext,...(agentFeature?spec.context||{}:{}),language,locale:language}});}catch(_){response={statusCode:503,body:"{}"};}
      const foregroundMs=performance.now()-active.start;
      if(agentFeature)await Promise.allSettled(background.splice(0));
      const value=JSON.parse(response.body),t=value.turn||{},noAction=!t.action_id&&!t.auto_apply;
@@ -124,11 +124,16 @@ async function main(){
      if(group==="habits")row.passed=row.passed&&/sleep|dorm/i.test(t.assistant_text||"");
      if(group==="bedtime")row.passed=row.passed&&/23:00|11\s*p\.?m/i.test(t.assistant_text||"");
      if(group==="incomplete")row.passed=row.passed&&/\?/.test(t.assistant_text||"");
-     if(["action","actions_combined"].includes(group)&&t.action_id){
+     if((["action","actions_combined"].includes(group)||agentFeature&&spec.expected_action)&&t.action_id){
        const payloads=await request(`/rest/v1/digital_wellness_feature_payloads?anonymous_user_id=eq.${memoryIdentity("app",user)}&select=payload`,undefined,service,"GET");
        const p=payloads.map(r=>r.payload?.properties?.memory?.pending_assistant_action).find(p=>p?.id===t.action_id);
-       row.pending_action=p?{type:p.type,minutes:p.minutes,recurrence:p.recurrence}:null;
-       row.passed=row.passed&&p?.type==="start_protection"&&p.minutes===30&&!['verified','applied'].includes(t.action_status);
+       row.pending_action=p?{type:p.type,minutes:p.minutes,recurrence:p.recurrence,start_minute:p.start_minute,end_minute:p.end_minute,weekdays:p.weekdays,duration_days:p.duration_days,window_id:p.window_id,hours:p.hours,hard_mode:p.hard_mode}:null;
+       row.passed=row.passed&&(spec.expected_action?Object.entries(spec.expected_action).every(([k,v])=>JSON.stringify(p?.[k])===JSON.stringify(v)):p?.type==="start_protection"&&p.minutes===30)&&!['verified','applied'].includes(t.action_status);
+     }
+     if(agentFeature){
+       row.canonical_memories=await request('/rest/v1/bm_brain_memories?auth_user_id=eq.'+user+'&select=key,value',undefined,service,'GET');
+       if(spec.expected_memory)row.passed=row.passed&&row.canonical_memories.some(m=>m.key===spec.expected_memory.key&&m.value===spec.expected_memory.value);
+       if(spec.forbid_memory)row.passed=row.passed&&row.canonical_memories.length===0;
      }
      if(group==="forget"&&response.statusCode===200){
        const memories=await request(`/rest/v1/bm_brain_memories?auth_user_id=eq.${user}&select=value`,undefined,service,"GET");
