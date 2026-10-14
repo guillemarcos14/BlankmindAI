@@ -16,18 +16,24 @@ function input(row,report,version=3){
    actual:{http_status:row.status,queued_action:row.pending_action||null,action_id_present:row.action_id_present,auto_apply:row.auto_apply,
      memories:row.canonical_memories||[],observations:row.canonical_observations??"Not exposed in this receipt, do not assume absent or persisted",committed_effect:row.committed_effect??null,
      forgetting_committed:row.forgetting_committed??null,physical_device_receipt:false}};
- if(version===1)return value;if(![2,3].includes(version))throw Error("Unknown review input version");
+ if(version===1)return value;if(![2,3,4].includes(version))throw Error("Unknown review input version");
  value.context={has_selected_apps:true,screen_time_authorized:true,device_execution_ready:true,schedule:{windows:[]},...spec.context,
    current_native_sleep:report.case_manifest.native_sleep_values?"See explicit native fixture; do not assume absence":{available:false,nights:[],scope:"Current iPhone snapshot only. Account observations remain separate and can be available."}};
  value.recording_semantics={clock:report.fixture_clock,timezone:"Europe/Madrid",
    protection:"The published fixture seeder creates manual sessions that end via timer, with no pause or break events. The recorded break count is zero; session count is separate. Union overlapping intervals when computing duration.",
    sleep:"Account sleep observations and current iPhone nights are separate sources. Missing current iPhone nights never imply missing account observations."};
- if(version===3)value.recording_semantics.effects="canonical_memories and observations are AFTER-turn snapshots, including the pre-existing fixture rows listed in source_records. Their presence does not prove this turn wrote them. committed_effect is the actual SQL receipt for this turn: brain_memory_effect=null means no memory/observation change, regardless of the seeded rows. Attribute only changes in that receipt to the response. When receipts were not exposed, do not invent them.";
+ if(version>=3)value.recording_semantics.effects="canonical_memories and observations are AFTER-turn snapshots, including the pre-existing fixture rows listed in source_records. Their presence does not prove this turn wrote them. committed_effect is the actual SQL receipt for this turn: brain_memory_effect=null means no memory/observation change, regardless of the seeded rows. Attribute only changes in that receipt to the response. When receipts were not exposed, do not invent them.";
+ if(version===4){
+  value.actual.model_contexts=row.model_contexts??"Not captured; do not infer a synced Watch baseline.";
+  value.recording_semantics.watch="Generic measured account observations, including native_health, do not establish Apple Watch device provenance, the synced rest_snapshot or the seven-night measured-rest baseline. Distinguish lack of that baseline from lack of all sleep observations. Judge the exact claim, never relabel measurements as Watch data without provenance.";
+  value.recording_semantics.clock_scope="fixture_clock is seed time, not the time of the model turn. Use captured model_contexts.turn_clock when available.";
+ }
  return value;
 }
 async function main(){
  if(!process.argv.includes("--run")||!process.env.OPENAI_API_KEY)throw Error("Explicit paid review required");
  const source=arg("--input"),output=arg("--output"),budgetFile=arg("--budget-file");
+ const inputVersion=Number(arg("--input-version",3));if(![3,4].includes(inputVersion))throw Error("Unknown review input version");
  if(!source||!output||!budgetFile||!fs.existsSync(budgetFile))throw Error("Source, output and existing authorized budget required");
  const report=JSON.parse(fs.readFileSync(source));if(!report.complete)throw Error("Complete frozen source required");
  const model="gpt-5.6-sol",rates=JSON.parse(fs.readFileSync(arg("--rates")));
@@ -36,15 +42,15 @@ async function main(){
  const fetcher=require("./bm_shared_budget").install({budgetFile,requestsFile:requestFile,rates});
  const prior=fs.existsSync(output)?JSON.parse(fs.readFileSync(output)):null;
  if(prior&&prior.source_sha256!==sha(report))throw Error("Review source changed");
- if(prior&&(prior.input_version||1)!==3)throw Error("Preserve prior review; use a new output for the new input version");
- const result=prior||{version:1,input_version:3,model,source_sha256:sha(report),source_run_id:report.run_id,complete:false,model_review_not_human:true,reviews:[]};
+ if(prior&&(prior.input_version||1)!==inputVersion)throw Error("Preserve prior review; use a new output for the new input version");
+ const result=prior||{version:1,input_version:inputVersion,model,source_sha256:sha(report),source_run_id:report.run_id,complete:false,model_review_not_human:true,reviews:[]};
  const save=()=>{fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(result,null,2)+"\n");};
  const pending=report.records.filter(row=>!result.reviews.some(r=>r.id===row.variant+":"+row.pair+":"+row.step));
  if(process.argv.includes("--candidate-first"))pending.sort((a,b)=>Number(b.variant==="decisions")-Number(a.variant==="decisions"));
  const stopFile=arg("--stop-file");
  const concurrency=Number(arg("--concurrency",4));if(!Number.isSafeInteger(concurrency)||concurrency<1||concurrency>4)throw Error("Concurrency 1..4 required");
  async function reviewOne(row){
-  const data=input(row,report),id=row.variant+":"+row.pair+":"+row.step;
+  const data=input(row,report,inputVersion),id=row.variant+":"+row.pair+":"+row.step;
   const request={model,reasoning:{effort:"low"},max_output_tokens:600,input:[{role:"system",content:SYSTEM},{role:"user",content:JSON.stringify(data)}],
    text:{format:{type:"json_schema",name:"agent_quality_review",strict:true,schema:{type:"object",additionalProperties:false,required:["response_ok","memory_ok","action_ok","naturalness","rationale"],properties:{
     response_ok:{type:"boolean"},memory_ok:{type:"boolean"},action_ok:{type:"boolean"},naturalness:{type:"integer",minimum:1,maximum:5},rationale:{type:"string"}}}}}};

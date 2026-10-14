@@ -44,12 +44,23 @@ async function main(){
  const meter=require('./bm_decisions_meter');
  const budgetFile=get('--budget-file','tmp/retrieval-wide/budget.json');const budget=fs.existsSync(budgetFile)?JSON.parse(fs.readFileSync(budgetFile)):{limit_usd:4,reserved_upper_usd:0,known_usd:0,requests:0};
  const saveBudget=()=>fs.writeFileSync(budgetFile,JSON.stringify(budget,null,2));
+ const pairedVoice=args.includes("--paired-voice"),voiceCap=Number(get("--voice-character-cap",400));let voiceCharacters=0;
+ if(pairedVoice){
+  if(!agentFeature||!process.env.ELEVENLABS_API_KEY||!Number.isInteger(voiceCap)||voiceCap<1||voiceCap>800)throw Error("decisions_voice_configuration_required");
+  if(budget.reserved_upper_usd+1>budget.limit_usd)throw Error("decisions_spend_limit");
+  budget.reserved_upper_usd+=1;budget.remote_opaque_reservations||=[];
+  budget.remote_opaque_reservations.push({run_id:crypto.randomUUID(),kind:"agent-paired-voice",reserved_upper_usd:1,character_cap:voiceCap,usage_usd:null,reason:"Real paired input-to-PCM; provider does not return exact USD. Preserve this reserve; no key/quota extension."});saveBudget();
+  Object.assign(process.env,{BM_VOICE_ENABLED:"true",BM_VOICE_PROVIDER:"elevenlabs"});
+ }
  const reserve=(body,endpoint)=>{const p=JSON.parse(body),upper=(Buffer.byteLength(String(body),'utf8')*(endpoint==='decisions'?rates.decisions_input:rates.input*1.25)+(endpoint==='decisions'?0:(p.max_output_tokens||10000))*rates.output)/1e6;if(budget.reserved_upper_usd+upper>budget.limit_usd)throw Error('decisions_spend_limit');budget.reserved_upper_usd+=upper;budget.requests++;saveBudget();return upper;};
  const originalFetch=global.fetch;let active=null;
  global.fetch=async(url,options)=>{
    const endpoint=String(url)==='https://api.openai.com/v1/decisions'?'decisions':String(url)==='https://api.openai.com/v1/responses'?'responses':null;
    if(!endpoint)return originalFetch(url,options); const reserved=reserve(options.body,endpoint); if(!active)return originalFetch(url,options);
    const local=active,row={endpoint,reserved_upper_usd:reserved,request_sha256:crypto.createHash('sha256').update(String(options?.body||'')).digest('hex'),...(args.includes('--retain-synthetic-requests')?{synthetic_request:JSON.parse(options.body)}:{})};local.provider_requests.push(row);
+   if(agentFeature&&endpoint==="responses"){
+    try{const input=JSON.parse(JSON.parse(options.body).input?.[1]?.content);if(input.mode){local.model_contexts||=[];local.model_contexts.push({mode:input.mode,turn_clock:input.now,rest_evidence:input.sources?.find(s=>s.source_id==="rest_evidence")??null});}}catch(_){}
+   }
    if(endpoint==='responses')local.model_calls++;else local.decisions_calls++;
    try{const raw=await originalFetch(url,options);
     if(agentFeature&&endpoint==="decisions"){const result=await raw.clone().json().catch(()=>null);if(Number.isSafeInteger(result?.usage?.input_tokens))row.usage={input_tokens:result.usage.input_tokens,output_tokens:0,cached_input_tokens:0,cache_write_tokens:0};}
@@ -136,7 +147,7 @@ async function main(){
      }
      if(agentFeature){
        row.canonical_memories=await request('/rest/v1/bm_brain_memories?auth_user_id=eq.'+user+'&select=key,value',undefined,service,'GET');
-       row.canonical_observations=await request('/rest/v1/bmb_observations?auth_user_id=eq.'+user+'&select=metric,value_number,value_text,unit,measurement,evidence,measured_at',undefined,service,'GET');
+       row.canonical_observations=await request('/rest/v1/bmb_observations?auth_user_id=eq.'+user+'&select=metric,value_number,value_text,unit,measurement,evidence,measured_at,source,status,created_at',undefined,service,'GET');
        row.committed_effect=await request('/rest/v1/assistant_app_turns?auth_user_id=eq.'+user+'&id=eq.'+turn+'&select=brain_memory_effect,brain_memory_applied_at',undefined,service,'GET');
        if(spec.expected_memory)row.passed=row.passed&&row.canonical_memories.some(m=>m.key===spec.expected_memory.key&&typeof m.value==="string"&&m.value.includes(spec.expected_memory.value));
        if(spec.expected_fact){
@@ -158,6 +169,11 @@ async function main(){
        const memoryCount=spec.profile==='forgotten'?1:0,unchanged=JSON.stringify(tuples)===JSON.stringify(seeded)&&memories.length===memoryCount&&memories.every(m=>m.value===null);
        row.personal_record_integrity={passed:unchanged,observations_count:observations.length,expected_observations_count:seeded.length,memory_count:memories.length,expected_memory_count:memoryCount,...(!unchanged?{unexpected_state:{observations,memories}}:{})};
        row.passed=row.passed&&unchanged;
+     }
+     row.audio_requested=pairedVoice&&spec.audio_requested===true;
+     if(row.audio_requested){
+      row.voice=await require("./bm_agent_paired_voice").measure({root:roots[variant],token,install,turn,started:active.start,text:t.assistant_text,remaining:voiceCap-voiceCharacters});
+      voiceCharacters+=row.voice.characters;row.first_audio_ms=row.voice.first_audio_ms;row.voice_cost_usd=row.voice.cost_usd??null;row.passed=row.passed&&row.voice.passed;
      }
      history.push({role:"user",content:text},{role:"assistant",content:t.assistant_text||""}); records.push(row);for(const req of row.provider_requests){const measured=meter.estimate(req,rates);if(measured!==null){budget.known_usd+=measured;budget.reserved_upper_usd-=req.reserved_upper_usd-measured;}}saveBudget();active=null;console.info=originalInfo;save();
      if(args.includes("--fail-fast")&&variant==="decisions"&&!row.passed)throw Error("agent_hard_failure_"+row.case_id+"_"+variant);

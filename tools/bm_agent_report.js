@@ -23,7 +23,9 @@ function adapt(report,quality){
   const spec=report.case_manifest.cases.find(c=>c.id===r.case_id);
   const review=quality.reviews.find(q=>q.id===r.variant+":"+r.pair+":"+r.step);
   if(!review||review.input_sha256!==sha(input(r,report,quality.input_version||1)))throw Error("Review does not match original turn");
-  const parts=r.provider_requests.map(p=>estimate(p,report.rates)),cost=parts.length&&parts.every(n=>Number.isFinite(n)&&n>=0)?parts.reduce((a,b)=>a+b,0):null;
+  const parts=r.provider_requests.map(p=>estimate(p,report.rates)),textCost=parts.length&&parts.every(n=>Number.isFinite(n)&&n>=0)?parts.reduce((a,b)=>a+b,0):null;
+  const voiceKnown=r.audio_requested!==true||(Number.isFinite(r.voice_cost_usd)&&r.voice_cost_usd>=0);
+  const cost=textCost!==null&&voiceKnown?textCost+(r.audio_requested===true?r.voice_cost_usd:0):null;
   const group=["sleep_yesterday","sleep_week","protection_yesterday","protection_week","query"].includes(r.group)?"query":
    ["memory","bedtime","forget","habits"].includes(r.group)?"memory":r.group==="action"||r.group==="actions_combined"?"action":"chat";
   const actionMatches=spec.expected_action?Boolean(r.action_id_present&&r.pending_action&&Object.entries(spec.expected_action).every(([k,v])=>{

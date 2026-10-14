@@ -35,6 +35,13 @@ const fact={key:"preferences",literal:"leer en papel"},stored=structuredClone(re
 stored.case_manifest.cases[0].expected_fact=fact;
 stored.records[0].canonical_memories=[{key:fact.key,value:fact.literal}];
 const reviewed=r=>({...quality,source_sha256:sha(r),reviews:[{...quality.reviews[0],input_sha256:sha(input(r.records[0],r))}]});
+const voiced=structuredClone(report);voiced.records[0].audio_requested=true;
+assert.equal(adapt(voiced,reviewed(voiced))[0].cost_usd,null,"Unknown billed voice cost became a free audio measurement");
+voiced.records[0].voice_cost_usd=.01;
+assert.equal(adapt(voiced,reviewed(voiced))[0].cost_usd,.010032,"Known voice cost was omitted from total cost");
+const v4=input({...row,model_contexts:[{turn_clock:"2026-10-14T16:00:00Z",rest_evidence:{available:false,reason:"no_synced_watch_baseline"}}]},report,4);
+assert.equal(v4.actual.model_contexts[0].rest_evidence.available,false);
+assert(v4.recording_semantics.clock_scope.includes("seed time"));
 assert.equal(adapt(stored,reviewed(stored))[0].quality.memory_ok,false,"Pre-existing rows or a judge approval hid a missing write");
 stored.records[0].committed_effect=[{brain_memory_effect:{operation:"set",key:fact.key,value:fact.literal},brain_memory_applied_at:null}];
 assert.equal(adapt(stored,reviewed(stored))[0].quality.memory_ok,false,"An unapplied planned effect counted as persisted");
