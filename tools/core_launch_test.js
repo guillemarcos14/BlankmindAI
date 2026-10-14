@@ -19,11 +19,13 @@ const sources=require("../netlify/functions/bmb-sources").SOURCE_NAMES;
 assert(sources.includes("rest_nights")&&sources.includes("rest_experiments")&&sources.includes("health_context"));
 assert(!sources.some(n=>["wellness","wearables","wearable_connections"].includes(n)));
 const project=fs.readFileSync(path.join(root,"ios/Blank/Blank.xcodeproj/project.pbxproj"),"utf8");
-assert(!/Widget|8A000004|BC121200/.test(project));
+assert(!/Widget|8A000004|BC12120000000000000000(?:04|05|10|20|21|30)/.test(project));
 const syntax=project.replace(/\/\*[\s\S]*?\*\//g,"").replace(/"(?:\\.|[^"\\])*"/g,"");
 const stack=[];
 for(const c of syntax){if(c==="{"||c==="(")stack.push(c);else if(c==="}"||c===")")assert.equal(stack.pop(),c==="}"?"{":"(","Xcode project has unbalanced target attributes");}
 assert.equal(stack.length,0);
+const monitorSources=project.slice(project.indexOf('8A0000020000000000000050 /* Sources */ ='),project.indexOf('8A0000050000000000000050 /* Sources */ ='));
+for(const name of ["BlankSharedState.swift","BlankDomainModels.swift","BlankBrainMetrics.swift"])assert(monitorSources.includes(name),name+" missing from core monitor sources");
 for(const name of ["SetupView.swift","ContentView.swift","HomeView.swift"]){
  const source=fs.readFileSync(path.join(root,"ios/Blank/Blank",name),"utf8");
  assert(!source.includes('path: "assistant-channel"'),"Native lifecycle still uses the retired endpoint");

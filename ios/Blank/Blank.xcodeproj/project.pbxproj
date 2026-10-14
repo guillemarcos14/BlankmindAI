@@ -62,6 +62,9 @@
 		63C68C09E7B74B4AA238F332 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3F25DC49D4674B4C8B22E955 /* PrivacyInfo.xcprivacy */; };
 		EA0C1BCB75904DD68DAA27F0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = BF1828A8E5024924A5E85517 /* PrivacyInfo.xcprivacy */; };
 		C01400000000000000000001 /* RestReportScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000002 /* RestReportScope.swift */; };
+		BC1212000000000000000001 /* BlankSharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0000010000000000000025 /* BlankSharedState.swift */; };
+		BC1212000000000000000002 /* BlankDomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A000001000000000000001B /* BlankDomainModels.swift */; };
+		BC1212000000000000000003 /* BlankBrainMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10000000000000000000031 /* BlankBrainMetrics.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -511,6 +514,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BC1212000000000000000001 /* BlankSharedState.swift in Sources */,
+				BC1212000000000000000002 /* BlankDomainModels.swift in Sources */,
+				BC1212000000000000000003 /* BlankBrainMetrics.swift in Sources */,
 				8A0000020000000000000001 /* DeviceActivityMonitorExtension.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
