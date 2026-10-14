@@ -23,6 +23,7 @@ final class ScreenTimeBlocker: ObservableObject {
     #endif
 
     var authorizationStatusLabel: String {
+        if hasAuthorization { return "approved" }
         switch authorizationStatus {
         case .notDetermined:
             return "notDetermined"

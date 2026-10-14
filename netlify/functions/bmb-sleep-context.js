@@ -19,7 +19,7 @@ function sleepContext(context) {
         ||!Number.isInteger(night.sleep_minutes)||night.sleep_minutes<=0||night.sleep_minutes>1440)continue;
       if(context.brain_snapshot.local_date&&night.date>context.brain_snapshot.local_date)continue;
       const row={id:`current_sleep:${night.date}`,date:night.date,source,sleep_minutes:night.sleep_minutes};
-      for(const key of ["deep_minutes","rem_minutes","core_minutes","awake_minutes","in_bed_minutes","bedtime_minute","wake_minute"]) {
+      for(const key of ["deep_minutes","rem_minutes","core_minutes","awake_minutes","in_bed_minutes","bedtime_minute","sleep_onset_minute","wake_minute"]) {
         const value=night[key],maximum=key.endsWith("_minute")?1439:1440;
         if(Number.isInteger(value)&&value>=0&&value<=maximum)row[key]=value;
       }

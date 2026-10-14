@@ -41,6 +41,18 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_26.4.app
           xcodebuild -version
           swift -version
+      - name: Inspect supported usage API
+        run: |
+          python3 - <<'PY'
+          import pathlib, subprocess
+          task_sdk = pathlib.Path(subprocess.check_output(['xcrun', '--sdk', 'iphonesimulator', '--show-sdk-path'], text=True).strip())
+          task_module = task_sdk / 'System/Library/Frameworks/DeviceActivity.framework/Modules/DeviceActivity.swiftmodule'
+          task_file = next(task_module.glob('*.swiftinterface'))
+          task_lines = task_file.read_text().splitlines()
+          for task_index, task_line in enumerate(task_lines):
+              if 'struct DeviceActivityData' in task_line or 'func activityData(' in task_line or 'activitySegments' in task_line:
+                  print('\n'.join(task_lines[max(0, task_index-2):task_index+65]))
+          PY
       - name: Validate bundle executable setting
         run: |
           /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" ios/Blank/Blank/Info.plist | grep -Fx '$(EXECUTABLE_NAME)'

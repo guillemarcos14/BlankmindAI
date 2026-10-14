@@ -25,6 +25,7 @@ create table public.bmb_rest_experiments (
  metric text not null check(metric in ('sleep_continuity','sleep_duration_target','sleep_regularity')),
  target_minutes integer check(target_minutes between 180 and 720), reference_minute integer check(reference_minute between 0 and 1439),
  review_after_days integer not null check(review_after_days between 7 and 14),
+ lead_minutes_bucket integer check(lead_minutes_bucket between 0 and 120),
  action jsonb not null, baseline jsonb not null, evidence_ids jsonb not null,
  excluded_dates jsonb not null default '[]', verified_at timestamptz,
  status text not null default 'awaiting_execution' check(status in ('awaiting_execution','active','completed','failed','cancelled','forgotten')),
@@ -51,6 +52,18 @@ grant all on public.bmb_rest_context,public.bmb_rest_nights,public.bmb_rest_expe
 create policy rest_context_service on public.bmb_rest_context for all to service_role using(true) with check(true);
 create policy rest_nights_service on public.bmb_rest_nights for all to service_role using(true) with check(true);
 create policy rest_experiments_service on public.bmb_rest_experiments for all to service_role using(true) with check(true);
+
+create function public.bmb_rest_lead_bucket(p_baseline jsonb,p_start integer) returns integer
+language sql immutable set search_path=public as $$
+ select case when value between 0 and 120 then (round(value/15)*15)::int else null end from (
+   select percentile_cont(0.5) within group(order by
+     mod((extract(hour from (n->>'start_at')::timestamptz at time zone (n->>'timezone'))::int*60
+       +extract(minute from (n->>'start_at')::timestamptz at time zone (n->>'timezone'))::int)-p_start+2160,1440)-720) as value
+   from jsonb_array_elements(p_baseline) n where n->>'source'='apple_watch' and not (n->>'manual')::boolean and (n->>'complete')::boolean
+ ) q;
+$$;
+revoke all on function public.bmb_rest_lead_bucket(jsonb,integer) from public,anon,authenticated;
+grant execute on function public.bmb_rest_lead_bucket(jsonb,integer) to service_role;
 
 create function public.bmb_sync_rest(p_user uuid,p_install text,p_snapshot jsonb) returns jsonb
 language plpgsql security definer set search_path=public as $$
@@ -163,9 +176,9 @@ begin
  select coalesce(jsonb_agg(to_jsonb(n)),'[]') into base from bmb_rest_nights n where auth_user_id=new.auth_user_id
  and source='apple_watch' and not manual and complete and end_at<new.created_at and end_at>new.created_at-interval '35 days';
  if jsonb_array_length(base)<7 then return new; end if;
- insert into bmb_rest_experiments(auth_user_id,action_id,source_turn_id,hypothesis,metric,target_minutes,reference_minute,review_after_days,action,baseline,evidence_ids)
+ insert into bmb_rest_experiments(auth_user_id,action_id,source_turn_id,hypothesis,metric,target_minutes,reference_minute,review_after_days,action,baseline,evidence_ids,lead_minutes_bucket)
  values(new.auth_user_id,new.action_id,new.id,plan->>'hypothesis',plan->>'metric',(plan->>'target_minutes')::int,
- (plan->>'reference_minute')::int,(plan->>'review_after_days')::int,a,base,plan->'evidence_ids') on conflict do nothing;
+ (plan->>'reference_minute')::int,(plan->>'review_after_days')::int,a,base,plan->'evidence_ids',bmb_rest_lead_bucket(base,(a->>'start_minute')::int)) on conflict do nothing;
  return new;
 end $$;
 create trigger bmb_rest_completed_turn after update of brain_memory_applied_at on public.assistant_app_turns for each row execute function public.bmb_rest_capture_turn();
@@ -200,13 +213,14 @@ begin
  if not exists(select 1 from bmb_accounts where auth_user_id=p_user and coalesce((settings#>>'{rest,global_learning_enabled}')::boolean,false)) then
    return jsonb_build_object('available',false,'reason','global_learning_not_enabled'); end if;
  select jsonb_agg(to_jsonb(g)) into result from (
-   select metric,count(distinct e.auth_user_id) as users,count(*) as experiments,
+   select metric,lead_minutes_bucket,count(distinct e.auth_user_id) as users,count(*) as experiments,
    avg((evaluation->>'delta')::double precision) as mean_delta,
    count(*) filter(where evaluation->>'status'='improved')::double precision/count(*) as improved_fraction
    from bmb_rest_experiments e join bmb_accounts a using(auth_user_id)
    where e.auth_user_id<>p_user and e.status='completed' and e.updated_at>now()-interval '180 days'
    and coalesce((a.settings#>>'{rest,global_learning_enabled}')::boolean,false)
-   group by metric having count(distinct e.auth_user_id)>=20
+   and lead_minutes_bucket is not null
+   group by metric,lead_minutes_bucket having count(distinct e.auth_user_id)>=20
  ) g;
  return jsonb_build_object('available',result is not null,'rows',coalesce(result,'[]'),'role','weak_prior_only_personal_evidence_wins');
 end $$;
@@ -297,9 +311,9 @@ begin
    select coalesce(jsonb_agg(to_jsonb(r)),'[]') into base from bmb_rest_nights r where auth_user_id=p_user
      and source='apple_watch' and not manual and complete and end_at>=parent.verified_at and end_at<n;
    if jsonb_array_length(base)<7 then raise exception 'rest_insufficient_iteration_baseline'; end if;
-   insert into bmb_rest_experiments(auth_user_id,action_id,hypothesis,metric,target_minutes,reference_minute,review_after_days,action,baseline,evidence_ids)
+   insert into bmb_rest_experiments(auth_user_id,action_id,hypothesis,metric,target_minutes,reference_minute,review_after_days,action,baseline,evidence_ids,lead_minutes_bucket)
    values(p_user,'bmb_'||event_id::text,parent.hypothesis,parent.metric,parent.target_minutes,parent.reference_minute,
-     (a.settings#>>'{rest,review_after_days}')::int,p_event->'action',base,parent.evaluation->'evidence_ids');
+     (a.settings#>>'{rest,review_after_days}')::int,p_event->'action',base,parent.evaluation->'evidence_ids',bmb_rest_lead_bucket(base,(p_event#>>'{action,start_minute}')::int));
  end if;
  return jsonb_build_object('claimed',event_id is not null,'id',event_id,'reason',case when event_id is null then 'duplicate' else 'reserved' end);
 end $$;
