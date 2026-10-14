@@ -2,6 +2,10 @@
 const assert=require("node:assert/strict"),crypto=require("node:crypto"),{adapt}=require("./bm_agent_report"),{input}=require("./bm_agent_quality");
 const sha=x=>crypto.createHash("sha256").update(JSON.stringify(x)).digest("hex");
 const {providerFailure}=require("./bm_agent_quality");
+const {nativeQueued}=require("./bm_retrieval_wide_benchmark");
+assert.equal(nativeQueued({action_id:"queued",auto_apply:false},{expected_action:{type:"open_app_picker"}}),true,"A native UI interaction was mistaken for a missing command");
+assert.equal(nativeQueued({action_id:null,auto_apply:false},{expected_action:{type:"open_app_picker"}}),false);
+assert.equal(nativeQueued({action_id:"queued",auto_apply:false},{expected_action:{type:"start_protection"}}),false,"Non-UI commands lost the automatic-execution check");
 assert.equal(providerFailure(429,{error:{code:"credit_balance_exhausted"}}),"provider_credit_exhausted");
 assert.equal(providerFailure(429,{}),"provider_rate_limited");
 const row={agent_feature:"tools",variant:"decisions",pair:0,step:0,case_id:"fixture",language:"es",group:"action",status:200,
@@ -27,4 +31,13 @@ assert.throws(()=>adapt(report,{...quality,reviews:[{...quality.reviews[0],input
 const unaudited=structuredClone(report);delete unaudited.records[0].canonical_observations;
 const uq={...quality,source_sha256:sha(unaudited),reviews:[{...quality.reviews[0],input_sha256:sha(input(unaudited.records[0],unaudited))}]};
 assert.equal(adapt(unaudited,uq)[0].quality.reviewed,false,"Missing database audit qualified as complete memory review");
+const fact={key:"preferences",literal:"leer en papel"},stored=structuredClone(report);
+stored.case_manifest.cases[0].expected_fact=fact;
+stored.records[0].canonical_memories=[{key:fact.key,value:fact.literal}];
+const reviewed=r=>({...quality,source_sha256:sha(r),reviews:[{...quality.reviews[0],input_sha256:sha(input(r.records[0],r))}]});
+assert.equal(adapt(stored,reviewed(stored))[0].quality.memory_ok,false,"Pre-existing rows or a judge approval hid a missing write");
+stored.records[0].committed_effect=[{brain_memory_effect:{operation:"set",key:fact.key,value:fact.literal},brain_memory_applied_at:null}];
+assert.equal(adapt(stored,reviewed(stored))[0].quality.memory_ok,false,"An unapplied planned effect counted as persisted");
+stored.records[0].committed_effect[0].brain_memory_applied_at="2026-10-14T00:00:00Z";
+assert.equal(adapt(stored,reviewed(stored))[0].quality.memory_ok,true);
 console.log("PASS real-receipt adapter: exact source/review binding, independent blind judge, actual action, full cost, missing state audits and no invented audio");

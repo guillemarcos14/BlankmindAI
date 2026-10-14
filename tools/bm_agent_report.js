@@ -4,6 +4,17 @@
 const fs=require("node:fs"),crypto=require("node:crypto"),{estimate}=require("./bm_decisions_meter");
 const {assess}=require("../netlify/functions/bm-agent-evidence"),{input}=require("./bm_agent_quality");
 const sha=value=>crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+function committedFact(row,fact){
+ if(!fact||typeof fact.key!=="string"||typeof fact.literal!=="string"||!fact.literal)return false;
+ const matches=value=>typeof value==="string"&&value.includes(fact.literal);
+ return (row.committed_effect||[]).some(({brain_memory_effect:e,brain_memory_applied_at:at})=>{
+  if(!e||typeof at!=="string"||!Number.isFinite(Date.parse(at)))return false;
+  if(e.operation==="set"&&e.key===fact.key&&matches(e.value))
+   return (row.canonical_memories||[]).some(m=>m.key===fact.key&&matches(m.value));
+  return (e.observations||[]).some(o=>o.metric===fact.key&&o.unit==="text"&&matches(o.value_text)
+   &&(row.canonical_observations||[]).some(saved=>saved.metric===o.metric&&saved.unit===o.unit&&saved.measurement===o.measurement&&matches(saved.value_text)));
+ });
+}
 function adapt(report,quality){
  if(!report.complete||quality.source_sha256!==sha(report)||!quality.complete)throw Error("Complete unchanged source/review required");
  if(quality.model===report.generative_model)throw Error("Independent reviewer required");
@@ -22,6 +33,7 @@ function adapt(report,quality){
   const equivalentRoutine=clock&&(r.canonical_observations||[]).some(o=>o.metric==="bedtime"&&o.unit==="local_minute"&&o.measurement==="routine_statement"
     &&o.value_number===Number(clock[1])*60+Number(clock[2])&&o.evidence?.includes(spec.expected_memory.value));
   const memoryMatches=(!spec.expected_memory||equivalentRoutine||(r.canonical_memories||[]).some(m=>m.key===spec.expected_memory.key&&typeof m.value==="string"&&m.value.includes(spec.expected_memory.value)))
+    &&(!spec.expected_fact||committedFact(r,spec.expected_fact))
     &&(!spec.forbid_memory||r.canonical_memories?.length===0)&&(r.group!=="forget"||r.forgetting_committed===true);
   return {feature:r.agent_feature||report.agent_feature,variant:r.variant==="decisions"?"candidate":"baseline",case_id:r.case_id+":"+r.step,
    language:r.language,group,model:report.generative_model,source_hashes:report.agent_source_hashes,
@@ -39,4 +51,4 @@ if(require.main===module){
  fs.writeFileSync(output,JSON.stringify(result,null,2)+"\n");console.log(JSON.stringify({feature,approved:result.assessment.approved,reasons:result.assessment.reasons,case_count:result.assessment.case_count}));
  if(!result.assessment.approved)process.exitCode=1;
 }
-module.exports={adapt};
+module.exports={adapt,committedFact};

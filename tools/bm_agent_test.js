@@ -25,6 +25,11 @@ async function main(){
  let p="Hola",r=await turn(p,[compact(p,"¡Hola! ¿Qué tal vas?")]);
  assert.equal(r.calls,1);assert.deepEqual(r.requests[0].tools.map(t=>t.name),["consultar_contexto","gestionar"]);
  assert.equal(r.requests[0].parallel_tool_calls,false);assert.deepEqual(r.result.plan.actions,[]);
+ const managedAction=r.requests[0].tools.find(t=>t.name==="gestionar").parameters.properties.action;
+ const pauseContract=managedAction.anyOf.find(s=>s.properties?.type.enum.includes("pause_rules"));
+ assert.deepEqual(pauseContract.properties.type.enum,["pause_rules"]);
+ assert.equal(pauseContract.properties.hours.type,"integer");assert.equal(pauseContract.properties.hours.minimum,1);
+ assert.equal(pauseContract.properties.minutes.type,"null");
  assert(r.requests[0].text.format.schema.required.length<brain.schema.required.length,"Plain replies still generate the full effects envelope");
  for(const type of require("../netlify/functions/bm-pending-action").PENDING_ASSISTANT_ACTION_TYPES){
   if(type==="apply_ai_plan")continue;
