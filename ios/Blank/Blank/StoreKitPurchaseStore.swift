@@ -245,11 +245,13 @@ struct PersonalizedFollowupSheet: View {
                     Text(reason).font(.blankInter(size: 17, relativeTo: .body))
                     Text("Your first recurring window stays free permanently. You can edit, pause or disable it in Control. Add follow-up when you want help adapting your routine.")
                 }
-                Section("Included with follow-up") {
+                Section {
                     Text("Multiple windows and different schedules by day")
                     Text("Unlimited conversations by text and voice")
                     Text("Full Progress history, trends, comparisons and explanations")
                     Text("Automatic evaluation and adjustments within your permissions")
+                } header: {
+                    Text("Included with follow-up").foregroundStyle(BlankColors.ink)
                 }
                 Section {
                     ForEach(purchases.products, id: \.id) { product in
