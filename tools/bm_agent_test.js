@@ -13,13 +13,14 @@ const context=()=>({language:"es",memory:{semantic_store_version:0},has_selected
 const action=(type="start_protection")=>({type,minutes:30,start_minute:1320,end_minute:420,start_mode:null,weekdays:[2,3,4,5,6],duration_days:7,local_date:null,timezone:"Europe/Madrid",recurrence:"weekly",window_id:"window-a",hours:2,hard_mode:false});
 const compact=(prompt,reply="Lo vemos juntos.")=>({phase:"final",response_language:"es",message_kind:"question",evidence:prompt,response_text:reply,cited_sources:[]});
 const management=(prompt,extra={})=>({response_language:"es",message_kind:"statement",evidence:prompt,decision:"respond",accepted_proposal:null,pending_request:null,action:null,memory:null,observations:[],followup_resolution:null,longitudinal_review:null,response_text:"He anotado lo que me cuentas.",cited_sources:[],...extra});
+let callSequence=0;
 const fn=(name,args)=>{
  if(name==="gestionar"&&!Object.hasOwn(args,"effects")){
   const effectNames=["rest_experiment","rest_preferences","rest_exclusions","rest_claim","accepted_proposal","pending_request","action","memory","observations","followup_resolution","longitudinal_review"];
   const effects=effectNames.filter(k=>args[k]!=null&&(!Array.isArray(args[k])||args[k].length)).map(kind=>({kind,value:args[kind]}));
   args={...Object.fromEntries(Object.entries(args).filter(([k])=>!effectNames.includes(k))),effects};
  }
- return {status:"completed",output:[{type:"function_call",name,arguments:JSON.stringify(args)}]};
+ return {status:"completed",output:[{type:"function_call",call_id:"fixture_call_"+(++callSequence),name,arguments:JSON.stringify(args)}]};
 };
 async function turn(prompt,responses,{ctx=context(),memories=[]}={}){
  let calls=0;const requests=[];
@@ -32,6 +33,7 @@ async function main(){
  let p="Hola",r=await turn(p,[compact(p,"¡Hola! ¿Qué tal vas?")]);
  assert.equal(r.calls,1);assert.deepEqual(r.requests[0].tools.map(t=>t.name),["consultar_contexto","gestionar"]);
  assert.equal(r.requests[0].parallel_tool_calls,false);assert.deepEqual(r.result.plan.actions,[]);
+ assert.equal(r.requests[0].reasoning.effort,"none");
  const managedAction=r.requests[0].tools.find(t=>t.name==="gestionar").parameters.properties.effects.items.anyOf.find(s=>s.properties.kind.enum[0]==="action").properties.value;
  const pauseContract=managedAction.anyOf.find(s=>s.properties?.type.enum.includes("pause_rules"));
  assert.deepEqual(pauseContract.properties.type.enum,["pause_rules"]);
@@ -88,6 +90,9 @@ async function main(){
  const start=paths.length;
  r=await turn(p,[fn("consultar_contexto",{response_language:"es",message_kind:"question",evidence:p,queries:[query,query]}),{...compact(p,"Me contaste que te cuesta dejar el móvil."),cited_sources:["history"]}]);
  assert.equal(r.calls,2);assert.equal(paths.slice(start).filter(p=>p.startsWith("assistant_app_turns")).length,2,"Identical tool reads were not shared (one automatic history read plus one requested read)");
+ const toolCall=r.requests[1].input.find(i=>i.type==="function_call"),toolOutput=r.requests[1].input.find(i=>i.type==="function_call_output");
+ assert.equal(toolCall.call_id,toolOutput.call_id);assert.equal(JSON.parse(toolOutput.output).sources[0].source_id,"history");
+ assert(!Object.hasOwn(JSON.parse(r.requests[1].input[1].content),"agentToolHistory"),"Protocol history was duplicated into the user context");
  rows=Array.from({length:40},(_,i)=>({id:"history-"+i,user_text:"Dato "+i,assistant_text:"Anotado",created_at:new Date().toISOString()}));
  r=await turn("Hola",[compact("Hola")]);
  const input=JSON.parse(r.requests[0].input[1].content),history=input.sources.find(s=>s.source_id==="history");

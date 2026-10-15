@@ -142,6 +142,8 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema:boundedSchema}}};
   if(useTools){
     Object.assign(request,agentTools.contract(boundedSchema,availableCitations));
+    request.reasoning={effort:"none"};
+    if(input.agentToolHistory?.length)request.input.push(...input.agentToolHistory);
     request.input[0].content+="\n"+agentTools.INSTRUCTIONS;
     // A compact reply has no effects. Repairing a management result through
     // that envelope used to silently discard the memory while saying "saved".
@@ -172,6 +174,8 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
       if(onDraft)onDraft('');
       continue;
     }
+    if(useTools&&result.phase==="read"&&body.output?.some(o=>o.type==="function_call"&&typeof o.call_id==="string"))
+      Object.defineProperty(result,"agentToolOutput",{value:body.output,enumerable:false});
     return input.retrieval_contract?retrievalAdapter.expandProse(result,input):result;
   }
 }
@@ -243,6 +247,11 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     if(!result.queries?.length||pass===3)throw Error("bmb_read_budget_exhausted");
     const readResults=await timing.span("source_reads",()=>consultar_contexto(result.queries));
     sources.push(...readResults);
+    if(result.agentToolOutput){
+      if(!input.agentToolHistory)Object.defineProperty(input,"agentToolHistory",{value:[],enumerable:false});
+      const call=result.agentToolOutput.find(o=>o.type==="function_call");
+      input.agentToolHistory.push(...result.agentToolOutput,{type:"function_call_output",call_id:call.call_id,output:JSON.stringify({sources:readResults})});
+    }
   }
   if(!proactive&&result?.phase==="final"&&result.message_kind==="acceptance"&&!prior.proposal) {
     const recovered=await recover({history:latest.rows,timezone:input.timezone,actionSchema,after:prior.recovery_after},
