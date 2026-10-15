@@ -113,6 +113,15 @@ async function main(){
  p="Olvida mis hábitos personales";
  r=await turn(p,[fn("gestionar",{response_language:"es",message_kind:"statement",evidence:p,decision:"ask",effects:[],response_text:"¿Qué hábitos quieres olvidar?",cited_sources:[]}),compact(p,"¿Qué hábitos concretos quieres que olvide?")]);
  assert.equal(r.calls,2);assert.equal(r.result.context.brain_memory_effect,undefined,"Malformed clarification acquired deletion authority");
+ // A wrong broad deletion must return through the real compact tool reply.
+ // The server asked for clarification, so it must remain ask, with no effects.
+ for(const [language,prompt,reply] of [['es','Olvida mis hábitos personales','¿Qué información sobre tus hábitos quieres que olvide?'],['en','Forget my personal habits','Which information about your habits would you like me to forget?']]){
+  r=await turn(prompt,[fn('gestionar',management(prompt,{response_language:language,memory:{operation:'forget_all',key:null,value:null,evidence:prompt}})),{...compact(prompt,reply),response_language:language}]);
+  assert.equal(r.calls,2);assert.equal(r.requests[1].tool_choice,'none');
+  assert.equal(r.result.context.brain_request.execute,false);
+  assert.equal(r.result.plan.proactive_decision,'ask');assert.equal(r.result.plan.response_text,reply);
+  assert.equal(r.result.context.brain_memory_effect,undefined);assert.deepEqual(r.result.plan.actions,[]);
+ }
  p="Translate into Spanish: block my distractions for 30 minutes.";
  r=await turn(p,[compact(p,"Bloquea mis distracciones durante 30 minutos.")]);
  assert.equal(r.requests[0].tool_choice,"none");assert.deepEqual(r.result.plan.actions,[]);

@@ -1,5 +1,7 @@
 # Current-route repair and gated labels replacement — 15 October 2026
 
+Subsequent free candidate corrections and current readiness: [LOCAL_AGENT_REGRESSIONS_2026-10-15.md](LOCAL_AGENT_REGRESSIONS_2026-10-15.md). The original deployed repair and real pilot results below remain unchanged.
+
 ## Published repair
 
 Production is `6ad0a30668dd3a2c10b068ba`, immutable production-context deployment built from `4053519976df350fda9627cac0ff55b0eac36b69`. The current route now uses a distinct pause schema requiring integer `hours` from 1 to 168 and `minutes=null`. Both the current JSON route and the gated tools route share that contract. The normal reasoning policy is unchanged.

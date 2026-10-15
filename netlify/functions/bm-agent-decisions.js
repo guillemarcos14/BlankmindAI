@@ -11,13 +11,14 @@ const METRIC_MEANINGS={sleep_duration:"Recorded sleep time yesterday OR the mean
  none:"No single supported metric: ambiguous, multiple metrics, weekly sleep sum, advice, third-party records, phone use or time saved. An explicitly requested weekly average of sleep durations IS supported and belongs to sleep_duration."};
 const choice = (name, values, instructions) => ({ type: "choice", name, instructions,
       choices: values.map(value => ({ value, description: name==="metric"?METRIC_MEANINGS[value]:value==="yesterday"?"Yesterday / ayer, the previous local calendar day":value==="this_week"?"This week / esta semana, the current local calendar week":"No single explicit supported period" })) });
+const words=expression=>new RegExp("(?<![\\p{L}\\p{N}_])(?:"+expression+")(?![\\p{L}\\p{N}_])","iu");
 function candidate(text) {
   // Rejection only. The classifier, never a keyword, selects the actual read.
   return String(text).length <= 1500
-    && /\?|\b(?:show|tell|retrieve|dime|consulta|muéstrame)\b/iu.test(text)
-    && /\b(?:yesterday|ayer|this week|esta semana)\b/iu.test(text)
-    && /\b(?:sleep|slept|sueño|dormí|protecci[oó]n|protection|sesiones|sessions|breaks|interrupciones|bloqueos)\b/iu.test(text)
-    && !/\b(?:bloquea|activa|desactiva|programa|elimina|olvida|forget|delete|translate|traduce|hypothetical|hipotético)\b/iu.test(text);
+    && (/\?/u.test(text)||words("show|tell|retrieve|how|what|dime|consulta|mu[eé]strame|cu[aá]nt[oa]s?|qu[eé]").test(text))
+    && words("yesterday|ayer|this (?:calendar )?week|esta semana").test(text)
+    && words("sleep|slept|sueño|dorm[ií]|protecci[oó]n|protection|protected|sesiones|sessions|breaks|interrupciones|bloqueos").test(text)
+    && !words("block|bloquea|activa|desactiva|programa|schedule|elimina|olvida|borra|forget|delete|translate|traduce|repeat|repite|echo|quote|cita|hypothetical|hipot[eé]tic[a-záéíóú]*|compare|compara|advice|consejo|should|deber[ií]a|why|por qu[eé]|partner|pareja|friend|amig[oa]|wife|husband|espos[oa]|child|hij[oa]|mother|father|madre|padre").test(text);
 }
 function request(text) {
   return { model: MODEL, input: JSON.stringify({ current_message: String(text),
@@ -77,7 +78,7 @@ async function start(userId, text, { env = process.env, fetcher = fetch } = {}) 
   finally { console.info(JSON.stringify({event:"bm_agent_decisions",status:parsed?"completed":"fallback",elapsed_ms:Math.round(performance.now()-started),input_tokens:parsed?.input_tokens??null})); }
 }
 async function prepare(route, options) {
-  if (!route || !METRICS.includes(route.metric) || !PERIODS.slice(0,-1).includes(route.period)) return null;
+  if (!route || !METRICS.slice(0,-1).includes(route.metric) || !PERIODS.slice(0,-1).includes(route.period)) return null;
   const metric = route.metric.startsWith("sleep") ? "sleep" : "protection";
   const data = await legacy.prepare(metric+"_"+(route.period === "yesterday" ? "yesterday" : "week"),options);
   if (!data || !["protection_sessions","protection_breaks"].includes(route.metric)) return data;
@@ -97,7 +98,8 @@ function proseRequest(input) {
 }
 function expandProse(value,input) {
   const n = input.retrieval_contract.facts.count;
-  if (!new RegExp("(^|[^\\d])"+n+"([^\\d]|$)").test(value.response_text||"")) throw Error("agent_count_not_grounded");
+  const numbers=(value.response_text||"").match(/[+\-−]?\d+(?:[.,]\d+)*/gu)||[];
+  if (!Number.isSafeInteger(n)||n<0||!numbers.includes(String(n))) throw Error("agent_count_not_grounded");
   return legacy.expandProse(value,input);
 }
 module.exports={METRICS,PERIODS,candidate,request,validate,selected,start,prepare,proseRequest,expandProse};

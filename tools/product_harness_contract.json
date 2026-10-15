@@ -62,6 +62,10 @@
     "repair_commands": [],
     "commands": [
       {
+        "name": "bm_agent_retrieval_regressions",
+        "run": "node tools/bm_agent_retrieval_regression_test.js"
+      },
+      {
         "name": "bm_agent_label_replacement",
         "run": "node tools/bm_agent_label_replacement_test.js"
       },

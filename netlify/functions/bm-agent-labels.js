@@ -68,10 +68,11 @@ function classificationRequest(observations,currentMessage){
    choices:[{value:"routine_statement",description:"An explicit usual habit/routine; no occurrence measured on a date."},{value:"declared",description:"The user's explicit report of a particular occurrence, not a usual routine."},{value:"uncertain",description:"Ambiguous or unsupported classification; return to the generative agent."}]}))};
 }
 async function complete(result,input,{fetcher=fetch,env=process.env}={}){
- const observations=result.observations||[];
+ const observations=result?.observations;
+ if(!Array.isArray(observations))return null;
  if(!observations.length)return result;
  if(!activation.enabled('labels',env)||!env.OPENAI_API_KEY||observations.length>12||
-   observations.some(o=>Object.hasOwn(o,'measurement')||!o.evidence?.trim()||!input.current_message?.includes(o.evidence)))return null;
+   observations.some(o=>!o||typeof o!=='object'||Array.isArray(o)||Object.hasOwn(o,'measurement')||typeof o.evidence!=='string'||!o.evidence.trim()||!input.current_message?.includes(o.evidence)))return null;
  const payload=classificationRequest(observations,input.current_message),encoded=JSON.stringify(payload);
  if(Buffer.byteLength(encoded)>24000)return null;
  const started=performance.now();let parsed=null,accepted=false,attempted=false;

@@ -16,7 +16,7 @@ function contract(legacy, citations = []) {
   const literal = "Literal substring of current_message. Keep original words and language.";
   const memory = structuredClone(p.memory), observations = structuredClone(p.observations), action = structuredClone(p.action);
   const memoryFields = memory.anyOf.find(s=>s.type==="object").properties;
-  memoryFields.operation.description="forget deletes only key; forget_all forgets existing personal memory. Neither disables future collection, changes consent nor deletes the account; never promise those unsupported effects. For a category spanning multiple keys, ask for a precise supported scope before deleting. Never claim a wider deletion than this operation.";
+  memoryFields.operation.description="forget deletes only key; forget_all requires an explicit request to forget ALL personal memory. Neither disables future collection, changes consent nor deletes the account; never promise those unsupported effects. An ambiguous category may span saved memories and observations. Ask openly what information the user means; examples are not an exhaustive menu and never imply that only listed categories exist. Never claim a wider deletion than this operation.";
   memoryFields.value.anyOf.find(s=>s.type==="string").description=literal;
   memoryFields.evidence.description=literal;
   observations.items.properties.value_text.anyOf.find(s=>s.type==="string").description=literal;
