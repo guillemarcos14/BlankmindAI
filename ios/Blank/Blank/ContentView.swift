@@ -72,6 +72,13 @@ struct ContentView: View {
                 List {
                     Text("Your first completed block").font(.blankInter(size: 26, relativeTo: .title))
                     Text("Your iPhone recorded a completed protection window. This does not establish that your sleep improved.")
+                    if let owner = AssistantAppSession.userID, let block = purchaseStore.completedBlocks(owner: owner).last,
+                       let date = AssistantInboxAction.parseDate(block["ended_at"] as? String) {
+                        Text("Completed \(date.formatted(date: .abbreviated, time: .shortened))")
+                    }
+                    if let night = RestHealthContext.shared.nights.filter({ $0.watchMeasured && !$0.manual && $0.end <= Date() }).max(by: { $0.end < $1.end }) {
+                        Text("Latest Watch sleep: \(Int(RestInterval.minutes(night.asleep))) minutes on \(night.date.formatted(date: .abbreviated, time: .omitted)).")
+                    } else { Text("No measured Apple Watch sleep is available yet.") }
                     Text("Your recurring window stays free. View completed blocks and your latest available Watch night in Progress.")
                     Button("Activate personalized follow-up") {
                         purchaseStore.showingFirstSummary = false

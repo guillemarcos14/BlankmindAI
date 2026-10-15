@@ -2,7 +2,7 @@ begin;
 insert into auth.users(id) values ('aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa'),('bbbbbbbb-1111-4111-8111-bbbbbbbbbbbb');
 do $$
 declare u uuid:='aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa'; v uuid:='bbbbbbbb-1111-4111-8111-bbbbbbbbbbbb';
- w uuid:='cccccccc-1111-4111-8111-cccccccccccc'; r jsonb;
+ w uuid:='cccccccc-1111-4111-8111-cccccccccccc'; r jsonb; voice record; i int;
 begin
  perform funnel_implement_first(u,w,'{"registered":true}');
  perform funnel_implement_first(u,gen_random_uuid(),'{"registered":true}');
@@ -24,5 +24,13 @@ begin
   or has_function_privilege('authenticated','public.funnel_implement_first(uuid,uuid,jsonb)','execute')
   or has_function_privilege('anon','public.funnel_claim_diagnosis(uuid,text)','execute') then raise exception 'Client can forge commercial state'; end if;
  if exists(select 1 from pg_class where oid in('funnel_accounts'::regclass,'funnel_storekit_grants'::regclass,'funnel_diagnoses'::regclass) and not relrowsecurity) then raise exception 'Funnel RLS missing'; end if;
+ insert into assistant_app_turns(id,auth_user_id,user_text,assistant_text,status,completed_at) values(w,u,'test','reply','completed',now());
+ for i in 1..101 loop
+  select * into voice from reserve_assistant_voice(u,w,gen_random_uuid());
+  if not voice.reserved then raise exception 'Historical per-account voice quota cut setup at %',i;end if;
+ end loop;
+ insert into assistant_voice_global_usage(hour,requests) values(date_trunc('hour',now()),1000) on conflict(hour) do update set requests=1000;
+ select * into voice from reserve_assistant_voice(u,w,gen_random_uuid());
+ if voice.reserved then raise exception 'Global emergency provider capacity was removed';end if;
 end $$;
 rollback;

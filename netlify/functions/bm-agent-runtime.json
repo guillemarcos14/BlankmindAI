@@ -57,7 +57,7 @@
     "bmb-sources.js": "a932f9dccb13bfbc5fd0a8962eff92f8a6d7f2ccbc0f5d621bf32f34b85ceb90",
     "bmb-tick.js": "137d9b8ade307f608061041edc08b20b37011e955ecba54868f8624b3e6c2bcc",
     "bmb-worker-background.js": "3f1b3967179d3d6fd0e1049ee4ea68d5a752dea7ad12100d08948149bcdc2e15",
-    "funnel-access.js": "6e28fe5b02afd19131c5268f6daa0cc7ea31f1e8a7ff37e0f3dbb30b820a3bd6",
+    "funnel-access.js": "0699981a83efab932fb828c7deb203ff8011f04ccfd5713e308d01d72ab4558c",
     "funnel-diagnosis.js": "232d7cdd48533e20449202dadf67dc166f5da24cbbee1a4354fae2486edbf5ae",
     "funnel-event.js": "0bc6de6881caaf541e4293d466648dec5ed2f97be5d92e7b99d1df02a63bafce",
     "funnel-storekit.js": "13df07c327213a117407980ed50659b3ab6409b22ac3240d4384bcddaf0b0fcf",
@@ -72,8 +72,8 @@
     "shopify-orders-paid.js": "9ac479367bf9200a2c2d83adfa83d1f98e2e0520fd32ff1abadc72d75bdc1327",
     "supabase/migrations/035_bmb_measured_rest.sql": "ad6c5634cc235f3c0f52df3dad06676663283d1b667f0e95a6df913ce9e72f2e",
     "supabase/migrations/036_bm_agent_labels.sql": "f611c07efca9a1fdeca0acff90f2e9915e0cb6a8d2f1d03cf384d9448347644f",
-    "netlify/functions/funnel-catalog.json": "fd6f410c281ca46a3953c03afdff67b295b9f59a32f16efbaa6a6fb61ed6ba86",
+    "netlify/functions/funnel-catalog.json": "654c3fe931cbe5ba594e5750780ba68202e6216de0aad4498872f65bed502a44",
     "netlify/package-lock.json": "0eb24a9183e44d60c10821910c7e55f1e4ab07a4e26112ce2580c1d2ace7236f",
-    "supabase/migrations/037_monetization_funnel.sql": "067e561ab643b99113acda960d0778d14d5af8067e254ca92b64eaaad258e1e0"
+    "supabase/migrations/037_monetization_funnel.sql": "0ec2c8f106aa18ecdf57f565afc2a813a265993570cf1c84a1db1a07da2e91b6"
   }
 }

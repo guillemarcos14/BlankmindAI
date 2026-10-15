@@ -50,6 +50,7 @@ async function api(auth,body,db=supabaseFetch){
  if(body.action==="funnel_receipt"){
   const r=body.receipt;
   if(!r||!/^[-0-9a-f]{36}$/i.test(r.window_id||"")||r.registered!==true||r.screen_time_authorized!==true||r.selection_count<1
+    ||!Number.isSafeInteger(r.selection_count)||r.selection_count>10000
     ||!Number.isInteger(r.start_minute)||r.start_minute<0||r.start_minute>1439||!Number.isInteger(r.end_minute)||r.end_minute<0||r.end_minute>1439
     ||r.start_minute===r.end_minute||r.permanent!==true||!Array.isArray(r.weekdays)||!r.weekdays.length||r.weekdays.some(d=>!Number.isInteger(d)||d<1||d>7))return json(400,{error:"invalid_native_schedule_receipt"});
   // Native registration is evidence of scheduling, never evidence of a completed block or better sleep.

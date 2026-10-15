@@ -96,7 +96,8 @@ final class StoreKitPurchaseStore: ObservableObject {
             salesApproved = catalog["sales_approved"] as? Bool == true
             productIDs = salesApproved ? (catalog["product_ids"] as? [String] ?? []) : []
             entitlementIDs = catalog["entitlement_ids"] as? [String] ?? []
-            products = try await Product.products(for: productIDs).filter { $0.type == .autoRenewable }
+            let offersApproved = catalog["introductory_offers_approved"] as? Bool == true
+            products = try await Product.products(for: productIDs).filter { $0.type == .autoRenewable && (offersApproved || $0.subscription?.introductoryOffer == nil) }
             message = products.isEmpty ? "Personalized follow-up is not available to purchase yet. Your first recurring window stays free." : nil
             await updateCustomerProductStatus()
         } catch {
@@ -115,8 +116,8 @@ final class StoreKitPurchaseStore: ObservableObject {
         if status["premium"] as? Bool != true { premiumUntil = nil; purchasedProductIds = [] }
         if status["premium"] as? Bool != true { defaults.removeObject(forKey: "funnel.premiumUntil." + owner) }
     }
-    private func verify(_ result: VerificationResult<Transaction>) async throws -> Transaction {
-        let transaction: Transaction
+    private func verify(_ result: VerificationResult<StoreKit.Transaction>) async throws -> StoreKit.Transaction {
+        let transaction: StoreKit.Transaction
         switch result { case .verified(let value): transaction = value; case .unverified: throw URLError(.cannotParseResponse) }
         guard let owner = AssistantAppSession.userID, let token = UUID(uuidString: owner), transaction.appAccountToken == token,
               entitlementIDs.contains(transaction.productID) else { throw URLError(.userAuthenticationRequired) }
@@ -161,7 +162,7 @@ final class StoreKitPurchaseStore: ObservableObject {
     func updateCustomerProductStatus() async {
         guard AssistantAppSession.hasAppleIdentity else { resetAccount(); return }
         premiumUntil = nil; purchasedProductIds = []
-        for await result in Transaction.currentEntitlements {
+        for await result in StoreKit.Transaction.currentEntitlements {
             guard case .verified(let t) = result, entitlementIDs.contains(t.productID), t.revocationDate == nil,
                   !t.isUpgraded, let expiry = t.expirationDate, expiry > Date() else { continue }
             do { _ = try await verify(result) } catch { message = "Could not verify follow-up access. Restore purchases to retry." }
@@ -169,7 +170,7 @@ final class StoreKitPurchaseStore: ObservableObject {
         if !hasPremiumAccess, let owner = AssistantAppSession.userID { defaults.removeObject(forKey: "funnel.premiumUntil." + owner) }
     }
     func observeTransactionUpdates() async {
-        for await result in Transaction.updates {
+        for await result in StoreKit.Transaction.updates {
             do { let transaction = try await verify(result); await transaction.finish() }
             catch { await updateCustomerProductStatus() }
         }

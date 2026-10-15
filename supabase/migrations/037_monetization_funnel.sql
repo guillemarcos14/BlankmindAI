@@ -41,3 +41,26 @@ begin
 end; $$;
 revoke all on function public.funnel_implement_first(uuid,uuid,jsonb),public.funnel_claim_diagnosis(uuid,text) from public,anon,authenticated;
 grant execute on function public.funnel_implement_first(uuid,uuid,jsonb),public.funnel_claim_diagnosis(uuid,text) to service_role;
+
+-- No per-account message/audio allowance defines commercial access. Preserve
+-- provider-wide emergency capacity and replay/deleted-turn protections.
+create or replace function public.reserve_assistant_voice(p_auth_user_id uuid,p_turn_id uuid,p_request_id uuid)
+returns table(reserved boolean,reason text)
+language plpgsql security definer set search_path=public,pg_temp as $$
+declare t timestamptz;
+begin
+ perform pg_advisory_xact_lock(1791384106);t:=clock_timestamp();
+ if exists(select 1 from assistant_voice_requests where request_id=p_request_id) then
+  return query select false,'duplicate'::text;return;end if;
+ if not exists(select 1 from assistant_app_turns where id=p_turn_id and auth_user_id=p_auth_user_id and status='completed') then
+  return query select false,'unavailable'::text;return;end if;
+ if (select coalesce(sum(requests),0) from assistant_voice_global_usage where hour>=date_trunc('hour',t-interval '24 hours'))>=1000 then
+  return query select false,'rate_limited'::text;return;end if;
+ insert into assistant_voice_requests(request_id,auth_user_id,turn_id) values(p_request_id,p_auth_user_id,p_turn_id);
+ insert into assistant_voice_global_usage(hour,requests) values(date_trunc('hour',t),1)
+  on conflict(hour) do update set requests=assistant_voice_global_usage.requests+1;
+ delete from assistant_voice_global_usage where hour<t-interval '48 hours';
+ return query select true,'reserved'::text;
+end;$$;
+revoke all on function public.reserve_assistant_voice(uuid,uuid,uuid) from public,anon,authenticated;
+grant execute on function public.reserve_assistant_voice(uuid,uuid,uuid) to service_role;
