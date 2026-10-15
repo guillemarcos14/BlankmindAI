@@ -16,24 +16,28 @@ function input(row,report,version=3){
    actual:{http_status:row.status,queued_action:row.pending_action||null,action_id_present:row.action_id_present,auto_apply:row.auto_apply,
      memories:row.canonical_memories||[],observations:row.canonical_observations??"Not exposed in this receipt, do not assume absent or persisted",committed_effect:row.committed_effect??null,
      forgetting_committed:row.forgetting_committed??null,physical_device_receipt:false}};
- if(version===1)return value;if(![2,3,4].includes(version))throw Error("Unknown review input version");
+ if(version===1)return value;if(![2,3,4,5].includes(version))throw Error("Unknown review input version");
  value.context={has_selected_apps:true,screen_time_authorized:true,device_execution_ready:true,schedule:{windows:[]},...spec.context,
    current_native_sleep:report.case_manifest.native_sleep_values?"See explicit native fixture; do not assume absence":{available:false,nights:[],scope:"Current iPhone snapshot only. Account observations remain separate and can be available."}};
  value.recording_semantics={clock:report.fixture_clock,timezone:"Europe/Madrid",
    protection:"The published fixture seeder creates manual sessions that end via timer, with no pause or break events. The recorded break count is zero; session count is separate. Union overlapping intervals when computing duration.",
    sleep:"Account sleep observations and current iPhone nights are separate sources. Missing current iPhone nights never imply missing account observations."};
  if(version>=3)value.recording_semantics.effects="canonical_memories and observations are AFTER-turn snapshots, including the pre-existing fixture rows listed in source_records. Their presence does not prove this turn wrote them. committed_effect is the actual SQL receipt for this turn: brain_memory_effect=null means no memory/observation change, regardless of the seeded rows. Attribute only changes in that receipt to the response. When receipts were not exposed, do not invent them.";
- if(version===4){
+ if(version>=4){
   value.actual.model_contexts=row.model_contexts??"Not captured; do not infer a synced Watch baseline.";
   value.recording_semantics.watch="Generic measured account observations, including native_health, do not establish Apple Watch device provenance, the synced rest_snapshot or the seven-night measured-rest baseline. Distinguish lack of that baseline from lack of all sleep observations. Judge the exact claim, never relabel measurements as Watch data without provenance.";
   value.recording_semantics.clock_scope="fixture_clock is seed time, not the time of the model turn. Use captured model_contexts.turn_clock when available.";
+ }
+ if(version>=5){
+  value.requested_observations=spec.expected_observations||null;
+  value.recording_semantics.routines="Apply authored expected_observations to this specific case, not to sibling cases. routine_statement records a usual habit; its storage timestamp is the date it was stated, never a measured daily occurrence. A routine need not have yesterday's date. Only an explicit dated occurrence is declared; preserve its actual requested date. Never convert a usual habit into a dated daily event.";
  }
  return value;
 }
 async function main(){
  if(!process.argv.includes("--run")||!process.env.OPENAI_API_KEY)throw Error("Explicit paid review required");
  const source=arg("--input"),output=arg("--output"),budgetFile=arg("--budget-file");
- const inputVersion=Number(arg("--input-version",3));if(![3,4].includes(inputVersion))throw Error("Unknown review input version");
+ const inputVersion=Number(arg("--input-version",3));if(![3,4,5].includes(inputVersion))throw Error("Unknown review input version");
  if(!source||!output||!budgetFile||!fs.existsSync(budgetFile))throw Error("Source, output and existing authorized budget required");
  const report=JSON.parse(fs.readFileSync(source));if(!report.complete)throw Error("Complete frozen source required");
  const model="gpt-5.6-sol",rates=JSON.parse(fs.readFileSync(arg("--rates")));
