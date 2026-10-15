@@ -60,7 +60,7 @@ function syntheticDeviceSnapshot(now = new Date().toISOString()) {
   return {schema_version:1,generated_at:now,timezone:"Europe/Madrid",sessions:[]};
 }
 
-async function run(config, output, { infrastructureOnly = false } = {}) {
+async function run(config, output, { infrastructureOnly = false, runtimeRegressions = false } = {}) {
   // Recheck even when called programmatically.
   target(config.supabase, "supabase", config); target(config.netlify, "netlify", config);
   const runId = crypto.randomUUID();
@@ -194,7 +194,26 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
         body: { p_auth_user_id: a.id, p_turn_id: crypto.randomUUID(), p_user_text: "forbidden", p_lease_owner: crypto.randomUUID() } });
       expect([401,403].includes(rpc.status), "client_claim_rpc_allowed");
     });
-    if (!infrastructureOnly) {
+    if(runtimeRegressions){
+      for(const [language,user,pause,forget]of [['es',a,'Pausa mis reglas de bloqueo durante 2 horas.','Elimina de tu memoria mis hábitos personales.'],['en',b,'Pause my blocking rules for 2 hours.','Remove my personal habits from your memory.']]){
+        await check('pause_hours_'+language,async()=>{
+          const turn=await send(user,pause),queued=await pending(user);
+          expect(turn.action_id&&queued?.id===turn.action_id&&queued.type==='pause_rules'&&queued.hours===2,'pause_not_queued_exact_hours');
+          expect(turn.action_status!=='verified','fabricated_native_verification');
+        });
+        await check('ambiguous_forget_preserves_memory_'+language,async()=>{
+          const facts=[['bedtime','23:00'],['preferences','reading on paper']].map(([key,value])=>({auth_user_id:user.id,key,value,source_text:'Synthetic regression fixture',source_at:new Date().toISOString()}));
+          ok(await db('bm_brain_memories',{method:'POST',body:facts}),'regression_memory_seed');
+          const turn=await send(user,forget);
+          const rows=ok(await db(`bm_brain_memories?auth_user_id=eq.${user.id}&select=key,value`),'regression_memory_read');
+          expect(!turn.action_id&&turn.assistant_text?.trim(),'ambiguous_forget_missing_clarification');
+          expect(rows.length===2&&facts.every(f=>rows.some(r=>r.key===f.key&&r.value===f.value)),'ambiguous_forget_deleted_memory');
+          const effect=ok(await db(`assistant_app_turns?id=eq.${turn.id}&select=brain_memory_effect`),'regression_effect_read');
+          expect(!effect[0]?.brain_memory_effect?.operation,'ambiguous_forget_committed_deletion');
+        });
+      }
+    }
+    if (!infrastructureOnly&&!runtimeRegressions) {
     let first;
     await check("send_commits_exact_reply_action_and_shared_state", async () => {
       first = await send(a, "Block my selected apps now for 25 minutes, just once.");
@@ -292,10 +311,10 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
   const result = { evaluator: config.physicalQa ? "assistant-app-authorized-production-synthetic-qa-v1" : "assistant-app-real-staging-v1", generated_at: new Date().toISOString(), run_id: runId,
     script_sha256: crypto.createHash("sha256").update(fs.readFileSync(__filename)).digest("hex"),
     targets: { supabase: config.supabase, netlify: config.netlify }, checks, cleanup,
-    scope: infrastructureOnly ? "infrastructure_only_no_model_calls" : "full_conversation_recovery",
-    full_conversation_tested: !infrastructureOnly,
+    scope: runtimeRegressions ? "pause_and_ambiguous_forget_ES_EN" : infrastructureOnly ? "infrastructure_only_no_model_calls" : "full_conversation_recovery",
+    full_conversation_tested: !infrastructureOnly&&!runtimeRegressions,
     synthetic_auth_user_ids: users.map(user => user.id),
-    passed: !failure && checks.length === (infrastructureOnly ? 4 : 9) && cleanup.every(item => item.passed),
+    passed: !failure && checks.length === (runtimeRegressions ? 8 : infrastructureOnly ? 4 : 9) && cleanup.every(item => item.passed),
     limitations: [...(infrastructureOnly ? ["Only authentication, installation isolation and database access controls tested. Conversation generation, replay, shared memory and receipts are NOT tested in this run."] : []), "Seeded QA identities bypass phone OTP onboarding; no email or SMS is sent.",
       infrastructureOnly ? "No native receipt or iPhone enforcement is tested." : "Native receipt is a simulated failed result, never verified; no iPhone enforcement tested.",
       infrastructureOnly ? "Shared WhatsApp memory, provider webhooks and delivery are not tested." : "Shared WhatsApp semantic storage is checked directly; no external provider webhook or delivery is exercised."] };
