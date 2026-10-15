@@ -28,6 +28,8 @@ async function main(){
   check(F.actionAllowed({type},{premium:false,initial_setup:false},[{}]),"Free safety control: "+type);
  check(F.actionAllowed({type:"update_schedule",window_id:user},{premium:false,free_window_id:user},[{}]),"Correcting the free window remains free");
  check(!F.actionAllowed({type:"update_schedule",window_id:"other"},{premium:false,free_window_id:user},[{}]),"Other-window edits require premium");
+ check(F.actionAllowed({type:"update_schedule",window_id:user},rights,[{id:user}]),"An unregistered first window can be corrected during initial setup");
+ check(!F.actionAllowed({type:"update_schedule",window_id:user},rights,[{id:user},{id:"other"}]),"Initial setup cannot grant edits to multiple legacy windows");
  check(F.actionAllowed({type:"apply_schedule",recurrence:"once"},{premium:true},[{}]),"Paid windows preserve requested exact scope");
  const transaction={bundleId:"com.blanknfc.app.ios",environment:"Sandbox",type:"Auto-Renewable Subscription",productId:"blanked_monthly_299",
   appAccountToken:user,expiresDate:now+60000,purchaseDate:now-1000,originalTransactionId:"123",transactionId:"124"};

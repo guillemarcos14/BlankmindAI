@@ -9,7 +9,10 @@ async function main(){
   const plan=corpus.build(feature);assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory,feature+'.json'))),plan,'Frozen authored corpus drifted');
   const c=corpus.coverage(plan);assert(c.coverage_prepared);assert.equal(c.approved,false);assert.equal(c.executed_pairs,0);assert.equal(c.counts.all.planned_audio,64);cases+=plan.cases.length;
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory,feature+'-coverage.json'))),c);
-  preflight.verify(plan,JSON.parse(fs.readFileSync(path.join(directory,'source-lock.json'))),{feature,hashes:require('./bm_agent_runtime').verify()});
+  const currentHashes=require('./bm_agent_runtime').verify();
+  const historical=JSON.parse(fs.readFileSync(path.join(directory,'source-lock.json')));
+  assert.throws(()=>preflight.verify(plan,historical,{feature,hashes:currentHashes}),/stale_source/,'The pre-funnel preparation must remain stale, never relabelled as executed evidence');
+  preflight.verify(plan,JSON.parse(fs.readFileSync(path.join(directory,'source-lock-funnel.json'))),{feature,hashes:currentHashes});
   for(const mutate of [p=>{p.cases.pop();},p=>{p.cases[1]=p.cases[0];},p=>{p.cases.forEach(c=>c.audio_requested=false);},p=>{p.cases[0].text='changed';},p=>{p.executed=true;}]){const changed=structuredClone(plan);mutate(changed);assert.equal(corpus.coverage(changed).coverage_prepared,false);}
   const hashes={fixture:'f'.repeat(64)},lock={kind:'agent-unexecuted-source-lock-v1',source_hashes:hashes,corpora:{[feature]:corpus.sha(plan)}};
   assert.equal(preflight.verify(plan,lock,{feature,hashes}).activation_ready,false);

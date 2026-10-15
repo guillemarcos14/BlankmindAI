@@ -30,7 +30,8 @@ function actionAllowed(action,rights,windows=[]){
  if(rights.premium)return true;
  if(action.autonomous)return false;
  if(["pause_rules","disable_pause","delete_schedule","delete_all_schedules","disable_daily_limit","disable_allow_only","disable_adult_filter","request_screen_time_permission","open_app_picker"].includes(action.type))return true;
- if(action.type==="update_schedule")return Boolean(rights.free_window_id)&&action.window_id?.toLowerCase()===rights.free_window_id.toLowerCase();
+ if(action.type==="update_schedule")return Boolean(rights.free_window_id)&&action.window_id?.toLowerCase()===rights.free_window_id.toLowerCase()
+  ||rights.initial_setup===true&&windows.length===1&&typeof windows[0].id==="string"&&action.window_id?.toLowerCase()===windows[0].id.toLowerCase();
  if(action.type==="apply_schedule")return (Boolean(rights.free_window_id)&&action.id?.slice(4).toLowerCase()===rights.free_window_id.toLowerCase()
   ||(!windows.length&&rights.initial_setup))&&action.recurrence==="continuous";
  // Selection during the first configuration must remain free.

@@ -132,6 +132,7 @@ final class StoreKitPurchaseStore: ObservableObject {
         return transaction
     }
     func purchase(productId: String) async -> Bool {
+        guard !isPurchasing else { return false }
         guard salesApproved, productIDs.contains(productId), let product = products.first(where: { $0.id == productId }),
               let owner = AssistantAppSession.userID, AssistantAppSession.hasAppleIdentity, let token = UUID(uuidString: owner) else {
             message = "This subscription is not available yet."; return false
