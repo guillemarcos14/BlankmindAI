@@ -7,7 +7,7 @@ const brain=require("../netlify/functions/bmb-brain"),tools=require("../netlify/
 const routing=require("../netlify/functions/bm-agent-decisions"),labels=require("../netlify/functions/bm-agent-labels");
 const userId="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const envBefore={...process.env};
-Object.assign(process.env,{BM_AGENT_QA_ENABLED:"true",SUPABASE_URL:activation.QA,OPENAI_API_KEY:""});
+Object.assign(process.env,{BM_AGENT_QA_ENABLED:"true",BM_AGENT_QA_FEATURES:"tools",SUPABASE_URL:activation.QA,OPENAI_API_KEY:""});
 const context=()=>({language:"es",memory:{semantic_store_version:0},has_selected_apps:true,screen_time_authorized:true,
  brain_snapshot:{schema_version:1,generated_at:new Date().toISOString(),timezone:"Europe/Madrid",sessions:[]}});
 const action=(type="start_protection")=>({type,minutes:30,start_minute:1320,end_minute:420,start_mode:null,weekdays:[2,3,4,5,6],duration_days:7,local_date:null,timezone:"Europe/Madrid",recurrence:"weekly",window_id:"window-a",hours:2,hard_mode:false});

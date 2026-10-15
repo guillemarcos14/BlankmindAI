@@ -131,7 +131,7 @@ function proposal(a) {return {action:a,fingerprint:fingerprint(a),expires_at:new
 function actionIdentity(a) {
   return JSON.stringify(Object.fromEntries(Object.entries(a).sort(([a],[b])=>a.localeCompare(b))));
 }
-async function generate(input,{model=readModelJson,onDraft}={}) {
+async function generate(input,{model=readModelJson,onDraft,labeler=require('./bm-agent-labels').complete}={}) {
   if(onDraft) {
     onDraft(""); // Discard a prior read, repair or restored-offer draft.
     model=options=>require("./bm-response-stream").readModelStream({...options,onDraft:text=>onDraft(require('./bmb-factual-copy').preparedCopy(cleanCitations(input.retrieval_contract?require("./bm-retrieval-step").cleanProse(text):text,{quotedIn:input.current_message,partial:true})))});
@@ -139,12 +139,15 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
   const availableCitations=[...new Set([...(input.coverage||[]).map(s=>s.source_id),...(input.memories||[]).map(m=>m.id),...(input.sources||[]).flatMap(s=>[s.source_id,...(s.rows||[]).map(r=>r.id)])].filter(id=>typeof id==='string'&&id))];
   const citationSchema=availableCitations.length?{...schema.properties.cited_sources,items:{type:'string',enum:availableCitations}}:{...schema.properties.cited_sources,maxItems:0};
   const outputSchema=input.mode==="proactive"?schema:{...schema,properties:{...schema.properties,decision:{...schema.properties.decision,enum:schema.properties.decision.enum.filter(value=>value!=="silent")}}};
-  const boundedSchema={...outputSchema,properties:{...outputSchema.properties,cited_sources:citationSchema}};
+  const useLabels=agentActivation.enabled('labels')&&input.mode!=='proactive'&&!input.retrieval_contract&&!input.labels_fallback;
+  const canonicalSchema={...outputSchema,properties:{...outputSchema.properties,cited_sources:citationSchema}};
+  const boundedSchema=useLabels?require('./bm-agent-labels').extractionSchema(canonicalSchema):canonicalSchema;
   const useTools=agentActivation.enabled("tools")&&input.mode!=="proactive"&&!input.retrieval_contract;
   const retrievalAdapter=input.retrieval_contract?.agent_count?require("./bm-agent-decisions"):require("./bm-retrieval-step");
   const request=input.retrieval_contract?retrievalAdapter.proseRequest(input):{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
     input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
     text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema:boundedSchema}}};
+  if(useLabels)request.input[0].content+='\n'+require('./bm-agent-labels').EXTRACTION_INSTRUCTIONS;
   if(useTools){
     Object.assign(request,agentTools.contract(boundedSchema,availableCitations));
     if(input.agentToolHistory?.length)request.input.push(...input.agentToolHistory);
@@ -183,19 +186,25 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     }
     if(useTools&&result.phase==="read"&&body.output?.some(o=>o.type==="function_call"&&typeof o.call_id==="string"))
       Object.defineProperty(result,"agentToolOutput",{value:body.output,enumerable:false});
+    if(useLabels&&result.phase==='final'){
+      const classified=await labeler(result,input);
+      if(classified)return classified;
+      // No extracted effect has been committed. Uncertainty returns the entire
+      // original turn to the canonical agent once, with no further classifier.
+      return generate({...input,labels_fallback:true},{model,onDraft,labeler});
+    }
     return input.retrieval_contract?retrievalAdapter.expandProse(result,input):result;
   }
 }
 async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run=input=>generate(input,{onDraft}),db=supabaseFetch,memories=null,recover=require("./bmb-proposal").recover}={}) {
   // Policy and followups are independent of the memory cutoff; history is not.
-  const [saved,policyRows,openFollowups,decisionsResult,retrievalRoute,dataLabels]=await timing.span("brain_context",()=>Promise.all([
+  const [saved,policyRows,openFollowups,decisionsResult,retrievalRoute]=await timing.span("brain_context",()=>Promise.all([
     memories||readMemories(userId),
     db(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=settings,version`,{method:"GET"}),
     longitudinal.followups(userId,db),
     proactive?null:require("./bm-decisions").start(userId,prompt),
     proactive||context.memory?.conversation_state?.bmb_state?.pending_request||context.memory?.conversation_state?.bmb_state?.proposal?null:
       agentActivation.enabled("retrieval")?require("./bm-agent-decisions").start(userId,prompt):require("./bm-retrieval-step").start(userId,prompt),
-    agentActivation.enabled("labels")?require("./bm-agent-labels").read(userId,{db}):[],
   ]));
   const cutoff=saved.filter(m=>m.value==null).map(m=>m.source_at).filter(Boolean).sort().at(-1);
   // Tombstones cut off ALL automatic historical personalization; current explicit history queries can opt in via the model read tool only after user evidence.
@@ -227,11 +236,6 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
       {source_id:"current_sleep",available:currentSleep.available,source:currentSleep.source,is_synthetic:currentSleep.is_synthetic,reason:currentSleep.reason},
       {source_id:"memory",source:"user declarations"},{source_id:"phone_usage",available:restSnapshot?.digital?.available===true,reason:restSnapshot?.digital?.reason||"Supported activity-data authorization is unavailable; protection is not phone usage"},
       {source_id:"policy",source:"user configured permissions"}]};
-  if(dataLabels.length){
-    const relevant=new Set([...saved.map(m=>m.source_turn_id),...(recent.rows||[]).map(r=>r.id)]);
-    const rows=dataLabels.filter(r=>relevant.has(r.turn_id));
-    if(rows.length)input.data_labels={advisory:true,instruction:"Search metadata only. Retrieve source facts before using values. Labels never change dates, provenance, memory or action permissions.",rows};
-  }
   if(continuing&&latest.rows?.length)input.immediately_previous_answer={user_text:latest.rows[0].user_text,assistant_text:latest.rows[0].assistant_text,
     instruction:'This is the most recent completed account turn. Resolve this followup against this answer. Translate this answer for a language-only request. A provenance question refers to its datum/date, not an earlier weekly average. Validate facts using the freshly supplied records.'};
   const queryPeriod=require('./bmb-query-period');

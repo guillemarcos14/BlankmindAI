@@ -156,6 +156,12 @@ async function main(){
         row.fact_persisted=require('./bm_agent_report').committedFact(row,spec.expected_fact);
         row.passed=row.passed&&row.fact_persisted;
        }
+       if(spec.expected_observations){
+         row.observations_persisted=spec.expected_observations.every(expected=>row.canonical_observations.some(saved=>
+           Object.entries(expected).every(([k,v])=>saved[k]===v))&&row.committed_effect.some(({brain_memory_effect:e,brain_memory_applied_at:at})=>
+             at&&e?.observations?.some(o=>Object.entries(expected).every(([k,v])=>o[k]===v))));
+         row.passed=row.passed&&row.observations_persisted;
+       }
        if(spec.forbid_memory)row.passed=row.passed&&row.canonical_memories.length===0;
      }
      if(group==="forget"&&response.statusCode===200){
