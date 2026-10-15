@@ -15,8 +15,15 @@ enum FunnelPolicy {
               row["uncertain"] as? Bool == false, let start = date(row["started_at"]), let end = date(row["ended_at"]),
               end <= now, end > start, let plan = row["plan"] as? [String: Any],
               let from = plan["start_minute"] as? Int, let to = plan["end_minute"] as? Int else { return false }
-        let duration = Double((to - from + 1440) % 1440) * 60
-        return duration > 0 && end.timeIntervalSince(start) >= duration - 60 && end.timeIntervalSince(start) <= duration + 300
+        guard from != to else { return false }
+        var calendar = Calendar(identifier: .gregorian)
+        if let zone = plan["timezone"] as? String, let timezone = TimeZone(identifier: zone) { calendar.timeZone = timezone }
+        let minute = calendar.component(.hour, from: start) * 60 + calendar.component(.minute, from: start)
+        guard (from < to ? minute >= from && minute < to : minute >= from || minute < to) else { return false }
+        let base = calendar.startOfDay(for: start)
+        let endDay = from >= to && minute >= from ? (calendar.date(byAdding: .day, value: 1, to: base) ?? base) : base
+        guard let expectedEnd = calendar.date(bySettingHour: to / 60, minute: to % 60, second: 0, of: endDay) else { return false }
+        return end >= expectedEnd.addingTimeInterval(-60) && end <= expectedEnd.addingTimeInterval(300)
     }
 }
 

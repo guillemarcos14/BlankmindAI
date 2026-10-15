@@ -154,7 +154,7 @@ final class SessionStore: ObservableObject {
     @Published var schedule: BlankFocusSchedule {
         didSet {
             if !StoreKitPurchaseStore.shared.hasPremiumAccess {
-                let freeID = StoreKitPurchaseStore.shared.freeWindowUUID ?? oldValue.windows.first?.id ?? schedule.windows.first?.id
+                let freeID = oldValue.windows.isEmpty ? schedule.windows.first?.id : (StoreKitPurchaseStore.shared.freeWindowUUID ?? oldValue.windows.first?.id)
                 if schedule.windows.contains(where: { candidate in candidate.id != freeID && candidate.enabled && !oldValue.windows.contains(where: { $0.id == candidate.id && $0.enabled }) }) {
                     schedule = oldValue
                     StoreKitPurchaseStore.shared.requestPremium("Add another recurring window or different hours by day.")
@@ -844,9 +844,11 @@ final class SessionStore: ObservableObject {
     }
 
     func syncRecurringSchedule() {
-        if let owner = AssistantAppSession.userID, defaults.string(forKey: "funnel.window." + owner) == nil,
-           let first = schedule.windows.first(where: { $0.startsAt == nil }) {
-            defaults.set(first.id.uuidString, forKey: "funnel.window." + owner)
+        if let owner = AssistantAppSession.userID, let first = schedule.windows.first(where: { $0.startsAt == nil }) {
+            let stored = defaults.string(forKey: "funnel.window." + owner).flatMap(UUID.init(uuidString:))
+            if stored == nil || !schedule.windows.contains(where: { $0.id == stored }) {
+                defaults.set(first.id.uuidString, forKey: "funnel.window." + owner)
+            }
         }
         recurringScheduleRegistered = DeviceActivityTimerScheduler.syncRecurringSchedule(
             schedule,

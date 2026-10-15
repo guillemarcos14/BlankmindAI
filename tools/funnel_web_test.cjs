@@ -14,6 +14,11 @@ let browser;
  for(const [name,viewport] of [['desktop',{width:1440,height:1000}],['mobile',{width:390,height:844}]]){
   const page=await browser.newPage({viewport});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);await page.locator('[data-section="pricing"]').click();await page.getByRole('heading',{name:'Your first plan stays free.'}).waitFor();
+  await page.waitForFunction(()=>{
+    const link=document.querySelector('[data-section="pricing"]'),nav=document.querySelector('.nav-scroll');
+    const r=link.getBoundingClientRect(),n=nav.getBoundingClientRect();
+    return link.getAttribute('aria-current')==='page'&&Math.abs(innerWidth<=800?r.left-n.left:r.top+r.height/2-n.top-nav.clientHeight/2)<2;
+  });
   assert(!await page.locator('.detail-copy').innerText().then(x=>/free during its initial phase|3.day|30.day|\$\d/.test(x)));
   await page.screenshot({path:path.join(output,`${name}-pricing.png`)});
   await page.getByRole('link',{name:'Start your free diagnosis'}).click();
@@ -22,6 +27,7 @@ let browser;
   await page.locator('#answer').fill('Instagram and video feeds');await page.getByRole('button',{name:'Continue',exact:true}).click();
   await page.locator('#bedtime').fill('23:00');await page.getByRole('button',{name:'See my proposal'}).click();
   assert((await page.locator('#proposal-copy').innerText()).includes('22:30 to 23:00'));
+  await page.locator('#proposal').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(output,`${name}-proposal-viewport.png`)});
   let requests=0;
   await page.route('https://getblank.netlify.app/.netlify/functions/funnel-diagnosis',async route=>{
     requests++;const body=route.request().postDataJSON();assert.equal(body.consent,true);assert.equal(body.context.start_minute,1350);
@@ -31,12 +37,12 @@ let browser;
   await page.getByRole('button',{name:'Continue in the app'}).click();assert.equal(requests,0,'No context leaves browser without consent');
   await page.locator('#transfer-consent').check();await page.getByRole('button',{name:'Continue in the app'}).click();
   await page.getByRole('status').filter({hasText:'Could not save'}).waitFor();
-  await page.screenshot({path:path.join(output,`${name}-transfer-error.png`),fullPage:true});
-  await page.getByRole('button',{name:'Continue in the app'}).click();await page.locator('#handoff').waitFor({state:'visible'});
+  await page.getByRole('button',{name:'Try again'}).scrollIntoViewIfNeeded();await page.screenshot({path:path.join(output,`${name}-transfer-error.png`)});
+  await page.getByRole('button',{name:'Try again'}).click();await page.locator('#handoff').waitFor({state:'visible'});
   assert.equal(await page.locator('#open-app').getAttribute('href'),'blank://diagnosis?token='+'a'.repeat(64));
   assert.equal(await page.locator('#handoff-code').inputValue(),'a'.repeat(64));
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
-  await page.screenshot({path:path.join(output,`${name}-proposal.png`),fullPage:true});
+  await page.locator('#open-app').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(output,`${name}-handoff-viewport.png`)});
   await page.getByRole('button',{name:'Revise my answers'}).click();assert.equal(await page.locator('#answer').inputValue(),'');
   assert.equal(errors.length,0,errors.join('\n'));await page.close();
  }

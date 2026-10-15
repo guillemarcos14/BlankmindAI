@@ -45,7 +45,7 @@ final class StoreKitPurchaseStore: ObservableObject {
     }
     var freeWindowUUID: UUID? {
         let cached = AssistantAppSession.userID.flatMap { defaults.string(forKey: "funnel.window." + $0) }
-        return (freeWindowID ?? cached).flatMap(UUID.init(uuidString:))
+        return (cached ?? freeWindowID).flatMap(UUID.init(uuidString:))
     }
     func enableDemoProAccess() {} // Legacy preview hook cannot grant commercial rights.
     func captureReferral(from url: URL) {}
@@ -180,9 +180,10 @@ final class StoreKitPurchaseStore: ObservableObject {
         if let window = store.schedule.windows.first(where: { $0.id == freeWindowUUID }) ?? store.schedule.windows.first,
            window.startsAt == nil, window.expiresAt == nil, store.recurringScheduleRegistered, store.hasSelectedApps,
            BlankSharedState.familyControlsApproved, window.enabled {
-            let receipt: [String: Any] = ["window_id": window.id.uuidString, "registered": true, "screen_time_authorized": true,
+            var receipt: [String: Any] = ["window_id": window.id.uuidString, "registered": true, "screen_time_authorized": true,
                 "selection_count": store.selectionCount, "start_minute": window.startMinute, "end_minute": window.endMinute,
-                "weekdays": window.weekdays, "permanent": true]
+                "weekdays": window.weekdays, "permanent": true, "window_count": store.schedule.windows.count]
+            if let prior = freeWindowID, prior.lowercased() != window.id.uuidString.lowercased() { receipt["replaces_window_id"] = prior }
             do { apply(try await request(["action": "funnel_receipt", "receipt": receipt])) }
             catch { message = "Your window is scheduled on this iPhone. Setup confirmation will retry when connected." }
         }
@@ -238,7 +239,7 @@ struct PersonalizedFollowupSheet: View {
                 Section {
                     Text("Personalized follow-up").font(.blankInter(size: 26, relativeTo: .title))
                     Text(reason).font(.blankInter(size: 17, relativeTo: .body))
-                    Text(purchases.initialImplemented ? "Your first window is scheduled. Keep it free, or add support as your routine changes." : "Your first recurring window is free permanently. Finish setting it up at any time.")
+                    Text("Your first recurring window stays free permanently. You can edit, pause or disable it in Control. Add follow-up when you want help adapting your routine.")
                 }
                 Section("Included with follow-up") {
                     Text("Multiple windows and different schedules by day")
@@ -268,6 +269,10 @@ struct PersonalizedFollowupSheet: View {
                     .accessibilityIdentifier("funnel-continue-free")
             }
             .tint(BlankColors.ink)
+            .font(.blankInter(size: 17, relativeTo: .body))
+            .scrollContentBackground(.hidden)
+            .background(BlankColors.minimalBackground)
+            .preferredColorScheme(.light)
             .navigationTitle("Follow-up")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { purchases.paywallReason = nil; dismiss() } } }
             .task { await purchases.loadProducts() }

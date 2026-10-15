@@ -27,6 +27,7 @@ get('window-form').addEventListener('submit',event=>{
 });
 get('revise').addEventListener('click',()=>{
  answers.length=0;proposed=null;continuation=null;get('conversation').replaceChildren();get('proposal').hidden=true;
+ get('transfer').hidden=false;get('transfer').textContent='Continue in the app';get('transfer-status').textContent='';
  get('handoff').hidden=true;get('transfer-consent').checked=false;get('question').textContent=questions[0];get('answer-form').hidden=false;get('answer').focus();
 });
 get('transfer').addEventListener('click',async()=>{
@@ -40,8 +41,8 @@ get('transfer').addEventListener('click',async()=>{
   const response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({context:proposed,consent:true}),referrerPolicy:'no-referrer'});
   const result=await response.json();if(!response.ok||!/^([a-f0-9]{64})$/.test(result.token))throw Error('transfer_failed');
   continuation=result.token;get('handoff-code').value=continuation;get('open-app').href=`blank://diagnosis?token=${continuation}`;
-  get('handoff').hidden=false;get('transfer-status').textContent='Ready to continue. Your free plan still needs to be configured and implemented on iPhone.';
- }catch(_){get('transfer-status').textContent='Could not save your continuation. Your answers are still here. Try again after the service is available.';}
+  get('handoff').hidden=false;get('transfer').hidden=true;get('transfer-status').textContent='Ready to continue. Your free plan still needs to be configured and implemented on iPhone.';get('open-app').focus();
+ }catch(_){get('transfer').textContent='Try again';get('transfer-status').textContent='Could not save your continuation. Your answers are still here. Choose Try again to retry.';}
  finally{get('transfer').disabled=false;}
 });
 get('copy-code').addEventListener('click',async()=>{

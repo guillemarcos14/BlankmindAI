@@ -24,7 +24,7 @@ button:focus-visible,a:focus-visible,.nav-scroll:focus-visible{outline:1px solid
 .content{width:270px;justify-self:end;position:relative}
 .detail{width:100%;max-height:76svh;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .nav-scroll.dragging,.nav-scroll.dragging a{cursor:grabbing}
-.detail-copy{animation:reveal .2s var(--ease) both}
+.detail-copy{animation:reveal .2s var(--ease) both;background:rgba(16,33,23,.72);padding:20px}
 .detail-copy h2{font:inherit;font-size:20px;line-height:1.2;letter-spacing:-.02em;margin:0 0 16px;text-wrap:balance}
 .mobile-heading-break{display:none}
 .detail-copy p{font-size:13px;line-height:1.6;margin:0 0 18px;text-wrap:pretty}

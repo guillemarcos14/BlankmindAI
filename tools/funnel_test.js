@@ -60,7 +60,7 @@ async function main(){
  check(JSON.parse(claims[0].options.body).p_hash!=="a".repeat(64),"Continuation secrets are hashed at rest");
  check((await D.claim({user:{id:user}},{token:"a".repeat(64)},async()=>null)).statusCode===410,"Expired/already claimed handoff is rejected");
  let receipts=0;
- const receipt={window_id:user,registered:true,screen_time_authorized:true,selection_count:1,start_minute:1320,end_minute:1350,weekdays:[1,2,3,4,5,6,7],permanent:true};
+ const receipt={window_id:user,registered:true,screen_time_authorized:true,selection_count:1,window_count:1,start_minute:1320,end_minute:1350,weekdays:[1,2,3,4,5,6,7],permanent:true};
  const receiptDB=async table=>{if(table==="rpc/funnel_implement_first")receipts++;return [];};
  for(const patch of [{registered:false},{screen_time_authorized:false},{selection_count:0},{permanent:false},{weekdays:[]},{end_minute:1320}]){
   check((await F.api({user:{id:user}},{action:"funnel_receipt",receipt:{...receipt,...patch}},receiptDB)).statusCode===400,"No implementation without a valid native registration receipt");

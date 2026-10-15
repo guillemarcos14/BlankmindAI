@@ -27,7 +27,9 @@ create function public.funnel_implement_first(p_user uuid,p_window uuid,p_receip
 language sql security definer set search_path=public as $$
  insert into funnel_accounts(auth_user_id,free_window_id,initial_implemented_at,registration_receipt)
  values(p_user,p_window,now(),p_receipt) on conflict(auth_user_id) do update set
- free_window_id=coalesce(funnel_accounts.free_window_id,excluded.free_window_id),
+ free_window_id=case when funnel_accounts.free_window_id=(excluded.registration_receipt->>'replaces_window_id')::uuid
+  and (excluded.registration_receipt->>'window_count')::int=1 then excluded.free_window_id
+  else coalesce(funnel_accounts.free_window_id,excluded.free_window_id) end,
  initial_implemented_at=coalesce(funnel_accounts.initial_implemented_at,excluded.initial_implemented_at),registration_receipt=excluded.registration_receipt;
 $$;
 create function public.funnel_claim_diagnosis(p_user uuid,p_hash text) returns jsonb

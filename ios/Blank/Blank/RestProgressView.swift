@@ -70,7 +70,7 @@ struct RestProgressContent: View {
     }
     private var showsFullProgress: Bool {
         #if DEBUG && targetEnvironment(simulator)
-        if PostOnboardingPreviewScene.enabled && AssistantAppPreview.scenario.contains("progress") { return true }
+        if PostOnboardingPreviewScene.enabled && AssistantAppPreview.scenario != "product-basic-home" { return true }
         #endif
         return purchases.hasPremiumAccess
     }

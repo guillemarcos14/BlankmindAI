@@ -44,7 +44,7 @@
     "bm-voice-alignment.js": "2e1297dbd3508478377076a7e2cdb39ff0b79a2dd34c0ae64e02eebd9f502733",
     "bm-voice-elevenlabs.js": "a1a0debcd51c42f62924238fc59d2024e64215015bb87731705ad76c4b4a6b06",
     "bm-voice-output.js": "62dc3e6e2d7e03fe959d6ce11826fb0ed8533bf66cd96559c4c3b4b9fc4c75fc",
-    "bmb-brain.js": "7b940a2769ac4b3895017c13df28525be4f0d013596527fcb5a76eb6c82524fe",
+    "bmb-brain.js": "40e016b9595deb87e6574211ed1a78c0ea92d284f18315c77cb31fb703c9499f",
     "bmb-factual-copy.js": "32ac925152844d6f8d7df69764b29153c54886cf4d203f2ced82f39ff9e4cd1e",
     "bmb-greeting.js": "733acd075e0ea7a7cccd43e20afda16c5b603390fdae3a040efc502c00aebff7",
     "bmb-longitudinal.js": "b5cf4094ddc48b781918c8eb0a03c6c617badbeda2b31bbe74f5db27b2c11e6d",
@@ -57,7 +57,7 @@
     "bmb-sources.js": "a932f9dccb13bfbc5fd0a8962eff92f8a6d7f2ccbc0f5d621bf32f34b85ceb90",
     "bmb-tick.js": "137d9b8ade307f608061041edc08b20b37011e955ecba54868f8624b3e6c2bcc",
     "bmb-worker-background.js": "3f1b3967179d3d6fd0e1049ee4ea68d5a752dea7ad12100d08948149bcdc2e15",
-    "funnel-access.js": "0699981a83efab932fb828c7deb203ff8011f04ccfd5713e308d01d72ab4558c",
+    "funnel-access.js": "9316a7e99e6075e6d8beb0e8d3b9fa9e35e7c3553c1d498f57d3abfe21598f08",
     "funnel-diagnosis.js": "232d7cdd48533e20449202dadf67dc166f5da24cbbee1a4354fae2486edbf5ae",
     "funnel-event.js": "0bc6de6881caaf541e4293d466648dec5ed2f97be5d92e7b99d1df02a63bafce",
     "funnel-storekit.js": "13df07c327213a117407980ed50659b3ab6409b22ac3240d4384bcddaf0b0fcf",
@@ -74,6 +74,6 @@
     "supabase/migrations/036_bm_agent_labels.sql": "f611c07efca9a1fdeca0acff90f2e9915e0cb6a8d2f1d03cf384d9448347644f",
     "netlify/functions/funnel-catalog.json": "654c3fe931cbe5ba594e5750780ba68202e6216de0aad4498872f65bed502a44",
     "netlify/package-lock.json": "0eb24a9183e44d60c10821910c7e55f1e4ab07a4e26112ce2580c1d2ace7236f",
-    "supabase/migrations/037_monetization_funnel.sql": "0ec2c8f106aa18ecdf57f565afc2a813a265993570cf1c84a1db1a07da2e91b6"
+    "supabase/migrations/037_monetization_funnel.sql": "5072d720a39b03b06cc8a7451af51cf00cde6a4635f34a3e25e390b4919bad48"
   }
 }
