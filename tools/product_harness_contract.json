@@ -62,6 +62,10 @@
     "repair_commands": [],
     "commands": [
       {
+        "name": "core_production_cleanup",
+        "run": "node tools/core_production_cleanup_test.js"
+      },
+      {
         "name": "core_launch",
         "run": "node tools/core_launch_test.js"
       },

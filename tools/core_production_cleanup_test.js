@@ -1,0 +1,17 @@
+"use strict";
+const assert=require("node:assert/strict"),{plan,verify,CORE,RETIRED}=require("./core_production_cleanup");
+const fn=(n,d="a".repeat(64))=>({n,d,p:10,bd:{runtimeAPIVersion:n.includes("voice")?2:1}});
+const functions=[...CORE.map(n=>fn(n)),fn("shopify-orders-paid"),fn("sms-agent")],files=[{path:"/index.html",sha:"b".repeat(40)}],schedules=[{name:"bmb-tick",cron:"*/5 * * * *"}];
+const fixture={functions,files,schedules,sourceExists:()=>false},p=plan(fixture);
+assert.deepEqual(p.removed,["sms-agent"]);assert(p.retained.includes("shopify-orders-paid"));assert(p.retained.includes("assistant-app-voice"));assert(p.body.draft);
+assert.throws(()=>plan({...fixture,sourceExists:n=>n==="sms-agent"}),/live source/);
+assert.throws(()=>plan({...fixture,functions:functions.filter(f=>f.n!=="assistant-device")}),/Required CORE/);
+assert.throws(()=>plan({...fixture,functions:[...functions,fn("assistant-app")]}),/Duplicate/);
+assert.throws(()=>plan({...fixture,schedules:[...schedules,{name:"sms-agent",cron:"* * * * *"}]}),/orphan/);
+const next={functions:functions.filter(f=>f.n!=="sms-agent"),files,schedules};assert(verify(next,p));
+assert.throws(()=>verify({...next,functions:[...next.functions,fn("sms-agent")]},p),/inventory/);
+assert.throws(()=>verify({...next,functions:next.functions.map(f=>f.n==="assistant-app"?fn(f.n,"c".repeat(64)):f)},p),/digests/);
+assert.throws(()=>verify({...next,files:[{path:"/index.html",sha:"c".repeat(40)}]},p),/Static/);
+assert.throws(()=>verify({...next,schedules:[]},p),/Schedule/);
+assert(!CORE.some(n=>RETIRED.includes(n)));
+console.log("PASS CORE retirement: explicit removal, retained business/core digests, no live-source deletion, unchanged statics/schedules, drift rejection");
