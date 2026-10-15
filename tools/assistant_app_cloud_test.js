@@ -56,6 +56,10 @@ function memoryIdentity(channel, user) {
   return `assistant:${crypto.createHash("sha256").update(`${channel}:${user}`).digest("hex").slice(0,32)}`;
 }
 
+function syntheticDeviceSnapshot(now = new Date().toISOString()) {
+  return {schema_version:1,generated_at:now,timezone:"Europe/Madrid",sessions:[]};
+}
+
 async function run(config, output, { infrastructureOnly = false } = {}) {
   // Recheck even when called programmatically.
   target(config.supabase, "supabase", config); target(config.netlify, "netlify", config);
@@ -111,6 +115,10 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
     return event?.payload?.properties?.memory?.pending_assistant_action ?? null;
   }
   async function send(user, text) {
+    // Follow the current native lifecycle. A synthetic presence flag alone is
+    // not a fresh device snapshot and must never bypass the stale-state guard.
+    ok(await inbox(user,{action:"sync_context",context:{brain_snapshot:syntheticDeviceSnapshot(),
+      app_presence:{app_present:true,app_ready:true,last_seen_at:new Date().toISOString()}}}),"fresh_synthetic_device_sync");
     const id = crypto.randomUUID();
     const response = await app(user, { action: "send", turn_id: id, text });
     expect(response.status === 200 && response.body?.turn?.status === "completed", `send_not_completed_http_${response.status}`);
@@ -286,6 +294,9 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
 
 function selfTest() {
   const assert = require("node:assert/strict");
+  const brainData=require("../netlify/functions/bm-brain-data"),now=Date.now();
+  assert(brainData.freshness(brainData.normalizeBrainSnapshot(syntheticDeviceSnapshot(new Date(now).toISOString())),now));
+  assert(!brainData.freshness(syntheticDeviceSnapshot(new Date(now-121000).toISOString()),now));
   assert.equal(target(SUPABASE_ORIGIN,"supabase"),SUPABASE_ORIGIN);
   for (const host of [`https://${STAGING_SITE}.netlify.app`, `https://preview--${STAGING_SITE}.netlify.app`]) assert.equal(target(host,"netlify"),host);
   for (const host of ["https://blankmind.netlify.app", "https://production.supabase.co", `${SUPABASE_ORIGIN}.evil.example`, `${SUPABASE_ORIGIN}/rest/v1`, `http://${STAGING_SITE}.netlify.app`, `https://${STAGING_SITE}.netlify.app.evil.example`, `https://x@${STAGING_SITE}.netlify.app`]) {
