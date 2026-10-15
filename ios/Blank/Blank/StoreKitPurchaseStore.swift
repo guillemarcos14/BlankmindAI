@@ -266,13 +266,20 @@ struct PersonalizedFollowupSheet: View {
                     Text("Payment is charged to your Apple account after confirmation. Subscriptions renew unless canceled at least 24 hours before the current period ends. Manage or cancel in the App Store.")
                         .font(.blankInter(size: 13, relativeTo: .footnote))
                 }
-                Button("Continue free") { purchases.paywallReason = nil; dismiss() }.frame(minHeight: 44)
-                    .accessibilityIdentifier("funnel-continue-free")
             }
             .tint(BlankColors.ink)
             .font(.blankInter(size: 17, relativeTo: .body))
             .scrollContentBackground(.hidden)
             .background(BlankColors.minimalBackground)
+            .safeAreaInset(edge: .bottom) {
+                Button("Continue free") { purchases.paywallReason = nil; dismiss() }
+                    .font(.blankInter(size: 17, relativeTo: .body))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
+                    .accessibilityIdentifier("funnel-continue-free")
+                    .padding(.horizontal, 20).padding(.vertical, 12)
+                    .background(BlankColors.minimalBackground)
+            }
             .preferredColorScheme(.light)
             .navigationTitle("Follow-up")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { purchases.paywallReason = nil; dismiss() } } }

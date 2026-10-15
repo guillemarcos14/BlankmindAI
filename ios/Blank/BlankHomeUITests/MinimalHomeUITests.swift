@@ -33,7 +33,10 @@ final class MinimalHomeUITests: XCTestCase {
         app.buttons["Explore full Progress"].tap()
         XCTAssertTrue(app.staticTexts["Personalized follow-up"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Buy"].exists)
-        app.buttons["Continue free"].tap()
+        let continueFree = app.buttons["funnel-continue-free"]
+        XCTAssertTrue(continueFree.isHittable, "The free exit must remain visible without scrolling past purchase conditions")
+        capture("funnel-followup-free-exit")
+        continueFree.tap()
         XCTAssertTrue(app.staticTexts["Your completed blocks"].waitForExistence(timeout: 5))
         app.buttons["home-tab-chat"].tap()
         XCTAssertTrue(app.buttons["home-voice"].waitForExistence(timeout: 5))
