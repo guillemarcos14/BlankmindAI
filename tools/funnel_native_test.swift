@@ -8,7 +8,7 @@ var row: [String: Any] = ["owner":"A","source":"native_schedule_shield","uncerta
 check(FunnelPolicy.completedBlock(row,owner:"A",now:now),"Actual full interval counts")
 check(!FunnelPolicy.completedBlock(row,owner:"B",now:now),"No cross-account blocks")
 check(FunnelPolicy.completedBlock(row.merging(["started_at":"2026-10-15T06:30:00Z"],uniquingKeysWith:{$1}),owner:"A",now:now),"A real late start that reaches the planned end can complete")
-for patch in [["uncertain":true], ["ended_at":"2026-10-15T06:10:00Z"], ["ended_at":"2026-10-15T09:00:00Z"], ["source":"scheduled"]] as [[String:Any]] {
+for patch in [["uncertain":true], ["ended_at":"2026-10-15T06:10:00Z"], ["ended_at":"2026-10-15T06:59:59Z"], ["ended_at":"2026-10-15T09:00:00Z"], ["source":"scheduled"]] as [[String:Any]] {
     check(!FunnelPolicy.completedBlock(row.merging(patch,uniquingKeysWith:{$1}),owner:"A",now:now),"No early, uncertain, future or scheduled completion")
 }
 row.removeValue(forKey:"ended_at")

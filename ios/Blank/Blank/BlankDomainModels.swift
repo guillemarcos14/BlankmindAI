@@ -23,7 +23,7 @@ enum FunnelPolicy {
         let base = calendar.startOfDay(for: start)
         let endDay = from >= to && minute >= from ? (calendar.date(byAdding: .day, value: 1, to: base) ?? base) : base
         guard let expectedEnd = calendar.date(bySettingHour: to / 60, minute: to % 60, second: 0, of: endDay) else { return false }
-        return end >= expectedEnd.addingTimeInterval(-60) && end <= expectedEnd.addingTimeInterval(300)
+        return end >= expectedEnd && end <= expectedEnd.addingTimeInterval(300)
     }
 }
 

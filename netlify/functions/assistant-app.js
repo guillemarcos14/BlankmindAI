@@ -178,7 +178,7 @@ function actionCopy(action, spanish) {
     const selectedDays = [...new Set(action.weekdays || [])].filter(day => Number.isInteger(day) && day >= 1 && day <= 7);
     const weekdays = !selectedDays.length || selectedDays.length === 7 ? (spanish ? "cada día" : "every day") : selectedDays.map(day => days[day - 1]).join(", ");
     // Mirror native creation defaults; editing a schedule preserves its expiry.
-    const durationDays = type === "apply_schedule" ? Math.min(14, Math.max(1, action.duration_days ?? 7)) : null;
+    const durationDays = type === "apply_schedule" && action.recurrence !== "continuous" ? Math.min(14, Math.max(1, action.duration_days ?? 7)) : null;
     const horizon = durationDays === null ? "" : (spanish ? ` durante ${durationDays} días` : ` for ${durationDays} days`);
     description = spanish ? `Bloqueo de ${clock(action.start_minute)} a ${clock(action.end_minute)}, ${weekdays}${horizon}`
       : `Block from ${clock(action.start_minute)} to ${clock(action.end_minute)}, ${weekdays}${horizon}`;
