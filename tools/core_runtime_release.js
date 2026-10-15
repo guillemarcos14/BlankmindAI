@@ -46,8 +46,9 @@ async function main(){
   // Every unchanged ZIP is required locally even if Netlify has it cached.
   const old=read(path.join(ROOT,'tmp/release-today/manifest.json'));
   const original=read(path.join(ROOT,'../Codigo-appstore-final/tmp/appstore-final/production-bundle/manifest.json'));
+  const priorArtifacts={...original.artifacts,...Object.fromEntries(old.package.functions.map(f=>[f.sha256,f.path]))};
   for(const [name,digest]of Object.entries(prepared.body.functions)){
-   const file=prepared.artifacts[name]||old.artifacts[digest]||original.artifacts[digest];assert(file&&hash(file)===digest,'Missing exact artifact '+name);prepared.artifacts[name]=file;
+   const file=prepared.artifacts[name]||priorArtifacts[digest];assert(file&&hash(file)===digest,'Missing exact artifact '+name);prepared.artifacts[name]=file;
   }
   save('plan.json',{...prepared,previous:site.published_deploy.id,previous_locked:!!(await api('/deploys/'+site.published_deploy.id)).locked,previous_snapshot:before,environment_digest:envHash,source_commit:packaged.source_commit,package_sha256:hash(packagePath)});
   console.log(JSON.stringify({previous:site.published_deploy.id,functions:27,statics:before.files.length,optimizations:false}));return;
