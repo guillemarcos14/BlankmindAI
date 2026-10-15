@@ -1,0 +1,3970 @@
+{
+  "version": 2,
+  "kind": "agent-certification-plan-v2",
+  "feature": "retrieval",
+  "authored_before_run": true,
+  "provider_real": false,
+  "executed": false,
+  "certified": false,
+  "provenance": "Pre-authored synthetic scenarios and state expectations. Planned coverage only, not measured pairs, review, audio or latency. Historical v1 corpus remains unchanged.",
+  "cases": [
+    {
+      "id": "v2-retrieval-es-chat-chat-es-0",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Hola.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "5eb964973451b8c654e40a61a5b1e874c44788dadd48f4e2d42b6197c843f8d4"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-1",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Buenas noches, ¿qué tal?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "c81ac90c2e8c06f96957e1a04feca3a8003ae7ca8922f82709fd94549c3dc854"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-2",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Gracias por escucharme.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "7e1156f66645c2506cd7f433e1f20dc714bae0b74a6a90de3359489c1d3f19bd"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-3",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Qué puedes hacer con mis bloqueos?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "321cfd242a4435643bbd853e7d9af89b3e95ce313ff0b815f14b650b85053c36"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-4",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Puedes modificar una ventana?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "8abc6e35384e2f2d24d5a6fc6d84c80e19128b4a2e274cf1a685f657c1c85373"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-5",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Qué significa la protección registrada?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "b54bd3c6cde8b435658575fc5ad01637696c900c23fb006b280485537ba581f4"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-6",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Puedes saber cuánto he usado Instagram?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "fe023d7180602e6a02ade22b991aeb8f5180375625f9bcc7a85872866d1b2409"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-7",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Bloquear el móvil garantiza que duerma mejor?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "521c42f7fa7932d60bd38a7301d51f1e64b191fed3b6a3f6f562d2896479c708"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-8",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Por qué no equivale protección a tiempo ahorrado?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "8f1b80ae684a263f8e8ee03b5b9dbee62a66e26bbf21c81b2e1ad7e5db4af4ae"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-9",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "No cambies nada, solo quiero hablar.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "af881fb2673c20e901d6e29562a4676e8fc5c5dc6a8dd589a464068edfdab138"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-10",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Me apetece charlar un rato.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "0c15b5f18e7e26732a3146e78d851188f1febed06efade30fa7432604a4e9dc0"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-11",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Cómo funcionaría una ventana nocturna?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ab2b1e375daa5832883b050f37b0286171434856639bf8cc83e5d7859233cdb1"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-12",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Qué datos necesitas para adaptar un horario?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "1e7af2e9c1c731334f1e24376a1731d4f2f141f3f0b2a2e0ea60f37ca49e8285"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-13",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Qué harías si faltan mis datos de sueño?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ab6f6ddf5196c95c49e9ea29d5f1d6ec940bb9de9257e86f6d8215a733a7a051"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-14",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Qué diferencia hay entre una rutina y lo que pasó ayer?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "63e4f9194d25fbb1d9ca133b5e17ca5fd88c09c5c9abfd3c59c5e70541cd6a4c"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-15",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Traduce al inglés «bloquea mis distracciones durante 30 minutos».",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "171da3edc703d2d7dd30c50cf80488c90f4c10ed9a90d711b4495fd54ef4a96e"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-16",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Mi amigo dijo «activa un bloqueo de 30 minutos». ¿Qué significa?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "8a32cc8bd25e5d486f6697c1fd45580473bff7efe423e9cad41fb61c1d8a0d41"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-17",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Si me acostara a las 23:00, ¿sería buena idea?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ccb03ff49b1fa8c62b22f33e1bc6e61a7bedc157a0c59e546728630e3b81b789"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-18",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Podrías bloquear las distracciones si te lo pidiera?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "a0b03210b2597f44ae6239c76efdcf89a2f77c858b3bd019d7bf184521493708"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-19",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Tengo que usar el mismo horario cada noche?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "7bf3505b732d78f798435a1984887881cb2fadcc95a02e232786d1a3a6a6a81f"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-20",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Cómo podría probar una rutina sin cambiarlo todo?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "c15484fcc18d0806620fb021c706a512285d982f6ee070be430016e038300080"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-21",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Estoy preparando una noche tranquila.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ee1fed6f4584a97df56c3293813164a6053bf7d8ef74a5498def4a1b2808ed07"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-22",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Por dónde empezarías si quiero descansar mejor?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "146094acdbf80491696929a7602d9815d35d630297885fd30bc65d3ea2e1079c"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-23",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Explícame qué es una pausa de reglas.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "2c0b79e2b381d75b0beadd940b3ba3338ab033e4318358a210cdd1a67b3cf426"
+    },
+    {
+      "id": "v2-retrieval-es-chat-chat-es-24",
+      "group": "chat",
+      "language": "es",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "¿Puede haber solapamientos entre ventanas?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "5d66110fc678fe25b88ef5b975df2c3967936fd073b55a8c31ade39dcf0ab494"
+    },
+    {
+      "id": "v2-retrieval-es-query-sleep_duration-standard",
+      "text": "¿Cuánto dormí ayer?",
+      "profile": "standard",
+      "route": "sleep_yesterday",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "5328ddd42772fa3a05642b9806ce29098b4ead69eef7ddad8fdd9f76be1e7c67"
+    },
+    {
+      "id": "v2-retrieval-es-query-sleep_average-standard",
+      "text": "Dime mi media de sueño registrada esta semana.",
+      "profile": "standard",
+      "route": "sleep_week",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "c2a4c76a5c1298bbf82d23ea759d6f6ee9383de39afc76c76c819f0977d068ab"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_duration-standard",
+      "text": "¿Cuánto tiempo de protección registré ayer?",
+      "profile": "standard",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "e7f6218452dc2666dc311a8969dc180c57ba4d070565b201b5827e53380a8a04"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_sessions-standard",
+      "text": "¿Cuántas sesiones de protección constan esta semana?",
+      "profile": "standard",
+      "route": "protection_week",
+      "expected_retrieval": {
+        "metric": "protection_sessions",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "678d78d057d7b0f845b0b0ca368d51ffc6f19419fa2ab0e93967ddf30ac22ec5"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_breaks-standard",
+      "text": "¿Cuántas interrupciones de protección registré ayer?",
+      "profile": "standard",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_breaks",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "8448ac10d33a7476f9744e3d0d73df28b20a855ff060bb074a656af4ec6527e9"
+    },
+    {
+      "id": "v2-retrieval-es-query-sleep_duration-declared",
+      "text": "¿Cuánto dormí ayer?",
+      "profile": "declared",
+      "route": "sleep_yesterday",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "3769c8c08cfc82f9c6830e165777be9d45ee84d9da1e4ba7af71b57ca279e2a4"
+    },
+    {
+      "id": "v2-retrieval-es-query-sleep_average-declared",
+      "text": "Dime mi media de sueño registrada esta semana.",
+      "profile": "declared",
+      "route": "sleep_week",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "35531bda4e02f121738b48bd20c5ff7d6df2b02496e625974add6d463d44665e"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_duration-declared",
+      "text": "¿Cuánto tiempo de protección registré ayer?",
+      "profile": "declared",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "c64ee5b72601e95cdb04643a74d3f66907ba5a86669e0e71b896f199b71f140b"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_sessions-declared",
+      "text": "¿Cuántas sesiones de protección constan esta semana?",
+      "profile": "declared",
+      "route": "protection_week",
+      "expected_retrieval": {
+        "metric": "protection_sessions",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "ebc48e44677f5b63725c29bfb9371b8ba65423a7582b555c0a01ce684f3e7bff"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_breaks-declared",
+      "text": "¿Cuántas interrupciones de protección registré ayer?",
+      "profile": "declared",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_breaks",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "9e3c4550ef5bb615f0f4c82d13c87e9cc25aa8281ba35e3036baf59933b91631"
+    },
+    {
+      "id": "v2-retrieval-es-query-sleep_duration-missing",
+      "text": "¿Cuánto dormí ayer?",
+      "profile": "missing",
+      "route": "sleep_yesterday",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "e4a6b0a783a236455e7149da0b27363583a9b7cfb521d2026526de104ecb6659"
+    },
+    {
+      "id": "v2-retrieval-es-query-sleep_average-missing",
+      "text": "Dime mi media de sueño registrada esta semana.",
+      "profile": "missing",
+      "route": "sleep_week",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "2e83ac874b05ad3aa439f55a03398be9f50d0a09ac64cab860d373b7764a88b5"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_duration-missing",
+      "text": "¿Cuánto tiempo de protección registré ayer?",
+      "profile": "missing",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "240bde76fe0d8903fc9e3b657c06ceba34ae4605e3d63fb988be0a8a765fec9f"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_sessions-missing",
+      "text": "¿Cuántas sesiones de protección constan esta semana?",
+      "profile": "missing",
+      "route": "protection_week",
+      "expected_retrieval": {
+        "metric": "protection_sessions",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "9eea9865aecdf9ec3560c37d53d97de1ea267aadce3e7373cbe21f28397adb30"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_breaks-missing",
+      "text": "¿Cuántas interrupciones de protección registré ayer?",
+      "profile": "missing",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_breaks",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "5f4b1d5089e570e560e4c8b58bc5ff19c6d94ed3a84216a94a014afc7bd3535e"
+    },
+    {
+      "id": "v2-retrieval-es-query-sleep_duration-zero",
+      "text": "¿Cuánto dormí ayer?",
+      "profile": "zero",
+      "route": "sleep_yesterday",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "105ef8fb675855e58fad8ab63b848d39ef93c97e44ecd29e6c8c6a5caf3f77cb"
+    },
+    {
+      "id": "v2-retrieval-es-query-sleep_average-zero",
+      "text": "Dime mi media de sueño registrada esta semana.",
+      "profile": "zero",
+      "route": "sleep_week",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "6d53f9921d92cb1a628d2c87f7e9d1f3de2f4b6387d458a0af95410fa08aedb0"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_duration-zero",
+      "text": "¿Cuánto tiempo de protección registré ayer?",
+      "profile": "zero",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "5d5b4d5e881f81e76515a549f25aa66bf6f0d7072861914b471ac25791d8aed1"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_sessions-zero",
+      "text": "¿Cuántas sesiones de protección constan esta semana?",
+      "profile": "zero",
+      "route": "protection_week",
+      "expected_retrieval": {
+        "metric": "protection_sessions",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "b68321e26a5d170b190402fc17d8d3d14054524390b444b45ae675f12d3a6cfd"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_breaks-zero",
+      "text": "¿Cuántas interrupciones de protección registré ayer?",
+      "profile": "zero",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_breaks",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "d808ee39ea66311b64eb5e46c201946db05479c8a937247365bf9ba5910adb53"
+    },
+    {
+      "id": "v2-retrieval-es-query-sleep_duration-sparse",
+      "text": "¿Cuánto dormí ayer?",
+      "profile": "sparse",
+      "route": "sleep_yesterday",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "dc306047abd1f13de601993d1f71cadd5331b3f8681bdb3f76cd4bcc4a5b2d08"
+    },
+    {
+      "id": "v2-retrieval-es-query-sleep_average-sparse",
+      "text": "Dime mi media de sueño registrada esta semana.",
+      "profile": "sparse",
+      "route": "sleep_week",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "a644536441c3bf4049266fff8a74317b8354ef91383729ba6208eed5a2c5ae8a"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_duration-sparse",
+      "text": "¿Cuánto tiempo de protección registré ayer?",
+      "profile": "sparse",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "c60c2dc8d4a659911d4f44af677ddf18162d156cd60a671ec48f989397cc654b"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_sessions-sparse",
+      "text": "¿Cuántas sesiones de protección constan esta semana?",
+      "profile": "sparse",
+      "route": "protection_week",
+      "expected_retrieval": {
+        "metric": "protection_sessions",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "0d636e9b129c4a6072a1f2c5abf16fb7289913fbd04c4a5f0cb9e5322b5d3ecd"
+    },
+    {
+      "id": "v2-retrieval-es-query-protection_breaks-sparse",
+      "text": "¿Cuántas interrupciones de protección registré ayer?",
+      "profile": "sparse",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_breaks",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "es",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "9fc48de1303481d6dd3cdc1ab2e38bc921a5517624ddbf4e622e9a3bddbf4dc2"
+    },
+    {
+      "id": "v2-retrieval-es-action-block-5",
+      "text": "Bloquea mis distracciones durante 5 minutos.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 5
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "a3c8a87707f90f09695090a6b614212715cb21f3d0f184c56eb841047046aa1d"
+    },
+    {
+      "id": "v2-retrieval-es-action-block-15",
+      "text": "Bloquea mis distracciones durante 15 minutos.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 15
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "2aab2fa020867f0cbecf8f08500176ccd5425858024adc250b0a9487556a75b7"
+    },
+    {
+      "id": "v2-retrieval-es-action-block-30",
+      "text": "Bloquea mis distracciones durante 30 minutos.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 30
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "68cd076b2e33431bf32a48e80f1cf33cd06d8e4b7ed4b0eb268c36033518386a"
+    },
+    {
+      "id": "v2-retrieval-es-action-block-60",
+      "text": "Bloquea mis distracciones durante 60 minutos.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 60
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "6e2739bf1f75257e7269c698fb4a19a119ee901e85a4837c3b6e9c2fe59693db"
+    },
+    {
+      "id": "v2-retrieval-es-action-block-90",
+      "text": "Bloquea mis distracciones durante 90 minutos.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 90
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "1ac6bbd138cd092af59e476d6f4a804d9f90417c1998b800bdd414cfe21d2e02"
+    },
+    {
+      "id": "v2-retrieval-es-action-block-120",
+      "text": "Bloquea mis distracciones durante 120 minutos.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 120
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "20411b483852ec39bb18012bbe1209c07eeb59415cd383f63bf118466854ebbd"
+    },
+    {
+      "id": "v2-retrieval-es-action-block-240",
+      "text": "Bloquea mis distracciones durante 240 minutos.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 240
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "9947f5de0ce253af1b138b73a97750d9b73707ee5bed69ca3d512bd23a50003c"
+    },
+    {
+      "id": "v2-retrieval-es-action-weekly-7",
+      "text": "Crea una ventana de bloqueo de lunes a viernes de 22:00 a 07:00 durante 7 días.",
+      "expected_action": {
+        "type": "apply_schedule",
+        "start_minute": 1320,
+        "end_minute": 420,
+        "weekdays": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "recurrence": "weekly",
+        "duration_days": 7
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "59951c5e1cbe5d9d3c03a536a698f2339655b248c4cb270a1690dba668e86f16"
+    },
+    {
+      "id": "v2-retrieval-es-action-weekly-14",
+      "text": "Crea una ventana de bloqueo de lunes a viernes de 22:00 a 07:00 durante 14 días.",
+      "expected_action": {
+        "type": "apply_schedule",
+        "start_minute": 1320,
+        "end_minute": 420,
+        "weekdays": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "recurrence": "weekly",
+        "duration_days": 14
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ef61baf96a60566b50347287b26593348ae87adc79925c744eaa1898f6d630ee"
+    },
+    {
+      "id": "v2-retrieval-es-action-continuous",
+      "text": "Crea una ventana todos los días de 23:00 a 07:00, sin fecha de fin, hasta que la cambie.",
+      "expected_action": {
+        "type": "apply_schedule",
+        "start_minute": 1380,
+        "end_minute": 420,
+        "weekdays": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "recurrence": "continuous",
+        "duration_days": null
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ac1f49911a79204550ff1975582cd7140f09db05e6843305826726567677b621"
+    },
+    {
+      "id": "v2-retrieval-es-action-update",
+      "text": "Modifica mi única ventana Night a 22:00–07:00 de lunes a viernes durante 7 días.",
+      "expected_action": {
+        "type": "update_schedule",
+        "window_id": "qa-window",
+        "start_minute": 1320,
+        "end_minute": 420,
+        "weekdays": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "recurrence": "weekly",
+        "duration_days": 7
+      },
+      "context": {
+        "schedule": {
+          "windows": [
+            {
+              "id": "qa-window",
+              "name": "Night",
+              "start_minute": 1260,
+              "end_minute": 420,
+              "weekdays": [
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "recurrence": "weekly",
+              "duration_days": 7
+            }
+          ]
+        }
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "6897c8a7b01f2324063790864e2bf4db3b503ac3e8fe4aa1e1f928a8a018e778"
+    },
+    {
+      "id": "v2-retrieval-es-action-delete",
+      "text": "Elimina mi única ventana Night.",
+      "expected_action": {
+        "type": "delete_schedule",
+        "window_id": "qa-window"
+      },
+      "context": {
+        "schedule": {
+          "windows": [
+            {
+              "id": "qa-window",
+              "name": "Night",
+              "start_minute": 1260,
+              "end_minute": 420,
+              "weekdays": [
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "recurrence": "weekly",
+              "duration_days": 7
+            }
+          ]
+        }
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "4f2c7b5f5a8ee34a2cc16606bb216104b6de9637cfd822c2ff5cb9e24f55f9d2"
+    },
+    {
+      "id": "v2-retrieval-es-action-delete-all",
+      "text": "Elimina todas mis ventanas de bloqueo.",
+      "expected_action": {
+        "type": "delete_all_schedules"
+      },
+      "context": {
+        "schedule": {
+          "windows": [
+            {
+              "id": "qa-window",
+              "name": "Night",
+              "start_minute": 1260,
+              "end_minute": 420,
+              "weekdays": [
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "recurrence": "weekly",
+              "duration_days": 7
+            }
+          ]
+        }
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "1fb3666edecf8e14839a0c767e9f3e8234c6417cea105f386acc41c6aee5983b"
+    },
+    {
+      "id": "v2-retrieval-es-action-pause-1",
+      "text": "Pausa mis reglas durante 1 horas.",
+      "expected_action": {
+        "type": "pause_rules",
+        "hours": 1,
+        "minutes": null
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "9c8c6e6ee82e652b9b36fb18e9ffa627d374bb83348be65484162ef49d31169e"
+    },
+    {
+      "id": "v2-retrieval-es-action-pause-2",
+      "text": "Pausa mis reglas durante 2 horas.",
+      "expected_action": {
+        "type": "pause_rules",
+        "hours": 2,
+        "minutes": null
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "4d86ab8cfb4c4d4c1c1f1903f9c7d52c9c95b325605ddf6cc8b60845ac081f05"
+    },
+    {
+      "id": "v2-retrieval-es-action-pause-168",
+      "text": "Pausa mis reglas durante 168 horas.",
+      "expected_action": {
+        "type": "pause_rules",
+        "hours": 168,
+        "minutes": null
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "30e5bafc44b08b406fc8b29b769b0373388646f1695507c42bb9a1ff2d231a9b"
+    },
+    {
+      "id": "v2-retrieval-es-action-disable_pause",
+      "text": "Reanuda mis reglas de bloqueo.",
+      "expected_action": {
+        "type": "disable_pause"
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "1f61f3ed6a93850f42a421c3a1f3a82ee8596b69ebb9b336d1077d901e283703"
+    },
+    {
+      "id": "v2-retrieval-es-action-set_daily_limit",
+      "text": "Pon un límite diario de 15 minutos para mis distracciones.",
+      "expected_action": {
+        "type": "set_daily_limit",
+        "minutes": 15
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "5b1844c16f203f52b74c1f775a52efebf21eb877915b9b3daed42abaf54d78f4"
+    },
+    {
+      "id": "v2-retrieval-es-action-disable_daily_limit",
+      "text": "Desactiva mi límite diario de distracciones.",
+      "expected_action": {
+        "type": "disable_daily_limit"
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "95ade8a31022a01243021fa4c2fef385f3a8735349d2a6c0451a7be5d3516af7"
+    },
+    {
+      "id": "v2-retrieval-es-action-enable_allow_only",
+      "text": "Activa permitir solo las apps de mi selección.",
+      "expected_action": {
+        "type": "enable_allow_only"
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "eff8191fa15ac6300d31b7b199f0b83be50d228f6ec7d0bb95b5d76430752e9c"
+    },
+    {
+      "id": "v2-retrieval-es-action-disable_allow_only",
+      "text": "Desactiva permitir solo las apps seleccionadas.",
+      "expected_action": {
+        "type": "disable_allow_only"
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "affa5aff7d102c06f1fae34bb8b9dc1d34df85e0ef7540fd6152b5b80ff7b44c"
+    },
+    {
+      "id": "v2-retrieval-es-action-enable_adult_filter",
+      "text": "Activa el filtro de contenido adulto.",
+      "expected_action": {
+        "type": "enable_adult_filter"
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "7b69d177c08d19276d03202abaef50911476f5d6adcb56765ca9a9601647f552"
+    },
+    {
+      "id": "v2-retrieval-es-action-disable_adult_filter",
+      "text": "Desactiva el filtro de contenido adulto.",
+      "expected_action": {
+        "type": "disable_adult_filter"
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "3d2ccb5d85d758e36ff6afd26a048ab1fe568945ae919cdf16d79949df97fabf"
+    },
+    {
+      "id": "v2-retrieval-es-action-open_app_picker",
+      "text": "Abre el selector para que elija mis distracciones.",
+      "expected_action": {
+        "type": "open_app_picker"
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ea353af1dfa42e33c4056c594fd4272d860db8779d9997f796905aa98a61486f"
+    },
+    {
+      "id": "v2-retrieval-es-action-request_screen_time_permission",
+      "text": "Abre la solicitud de permiso de Tiempo de uso.",
+      "expected_action": {
+        "type": "request_screen_time_permission"
+      },
+      "context": {
+        "screen_time_authorized": false
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "df760caaea5de3cfb45d14b4493068e107b11bb853cd6ca93682fe6475a2a602"
+    },
+    {
+      "id": "v2-retrieval-es-memory-bedtime-routine_statement-1320",
+      "text": "Registra esta observación: normalmente me acuesto a las 22:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "measurement": "routine_statement",
+          "value_number": 1320,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "0740b07d680b0ac2f5d89bf7adbbeb077346f1ed6020b4d06e168b4fe03370b6",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-bedtime-routine_statement-1380",
+      "text": "Registra esta observación: normalmente me acuesto a las 23:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "measurement": "routine_statement",
+          "value_number": 1380,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "bee1d02d2218641afbe9884d858953dfb5a09df9c10eb4c4c3281c9c5688e724",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-bedtime-declared-1320",
+      "text": "Registra esta observación: ayer me acosté a las 22:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "measurement": "declared",
+          "value_number": 1320,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "50fafb88f97627de0e4db9f75622342a2faebacb430d242cf0e77d7562601988",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-bedtime-declared-1380",
+      "text": "Registra esta observación: ayer me acosté a las 23:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "measurement": "declared",
+          "value_number": 1380,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "3a6e8d45bdfddacef9d93a096195572892d92bbe8223d5ebc52bf7876fe26afb",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-wake_time-routine_statement-360",
+      "text": "Registra esta observación: normalmente me levanto a las 06:00.",
+      "expected_observations": [
+        {
+          "metric": "wake_time",
+          "measurement": "routine_statement",
+          "value_number": 360,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "0e0f80bdb71528d8e6b1aa8fcbf9266044ab50d0f3fa5b77f8f078e01bb06b81",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-wake_time-routine_statement-420",
+      "text": "Registra esta observación: normalmente me levanto a las 07:00.",
+      "expected_observations": [
+        {
+          "metric": "wake_time",
+          "measurement": "routine_statement",
+          "value_number": 420,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "66a708200f6c933413a2cac05047f624cabd68dc56c841c62a2416c1e7133d8b",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-wake_time-declared-360",
+      "text": "Registra esta observación: ayer me levanté a las 06:00.",
+      "expected_observations": [
+        {
+          "metric": "wake_time",
+          "measurement": "declared",
+          "value_number": 360,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "90753e7663f82f06d355b9d2c8f89f8226a09f9c8a0ff61a1269c931f10e2a5b",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-wake_time-declared-420",
+      "text": "Registra esta observación: ayer me levanté a las 07:00.",
+      "expected_observations": [
+        {
+          "metric": "wake_time",
+          "measurement": "declared",
+          "value_number": 420,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "fc2870ed6a00b722e27663e316077a1f0d986f62bd7f0545fd54d948d29dcfb3",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-sleep_duration-routine_statement-420",
+      "text": "Registra esta observación: normalmente duermo 7 horas.",
+      "expected_observations": [
+        {
+          "metric": "sleep_duration",
+          "measurement": "routine_statement",
+          "value_number": 420,
+          "value_text": null,
+          "unit": "minutes"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "69293a2a9cccff34fe5d5a11f3e23c5939569e532f823452a256bee4ba03c478",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-sleep_duration-routine_statement-480",
+      "text": "Registra esta observación: normalmente duermo 8 horas.",
+      "expected_observations": [
+        {
+          "metric": "sleep_duration",
+          "measurement": "routine_statement",
+          "value_number": 480,
+          "value_text": null,
+          "unit": "minutes"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "53b3440a3f3d0686ca8bb2fdc202c384a29330e2f13950dfdddff0c66075dd7a",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-sleep_duration-declared-420",
+      "text": "Registra esta observación: ayer dormí 7 horas.",
+      "expected_observations": [
+        {
+          "metric": "sleep_duration",
+          "measurement": "declared",
+          "value_number": 420,
+          "value_text": null,
+          "unit": "minutes"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "8d8c59dd6e96a31cd17baedbbea00d005aa575788c24f5506af2d92dfa7b62de",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-sleep_duration-declared-480",
+      "text": "Registra esta observación: ayer dormí 8 horas.",
+      "expected_observations": [
+        {
+          "metric": "sleep_duration",
+          "measurement": "declared",
+          "value_number": 480,
+          "value_text": null,
+          "unit": "minutes"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "1d4c0243fa60b0077333583f7ff1876244e356691ebf374b66149eee5cbe4b5f",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-caffeine-routine_statement-1",
+      "text": "Registra esta observación: normalmente tomo 1 cafés.",
+      "expected_observations": [
+        {
+          "metric": "caffeine",
+          "measurement": "routine_statement",
+          "value_number": 1,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "dc091adea69095e152114a795e948c1c668b9ad9c630beea0c80e992a063c3fc",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-caffeine-routine_statement-2",
+      "text": "Registra esta observación: normalmente tomo 2 cafés.",
+      "expected_observations": [
+        {
+          "metric": "caffeine",
+          "measurement": "routine_statement",
+          "value_number": 2,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "fbc67958ad0590bb9231091fe40af07ff96250703ba54fc18d006e65f5b608eb",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-caffeine-declared-1",
+      "text": "Registra esta observación: ayer tomé 1 cafés.",
+      "expected_observations": [
+        {
+          "metric": "caffeine",
+          "measurement": "declared",
+          "value_number": 1,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "5dab6c001586bb8670eed1906a797bf4baef302b843b147749f198f59d1bec77",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-caffeine-declared-2",
+      "text": "Registra esta observación: ayer tomé 2 cafés.",
+      "expected_observations": [
+        {
+          "metric": "caffeine",
+          "measurement": "declared",
+          "value_number": 2,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "716640c488625e079a9a9b57ee738e87b5858be7cce3c0b51f183d2a60807c55",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-alcohol-routine_statement-0",
+      "text": "Registra esta observación: normalmente tomo 0 bebidas con alcohol.",
+      "expected_observations": [
+        {
+          "metric": "alcohol",
+          "measurement": "routine_statement",
+          "value_number": 0,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "c12d9e1a25a64abae10f494d328d3452ff13623f0ff835fee18c76d4f439754f",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-alcohol-routine_statement-1",
+      "text": "Registra esta observación: normalmente tomo 1 bebidas con alcohol.",
+      "expected_observations": [
+        {
+          "metric": "alcohol",
+          "measurement": "routine_statement",
+          "value_number": 1,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "f82a18e77ce35642960b8c84eb4dc16f78a4cca0c788448bd74525fa32b670f5",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-alcohol-declared-0",
+      "text": "Registra esta observación: ayer tomé 0 bebidas con alcohol.",
+      "expected_observations": [
+        {
+          "metric": "alcohol",
+          "measurement": "declared",
+          "value_number": 0,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "5510e677a1e0186cd282b2b9725df227a607a897f4b47be81c21bd63ebdcfdc0",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-alcohol-declared-1",
+      "text": "Registra esta observación: ayer tomé 1 bebidas con alcohol.",
+      "expected_observations": [
+        {
+          "metric": "alcohol",
+          "measurement": "declared",
+          "value_number": 1,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "0bf5c6aedf298a2fd111a58582467a31d3ce78954db8f9ce619636987142a33f",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-two-routines",
+      "text": "Registra esta observación: normalmente me acuesto a las 23:00 y me levanto a las 07:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "value_number": 1380,
+          "value_text": null,
+          "unit": "local_minute",
+          "measurement": "routine_statement"
+        },
+        {
+          "metric": "wake_time",
+          "value_number": 420,
+          "value_text": null,
+          "unit": "local_minute",
+          "measurement": "routine_statement"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "572f5bea2e6eabdc7a8ad0827c676e475baf3f103686032cce56677e5d835bed",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-correction",
+      "text": "Registra mi corrección: normalmente me acuesto a las 22:30, no a las 23:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "value_number": 1350,
+          "value_text": null,
+          "unit": "local_minute",
+          "measurement": "routine_statement"
+        }
+      ],
+      "expected_decision": "respond",
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "8ea57206436fd46f360ba8cf5812db641b84adae93f6269d10fb3092f1ded3e3",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-es-memory-preference",
+      "text": "Mi preferencia para descansar es leer en papel.",
+      "expected_fact": {
+        "key": "preferences",
+        "literal": "leer en papel"
+      },
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "fc4d987a3170637de29c175ff5a018f6de6b52b7bc18362d9a4d23ec4297886f"
+    },
+    {
+      "id": "v2-retrieval-es-memory-forget-all",
+      "text": "Olvida todo lo que sabes sobre mí.",
+      "initial_memories": [
+        {
+          "key": "bedtime",
+          "value": "23:00"
+        },
+        {
+          "key": "preferences",
+          "value": "leer en papel"
+        }
+      ],
+      "expected_forgetting": {
+        "operation": "forget_all",
+        "key": null
+      },
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "2ba7c219c09bc9844b128ec1caee3f9c1dd7e6554ff3e9891a0349b03f6f72b7"
+    },
+    {
+      "id": "v2-retrieval-es-memory-forget-ambiguous",
+      "text": "Olvida mis hábitos personales.",
+      "initial_memories": [
+        {
+          "key": "bedtime",
+          "value": "23:00"
+        },
+        {
+          "key": "preferences",
+          "value": "leer en papel"
+        }
+      ],
+      "forbid_effects": true,
+      "expectation": "Ask an open scope clarification without a closed category menu. Preserve every seeded memory and observation; no deletion or action.",
+      "feature": "retrieval",
+      "language": "es",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "4412b22cfb0c8df67a892c24bcbb619fc45b281c951917252729defc956fc436"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-0",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Hello.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "1b04c8d3e68efd4e773221badfc76945598173b9d8f7e5b0319fd02145b74a37"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-1",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Good evening, how are you?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "607b05676c4dcd2116887b825a6d734e12077f5c4a1f3a59ea55e2b4be79915f"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-2",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Thanks for listening.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "0377691c7c111ba4a96481bb7222d2fc694dae8a6bebf732f88ccd84403e0255"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-3",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "What can you do with my blocks?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "5dc0621477acaf08cd83c27e8b005918b418653de58ccc262b121d6e61981903"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-4",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Can you edit a blocking window?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "82c0fbd6e6c5d29fec5ae2c0d546312b339d996e2162b5a8cf8b8960b9256923"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-5",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "What does recorded protection mean?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "cb3c931fdab6f4d97deb6aa0d2ea6c6e22d4ff687e74116f8b3eab8c267257bb"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-6",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Can you know how much I used Instagram?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "950b14e40b57c8a1b8b4f0c5d833a1c1cc73c66476d824562bb8c4936898641e"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-7",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Does blocking my phone guarantee better sleep?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "f3ea2721d13ec9dc06233cdfb4ebc4c89be93ca50631cc4a49ddc3abbee1afb9"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-8",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Why is protection different from time saved?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "a6df2f7aaf25d77641a92e8b13bf3be24a71bf92e9e1f645c6f48b2d92c5d3aa"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-9",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Do not change anything, I just want to talk.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "506995eacf2372a39b94046e0aa80747cc6eb679f109af48a1e1bd84fc6d4a49"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-10",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "I would like to chat for a bit.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "9711c4e64a3150201d6e02beba5ffa829936f753ed554259d59cae3207aedcfa"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-11",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "How would an overnight window work?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "5b07d198b207d207e2b24e345bdce68416f52ad6c38716b3086be23ce7581fd6"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-12",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "What data do you need to personalize a schedule?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "12e4e971f20f8956a7bea7afe21508cfb246d1e982dd0a4f290fa9e390f61337"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-13",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "What would you do if my sleep records were missing?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "c5013ab9694ab9d1e8e7132f983e6ada31405dc818210e345c5d7d9bcc1f81d8"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-14",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "What is the difference between a routine and something that happened yesterday?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "8693ff221c5382eab8fe658db67401274b01acdf5e93e506eff584d76cacf035"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-15",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Translate into Spanish: block my distractions for 30 minutes.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "0aed6a90c39681e78a27620541d076a57d77e271e26a843c5de4f5aa8c6fbc71"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-16",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "My friend said 'start a 30-minute block'. What does that mean?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "d946f7d60153f78d2d7a00d9abe76f2eb1eb6ccc56eefae1832ccca29f2003fe"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-17",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "If I went to bed at 23:00, would that be a good idea?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "0576ae11c8f0d3653fe7e3bbfc67d16383c5ac5a93cd4de4223843a6ebe0cf5b"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-18",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Could you block distractions if I asked you to?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "cd177ac7a7a1a78c9aa68e2ad9e6ba693617703c29baef9c943f92e0d9828df2"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-19",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Do I have to use the same schedule every night?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "a31a98b34951f5ba3610817f1613c7f8da7093917f6bc6bfc3aed641c7f73f9c"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-20",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "How could I test a routine without changing everything?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "280672128020cd31feb1c9322dcbddbbd79d30e3f9152fd45e024f8df70d1815"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-21",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "I am getting ready for a quiet evening.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "e4cb548d22e999df2c5e4579bab5404483d0e557e9ce048ecb697025dc0fc641"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-22",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Where would you start if I wanted to sleep better?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ad2965fa59be8e467428bddf4846589b1d5bf17be95aad05831ef5518f99184e"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-23",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Explain what a pause of rules means.",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "c4225759cd58ed51462d42c11947c8de7c1cd77147ab35c8a468d437c275ae04"
+    },
+    {
+      "id": "v2-retrieval-en-chat-chat-en-24",
+      "group": "chat",
+      "language": "en",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "text": "Can blocking windows overlap?",
+      "expectation": "Open natural reply to this exact input; no executed action or stored personal fact. Quoted/third-party/hypothetical commands never authorize effects. Protection does not measure phone use or guarantee sleep.",
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "b5f181893066553f48f2575807ff13b5ba8534006c83db3624c58df9d2ce55de"
+    },
+    {
+      "id": "v2-retrieval-en-query-sleep_duration-standard",
+      "text": "How much sleep did I record yesterday?",
+      "profile": "standard",
+      "route": "sleep_yesterday",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "83b09381e28907d9b0008647dc64de91244675dbbe3459f8ead94fc4b3e11522"
+    },
+    {
+      "id": "v2-retrieval-en-query-sleep_average-standard",
+      "text": "Tell me my recorded sleep average this calendar week.",
+      "profile": "standard",
+      "route": "sleep_week",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "ee53cfce2522f4d665436e131d9fffb88041e1dda127d261f08857b5e4a21b7a"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_duration-standard",
+      "text": "Show my protected time yesterday.",
+      "profile": "standard",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "11da3e2dadc92e0e26b2856b6835434568a5c52dfc1a9bee9163281900acb592"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_sessions-standard",
+      "text": "How many protection sessions are recorded this week?",
+      "profile": "standard",
+      "route": "protection_week",
+      "expected_retrieval": {
+        "metric": "protection_sessions",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "d9246d6b1786fcb2c11d21abc26e94ec9c76d0fd864e2db86ddbf98410efa64f"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_breaks-standard",
+      "text": "How many protection breaks did I record yesterday?",
+      "profile": "standard",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_breaks",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "45c4cd572d5476439a11c9d7bf294359903c19535daa1a1fa793aa144153a0d2"
+    },
+    {
+      "id": "v2-retrieval-en-query-sleep_duration-declared",
+      "text": "How much sleep did I record yesterday?",
+      "profile": "declared",
+      "route": "sleep_yesterday",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "777bb822bbeab066995eb6455c4ae007a1c7500275309dd0d98b080385edb371"
+    },
+    {
+      "id": "v2-retrieval-en-query-sleep_average-declared",
+      "text": "Tell me my recorded sleep average this calendar week.",
+      "profile": "declared",
+      "route": "sleep_week",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "9d6fb20e505c927a992ab3e1eb0bf78626f79a534780e76ce19a9d7affd2289f"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_duration-declared",
+      "text": "Show my protected time yesterday.",
+      "profile": "declared",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": true,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "af18d2b1ab3cc7b5422c30f337d3ae85cbf1220910dd12ae38a65463785d1c1c"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_sessions-declared",
+      "text": "How many protection sessions are recorded this week?",
+      "profile": "declared",
+      "route": "protection_week",
+      "expected_retrieval": {
+        "metric": "protection_sessions",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "109b01d8fcce3be617ea4e0188cc36a4233031ac2eba19c2d5f62e29baf70e1f"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_breaks-declared",
+      "text": "How many protection breaks did I record yesterday?",
+      "profile": "declared",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_breaks",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "598de86d8b94730257014d2066d70ae4a30cac7995289a03f5a38e9e5d135825"
+    },
+    {
+      "id": "v2-retrieval-en-query-sleep_duration-missing",
+      "text": "How much sleep did I record yesterday?",
+      "profile": "missing",
+      "route": "sleep_yesterday",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "2273193dbc33654c0d92802fc61894252f1ff70f3c14218556f35698ffb031b2"
+    },
+    {
+      "id": "v2-retrieval-en-query-sleep_average-missing",
+      "text": "Tell me my recorded sleep average this calendar week.",
+      "profile": "missing",
+      "route": "sleep_week",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "bebf25da22425e2f4dc3f6d8e91d0bd1073a4545df83797bf56848acf5469720"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_duration-missing",
+      "text": "Show my protected time yesterday.",
+      "profile": "missing",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "6f2272ee871e9a4c66488c1c4f726acbb3373f509cb1198a44ebdeef37dc2943"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_sessions-missing",
+      "text": "How many protection sessions are recorded this week?",
+      "profile": "missing",
+      "route": "protection_week",
+      "expected_retrieval": {
+        "metric": "protection_sessions",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "33407ab9df5a535f456ff48041153b48b076cf63ae1d778d095b05acb2d00895"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_breaks-missing",
+      "text": "How many protection breaks did I record yesterday?",
+      "profile": "missing",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_breaks",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "93e9cdfa39e6345d77856bbc61152e55ade0a5b35e6348ca31508ad444848015"
+    },
+    {
+      "id": "v2-retrieval-en-query-sleep_duration-zero",
+      "text": "How much sleep did I record yesterday?",
+      "profile": "zero",
+      "route": "sleep_yesterday",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "d3a4b6b7affafd781cfa387ffc29591d8394d7ede4f6e10dfb6f3e712c3347a0"
+    },
+    {
+      "id": "v2-retrieval-en-query-sleep_average-zero",
+      "text": "Tell me my recorded sleep average this calendar week.",
+      "profile": "zero",
+      "route": "sleep_week",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "91c4b9a7b583f7defa627d81d181a86acd4ac59f1819ad1f1648e7c09e75a3b5"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_duration-zero",
+      "text": "Show my protected time yesterday.",
+      "profile": "zero",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "ee11dd0c1c095a7346a0ded05abbecbaa71fe560e3ae6ccaa5a8a745a5c7e9eb"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_sessions-zero",
+      "text": "How many protection sessions are recorded this week?",
+      "profile": "zero",
+      "route": "protection_week",
+      "expected_retrieval": {
+        "metric": "protection_sessions",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "06bd8d028a04eccdfc9e05f078408ffec90408e05c6bc13daf50d417a8648c3c"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_breaks-zero",
+      "text": "How many protection breaks did I record yesterday?",
+      "profile": "zero",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_breaks",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "f9be685fc8271696214a7be481b36c7308f1ac46318ebe1b133a2ff2d2d6b210"
+    },
+    {
+      "id": "v2-retrieval-en-query-sleep_duration-sparse",
+      "text": "How much sleep did I record yesterday?",
+      "profile": "sparse",
+      "route": "sleep_yesterday",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "7cb305ea2d30fbabcb733b4acef4cabac8e339c4954b20381d0777dafaab3b0e"
+    },
+    {
+      "id": "v2-retrieval-en-query-sleep_average-sparse",
+      "text": "Tell me my recorded sleep average this calendar week.",
+      "profile": "sparse",
+      "route": "sleep_week",
+      "expected_retrieval": {
+        "metric": "sleep_duration",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "b8a040021e03b18c8ea971c2aa6a579d04ac759ba56aa57b7279bfd451854d81"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_duration-sparse",
+      "text": "Show my protected time yesterday.",
+      "profile": "sparse",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_duration",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "65866d8bc0722864397bbbf59cd999ec0f34c1a07ab0e5c90d0de11152fb3a20"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_sessions-sparse",
+      "text": "How many protection sessions are recorded this week?",
+      "profile": "sparse",
+      "route": "protection_week",
+      "expected_retrieval": {
+        "metric": "protection_sessions",
+        "period": "this_week"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "844ff0935767e48484f12d0601775d0b40207d5d97d9d1c6c74ff3063b54e4a0"
+    },
+    {
+      "id": "v2-retrieval-en-query-protection_breaks-sparse",
+      "text": "How many protection breaks did I record yesterday?",
+      "profile": "sparse",
+      "route": "protection_yesterday",
+      "expected_retrieval": {
+        "metric": "protection_breaks",
+        "period": "yesterday"
+      },
+      "forbid_effects": true,
+      "feature": "retrieval",
+      "language": "en",
+      "group": "query",
+      "audio_requested": false,
+      "expectation": "Answer the exact recorded metric/period with dates, units and coverage; missing is unknown, recorded zero is known. No action, new memory, phone-use or sleep-efficacy claims.",
+      "expected_classifier_work": "prepare_query",
+      "scenario_sha256": "eb96c7013d91904be9c69458c65f201d354c562718c590361e906e26673cee27"
+    },
+    {
+      "id": "v2-retrieval-en-action-block-5",
+      "text": "Block my distractions for 5 minutes.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 5
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "b6c3773707caed3e88c4f1a6c1808384717e615d3b79a66941e0e47b891e356f"
+    },
+    {
+      "id": "v2-retrieval-en-action-block-15",
+      "text": "Block my distractions for 15 minutes.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 15
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "411ebee03f4d749c42798b1e321ea3ec7d1ed6934e03a04ad182c19000531142"
+    },
+    {
+      "id": "v2-retrieval-en-action-block-30",
+      "text": "Block my distractions for 30 minutes.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 30
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ac852d7bbbda00a5e5866b10eb4e5252b77839ccb145a0fe45b1e05ebd2d3258"
+    },
+    {
+      "id": "v2-retrieval-en-action-block-60",
+      "text": "Block my distractions for 60 minutes.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 60
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "7f6b24fc653682db2797c03e7a38432fea40871571b9bebcdeac89238ff3b98d"
+    },
+    {
+      "id": "v2-retrieval-en-action-block-90",
+      "text": "Block my distractions for 90 minutes.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 90
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "f4179c1a3748933df84ecdc33077354ac98709985086ac0e09592f06c4e6f88e"
+    },
+    {
+      "id": "v2-retrieval-en-action-block-120",
+      "text": "Block my distractions for 120 minutes.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 120
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "e8bb499d6b254bb3be1b5cea54e66b43ecd228d4ae3e17db8621dd0b90f5a509"
+    },
+    {
+      "id": "v2-retrieval-en-action-block-240",
+      "text": "Block my distractions for 240 minutes.",
+      "expected_action": {
+        "type": "start_protection",
+        "minutes": 240
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "85bc9b8ea195d2018ccd2cbde25cd5f6c58654f00cc2db53854ac572e4171ec3"
+    },
+    {
+      "id": "v2-retrieval-en-action-weekly-7",
+      "text": "Create a blocking window Monday through Friday from 22:00 to 07:00 for 7 days.",
+      "expected_action": {
+        "type": "apply_schedule",
+        "start_minute": 1320,
+        "end_minute": 420,
+        "weekdays": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "recurrence": "weekly",
+        "duration_days": 7
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "7830001234c13533bc69c967c90b0bb8ae7f5b43c7f920c0ed70a65ecbf211ec"
+    },
+    {
+      "id": "v2-retrieval-en-action-weekly-14",
+      "text": "Create a blocking window Monday through Friday from 22:00 to 07:00 for 14 days.",
+      "expected_action": {
+        "type": "apply_schedule",
+        "start_minute": 1320,
+        "end_minute": 420,
+        "weekdays": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "recurrence": "weekly",
+        "duration_days": 14
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "41f3b40f5bc79665685a3377e1537d77dfacfac85a2e3a3adbd70dcb42f5177f"
+    },
+    {
+      "id": "v2-retrieval-en-action-continuous",
+      "text": "Create a window every day from 23:00 to 07:00, with no end date, until I change it.",
+      "expected_action": {
+        "type": "apply_schedule",
+        "start_minute": 1380,
+        "end_minute": 420,
+        "weekdays": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "recurrence": "continuous",
+        "duration_days": null
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "7b1c39b2011a9dc0f1436e4c3138f199f922b3130331a78114766098d1147806"
+    },
+    {
+      "id": "v2-retrieval-en-action-update",
+      "text": "Change my only Night window to 22:00–07:00 Monday through Friday for 7 days.",
+      "expected_action": {
+        "type": "update_schedule",
+        "window_id": "qa-window",
+        "start_minute": 1320,
+        "end_minute": 420,
+        "weekdays": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "recurrence": "weekly",
+        "duration_days": 7
+      },
+      "context": {
+        "schedule": {
+          "windows": [
+            {
+              "id": "qa-window",
+              "name": "Night",
+              "start_minute": 1260,
+              "end_minute": 420,
+              "weekdays": [
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "recurrence": "weekly",
+              "duration_days": 7
+            }
+          ]
+        }
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ea65203b60608e147e3333f97aca7ab8639056dba872af7069044728cbdf700d"
+    },
+    {
+      "id": "v2-retrieval-en-action-delete",
+      "text": "Delete my only Night window.",
+      "expected_action": {
+        "type": "delete_schedule",
+        "window_id": "qa-window"
+      },
+      "context": {
+        "schedule": {
+          "windows": [
+            {
+              "id": "qa-window",
+              "name": "Night",
+              "start_minute": 1260,
+              "end_minute": 420,
+              "weekdays": [
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "recurrence": "weekly",
+              "duration_days": 7
+            }
+          ]
+        }
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "e01522d24cc87b693ceb7b5acacc3ce4a85f4402c86bb7f30d3c9ba26bfcec0d"
+    },
+    {
+      "id": "v2-retrieval-en-action-delete-all",
+      "text": "Delete all my blocking windows.",
+      "expected_action": {
+        "type": "delete_all_schedules"
+      },
+      "context": {
+        "schedule": {
+          "windows": [
+            {
+              "id": "qa-window",
+              "name": "Night",
+              "start_minute": 1260,
+              "end_minute": 420,
+              "weekdays": [
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "recurrence": "weekly",
+              "duration_days": 7
+            }
+          ]
+        }
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "9244c1f4fadc1ab73d799d82e0a479236f437ad0a1346210ed6a643cc28f89ca"
+    },
+    {
+      "id": "v2-retrieval-en-action-pause-1",
+      "text": "Pause my rules for 1 hours.",
+      "expected_action": {
+        "type": "pause_rules",
+        "hours": 1,
+        "minutes": null
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "819174f078f520290d8407185c0734094bbeb6037bd248a05f22619bc483638b"
+    },
+    {
+      "id": "v2-retrieval-en-action-pause-2",
+      "text": "Pause my rules for 2 hours.",
+      "expected_action": {
+        "type": "pause_rules",
+        "hours": 2,
+        "minutes": null
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "0977a71e2c271ef25ee45650d80dcb9828c5008ba882da468b80e5b6ad199c69"
+    },
+    {
+      "id": "v2-retrieval-en-action-pause-168",
+      "text": "Pause my rules for 168 hours.",
+      "expected_action": {
+        "type": "pause_rules",
+        "hours": 168,
+        "minutes": null
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "0d187bffe3cc4bd277404dd5398f83ba8fccbb2963d9d66f4bf857f2410c43b6"
+    },
+    {
+      "id": "v2-retrieval-en-action-disable_pause",
+      "text": "Resume my blocking rules.",
+      "expected_action": {
+        "type": "disable_pause"
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "d86988a5ed2c2cfcad356a1982b3573801bf764d85a759dfa04ca9b5a5e7f3f3"
+    },
+    {
+      "id": "v2-retrieval-en-action-set_daily_limit",
+      "text": "Set a daily limit of 15 minutes for my distractions.",
+      "expected_action": {
+        "type": "set_daily_limit",
+        "minutes": 15
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "8d2626bbf1f5c40a4470051838240cfacb4a6e5b950f0fc0eccb1cac0f1a7d42"
+    },
+    {
+      "id": "v2-retrieval-en-action-disable_daily_limit",
+      "text": "Disable my daily distraction limit.",
+      "expected_action": {
+        "type": "disable_daily_limit"
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "5ba87f42b0b7999776005000b299895b9afd227700d00c425690482c63840918"
+    },
+    {
+      "id": "v2-retrieval-en-action-enable_allow_only",
+      "text": "Enable allow-only for the apps in my selection.",
+      "expected_action": {
+        "type": "enable_allow_only"
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "3a0655c0bef5a64f55e328a0676e235ad38151f44516bd16c68b968cc26168ca"
+    },
+    {
+      "id": "v2-retrieval-en-action-disable_allow_only",
+      "text": "Disable allow-only for the selected apps.",
+      "expected_action": {
+        "type": "disable_allow_only"
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ac5c56c877d29dddd21ca35c4603f1d70264e1793e5b1b4f191ea173a921c5f4"
+    },
+    {
+      "id": "v2-retrieval-en-action-enable_adult_filter",
+      "text": "Enable the adult content filter.",
+      "expected_action": {
+        "type": "enable_adult_filter"
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "4f7e3adf7e51cd41c91d569f54e3ae3a57da8dcad80329f2285a593ff1626598"
+    },
+    {
+      "id": "v2-retrieval-en-action-disable_adult_filter",
+      "text": "Disable the adult content filter.",
+      "expected_action": {
+        "type": "disable_adult_filter"
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "99d8cda18d65ffcc17a77f76a76c38ff9c1998d8f8f85ad204e75bd509294cac"
+    },
+    {
+      "id": "v2-retrieval-en-action-open_app_picker",
+      "text": "Open the picker so I can select my distractions.",
+      "expected_action": {
+        "type": "open_app_picker"
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "ccf68c1c53e3fab48db04bd5ed3854e997a9e897ae838112ec3f9be48a1e6577"
+    },
+    {
+      "id": "v2-retrieval-en-action-request_screen_time_permission",
+      "text": "Open the Screen Time permission request.",
+      "expected_action": {
+        "type": "request_screen_time_permission"
+      },
+      "context": {
+        "screen_time_authorized": false
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "action",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Queue exactly the authored native command and parameters, as an attempt only. No unrequested memory or measured sleep benefit.",
+      "forbid_memory_changes": true,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "7c16ff50ca5f0e6737def12e07a85e945f463d1b50782ba183b9f1648245a04c"
+    },
+    {
+      "id": "v2-retrieval-en-memory-bedtime-routine_statement-1320",
+      "text": "Record this observation: I usually go to bed at 22:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "measurement": "routine_statement",
+          "value_number": 1320,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "7bb06a11839ec22929561419d77c611a34172e99ebf56af40c8e86329c317539",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-bedtime-routine_statement-1380",
+      "text": "Record this observation: I usually go to bed at 23:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "measurement": "routine_statement",
+          "value_number": 1380,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "337913513397bdcd37f3c540b4ffe433c80d6510805d43eb3f01a5f7f700a775",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-bedtime-declared-1320",
+      "text": "Record this observation: yesterday I went to bed at 22:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "measurement": "declared",
+          "value_number": 1320,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "d72658cac0f9282202d73102b3fbeac44972e58c183f588d42e86bd7e68b1bef",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-bedtime-declared-1380",
+      "text": "Record this observation: yesterday I went to bed at 23:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "measurement": "declared",
+          "value_number": 1380,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "28b81dd9e7f0d6d68303df91e138cd8a71ac24c3c092319deaceff3869ed48e6",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-wake_time-routine_statement-360",
+      "text": "Record this observation: I usually wake up at 06:00.",
+      "expected_observations": [
+        {
+          "metric": "wake_time",
+          "measurement": "routine_statement",
+          "value_number": 360,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "08bba3d2a3c4257d1c0b26c04849c3284d0868f9a978f189f3b909df3768ca73",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-wake_time-routine_statement-420",
+      "text": "Record this observation: I usually wake up at 07:00.",
+      "expected_observations": [
+        {
+          "metric": "wake_time",
+          "measurement": "routine_statement",
+          "value_number": 420,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "a3286f81ad4e6ad9342de2a3b35823166190541d6de6efd8588bd79d16ee30cb",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-wake_time-declared-360",
+      "text": "Record this observation: yesterday I woke up at 06:00.",
+      "expected_observations": [
+        {
+          "metric": "wake_time",
+          "measurement": "declared",
+          "value_number": 360,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "7f4de54da7a7d88392b882e415ac7f2a7bce6b89dc80b4aaac5d5e953fc680dd",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-wake_time-declared-420",
+      "text": "Record this observation: yesterday I woke up at 07:00.",
+      "expected_observations": [
+        {
+          "metric": "wake_time",
+          "measurement": "declared",
+          "value_number": 420,
+          "value_text": null,
+          "unit": "local_minute"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": true,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "deb0b1bcb611f715a04f11ab9d3fb098c65d1836e59e18d5bedcdda320e1ca53",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-sleep_duration-routine_statement-420",
+      "text": "Record this observation: I usually sleep 7 hours.",
+      "expected_observations": [
+        {
+          "metric": "sleep_duration",
+          "measurement": "routine_statement",
+          "value_number": 420,
+          "value_text": null,
+          "unit": "minutes"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "057ba2fd91a0ede215387df9355ce3dbfd9126bab8012d06940cc0ac3016f795",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-sleep_duration-routine_statement-480",
+      "text": "Record this observation: I usually sleep 8 hours.",
+      "expected_observations": [
+        {
+          "metric": "sleep_duration",
+          "measurement": "routine_statement",
+          "value_number": 480,
+          "value_text": null,
+          "unit": "minutes"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "fdddf825e024feab87ebfa6907ed799ef08f33f6b1059d7e9ca8fa7597716f77",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-sleep_duration-declared-420",
+      "text": "Record this observation: yesterday I slept 7 hours.",
+      "expected_observations": [
+        {
+          "metric": "sleep_duration",
+          "measurement": "declared",
+          "value_number": 420,
+          "value_text": null,
+          "unit": "minutes"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "8d5154a19d5aefeab525752c34a132a56c54a86611d591021c25e70ce3969f8b",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-sleep_duration-declared-480",
+      "text": "Record this observation: yesterday I slept 8 hours.",
+      "expected_observations": [
+        {
+          "metric": "sleep_duration",
+          "measurement": "declared",
+          "value_number": 480,
+          "value_text": null,
+          "unit": "minutes"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "01cf16bf3642c411afed6b87b86320362bb1ab4307bda275d47ec1623dfe546b",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-caffeine-routine_statement-1",
+      "text": "Record this observation: I usually drink 1 coffees.",
+      "expected_observations": [
+        {
+          "metric": "caffeine",
+          "measurement": "routine_statement",
+          "value_number": 1,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "c7b03cfa8894a1d7fb7b1b8209929825f5bcd0974d3829909366a7bf9de90e58",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-caffeine-routine_statement-2",
+      "text": "Record this observation: I usually drink 2 coffees.",
+      "expected_observations": [
+        {
+          "metric": "caffeine",
+          "measurement": "routine_statement",
+          "value_number": 2,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "40183536fe341e435f0c1dbfd6efd0383fb0801148b90b792a4de10b08e4b283",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-caffeine-declared-1",
+      "text": "Record this observation: yesterday I drank 1 coffees.",
+      "expected_observations": [
+        {
+          "metric": "caffeine",
+          "measurement": "declared",
+          "value_number": 1,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "9723af7b9200b95a4a970bf4c3d39720817c164f3089223c7f2a73625537b67d",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-caffeine-declared-2",
+      "text": "Record this observation: yesterday I drank 2 coffees.",
+      "expected_observations": [
+        {
+          "metric": "caffeine",
+          "measurement": "declared",
+          "value_number": 2,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "fcf55d2a0f8143277e0b9992183f690d07c113d9eebe01a2f168d16851b1bc32",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-alcohol-routine_statement-0",
+      "text": "Record this observation: I usually drink 0 alcoholic drinks.",
+      "expected_observations": [
+        {
+          "metric": "alcohol",
+          "measurement": "routine_statement",
+          "value_number": 0,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "fc84cf9c53078c89b94ad65092752ac435853b154eabf126094168c7f3b16f81",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-alcohol-routine_statement-1",
+      "text": "Record this observation: I usually drink 1 alcoholic drinks.",
+      "expected_observations": [
+        {
+          "metric": "alcohol",
+          "measurement": "routine_statement",
+          "value_number": 1,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "9c549bd41f1017150689c55073e53e1692cc2c9925f572e08c789db7e85ec8ad",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-alcohol-declared-0",
+      "text": "Record this observation: yesterday I drank 0 alcoholic drinks.",
+      "expected_observations": [
+        {
+          "metric": "alcohol",
+          "measurement": "declared",
+          "value_number": 0,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "5e8581741cd336fbf87e40bb3a7684688cd83d70de959832e22ab3993dc0ecb7",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-alcohol-declared-1",
+      "text": "Record this observation: yesterday I drank 1 alcoholic drinks.",
+      "expected_observations": [
+        {
+          "metric": "alcohol",
+          "measurement": "declared",
+          "value_number": 1,
+          "value_text": null,
+          "unit": "servings"
+        }
+      ],
+      "observation_date_policy": "previous_local_day",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "f08dfffe660489c082df00a8207c6f3b55e64a93cc1efc51abb08650b54933ab",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-two-routines",
+      "text": "Record this observation: I usually go to bed at 23:00 and wake at 07:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "value_number": 1380,
+          "value_text": null,
+          "unit": "local_minute",
+          "measurement": "routine_statement"
+        },
+        {
+          "metric": "wake_time",
+          "value_number": 420,
+          "value_text": null,
+          "unit": "local_minute",
+          "measurement": "routine_statement"
+        }
+      ],
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "f7db6b8968a8cfdc1ead71a92669afcd89dd0a6777de16e93b1f04e14de7c6b2",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-correction",
+      "text": "Record my correction: I usually go to bed at 22:30, not 23:00.",
+      "expected_observations": [
+        {
+          "metric": "bedtime",
+          "value_number": 1350,
+          "value_text": null,
+          "unit": "local_minute",
+          "measurement": "routine_statement"
+        }
+      ],
+      "expected_decision": "respond",
+      "observation_date_policy": "statement_time_not_daily_measurement",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "5970c28a3831ac89cc0462657df1c26a9ee03470af6fb942a1e1ee99c8b05cf3",
+      "evidence_policy": "literal_current_message_preserved_in_committed_and_canonical_rows"
+    },
+    {
+      "id": "v2-retrieval-en-memory-preference",
+      "text": "My preference for winding down is reading on paper.",
+      "expected_fact": {
+        "key": "preferences",
+        "literal": "reading on paper"
+      },
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "8c40ef98f6992409de2a1423afaca619ffc846e277b069f3b25612250478dc27"
+    },
+    {
+      "id": "v2-retrieval-en-memory-forget-all",
+      "text": "Forget everything you know about me.",
+      "initial_memories": [
+        {
+          "key": "bedtime",
+          "value": "23:00"
+        },
+        {
+          "key": "preferences",
+          "value": "reading on paper"
+        }
+      ],
+      "expected_forgetting": {
+        "operation": "forget_all",
+        "key": null
+      },
+      "expected_decision": "respond",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expectation": "Persist only authored values, classification, units and literal evidence in this turn. Usual statements are not dated occurrences; explicit yesterday occurrences retain their local date. No native action or Watch efficacy claim.",
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "f63b4b6253a45a584fa7ca991f0b885ed752867b2763f854438144c52aeadc7a"
+    },
+    {
+      "id": "v2-retrieval-en-memory-forget-ambiguous",
+      "text": "Forget my personal habits.",
+      "initial_memories": [
+        {
+          "key": "bedtime",
+          "value": "23:00"
+        },
+        {
+          "key": "preferences",
+          "value": "reading on paper"
+        }
+      ],
+      "forbid_effects": true,
+      "expectation": "Ask an open scope clarification without a closed category menu. Preserve every seeded memory and observation; no deletion or action.",
+      "feature": "retrieval",
+      "language": "en",
+      "group": "memory",
+      "route": "sleep_yesterday",
+      "profile": "standard",
+      "audio_requested": false,
+      "expected_classifier_work": "direct",
+      "scenario_sha256": "fb449a000a08c3e4ca988ea1687cdbcad310ceb9d542ed716da7d048160c25a0"
+    }
+  ]
+}

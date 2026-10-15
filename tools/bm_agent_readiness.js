@@ -16,10 +16,15 @@ function build(){
    assessments[feature]={inputs:files,assessment:assess(adapt(report,review),{feature,sourceHashes:hashes})};
   }catch(error){assessments[feature]={inputs:files,assessment:{approved:false,reasons:['missing_or_invalid_preserved_receipt']},error:error.message};}
  }
+ const prepared_corpora={};
+ for(const feature of ['tools','retrieval','labels'])try{
+  const directory=path.join(__dirname,'datasets/bm_agent_prepared_2026-10-15');
+  prepared_corpora[feature]=require('./bm_agent_plan_preflight').verify(JSON.parse(fs.readFileSync(path.join(directory,feature+'.json'))),JSON.parse(fs.readFileSync(path.join(directory,'source-lock.json'))),{feature,hashes});
+ }catch(error){prepared_corpora[feature]={planned_only:true,activation_ready:false,coverage_prepared:false,error:error.message};}
  return {source_hashes:hashes,local_only:true,new_provider_calls:0,new_spend_usd:0,activation_ready:false,
-  current_manifest:JSON.parse(fs.readFileSync(path.join(root,'netlify/functions/bm-agent-activation.json'))),assessments,
+  current_manifest:JSON.parse(fs.readFileSync(path.join(root,'netlify/functions/bm-agent-activation.json'))),assessments,prepared_corpora,
   budget:{sha256:crypto.createHash('sha256').update(budgetBytes).digest('hex'),limit_usd:budget.limit_usd,known_usd:budget.known_usd,reserved_upper_usd:budget.reserved_upper_usd,remaining_usd:budget.limit_usd-budget.reserved_upper_usd,opaque_reservations:budget.remote_opaque_reservations.length,final_cap:budget.final_cap},
   blockers:['No current-source 200 distinct paired cases per feature, >=50 audio pairs, independent review, full costs and non-regressing global/language/group results.','Previous real labels cost/latency and tools subgroup regressions remain negative evidence; free mocks cannot reverse them.','No paid tests authorized in this task; remaining allowance is below the $1 minimum new voice reserve.','Physical iPhone/Watch validation and measured Watch sleep efficacy remain unproven.']};
 }
-if(require.main===module){const result=build(),out=path.resolve(__dirname,'../tmp/local-regressions-20261015/readiness.json');fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify({activation_ready:false,assessments:Object.fromEntries(Object.entries(result.assessments).map(([k,v])=>[k,v.assessment.reasons])),output:out}));}
+if(require.main===module){const result=build(),out=process.argv[2]?path.resolve(process.argv[2]):path.resolve(__dirname,'../tmp/local-regressions-20261015/readiness.json');fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify({activation_ready:false,assessments:Object.fromEntries(Object.entries(result.assessments).map(([k,v])=>[k,v.assessment.reasons])),output:out}));}
 module.exports={build};

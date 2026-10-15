@@ -16,7 +16,7 @@ function input(row,report,version=3){
    actual:{http_status:row.status,queued_action:row.pending_action||null,action_id_present:row.action_id_present,auto_apply:row.auto_apply,
      memories:row.canonical_memories||[],observations:row.canonical_observations??"Not exposed in this receipt, do not assume absent or persisted",committed_effect:row.committed_effect??null,
      forgetting_committed:row.forgetting_committed??null,physical_device_receipt:false}};
- if(version===1)return value;if(![2,3,4,5].includes(version))throw Error("Unknown review input version");
+ if(version===1)return value;if(![2,3,4,5,6].includes(version))throw Error("Unknown review input version");
  value.context={has_selected_apps:true,screen_time_authorized:true,device_execution_ready:true,schedule:{windows:[]},...spec.context,
    current_native_sleep:report.case_manifest.native_sleep_values?"See explicit native fixture; do not assume absence":{available:false,nights:[],scope:"Current iPhone snapshot only. Account observations remain separate and can be available."}};
  value.recording_semantics={clock:report.fixture_clock,timezone:"Europe/Madrid",
@@ -32,14 +32,20 @@ function input(row,report,version=3){
   value.requested_observations=spec.expected_observations||null;
   value.recording_semantics.routines="Apply authored expected_observations to this specific case, not to sibling cases. routine_statement records a usual habit; its storage timestamp is the date it was stated, never a measured daily occurrence. A routine need not have yesterday's date. Only an explicit dated occurrence is declared; preserve its actual requested date. Never convert a usual habit into a dated daily event.";
  }
+ if(version>=6){
+  value.requested_forgetting=spec.expected_forgetting||null;value.observation_date_policy=spec.observation_date_policy||null;
+  value.forbid_effects=spec.forbid_effects===true;value.actual.initial_state=row.initial_state??null;
+  value.recording_semantics.authored_state='For v2 plans, compare actual committed and canonical state to the authored gold and initial state. A no-effect request must preserve existing observations/memories, not clear them. A routine timestamp is statement time; a declared yesterday observation must retain the previous LOCAL day using model_contexts.turn_clock. Never assume a prepared corpus has been measured.';
+ }
  return value;
 }
 async function main(){
  if(!process.argv.includes("--run")||!process.env.OPENAI_API_KEY)throw Error("Explicit paid review required");
  const source=arg("--input"),output=arg("--output"),budgetFile=arg("--budget-file");
- const inputVersion=Number(arg("--input-version",3));if(![3,4,5].includes(inputVersion))throw Error("Unknown review input version");
+ const inputVersion=Number(arg("--input-version",3));if(![3,4,5,6].includes(inputVersion))throw Error("Unknown review input version");
  if(!source||!output||!budgetFile||!fs.existsSync(budgetFile))throw Error("Source, output and existing authorized budget required");
  const report=JSON.parse(fs.readFileSync(source));if(!report.complete)throw Error("Complete frozen source required");
+ if(report.case_manifest.kind==='agent-certification-plan-v2'&&inputVersion!==6)throw Error('v2_authored_gold_requires_review_input_v6');
  const model="gpt-5.6-sol",rates=JSON.parse(fs.readFileSync(arg("--rates")));
  if(rates.model!=="gpt-5.6-luna")throw Error("Generation rates required");
  const requestFile=output+".requests.json";

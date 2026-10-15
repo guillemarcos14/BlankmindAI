@@ -93,6 +93,7 @@ async function main(){
  const toolCall=r.requests[1].input.find(i=>i.type==="function_call"),toolOutput=r.requests[1].input.find(i=>i.type==="function_call_output");
  assert.equal(toolCall.call_id,toolOutput.call_id);assert.equal(JSON.parse(toolOutput.output).sources[0].source_id,"history");
  assert(!Object.hasOwn(JSON.parse(r.requests[1].input[1].content),"agentToolHistory"),"Protocol history was duplicated into the user context");
+ assert.equal(JSON.parse(r.requests[1].input[1].content).sources.filter(s=>s.source_id==='history').length,2,'The same cached read was duplicated in model context (one automatic history + one distinct tool read)');
  rows=Array.from({length:40},(_,i)=>({id:"history-"+i,user_text:"Dato "+i,assistant_text:"Anotado",created_at:new Date().toISOString()}));
  r=await turn("Hola",[compact("Hola")]);
  const input=JSON.parse(r.requests[0].input[1].content),history=input.sources.find(s=>s.source_id==="history");

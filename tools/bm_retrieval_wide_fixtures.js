@@ -11,6 +11,7 @@ async function seed(spec,{request,user,now}){
  if(profile==='missing')observations.length=0;
  if(observations.length)await request('/rest/v1/bmb_observations',observations);
  if(profile==='forgotten')await request('/rest/v1/bm_brain_memories',[{auth_user_id:user,key:'goal',value:null,source_text:'Forget everything about me.',source_at:iso(midnight(today,tz))}]);
+ if(spec.initial_memories?.length)await request('/rest/v1/bm_brain_memories',spec.initial_memories.map(m=>({...m,auth_user_id:user,source_text:'Synthetic authored prior memory',source_at:iso(now-2*86400000)})));
  let sessions=[];
  const minutes=spec.protection_minutes||79,base=midnight(yesterday,tz)+(profile==='boundary'?23*3600000+50*60000:14*3600000);
  if(!['missing','zero','forgotten'].includes(profile))sessions=[{id:crypto.randomUUID(),auth_user_id:user,started_at:iso(base),ended_at:iso(base+minutes*60000),observed_at:iso(base+minutes*60000),entry_mode:'manual',ended_reason:'timer'}, {id:crypto.randomUUID(),auth_user_id:user,started_at:iso(base+Math.floor(minutes/3)*60000),ended_at:iso(base+Math.floor(minutes*2/3)*60000),observed_at:iso(base+Math.floor(minutes*2/3)*60000),entry_mode:'manual',ended_reason:'timer'}, {id:crypto.randomUUID(),auth_user_id:user,started_at:iso(base-14*86400000),ended_at:iso(base-14*86400000+120*60000),observed_at:iso(base-14*86400000+120*60000),entry_mode:'manual',ended_reason:'timer'}];

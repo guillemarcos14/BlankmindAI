@@ -217,19 +217,25 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     daily_limit_enabled:context.daily_limit_enabled,daily_limit_minutes:context.daily_limit_minutes,
     last_device_outcome:context.memory?.last_assistant_action_outcome};
   const prior=context.memory?.conversation_state?.bmb_state||{};
-  const latest=await readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
-
   const currentSleep=sleepContext(context);
   const restSnapshot=context.personal_profile?.rest_snapshot;
-  const restSource=restSnapshot?.schema_version===1?await rest.context(userId,db):{source_id:"rest_evidence",objective:rest.OBJECTIVE,available:false,rows:[],reason:"no_synced_watch_baseline"};
+  const timezone=context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||'UTC';
+  const accelerated=!proactive&&['tools','retrieval','labels'].some(feature=>agentActivation.enabled(feature));
+  const historyRead=()=>readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
+  const restRead=()=>restSnapshot?.schema_version===1?rest.context(userId,db):{source_id:"rest_evidence",objective:rest.OBJECTIVE,available:false,rows:[],reason:"no_synced_watch_baseline"};
+  const prepareRetrieval=()=> (agentActivation.enabled("retrieval")?require("./bm-agent-decisions"):require("./bm-retrieval-step")).prepare(retrievalRoute,{userId,identity,cutoff,currentSleep,timezone,db});
+  // Independent account reads share no authorization-changing state. Keep
+  // their original source order while shortening the candidate critical path.
+  let latest,restSource,prepared;
+  if(accelerated)[latest,restSource,prepared]=await Promise.all([historyRead(),restRead(),prepareRetrieval()]);
+  else {latest=await historyRead();restSource=await restRead();}
   const recent=agentActivation.enabled("tools")&&latest.rows?.length>8
     ?{...latest,rows:latest.rows.slice(0,8),next_offset:8}:latest;
   const sources=[recent,currentSleep,restSource,...(proactive?.daily_review?.sources||[])];
-  const retrievalContext=require('./bm-retrieval-context'),timezone=context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||'UTC';
+  const retrievalContext=require('./bm-retrieval-context');
   const continuing=!proactive&&!prior.proposal&&!prior.pending_request&&retrievalContext.followup(prompt,prior.retrieval_context,{cutoff,timezone});
   if(continuing&&!retrievalRoute){const source=await retrievalContext.preload(prior.retrieval_context,{userId,identity,timezone,cutoff,currentSleep,db});if(source)sources.push(source);}
-  const retrieval=await (agentActivation.enabled("retrieval")?require("./bm-agent-decisions"):require("./bm-retrieval-step")).prepare(retrievalRoute,{userId,identity,cutoff,currentSleep,
-    timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",db});
+  const retrieval=accelerated?prepared:await prepareRetrieval();
   if(retrieval){const i=sources.findIndex(s=>s.source_id===retrieval.source.source_id);if(i>=0)sources[i]=retrieval.source;else sources.push(retrieval.source);}
   sources.push(...await require("./bm-decisions").prefetch(decisionsResult,{userId,identity,cutoff,
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",existing:sources,db}));
@@ -261,7 +267,9 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     if(result.phase!=="read")break;
     if(!result.queries?.length||pass===3)throw Error("bmb_read_budget_exhausted");
     const readResults=await timing.span("source_reads",()=>consultar_contexto(result.queries));
-    sources.push(...readResults);
+    // The reader shares exact in-flight reads. Reusing their evidence should
+    // not append the same object repeatedly to subsequent model contexts.
+    for(const source of readResults)if(!sources.includes(source))sources.push(source);
     if(result.agentToolOutput){
       if(!input.agentToolHistory)Object.defineProperty(input,"agentToolHistory",{value:[],enumerable:false});
       const call=result.agentToolOutput.find(o=>o.type==="function_call");
