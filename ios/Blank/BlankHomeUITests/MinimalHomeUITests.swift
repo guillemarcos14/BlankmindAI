@@ -120,7 +120,7 @@ final class MinimalHomeUITests: XCTestCase {
         XCTAssertTrue(sample.waitForExistence(timeout: 10))
         XCTAssertTrue(sample.isHittable, "Sample route must be visible before scrolling through Health recovery")
         XCTAssertLessThan(sample.frame.minY, app.buttons["Review access"].frame.minY)
-        XCTAssertFalse(app.buttons["onboarding-ai-consent"].exists)
+        XCTAssertTrue(app.buttons["onboarding-ai-consent"].exists, "Initial AI setup must not require a measured or sample sleep night")
         sample.tap()
         app.alerts.buttons["Use sample data"].tap()
         XCTAssertTrue(app.staticTexts["onboarding-sample-ready"].waitForExistence(timeout: 5))
