@@ -42,7 +42,7 @@ async function main(){
  async function api(route,method="GET",body,binary=false){const r=await fetch("https://api.netlify.com/api/v1"+route,{method,headers:{authorization:"Bearer "+token,"content-type":binary?"application/octet-stream":"application/json"},...(body===undefined?{}:{body:binary?body:JSON.stringify(body)}),signal:AbortSignal.timeout(30000)});assert(r.ok,method+" "+route+" HTTP "+r.status);return r.status===204?null:r.json();}
  const site=await api("/sites/"+SITE);assert.equal(site.ssl_url,"https://getblank.netlify.app");
  const env=await api("/accounts/"+site.account_id+"/env?site_id="+SITE),envHash=environmentDigest(env);
- async function snapshot(id){return {functions:inventory(await api("/sites/"+SITE+"/functions?deploy_id="+id)),files:await api("/deploys/"+id+"/files"),schedules:(await api("/deploys/"+id)).function_schedules};}
+ async function snapshot(id){return {functions:inventory(await api("/deploys/"+id+"/functions")),files:await api("/deploys/"+id+"/files"),schedules:(await api("/deploys/"+id)).function_schedules};}
  if(mode==="plan"){
   const previous=site.published_deploy.id,snap=await snapshot(previous),prepared=plan(snap);assert(prepared.removed.length,"No retired functions to remove");
   save("cleanup-plan.json",{created_at:new Date().toISOString(),authorization:"Guillem 15 Oct 2026: corrige limpieza servidor y completa validación/activación respetando40USD",previous,previous_locked:!!(await api("/deploys/"+previous)).locked,environment_digest:envHash,source:execFileSync("git",["rev-parse","HEAD"],{cwd:ROOT,encoding:"utf8"}).trim(),...prepared});
