@@ -1,6 +1,16 @@
 import Foundation
 
 enum FunnelPolicy {
+    static func approvedProduct(id: String, periodUnit: String, periodValue: Int, actualTrialDays: Int?, terms: [String: [String: Any]]) -> Bool {
+        guard let term = terms[id], term["period_unit"] as? String == periodUnit, term["period_value"] as? Int == periodValue else { return false }
+        if let actualTrialDays { return actualTrialDays == term["free_trial_days"] as? Int }
+        return true
+    }
+    static func purchaseTerms(price: String, period: String, eligibleTrialDays: Int?) -> String {
+        let renewal = "\(price) / \(period) · auto-renews"
+        if let days = eligibleTrialDays, days > 0 { return "\(days) days free, then " + renewal }
+        return renewal
+    }
     static func freeWindowID(stored: UUID?, windows: [UUID]) -> UUID? {
         if let stored, windows.contains(stored) { return stored }
         return windows.first

@@ -1,8 +1,12 @@
 {
   "version": 1,
-  "sales_approved": false,
-  "introductory_offers_approved": false,
-  "product_ids": [],
+  "sales_approved": true,
+  "introductory_offers_approved": true,
+  "product_ids": ["blanked_monthly_299", "blanked_annual_19"],
+  "product_terms": {
+    "blanked_monthly_299": {"period_unit": "month", "period_value": 1, "reference_price_eur": "2.99", "free_trial_days": 3},
+    "blanked_annual_19": {"period_unit": "year", "period_value": 1, "reference_price_eur": "19.99", "free_trial_days": 3}
+  },
   "existing_entitlement_ids": ["blanked_monthly_299", "blanked_annual_19"],
-  "note": "Existing paid rights remain restorable. New prices, billing periods and any premium trial require Guillem's commercial decision. No legacy product is offered for sale."
+  "note": "Guillem approved reusing these existing subscriptions on 2026-10-15: EUR 2.99/month or EUR 19.99/year, retaining the three-day trial where Apple confirms eligibility. StoreKit supplies the actual localized prices and purchase conditions; reference prices are never a fallback."
 }

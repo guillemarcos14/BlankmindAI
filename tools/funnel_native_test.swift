@@ -2,6 +2,14 @@ import Foundation
 
 func check(_ value: Bool, _ message: String) { if !value { fatalError(message) } }
 let now = ISO8601DateFormatter().date(from: "2026-10-15T08:00:00Z")!
+let terms: [String:[String:Any]] = ["monthly":["period_unit":"month","period_value":1,"free_trial_days":3], "annual":["period_unit":"year","period_value":1,"free_trial_days":3]]
+check(FunnelPolicy.approvedProduct(id:"monthly",periodUnit:"month",periodValue:1,actualTrialDays:3,terms:terms),"Approved monthly subscription with actual three-day trial can load")
+check(FunnelPolicy.approvedProduct(id:"annual",periodUnit:"year",periodValue:1,actualTrialDays:nil,terms:terms),"Annual base price remains available when Apple returns no introductory offer")
+check(!FunnelPolicy.approvedProduct(id:"monthly",periodUnit:"year",periodValue:1,actualTrialDays:3,terms:terms),"Do not sell an unexpected billing period")
+check(!FunnelPolicy.approvedProduct(id:"annual",periodUnit:"year",periodValue:1,actualTrialDays:30,terms:terms),"Do not inherit a different trial")
+check(!FunnelPolicy.approvedProduct(id:"unknown",periodUnit:"month",periodValue:1,actualTrialDays:3,terms:terms),"Unapproved products stay unavailable")
+check(FunnelPolicy.purchaseTerms(price:"2,99 €",period:"month",eligibleTrialDays:3)=="3 days free, then 2,99 € / month · auto-renews","Eligible offer includes actual localized renewal price")
+check(FunnelPolicy.purchaseTerms(price:"$19.99",period:"year",eligibleTrialDays:nil)=="$19.99 / year · auto-renews","Ineligible accounts are never promised a free trial")
 var row: [String: Any] = ["owner":"A","source":"native_schedule_shield","uncertain":false,
     "started_at":"2026-10-15T06:00:00Z","ended_at":"2026-10-15T07:00:00Z",
     "plan":["start_minute":360,"end_minute":420,"timezone":"UTC"]]

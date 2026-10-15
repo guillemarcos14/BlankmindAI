@@ -50,7 +50,11 @@ async function main(){
  await assert.rejects(()=>S.verify("another","a.b.c",{apple,db,now}),/account_mismatch/);checks++;
  await assert.rejects(()=>S.verify(user,"fake",{apple,db,now}),/invalid_storekit/);checks++;
  const catalog=require("../netlify/functions/funnel-catalog.json");
- check(!catalog.sales_approved&&catalog.product_ids.length===0,"No unapproved price/period/trial can be sold");
+ check(catalog.sales_approved&&catalog.introductory_offers_approved,"Explicit approval enables the existing subscriptions and three-day trial");
+ const status=JSON.parse((await F.api({user:{id:user}},{action:"funnel_status"},empty)).body).catalog;
+ check(JSON.stringify(status.product_ids)===JSON.stringify(["blanked_monthly_299","blanked_annual_19"]),"Only the two approved existing StoreKit IDs are offered");
+ check(status.product_terms.blanked_monthly_299.reference_price_eur==="2.99"&&status.product_terms.blanked_annual_19.reference_price_eur==="19.99","Approved EUR reference prices are exact");
+ check(status.introductory_offers_approved&&Object.values(status.product_terms).every(t=>t.free_trial_days===3),"Client receives the real approved trial policy, not a hidden false default");
  const context={routine:"Read in bed",difficulty:"Scroll past bedtime",apps:"Feeds",start_minute:1320,end_minute:1350};
  check(D.normalize(context).hypothesis===true,"Diagnosis remains a user-declared hypothesis");
  check(D.normalize({...context,end_minute:1320})===null,"Reject empty window");

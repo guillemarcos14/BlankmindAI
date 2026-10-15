@@ -42,6 +42,8 @@ async function api(auth,body,db=supabaseFetch){
  const user=auth.user.id;
  if(body.action==="funnel_status")return json(200,{ok:true,...await access(user,db),catalog:{
   sales_approved:catalog.sales_approved,product_ids:catalog.sales_approved?catalog.product_ids:[],
+  introductory_offers_approved:catalog.introductory_offers_approved===true,
+  product_terms:catalog.sales_approved?catalog.product_terms:{},
   entitlement_ids:[...new Set([...catalog.product_ids,...catalog.existing_entitlement_ids])]}});
  if(body.action==="funnel_verify"){
   const result=await require("./funnel-storekit").verify(user,body.signed_transaction,{db});

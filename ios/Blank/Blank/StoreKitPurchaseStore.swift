@@ -7,6 +7,7 @@ import SwiftUI
 final class StoreKitPurchaseStore: ObservableObject {
     static let shared = StoreKitPurchaseStore()
     @Published private(set) var products: [Product] = []
+    @Published private(set) var introductoryOfferEligibleIDs: Set<String> = []
     @Published private(set) var purchasedProductIds: Set<String> = []
     @Published private(set) var isLoading = false
     @Published private(set) var isPurchasing = false
@@ -66,7 +67,7 @@ final class StoreKitPurchaseStore: ObservableObject {
         paywallReason = benefit
     }
     func resetAccount() {
-        products = []; purchasedProductIds = []; premiumUntil = nil; premiumOwner = nil
+        products = []; introductoryOfferEligibleIDs = []; purchasedProductIds = []; premiumUntil = nil; premiumOwner = nil
         initialImplemented = false; freeWindowID = nil; salesApproved = false
         paywallReason = nil; showingFirstSummary = false
         if let owner = AssistantAppSession.userID {
@@ -88,6 +89,7 @@ final class StoreKitPurchaseStore: ObservableObject {
     }
     func loadProducts() async {
         guard !refreshing else { return }; refreshing = true
+        let owner = AssistantAppSession.userID
         isLoading = true; defer { isLoading = false; refreshing = false; hasLoadedProducts = true }
         do {
             let status = try await request(["action": "funnel_status"])
@@ -97,13 +99,30 @@ final class StoreKitPurchaseStore: ObservableObject {
             productIDs = salesApproved ? (catalog["product_ids"] as? [String] ?? []) : []
             entitlementIDs = catalog["entitlement_ids"] as? [String] ?? []
             let offersApproved = catalog["introductory_offers_approved"] as? Bool == true
-            products = try await Product.products(for: productIDs).filter { $0.type == .autoRenewable && (offersApproved || $0.subscription?.introductoryOffer == nil) }
-            message = products.isEmpty ? "Personalized follow-up is not available to purchase yet. Your first recurring window stays free." : nil
+            let approvedTerms = catalog["product_terms"] as? [String: [String: Any]] ?? [:]
+            let loaded = try await Product.products(for: productIDs).filter { product in
+                guard product.type == .autoRenewable, let info = product.subscription else { return false }
+                let trial = info.introductoryOffer.map { offer in
+                    offersApproved && offer.paymentMode == .freeTrial && offer.period.unit == .day ? offer.period.value : -1
+                }
+                return FunnelPolicy.approvedProduct(id: product.id, periodUnit: Self.periodUnit(info.subscriptionPeriod),
+                    periodValue: info.subscriptionPeriod.value, actualTrialDays: trial, terms: approvedTerms)
+            }.sorted { (productIDs.firstIndex(of: $0.id) ?? Int.max) < (productIDs.firstIndex(of: $1.id) ?? Int.max) }
+            var eligible = Set<String>()
+            for product in loaded {
+                if let info = product.subscription, info.introductoryOffer != nil, await info.isEligibleForIntroOffer { eligible.insert(product.id) }
+            }
+            guard owner == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+            products = loaded; introductoryOfferEligibleIDs = eligible
+            message = products.isEmpty ? "Subscriptions could not be loaded from the App Store. Try again. Your first recurring window stays free." : nil
             await updateCustomerProductStatus()
         } catch {
             // No fabricated prices or optimistic entitlement when the server is unavailable.
             message = "Could not refresh follow-up access. Try again. Your free window remains available."
         }
+    }
+    static func periodUnit(_ period: Product.SubscriptionPeriod) -> String {
+        switch period.unit { case .day: return "day"; case .week: return "week"; case .month: return "month"; case .year: return "year"; @unknown default: return "unknown" }
     }
     private func apply(_ status: [String: Any]) {
         guard let owner = AssistantAppSession.userID else { return }
@@ -258,7 +277,8 @@ struct PersonalizedFollowupSheet: View {
                         Button { Task { _ = await purchases.purchase(productId: product.id) } } label: {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(product.displayName)
-                                Text("\(product.displayPrice) / \(period(product)) · auto-renews")
+                                Text(FunnelPolicy.purchaseTerms(price: product.displayPrice, period: period(product),
+                                    eligibleTrialDays: purchases.introductoryOfferEligibleIDs.contains(product.id) ? product.subscription?.introductoryOffer?.period.value : nil))
                             }.frame(minHeight: 44)
                         }.disabled(purchases.isPurchasing)
                     }
@@ -294,8 +314,7 @@ struct PersonalizedFollowupSheet: View {
     }
     private func period(_ product: Product) -> String {
         guard let period = product.subscription?.subscriptionPeriod else { return "billing period" }
-        let unit: String
-        switch period.unit { case .day: unit = "day"; case .week: unit = "week"; case .month: unit = "month"; case .year: unit = "year"; @unknown default: unit = "period" }
+        let unit = StoreKitPurchaseStore.periodUnit(period)
         return period.value == 1 ? unit : "\(period.value) \(unit)s"
     }
 }

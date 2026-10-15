@@ -1,5 +1,7 @@
 # Estado del proyecto
 
+- 2026-10-15: Guillem aprueba aplicar las suscripciones existentes mensual2,99EUR/anual19,99EUR y confirma mantener3días de prueba para elegibles. Catálogo PR51 habilita solo blanked_monthly_299/blanked_annual_19; paywall usa precios/periodos reales StoreKit y elegibilidad Apple, sin fallback ni trial inventado. Condiciones AppStore externas no modificadas; continúa pendiente integración/publicación y QA real.
+
 - 2026-10-15: Funnel gratis/pago implementado como candidato PR51, integrado con PR50/e55fcd4. Primera ventana permanente, configuración inicial sin contador/sueño obligatorio, Progress reducido, resumen real y paywall contextual; web vigente reutilizada con diagnóstico conversacional y traspaso privado. StoreKit verificado en servidor; ventas OFF mientras precio/periodicidad/trial sigan pendientes. Harness54/54/scope,59aserciones y web desktop/móvil PASS; CI nativa/PostgreSQL y recibos finales en docs/MONETIZATION_FUNNEL_2026-10-15.md y PR51. Sin desplegar/publicar/compras reales/gastoAPI; gatesOFF y modelos canónicos preservados. La autorización presupuestaria histórica de abajo pertenece a su tarea de certificación y no se consume en este funnel.
 
 - 2026-10-15: Nueva autorización expresa +15USD: techo API acumulado55USD, reservas históricas intactas y margen15.314793745. Facturación interna abierta; no acredita recarga ni certificación.0llamadas nuevas, tools/retrieval/labelsOFF; audio/coste total pendientes. Ver docs/PROVIDER_CERTIFICATION_2026-10-15.md.
