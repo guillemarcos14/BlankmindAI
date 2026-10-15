@@ -111,7 +111,10 @@ final class StoreKitPurchaseStore: ObservableObject {
             initialImplemented = true; defaults.set(true, forKey: "funnel.implemented." + owner)
         }
         if let id = status["free_window_id"] as? String {
-            freeWindowID = id; defaults.set(id, forKey: "funnel.window." + owner)
+            freeWindowID = id
+            // A local replacement can be registered while its receipt is still in flight.
+            // Keep that slot until reconciliation, rather than restoring a deleted server ID.
+            if defaults.string(forKey: "funnel.window." + owner) == nil { defaults.set(id, forKey: "funnel.window." + owner) }
         }
         if status["premium"] as? Bool != true { premiumUntil = nil; purchasedProductIds = [] }
         if status["premium"] as? Bool != true { defaults.removeObject(forKey: "funnel.premiumUntil." + owner) }

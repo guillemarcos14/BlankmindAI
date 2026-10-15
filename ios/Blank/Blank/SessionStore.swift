@@ -858,7 +858,7 @@ final class SessionStore: ObservableObject {
 
     func reconcileCommercialAccess() {
         guard !isBlankActive, !StoreKitPurchaseStore.shared.hasPremiumAccess, !schedule.windows.isEmpty else { return }
-        let freeID = StoreKitPurchaseStore.shared.freeWindowUUID ?? schedule.windows.first!.id
+        let freeID = FunnelPolicy.freeWindowID(stored: StoreKitPurchaseStore.shared.freeWindowUUID, windows: schedule.windows.map(\.id))
         var values = schedule.windows
         for index in values.indices {
             if values[index].id != freeID { values[index].enabled = false }

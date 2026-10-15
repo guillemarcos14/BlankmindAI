@@ -24,6 +24,10 @@ print("PASS native funnel: completed versus scheduled/active, real evidence, acc
 let suite = "funnel-test-" + UUID().uuidString
 let defaults = UserDefaults(suiteName: suite)!
 let free = UUID(), other = UUID()
+let deleted = UUID()
+check(FunnelPolicy.freeWindowID(stored: deleted, windows: [free]) == free, "Reopening after deleting and recreating the free window cannot disable its replacement")
+check(FunnelPolicy.freeWindowID(stored: free, windows: [other, free]) == free, "An existing free slot is preserved when extra windows are present")
+check(FunnelPolicy.freeWindowID(stored: free, windows: []) == nil, "No window is fabricated after deletion")
 defaults.set("A", forKey: "blankBMBSignalOwner")
 defaults.set(free.uuidString, forKey: "funnel.window.A")
 check(BlankSharedState.commercialWindowAllowed(free, defaults: defaults, now: now), "Free window never expires")

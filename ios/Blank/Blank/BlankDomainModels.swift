@@ -1,6 +1,10 @@
 import Foundation
 
 enum FunnelPolicy {
+    static func freeWindowID(stored: UUID?, windows: [UUID]) -> UUID? {
+        if let stored, windows.contains(stored) { return stored }
+        return windows.first
+    }
     static func canConverse(implemented: Bool, premium: Bool) -> Bool { premium || !implemented }
     static func offerSummary(completed: Bool, active: Bool, premium: Bool, seen: Bool) -> Bool {
         completed && !active && !premium && !seen
