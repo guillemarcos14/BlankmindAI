@@ -142,7 +142,6 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema:boundedSchema}}};
   if(useTools){
     Object.assign(request,agentTools.contract(boundedSchema,availableCitations));
-    request.reasoning={effort:"none"};
     if(input.agentToolHistory?.length)request.input.push(...input.agentToolHistory);
     request.input[0].content+="\n"+agentTools.INSTRUCTIONS;
     // A compact reply has no effects. Repairing a management result through

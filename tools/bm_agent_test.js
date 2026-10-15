@@ -33,7 +33,7 @@ async function main(){
  let p="Hola",r=await turn(p,[compact(p,"¡Hola! ¿Qué tal vas?")]);
  assert.equal(r.calls,1);assert.deepEqual(r.requests[0].tools.map(t=>t.name),["consultar_contexto","gestionar"]);
  assert.equal(r.requests[0].parallel_tool_calls,false);assert.deepEqual(r.result.plan.actions,[]);
- assert.equal(r.requests[0].reasoning.effort,"none");
+ assert.equal(r.requests[0].reasoning,undefined,"Tool framing changed the previously validated reasoning policy");
  const managedAction=r.requests[0].tools.find(t=>t.name==="gestionar").parameters.properties.effects.items.anyOf.find(s=>s.properties.kind.enum[0]==="action").properties.value;
  const pauseContract=managedAction.anyOf.find(s=>s.properties?.type.enum.includes("pause_rules"));
  assert.deepEqual(pauseContract.properties.type.enum,["pause_rules"]);
