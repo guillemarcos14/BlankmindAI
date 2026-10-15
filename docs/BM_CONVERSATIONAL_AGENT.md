@@ -55,6 +55,8 @@ Terminar/extender una sesión, saltar una única ocurrencia, activar/desactivar 
 
 ## Sustituciones de Decisions
 
+La continuación del15oct prepara una representación compacta de `gestionar`: `effects` enumera únicamente los cambios solicitados, sin generar los campos nulos de todos los demás dominios. Se reconstruye el sobre canónico antes de validar y persistir. Se rechazan tipos desconocidos, duplicados y mezclas de los dos formatos; las operaciones simultáneas se conservan. El esquema antiguo sigue decodificándose por compatibilidad. Este cambio candidato no acredita activación ni beneficio hasta superar su evaluación independiente.
+
 retrieval sustituye la generación de preparación en consultas acotadas de sueño/protección de ayer o esta semana. Una llamada agrupa elegibilidad, métrica y periodo; el servidor lee y calcula; el generador solo redacta. Se añaden recuentos de sesiones e interrupciones registradas. Duda, negativa, fallo o datos insuficientes devuelven el turno al agente abierto. Nunca decide permisos ni ejecuta.
 
 labels clasifica tema y tipo de hechos nuevos ya extraídos, validados y guardados. No reextrae valores, cambia fechas, convierte declaraciones en mediciones ni recalcula etiquetas antiguas. Se reserva una única clasificación por turno, fuera del camino de la respuesta cuando el host ofrece waitUntil. El streaming API v2 conserva ese contexto. Un reenvío de un turno completado puede recuperar la clasificación omitida, sin repetir el proveedor. Sin host de background, presupuesto o migración, la conversación sigue disponible y el etiquetado se omite.

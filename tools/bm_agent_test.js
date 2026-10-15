@@ -13,7 +13,14 @@ const context=()=>({language:"es",memory:{semantic_store_version:0},has_selected
 const action=(type="start_protection")=>({type,minutes:30,start_minute:1320,end_minute:420,start_mode:null,weekdays:[2,3,4,5,6],duration_days:7,local_date:null,timezone:"Europe/Madrid",recurrence:"weekly",window_id:"window-a",hours:2,hard_mode:false});
 const compact=(prompt,reply="Lo vemos juntos.")=>({phase:"final",response_language:"es",message_kind:"question",evidence:prompt,response_text:reply,cited_sources:[]});
 const management=(prompt,extra={})=>({response_language:"es",message_kind:"statement",evidence:prompt,decision:"respond",accepted_proposal:null,pending_request:null,action:null,memory:null,observations:[],followup_resolution:null,longitudinal_review:null,response_text:"He anotado lo que me cuentas.",cited_sources:[],...extra});
-const fn=(name,args)=>({status:"completed",output:[{type:"function_call",name,arguments:JSON.stringify(args)}]});
+const fn=(name,args)=>{
+ if(name==="gestionar"&&!Object.hasOwn(args,"effects")){
+  const effectNames=["rest_experiment","rest_preferences","rest_exclusions","rest_claim","accepted_proposal","pending_request","action","memory","observations","followup_resolution","longitudinal_review"];
+  const effects=effectNames.filter(k=>args[k]!=null&&(!Array.isArray(args[k])||args[k].length)).map(kind=>({kind,value:args[kind]}));
+  args={...Object.fromEntries(Object.entries(args).filter(([k])=>!effectNames.includes(k))),effects};
+ }
+ return {status:"completed",output:[{type:"function_call",name,arguments:JSON.stringify(args)}]};
+};
 async function turn(prompt,responses,{ctx=context(),memories=[]}={}){
  let calls=0;const requests=[];
  const result=await brain.plan({prompt,context:ctx,userId,identity:{anonymous_user_id:"owner-a"}},{memories,
@@ -25,7 +32,7 @@ async function main(){
  let p="Hola",r=await turn(p,[compact(p,"¡Hola! ¿Qué tal vas?")]);
  assert.equal(r.calls,1);assert.deepEqual(r.requests[0].tools.map(t=>t.name),["consultar_contexto","gestionar"]);
  assert.equal(r.requests[0].parallel_tool_calls,false);assert.deepEqual(r.result.plan.actions,[]);
- const managedAction=r.requests[0].tools.find(t=>t.name==="gestionar").parameters.properties.action;
+ const managedAction=r.requests[0].tools.find(t=>t.name==="gestionar").parameters.properties.effects.items.anyOf.find(s=>s.properties.kind.enum[0]==="action").properties.value;
  const pauseContract=managedAction.anyOf.find(s=>s.properties?.type.enum.includes("pause_rules"));
  assert.deepEqual(pauseContract.properties.type.enum,["pause_rules"]);
  assert.equal(pauseContract.properties.hours.type,"integer");assert.equal(pauseContract.properties.hours.minimum,1);
@@ -93,6 +100,11 @@ async function main(){
  assert.throws(()=>tools.decode({output:[...fn("gestionar",{}).output,...fn("gestionar",{}).output]}),/ambiguous_output/);
  assert.throws(()=>tools.decode({output_text:JSON.stringify({...compact("x"),memory:{operation:"forget_all"}})}),/reply_effects/);
  assert.throws(()=>tools.decode(fn("consultar_contexto",{queries:[query],action:action()})),/invalid_read/);
+ const effect={kind:"memory",value:{operation:"set",key:"goal",value:"descansar",evidence:"descansar"}};
+ assert.throws(()=>tools.decode(fn("gestionar",{...compact("descansar"),effects:[effect,effect]})),/invalid_management/);
+ assert.throws(()=>tools.decode(fn("gestionar",{...compact("descansar"),effects:[effect],action:action()})),/invalid_management/);
+ const both=tools.decode(fn("gestionar",{response_language:"es",message_kind:"statement",evidence:"descansar",decision:"execute",effects:[effect,{kind:"action",value:action()}],response_text:"Voy a intentarlo.",cited_sources:[]}));
+ assert.equal(both.memory.key,"goal");assert.equal(both.action.type,"start_protection");
  p="Translate into Spanish: block my distractions for 30 minutes.";
  r=await turn(p,[compact(p,"Bloquea mis distracciones durante 30 minutos.")]);
  assert.equal(r.requests[0].tool_choice,"none");assert.deepEqual(r.result.plan.actions,[]);

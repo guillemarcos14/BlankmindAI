@@ -41,12 +41,15 @@ const result=(prompt)=>({phase:"final",response_text:"Let's test this evening wi
  const before={...process.env};
  Object.assign(process.env,{BM_AGENT_QA_ENABLED:"true",BM_AGENT_QA_FEATURES:"tools",SUPABASE_URL:require("../netlify/functions/bm-agent-activation").QA,OPENAI_API_KEY:""});
  try {
-   const direct=result(prompt),managed={...direct};delete managed.phase;delete managed.queries;
+   const direct=result(prompt),effectNames=["action","memory","observations","rest_experiment","rest_preferences","rest_exclusions","rest_claim","accepted_proposal","pending_request","followup_resolution","longitudinal_review"];
+   const managed={...Object.fromEntries(Object.entries(direct).filter(([k])=>!["phase","queries",...effectNames].includes(k))),effects:effectNames.filter(k=>direct[k]!=null&&(!Array.isArray(direct[k])||direct[k].length)).map(kind=>({kind,value:direct[kind]}))};
    let request;
    const toolPlan=await B.plan({prompt,context:ctx(),userId:owner,identity:{}},{run:input=>B.generate(input,{model:async payload=>{
      request=payload.request;return {body:{output:[{type:"function_call",name:"gestionar",arguments:JSON.stringify(managed)}]}};
    }})});
-   assert(request.tools[1].parameters.required.includes("rest_experiment"));
+   assert(request.tools[1].parameters.required.includes("effects"));
+   const experimentEffect=request.tools[1].parameters.properties.effects.items.anyOf.find(s=>s.properties.kind.enum[0]==="rest_experiment");
+   assert.deepEqual(experimentEffect.properties.value,{anyOf:B.schema.properties.rest_experiment.anyOf.filter(s=>s.type!=="null")});
    assert.equal(toolPlan.plan.bmb_state.proposal.rest_experiment.metric,"sleep_continuity","Two-tool path discarded the rest hypothesis");
    assert.equal(toolPlan.plan.actions.length,0,"Two-tool proposal bypassed acceptance");
  } finally {for(const key of Object.keys(process.env))if(!Object.hasOwn(before,key))delete process.env[key];Object.assign(process.env,before);}
