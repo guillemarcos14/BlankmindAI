@@ -20,3 +20,16 @@ check(!FunnelPolicy.offerSummary(completed:false,active:false,premium:false,seen
 check(!FunnelPolicy.offerSummary(completed:true,active:true,premium:false,seen:false),"No interruption during active protection")
 check(!FunnelPolicy.offerSummary(completed:true,active:false,premium:false,seen:true),"Dismissal prevents repetitive promotion")
 print("PASS native funnel: completed versus scheduled/active, real evidence, account isolation, free initial conversation and non-repetitive summary")
+let suite = "funnel-test-" + UUID().uuidString
+let defaults = UserDefaults(suiteName: suite)!
+let free = UUID(), other = UUID()
+defaults.set("A", forKey: "blankBMBSignalOwner")
+defaults.set(free.uuidString, forKey: "funnel.window.A")
+check(BlankSharedState.commercialWindowAllowed(free, defaults: defaults, now: now), "Free window never expires")
+check(!BlankSharedState.commercialWindowAllowed(other, defaults: defaults, now: now), "Additional window requires real entitlement")
+defaults.set(now.addingTimeInterval(600).timeIntervalSince1970, forKey: "funnel.premiumUntil.A")
+check(BlankSharedState.commercialWindowAllowed(other, defaults: defaults, now: now), "Paid extension window is allowed")
+check(!BlankSharedState.commercialWindowAllowed(other, defaults: defaults, now: now.addingTimeInterval(601)), "Expired premium cannot start new windows while the app is closed")
+defaults.set("B", forKey: "blankBMBSignalOwner")
+check(!BlankSharedState.commercialWindowAllowed(free, defaults: defaults, now: now), "Account switch cannot inherit free/premium window")
+defaults.removePersistentDomain(forName: suite)

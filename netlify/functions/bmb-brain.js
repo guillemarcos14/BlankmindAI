@@ -206,8 +206,8 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     memories||readMemories(userId),
     db(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=settings,version`,{method:"GET"}),
     longitudinal.followups(userId,db),
-    proactive?null:require("./bm-decisions").start(userId,prompt),
-    proactive||context.memory?.conversation_state?.bmb_state?.pending_request||context.memory?.conversation_state?.bmb_state?.proposal?null:
+    proactive||(context.funnel_access&&!context.funnel_access.premium)?null:require("./bm-decisions").start(userId,prompt),
+    proactive||(context.funnel_access&&!context.funnel_access.premium)||context.memory?.conversation_state?.bmb_state?.pending_request||context.memory?.conversation_state?.bmb_state?.proposal?null:
       agentActivation.enabled("retrieval")?require("./bm-agent-decisions").start(userId,prompt):require("./bm-retrieval-step").start(userId,prompt),
   ]));
   const cutoff=saved.filter(m=>m.value==null).map(m=>m.source_at).filter(Boolean).sort().at(-1);
@@ -227,7 +227,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     ?{...latest,rows:latest.rows.slice(0,8),next_offset:8}:latest;
   const sources=[recent,currentSleep,restSource,...(proactive?.daily_review?.sources||[])];
   const retrievalContext=require('./bm-retrieval-context'),timezone=context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||'UTC';
-  const continuing=!proactive&&!prior.proposal&&!prior.pending_request&&retrievalContext.followup(prompt,prior.retrieval_context,{cutoff,timezone});
+  const continuing=(!context.funnel_access||context.funnel_access.premium)&&!proactive&&!prior.proposal&&!prior.pending_request&&retrievalContext.followup(prompt,prior.retrieval_context,{cutoff,timezone});
   if(continuing&&!retrievalRoute){const source=await retrievalContext.preload(prior.retrieval_context,{userId,identity,timezone,cutoff,currentSleep,db});if(source)sources.push(source);}
   const retrieval=await (agentActivation.enabled("retrieval")?require("./bm-agent-decisions"):require("./bm-retrieval-step")).prepare(retrievalRoute,{userId,identity,cutoff,currentSleep,
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",db});
@@ -257,7 +257,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   if(retrieval&&!result&&onDraft)onDraft("");
   const commercialRead=async(...args)=>{
     const query=args[2];
-    if(context.funnel_access&&!context.funnel_access.premium&&["rest_nights","rest_experiments","reviews","protection_statistics","health_context","digital_usage"].includes(query?.source))throw Error("personalized_followup_required");
+    if(context.funnel_access&&!context.funnel_access.premium&&!["history","onboarding"].includes(query?.source))throw Error("personalized_followup_required");
     return readSource(...args);
   };
   const consultar_contexto=agentTools.reader({userId,identity,cutoff,timezone:input.timezone,db,read:commercialRead,prompt,
