@@ -1,0 +1,11 @@
+# Provider certification authorization — 15 October 2026
+
+Guillem explicitly added USD 15 to the previously authorized cumulative USD 40 API budget and requested certification with real providers. The shared ceiling is now **USD 55**. This new instruction supersedes the earlier prohibition on additional paid calls, but does not relax any evidence gate or authorize changes to provider keys, quotas, subscriptions or automatic reload.
+
+The existing shared ledger remains `../Codigo-retrieval/tmp/retrieval-wide/budget.json`. Only its ceiling and authorization history were updated: known spend USD 34.20500233, conservative reservations USD 39.685206255 and all 15 opaque reservations are preserved. Conservative remaining allowance is USD 15.314793745. These reservations include previous known spend; they must not be added together or released without evidence. Receipt: `tmp/provider-certification-20261015/budget-authorization.json`; original ledger copy: `budget-before.json` in that directory.
+
+The internal browser is open to OpenAI API billing. It showed USD 10.47 available credit and automatic reload OFF. The added spending authorization is not a completed top-up. No payment was submitted and no new paid provider request was made in this authorization step.
+
+Certification remains pending for tools, retrieval and labels. Each retains its original 200 distinct real paired cases, language/group coverage, at least 50 actual paired audio cases, independent review, source hashes, complete metering and improvement without global/subgroup regressions. All three activation gates remain OFF. The prepared v2 plans and source lock remain unchanged; no deployed runtime or native build changed.
+
+Audio is a separate unresolved dependency: no ElevenLabs key is present in the current process, the existing paired voice probe is capped at 800 characters, and its returned billed USD is unknown. Do not retrieve a previously rejected credential through another path, raise its quota, remove the probe guard, invent a zero cost, or treat an opaque USD 1 reservation as a measured voice charge. OpenAI credit alone does not resolve this evidence gap. Establish an authorized, metered voice test path before claiming complete certification or spending the whole remaining allowance on an incomplete text-only certificate.
