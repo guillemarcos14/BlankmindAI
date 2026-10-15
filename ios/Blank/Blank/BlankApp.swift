@@ -21,7 +21,9 @@ enum BlankPrivateStageQA {
     static func configure(baseURL: URL?, cookieHeader: String?, storage: HTTPCookieStorage = .shared) {
         #if BLANK_PRIVATE_STAGE_QA
         guard let baseURL, baseURL.scheme == "https",
-              baseURL.host == "blank-product-staging-20260926.netlify.app",
+              let host = baseURL.host,
+              (host == "blank-product-staging-20260926.netlify.app"
+                || host.range(of: "^[a-f0-9]{24}--blank-product-staging-20260926\\.netlify\\.app$", options: .regularExpression) != nil),
               let cookieHeader, !cookieHeader.isEmpty, !cookieHeader.contains("$("),
               !cookieHeader.contains("\r"), !cookieHeader.contains("\n") else { return }
         for pair in cookieHeader.split(separator: ";") {
@@ -29,7 +31,7 @@ enum BlankPrivateStageQA {
             guard components.count == 2, components[0] == "2ef5a74e-af70-4893-a5f6-63fb2537720d",
                   let cookie = HTTPCookie(properties: [
                     .name: "2ef5a74e-af70-4893-a5f6-63fb2537720d", .value: String(components[1]),
-                    .domain: baseURL.host!, .path: "/", .secure: "TRUE"
+                    .domain: host, .path: "/", .secure: "TRUE"
                   ]) else { continue }
             storage.setCookie(cookie)
         }

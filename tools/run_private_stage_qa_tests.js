@@ -15,8 +15,9 @@ import FoundationNetworking
 ${source.slice(start, end)}
 let storage = HTTPCookieStorage.sharedCookieStorage(forGroupContainerIdentifier: UUID().uuidString)
 let stage = URL(string: "https://blank-product-staging-20260926.netlify.app/.netlify/functions")!
+let draft = URL(string: "https://aaaaaaaaaaaaaaaaaaaaaaaa--blank-product-staging-20260926.netlify.app/.netlify/functions")!
 let production = URL(string: "https://getblank.netlify.app/.netlify/functions")!
-for url in [production, URL(string: "http://blank-product-staging-20260926.netlify.app")!, URL(string: "https://evil.test")!] {
+for url in [production, URL(string: "http://blank-product-staging-20260926.netlify.app")!, URL(string: "https://evil.test")!, URL(string: "https://preview--blank-product-staging-20260926.netlify.app")!, URL(string: "https://aaaaaaaaaaaaaaaaaaaaaaaa--blank-product-staging-20260926.netlify.app.evil.test")!, URL(string: "https://aaaaaaaaaaaaaaaaaaaaaaaa--getblank.netlify.app")!] {
     BlankPrivateStageQA.configure(baseURL: url, cookieHeader: "2ef5a74e-af70-4893-a5f6-63fb2537720d=synthetic-qa", storage: storage)
     precondition(storage.cookies?.isEmpty != false, "QA credential escaped staging")
 }
@@ -25,8 +26,10 @@ for header in ["$(BLANK_PRIVATE_QA_COOKIE)", "2ef5a74e-af70-4893-a5f6-63fb253772
     precondition(storage.cookies?.isEmpty != false, "Invalid QA credential installed")
 }
 BlankPrivateStageQA.configure(baseURL: stage, cookieHeader: "2ef5a74e-af70-4893-a5f6-63fb2537720d=synthetic-qa", storage: storage)
+BlankPrivateStageQA.configure(baseURL: draft, cookieHeader: "2ef5a74e-af70-4893-a5f6-63fb2537720d=synthetic-qa", storage: storage)
 #if BLANK_PRIVATE_STAGE_QA
 precondition(storage.cookies(for: stage)?.count == 1)
+precondition(storage.cookies(for: draft)?.count == 1)
 precondition(storage.cookies(for: production)?.isEmpty != false)
 precondition(storage.cookies?.first?.isSecure == true)
 #else
