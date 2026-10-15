@@ -13,6 +13,16 @@ async function main(){
  const stream=install({budgetFile,requestsFile,rates,fetcher:async()=>new Response('data: '+JSON.stringify({type:'response.completed',response:{model:rates.model,usage:{input_tokens:20,output_tokens:5}}})+'\n\n',{headers:{'content-type':'text/event-stream'}})});
  const response=await stream('https://api.openai.com/v1/responses',request);const before=JSON.parse(fs.readFileSync(budgetFile)).known_usd;await response.text();assert(JSON.parse(fs.readFileSync(budgetFile)).known_usd>before);
  assert(!fs.readFileSync(requestsFile,'utf8').includes('secret-not-recorded'));await assert.rejects(()=>call('https://api.openai.com/v1/responses',{body:JSON.stringify({model:'unpriced'})}),/unpriced/);
+ const campaign=JSON.parse(fs.readFileSync(budgetFile)),guardFile=path.join(dir,'campaign.json'),oldGuard=process.env.BM_PROVIDER_SPEND_LIMIT_FILE;
+ const guard={version:1,budget_file:budgetFile,initial_reserved_upper_usd:campaign.reserved_upper_usd,maximum_additional_usd:.000001,authorized_cumulative_limit_usd:1};
+ fs.writeFileSync(guardFile,JSON.stringify(guard));process.env.BM_PROVIDER_SPEND_LIMIT_FILE=guardFile;
+ try{
+  const unchanged=fs.readFileSync(budgetFile,'utf8');let dispatched=0;
+  const guarded=install({budgetFile,requestsFile,rates,fetcher:async()=>{dispatched++;throw Error('must_not_dispatch');}});
+  await assert.rejects(()=>guarded('https://api.openai.com/v1/responses',request),/spend_limit/);assert.equal(dispatched,0);assert.equal(fs.readFileSync(budgetFile,'utf8'),unchanged);
+  fs.writeFileSync(guardFile,JSON.stringify({...guard,budget_file:path.join(dir,'wrong.json')}));await assert.rejects(()=>guarded('https://api.openai.com/v1/responses',request),/invalid_campaign_guard/);
+  fs.writeFileSync(guardFile,JSON.stringify({...guard,maximum_additional_usd:100}));assert.equal(require('./bm_provider_spend_limit').limit(budgetFile,campaign),1,'Campaign cannot raise the shared cap');
+ }finally{if(oldGuard===undefined)delete process.env.BM_PROVIDER_SPEND_LIMIT_FILE;else process.env.BM_PROVIDER_SPEND_LIMIT_FILE=oldGuard;}
  const exhausted=JSON.parse(fs.readFileSync(budgetFile));exhausted.limit_usd=exhausted.reserved_upper_usd;fs.writeFileSync(budgetFile,JSON.stringify(exhausted));await assert.rejects(()=>call('https://api.openai.com/v1/responses',request),/spend_limit/);
  console.log('PASS shared budget: concurrent settlements, retained unknown reservations, streamed usage, no secrets, unpriced/exhausted rejection');
 }

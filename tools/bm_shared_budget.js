@@ -12,7 +12,7 @@ function install({budgetFile,requestsFile,fetcher=global.fetch,rates}){
   if(endpoint==='responses'&&request.model!==rates.model&&request.model!=='gpt-5.6-sol')throw Error('shared_budget_unpriced_model');
   const upper=(Buffer.byteLength(options.body)*1.25*price.input+(request.max_output_tokens||10000)*price.output)/1e6;
   const budget=JSON.parse(fs.readFileSync(budgetFile));
-  if(budget.reserved_upper_usd+upper>budget.limit_usd)throw Error('shared_budget_spend_limit');
+  if(budget.reserved_upper_usd+upper>require('./bm_provider_spend_limit').limit(budgetFile,budget))throw Error('shared_budget_spend_limit');
   budget.reserved_upper_usd+=upper;budget.requests++;fs.writeFileSync(budgetFile,JSON.stringify(budget,null,2));
   const row={endpoint,model:request.model,reserved_upper_usd:upper,request_sha256:crypto.createHash('sha256').update(options.body).digest('hex')};requests.push(row);save();
   let settled=false;

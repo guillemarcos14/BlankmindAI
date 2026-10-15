@@ -1,5 +1,7 @@
 # Estado del proyecto
 
+- 2026-10-15: PR51 integrado evaluado con58pares reales/116reviews: tools16/retrieval22/labels20, ningunaaprobada; tresgatesOFF y200/50audio intactos. Costeconocido1.68826983USD/reservaextra0.00032070, margen8.78140947deltope10.47; shared55 y15reservasprevias conservadas+1nueva. Sinproducción/nativo. Herramientas nuevas guard/source/preflight y agregación; harness54/54/scope. Ver docs/PROVIDER_SALDO_1047_2026-10-15.md.
+
 - 2026-10-15: Nueva autorización expresa +15USD: techo API acumulado55USD, reservas históricas intactas y margen15.314793745. Facturación interna abierta; no acredita recarga ni certificación.0llamadas nuevas, tools/retrieval/labelsOFF; audio/coste total pendientes. Ver docs/PROVIDER_CERTIFICATION_2026-10-15.md.
 
 - 2026-10-15: Cerrada preparación gratuita PR50: corpusV2 200casos/feature (100ES+100EN,50porgrupo,64audiosPLANIFICADOS),600planes sin ejecutar; source-lock y preflight rechazan drift/repeticiones. Optimización candidata de lecturas concurrentes/cache por turno/contexto sin duplicados y labels una clasificación por evidencia idéntica. Auditoría v2 exige commit+persistencia+fecha local/olvido real; reviewv6 preserva históricos. Harness53/53/baseline/scope con red bloqueada y0USD; ledgerFINAL40/gatesOFF intactos,15opacas conservadas. Providercoste/latencia/audio, físico y eficaciaWatch siguen pendientes. Guía Extra/Codigo-agent-final40/docs/FREE_AGENT_PREPARATION_2026-10-15.md; recibos tmp/free-completion-20261015/.

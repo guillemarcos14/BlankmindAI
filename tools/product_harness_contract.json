@@ -61,6 +61,7 @@
     "max_repair_attempts": 0,
     "repair_commands": [],
     "commands": [
+      {"name":"bm_agent_campaign_safety","run":"node tools/bm_agent_campaign_safety_test.js"},
       {"name":"bm_agent_prepared_sources","run":"node tools/bm_agent_prepared_sources_test.js"},
       {"name":"bm_agent_corpus_v2","run":"node tools/bm_agent_corpus_v2_test.js"},
       {"name":"bm_agent_work_reuse","run":"node tools/bm_agent_work_reuse_test.js"},
