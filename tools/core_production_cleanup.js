@@ -29,11 +29,17 @@ function verify({functions,files,schedules},prepared){
  return true;
 }
 function environmentDigest(vars){return crypto.createHash("sha256").update(JSON.stringify(vars.map(v=>({key:v.key,scopes:[...v.scopes].sort(),is_secret:!!v.is_secret,values:v.values.map(x=>({context:x.context,branch:x.branch||null,value:x.value})).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))})).sort((a,b)=>a.key.localeCompare(b.key)))).digest("hex");}
+function artifacts(prepared){
+ const old=JSON.parse(fs.readFileSync(path.resolve(ROOT,"../Codigo-appstore-final/tmp/appstore-final/production-bundle/manifest.json"),"utf8"));
+ const current=JSON.parse(fs.readFileSync(path.join(ROOT,"tmp/release-today/manifest.json"),"utf8"));
+ const paths={...old.artifacts,...Object.fromEntries(current.package.functions.map(f=>[f.sha256,f.path]))};
+ return Object.fromEntries(Object.entries(prepared.body.functions).map(([n,h])=>{const file=paths[h];assert(file&&fs.existsSync(file),"Exact retained ZIP unavailable: "+n);assert.equal(crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"),h,"Retained ZIP mismatch: "+n);return [n,file];}));
+}
 async function main(){
- const mode=process.argv[2];assert(["plan","prepare","publish","verify","rollback","smoke-draft","smoke-live"].includes(mode));
+ const mode=process.argv[2];assert(["plan","prepare","resume","publish","verify","rollback","smoke-draft","smoke-live"].includes(mode));
  if(!["plan","verify"].includes(mode))assert(process.argv.includes("--confirm"),"Explicit --confirm required for remote mutations");
  const cfg=JSON.parse(fs.readFileSync(path.join(process.env.APPDATA,"netlify/Config/config.json"),"utf8")),token=(cfg.users[cfg.userId]||Object.values(cfg.users)[0]).auth.token;
- async function api(route,method="GET",body){const r=await fetch("https://api.netlify.com/api/v1"+route,{method,headers:{authorization:"Bearer "+token,"content-type":"application/json"},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(30000)});assert(r.ok,method+" "+route+" HTTP "+r.status);return r.status===204?null:r.json();}
+ async function api(route,method="GET",body,binary=false){const r=await fetch("https://api.netlify.com/api/v1"+route,{method,headers:{authorization:"Bearer "+token,"content-type":binary?"application/octet-stream":"application/json"},...(body===undefined?{}:{body:binary?body:JSON.stringify(body)}),signal:AbortSignal.timeout(30000)});assert(r.ok,method+" "+route+" HTTP "+r.status);return r.status===204?null:r.json();}
  const site=await api("/sites/"+SITE);assert.equal(site.ssl_url,"https://getblank.netlify.app");
  const env=await api("/accounts/"+site.account_id+"/env?site_id="+SITE),envHash=environmentDigest(env);
  async function snapshot(id){return {functions:inventory(await api("/sites/"+SITE+"/functions?deploy_id="+id)),files:await api("/deploys/"+id+"/files"),schedules:(await api("/deploys/"+id)).function_schedules};}
@@ -46,13 +52,22 @@ async function main(){
  if(mode==="rollback"){
   const receipt=load("cleanup-publication.json");assert.equal(site.published_deploy.id,receipt.deploy_id);await api("/sites/"+SITE+"/deploys/"+prepared.previous+"/restore","POST",{});if(!prepared.previous_locked)await api("/deploys/"+prepared.previous+"/unlock","POST",{});save("cleanup-rollback.json",{at:new Date().toISOString(),restored:prepared.previous});return;
  }
- if(mode==="prepare"){
+ if(mode==="prepare"||mode==="resume"){
   assert.equal(site.published_deploy.id,prepared.previous);const original=await snapshot(prepared.previous);assert.deepEqual(plan(original),{removed:prepared.removed,retained:prepared.retained,body:prepared.body});
   assert(/^codex\/backend-release-/.test(execFileSync("git",["branch","--show-current"],{cwd:ROOT,encoding:"utf8"}).trim()));
   assert.equal(execFileSync("git",["status","--porcelain"],{cwd:ROOT,encoding:"utf8"}).trim(),"","Commit release source first");
   assert.equal(load("cleanup-validation.json").status,"passed","Scope-enforced validation required");
-  await api("/deploys/"+prepared.previous+"/lock","POST",{});
-  const d=await api("/sites/"+SITE+"/deploys","POST",prepared.body);save("cleanup-publication.json",{status:"preparing",previous:prepared.previous,deploy_id:d.id,url:d.deploy_ssl_url,source:prepared.source});
+  const exact=artifacts(prepared);let d;
+  if(mode==="prepare"){
+   assert(!fs.existsSync(path.join(DIR,"cleanup-publication.json")),"Existing draft receipt: use resume, never create a duplicate");
+   await api("/deploys/"+prepared.previous+"/lock","POST",{});
+   d=await api("/sites/"+SITE+"/deploys","POST",prepared.body);save("cleanup-publication.json",{status:"preparing",previous:prepared.previous,deploy_id:d.id,url:d.deploy_ssl_url,source:prepared.source});
+  }else{d=await api("/deploys/"+load("cleanup-publication.json").deploy_id);assert.equal(load("cleanup-publication.json").status,"preparing");}
+  const needed=new Set(d.required_functions||[]),metadata=new Map(original.functions.map(f=>[name(f),f]));
+  for(const [n,h] of Object.entries(prepared.body.functions))if(needed.has(h)){
+   const f=metadata.get(n),mode=f.bd?.runtimeAPIVersion===2?"stream":n.endsWith("-background")?"background":"buffer";
+   await api("/deploys/"+d.id+"/functions/"+n+"?runtime="+(f.r||"nodejs22.x")+"&invocation_mode="+mode,"PUT",fs.readFileSync(exact[n]),true);
+  }
   for(let i=0;i<30;i++){const state=await api("/deploys/"+d.id);assert.notEqual(state.state,"error");if(state.state==="ready"){verify(await snapshot(d.id),prepared);assert.equal((await api("/sites/"+SITE)).published_deploy.id,prepared.previous);save("cleanup-publication.json",{...load("cleanup-publication.json"),status:"prepared"});console.log(JSON.stringify({status:"prepared",deploy_id:d.id,removed:prepared.removed.length}));return;}await new Promise(r=>setTimeout(r,1000));}throw Error("Draft readiness timeout; retain receipt and inspect same deploy");
  }
  const receipt=load("cleanup-publication.json");
