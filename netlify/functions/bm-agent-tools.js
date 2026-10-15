@@ -66,6 +66,7 @@ function decode(body) {
   }
   const call = calls[0];let value = parse(call.arguments);
   if (call.name === "consultar_contexto") {
+    if(typeof call.call_id!=='string'||!call.call_id.trim()||call.call_id.length>128)throw Error('agent_invalid_read_call');
     if (Object.keys(value).some(key => !["response_language", "message_kind", "evidence", "queries"].includes(key))
       || !Array.isArray(value.queries) || !value.queries.length || value.queries.length > 3) throw Error("agent_invalid_read");
     return { ...nulls(), ...value, phase: "read", decision: "respond", response_text: "", cited_sources: [] };
@@ -95,7 +96,7 @@ function reader(options) {
     return Promise.all(queries.map(query => {
       const historical = query.source === "history" && options.isQuestion && query.history_evidence?.trim() && prompt.includes(query.history_evidence);
       const bounded = bound(query), q = { ...bounded, timezone: bounded.timezone || timezone };
-      const key = JSON.stringify([q, historical ? null : cutoff]);
+      const key = JSON.stringify([Object.fromEntries(Object.entries(q).sort(([a],[b])=>a.localeCompare(b))), historical ? null : cutoff]);
       if (!cache.has(key)) cache.set(key, read(userId, identity, q, historical ? null : cutoff, db));
       return cache.get(key);
     }));

@@ -35,9 +35,14 @@ async function main(){
  const agentFeature=get("--agent-feature",null);
  if(agentFeature&&!["tools","retrieval","labels"].includes(agentFeature))throw Error("decisions_agent_feature");
  if(agentFeature&&(!args.includes("--budget-file")||!fs.existsSync(get("--budget-file"))))throw Error("decisions_existing_budget_required");
- if(!args.includes("--run"))throw Error("retrieval_explicit_benchmark_required");
- const CASES=JSON.parse(fs.readFileSync(get("--cases","tools/datasets/bm_retrieval_step_cases_2026-10-08.json"))).cases;
+ if(!args.includes("--run")&&!args.includes('--preflight-only'))throw Error("retrieval_explicit_benchmark_required");
+ const caseManifest=JSON.parse(fs.readFileSync(get("--cases","tools/datasets/bm_retrieval_step_cases_2026-10-08.json"))),CASES=caseManifest.cases;
  const pairs=Number(get("--pairs",20)),fromPair=Number(get("--from-pair",0));if(!Number.isInteger(pairs)||pairs<1||pairs>300||!Number.isInteger(fromPair)||fromPair<0||fromPair+pairs>300)throw Error("decisions_pairs_invalid");
+ if(caseManifest.kind==='agent-certification-plan-v2'){
+  const lockFile=get('--plan-lock');if(!lockFile)throw Error('decisions_plan_lock_required');
+  const preflight=require('./bm_agent_plan_preflight').verify(caseManifest,JSON.parse(fs.readFileSync(lockFile)),{feature:agentFeature,hashes:require('./bm_agent_runtime').verify(),pairs,from:fromPair});
+  if(args.includes('--preflight-only')){console.log(JSON.stringify(preflight));return;}
+ }else if(args.includes('--preflight-only'))throw Error('decisions_v2_plan_required');
  const c=configuration();if(process.env.SUPABASE_URL!==c.supabase||!process.env.OPENAI_API_KEY)throw Error("decisions_private_providers_required");
  const rateFile=get("--rates",null),rates=rateFile?JSON.parse(fs.readFileSync(rateFile)):null;
  if(rates&&(!["input","cached","output"].every(k=>Number.isFinite(rates[k])&&rates[k]>=0)||rates.model!==(process.env.OPENAI_MODEL||"gpt-5.6-luna")||!rates.source))throw Error("decisions_rates_invalid");
@@ -126,6 +131,7 @@ async function main(){
        else expected.primary_source='observations';
      }
      if(spec.profile==='invalid'&&report.case_manifest.version===1&&spec.id.startsWith('fresh-'))expected.minutes=null;
+     const initialState=caseManifest.kind==='agent-certification-plan-v2'?{memories:await request('/rest/v1/bm_brain_memories?auth_user_id=eq.'+user+'&select=key,value',undefined,service,'GET'),observations:await request('/rest/v1/bmb_observations?auth_user_id=eq.'+user+'&select=metric,value_number,value_text,unit,measurement,evidence,measured_at,source,status,created_at',undefined,service,'GET')}:null;
      const history=[];for(const [step,text]of (spec.turns||[spec.text]).entries()){const turn=crypto.randomUUID();active={pair,step,variant,group,turn_id:turn,start:performance.now(),first_text_ms:null,first_emitted_text_ms:null,drafts:[],database_calls:0,model_calls:0,usage_records:0,metered_usage:{},decisions_calls:0,decisions_known_cost_usd:0,decisions_unknown_cost_upper_usd:0,provider_requests:[],decisions_trace:[],retrieval_trace:[],agent_trace:[]};
      console.info=line=>{try{const m=JSON.parse(line);if(["bm_stream_timing","bm_token_usage"].includes(m.event)&&Number.isSafeInteger(m.usage?.input_tokens)&&Number.isSafeInteger(m.usage?.output_tokens)){
        active.usage_records++;for(const [k,v]of Object.entries(m.usage))active.metered_usage[k]=(active.metered_usage[k]||0)+v;
@@ -163,12 +169,17 @@ async function main(){
          row.passed=row.passed&&row.observations_persisted;
        }
        if(spec.forbid_memory)row.passed=row.passed&&row.canonical_memories.length===0;
+       if(caseManifest.kind==='agent-certification-plan-v2'){
+        row.initial_state=initialState;
+        row.authored_state_passed=require('./bm_agent_state_audit').check(row,spec,{clock:row.model_contexts?.at(-1)?.turn_clock});
+        row.passed=row.passed&&row.authored_state_passed;
+       }
      }
      if(group==="forget"&&response.statusCode===200){
        const memories=await request(`/rest/v1/bm_brain_memories?auth_user_id=eq.${user}&select=value`,undefined,service,"GET");
        row.forgetting_committed=memories.some(m=>m.value===null);row.passed=row.passed&&row.forgetting_committed;
      }
-     if(args.includes('--verify-personal-records')&&!['action','actions_combined','forget','advice'].includes(group)){
+     if(args.includes('--verify-personal-records')&&caseManifest.kind!=='agent-certification-plan-v2'&&!['action','actions_combined','forget','advice'].includes(group)){
        const [observations,memories]=await Promise.all([
          request(`/rest/v1/bmb_observations?auth_user_id=eq.${user}&select=metric,value_number,unit,measured_at,measurement&limit=100`,undefined,service,'GET'),
          request(`/rest/v1/bm_brain_memories?auth_user_id=eq.${user}&select=key,value&limit=100`,undefined,service,'GET')]);

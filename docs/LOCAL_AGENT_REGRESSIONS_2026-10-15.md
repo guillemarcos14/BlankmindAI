@@ -1,5 +1,7 @@
 # Free local corrections; activation still blocked — 15 October 2026
 
+Subsequent completed corpus, coverage and free candidate optimizations: [FREE_AGENT_PREPARATION_2026-10-15.md](FREE_AGENT_PREPARATION_2026-10-15.md). The 47-check receipt below remains evidence of its original source; the new task has a separate baseline and 53-check receipt.
+
 This continuation changes only the unpublished candidate on PR50. Production remains `6ad0a30668dd3a2c10b068ba`, native build 119 is unchanged, and tools/retrieval/labels remain OFF. The prior runtime repair and its real provider results are described in `RUNTIME_REPAIR_AND_LABELS_2026-10-15.md`; this document records subsequent local corrections, not a new provider certificate.
 
 ## Corrections and evidence

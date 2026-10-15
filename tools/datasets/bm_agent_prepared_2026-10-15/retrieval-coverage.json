@@ -1,0 +1,37 @@
+{
+  "planned_only": true,
+  "executed_pairs": 0,
+  "approved": false,
+  "coverage_prepared": true,
+  "counts": {
+    "all": {
+      "cases": 200,
+      "planned_audio": 64
+    },
+    "es": {
+      "cases": 100,
+      "planned_audio": 32
+    },
+    "en": {
+      "cases": 100,
+      "planned_audio": 32
+    },
+    "chat": {
+      "cases": 50,
+      "planned_audio": 16
+    },
+    "query": {
+      "cases": 50,
+      "planned_audio": 16
+    },
+    "action": {
+      "cases": 50,
+      "planned_audio": 16
+    },
+    "memory": {
+      "cases": 50,
+      "planned_audio": 16
+    }
+  },
+  "reasons": []
+}
