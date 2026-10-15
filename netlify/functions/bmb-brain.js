@@ -167,10 +167,12 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     if(content.some(o=>o.type==='refusal'))throw Error('bmb_model_refusal');
     const raw=body.output_text||content.filter(o=>o.type==="output_text").map(o=>o.text).join("");
     let result;try{result=useTools?agentTools.decode(body):JSON.parse(raw);}catch(error){
-      if(!(error instanceof SyntaxError)||attempt)throw Error('bmb_invalid_model_json');
+      const invalidTool=useTools&&/^agent_(?:invalid_|reply_effects|unknown_tool|ambiguous_output)/.test(error.message);
+      if((!(error instanceof SyntaxError)&&!invalidTool)||attempt)throw Error('bmb_invalid_model_json');
       // Nothing from an unparseable result is trusted or committed. Reissue the
       // same bounded schema/input once; normal authority checks still follow.
       console.info(JSON.stringify({event:'bmb_json_conformance_retry',characters:raw.length,attempt:1}));
+      if(invalidTool)request.input[0].content+="\nThe previous output violated the tool envelope. Use only declared fields and nonempty, unique effects. If you need clarification without changing state, emit the compact final reply with no tools. No prior invalid effect was committed.";
       if(onDraft)onDraft('');
       continue;
     }

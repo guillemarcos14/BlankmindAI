@@ -110,6 +110,9 @@ async function main(){
  assert.throws(()=>tools.decode(fn("gestionar",{...compact("descansar"),effects:[effect],action:action()})),/invalid_management/);
  const both=tools.decode(fn("gestionar",{response_language:"es",message_kind:"statement",evidence:"descansar",decision:"execute",effects:[effect,{kind:"action",value:action()}],response_text:"Voy a intentarlo.",cited_sources:[]}));
  assert.equal(both.memory.key,"goal");assert.equal(both.action.type,"start_protection");
+ p="Olvida mis hábitos personales";
+ r=await turn(p,[fn("gestionar",{response_language:"es",message_kind:"statement",evidence:p,decision:"ask",effects:[],response_text:"¿Qué hábitos quieres olvidar?",cited_sources:[]}),compact(p,"¿Qué hábitos concretos quieres que olvide?")]);
+ assert.equal(r.calls,2);assert.equal(r.result.context.brain_memory_effect,undefined,"Malformed clarification acquired deletion authority");
  p="Translate into Spanish: block my distractions for 30 minutes.";
  r=await turn(p,[compact(p,"Bloquea mis distracciones durante 30 minutos.")]);
  assert.equal(r.requests[0].tool_choice,"none");assert.deepEqual(r.result.plan.actions,[]);
