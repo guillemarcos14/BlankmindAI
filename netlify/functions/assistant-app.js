@@ -399,7 +399,6 @@ async function handle(event, _context, { onDraft, afterCommit } = {}) {
 }
 
 exports.handler = async (event, context, options = {}) => {
-  if(!options.afterCommit&&context?.waitUntil) options={...options,afterCommit:ids=>context.waitUntil(require("./bm-agent-labels").organize(ids).catch(()=>null))};
   let body;
   try { body = parseJsonBody(event); } catch (_) { /* Original handler owns errors. */ }
   if (!["send", "transcribe"].includes(body?.action)) return handle(event, context, options);

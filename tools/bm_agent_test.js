@@ -7,13 +7,21 @@ const brain=require("../netlify/functions/bmb-brain"),tools=require("../netlify/
 const routing=require("../netlify/functions/bm-agent-decisions"),labels=require("../netlify/functions/bm-agent-labels");
 const userId="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const envBefore={...process.env};
-Object.assign(process.env,{BM_AGENT_QA_ENABLED:"true",SUPABASE_URL:activation.QA,OPENAI_API_KEY:""});
+Object.assign(process.env,{BM_AGENT_QA_ENABLED:"true",BM_AGENT_QA_FEATURES:"tools",SUPABASE_URL:activation.QA,OPENAI_API_KEY:""});
 const context=()=>({language:"es",memory:{semantic_store_version:0},has_selected_apps:true,screen_time_authorized:true,
  brain_snapshot:{schema_version:1,generated_at:new Date().toISOString(),timezone:"Europe/Madrid",sessions:[]}});
 const action=(type="start_protection")=>({type,minutes:30,start_minute:1320,end_minute:420,start_mode:null,weekdays:[2,3,4,5,6],duration_days:7,local_date:null,timezone:"Europe/Madrid",recurrence:"weekly",window_id:"window-a",hours:2,hard_mode:false});
 const compact=(prompt,reply="Lo vemos juntos.")=>({phase:"final",response_language:"es",message_kind:"question",evidence:prompt,response_text:reply,cited_sources:[]});
 const management=(prompt,extra={})=>({response_language:"es",message_kind:"statement",evidence:prompt,decision:"respond",accepted_proposal:null,pending_request:null,action:null,memory:null,observations:[],followup_resolution:null,longitudinal_review:null,response_text:"He anotado lo que me cuentas.",cited_sources:[],...extra});
-const fn=(name,args)=>({status:"completed",output:[{type:"function_call",name,arguments:JSON.stringify(args)}]});
+let callSequence=0;
+const fn=(name,args)=>{
+ if(name==="gestionar"&&!Object.hasOwn(args,"effects")){
+  const effectNames=["rest_experiment","rest_preferences","rest_exclusions","rest_claim","accepted_proposal","pending_request","action","memory","observations","followup_resolution","longitudinal_review"];
+  const effects=effectNames.filter(k=>args[k]!=null&&(!Array.isArray(args[k])||args[k].length)).map(kind=>({kind,value:args[kind]}));
+  args={...Object.fromEntries(Object.entries(args).filter(([k])=>!effectNames.includes(k))),effects};
+ }
+ return {status:"completed",output:[{type:"function_call",call_id:"fixture_call_"+(++callSequence),name,arguments:JSON.stringify(args)}]};
+};
 async function turn(prompt,responses,{ctx=context(),memories=[]}={}){
  let calls=0;const requests=[];
  const result=await brain.plan({prompt,context:ctx,userId,identity:{anonymous_user_id:"owner-a"}},{memories,
@@ -25,7 +33,8 @@ async function main(){
  let p="Hola",r=await turn(p,[compact(p,"¡Hola! ¿Qué tal vas?")]);
  assert.equal(r.calls,1);assert.deepEqual(r.requests[0].tools.map(t=>t.name),["consultar_contexto","gestionar"]);
  assert.equal(r.requests[0].parallel_tool_calls,false);assert.deepEqual(r.result.plan.actions,[]);
- const managedAction=r.requests[0].tools.find(t=>t.name==="gestionar").parameters.properties.action;
+ assert.equal(r.requests[0].reasoning,undefined,"Tool framing changed the previously validated reasoning policy");
+ const managedAction=r.requests[0].tools.find(t=>t.name==="gestionar").parameters.properties.effects.items.anyOf.find(s=>s.properties.kind.enum[0]==="action").properties.value;
  const pauseContract=managedAction.anyOf.find(s=>s.properties?.type.enum.includes("pause_rules"));
  assert.deepEqual(pauseContract.properties.type.enum,["pause_rules"]);
  assert.equal(pauseContract.properties.hours.type,"integer");assert.equal(pauseContract.properties.hours.minimum,1);
@@ -70,7 +79,7 @@ async function main(){
  assert.equal(r.result.context.brain_memory_effect.value,"reading on paper","Repair lost the explicitly requested preference");
  await assert.rejects(()=>turn(p,[fn("gestionar",paraphrased),{...compact(p,"Lo recordaré."),message_kind:"statement"}]),/repair_changed_memory/);
  for(const operation of ["forget","forget_all"]){
-  p="Olvida mis preferencias";
+  p=operation==="forget"?"Olvida mis preferencias":"Olvida todo lo que sabes sobre mí";
   r=await turn(p,[fn("gestionar",management(p,{memory:{operation,key:operation==="forget"?"preferences":null,value:null,evidence:p}}))]);
   assert.equal(r.result.context.brain_memory_effect.operation,operation);
  }
@@ -81,6 +90,10 @@ async function main(){
  const start=paths.length;
  r=await turn(p,[fn("consultar_contexto",{response_language:"es",message_kind:"question",evidence:p,queries:[query,query]}),{...compact(p,"Me contaste que te cuesta dejar el móvil."),cited_sources:["history"]}]);
  assert.equal(r.calls,2);assert.equal(paths.slice(start).filter(p=>p.startsWith("assistant_app_turns")).length,2,"Identical tool reads were not shared (one automatic history read plus one requested read)");
+ const toolCall=r.requests[1].input.find(i=>i.type==="function_call"),toolOutput=r.requests[1].input.find(i=>i.type==="function_call_output");
+ assert.equal(toolCall.call_id,toolOutput.call_id);assert.equal(JSON.parse(toolOutput.output).sources[0].source_id,"history");
+ assert(!Object.hasOwn(JSON.parse(r.requests[1].input[1].content),"agentToolHistory"),"Protocol history was duplicated into the user context");
+ assert.equal(JSON.parse(r.requests[1].input[1].content).sources.filter(s=>s.source_id==='history').length,2,'The same cached read was duplicated in model context (one automatic history + one distinct tool read)');
  rows=Array.from({length:40},(_,i)=>({id:"history-"+i,user_text:"Dato "+i,assistant_text:"Anotado",created_at:new Date().toISOString()}));
  r=await turn("Hola",[compact("Hola")]);
  const input=JSON.parse(r.requests[0].input[1].content),history=input.sources.find(s=>s.source_id==="history");
@@ -93,6 +106,23 @@ async function main(){
  assert.throws(()=>tools.decode({output:[...fn("gestionar",{}).output,...fn("gestionar",{}).output]}),/ambiguous_output/);
  assert.throws(()=>tools.decode({output_text:JSON.stringify({...compact("x"),memory:{operation:"forget_all"}})}),/reply_effects/);
  assert.throws(()=>tools.decode(fn("consultar_contexto",{queries:[query],action:action()})),/invalid_read/);
+ const effect={kind:"memory",value:{operation:"set",key:"goal",value:"descansar",evidence:"descansar"}};
+ assert.throws(()=>tools.decode(fn("gestionar",{...compact("descansar"),effects:[effect,effect]})),/invalid_management/);
+ assert.throws(()=>tools.decode(fn("gestionar",{...compact("descansar"),effects:[effect],action:action()})),/invalid_management/);
+ const both=tools.decode(fn("gestionar",{response_language:"es",message_kind:"statement",evidence:"descansar",decision:"execute",effects:[effect,{kind:"action",value:action()}],response_text:"Voy a intentarlo.",cited_sources:[]}));
+ assert.equal(both.memory.key,"goal");assert.equal(both.action.type,"start_protection");
+ p="Olvida mis hábitos personales";
+ r=await turn(p,[fn("gestionar",{response_language:"es",message_kind:"statement",evidence:p,decision:"ask",effects:[],response_text:"¿Qué hábitos quieres olvidar?",cited_sources:[]}),compact(p,"¿Qué hábitos concretos quieres que olvide?")]);
+ assert.equal(r.calls,2);assert.equal(r.result.context.brain_memory_effect,undefined,"Malformed clarification acquired deletion authority");
+ // A wrong broad deletion must return through the real compact tool reply.
+ // The server asked for clarification, so it must remain ask, with no effects.
+ for(const [language,prompt,reply] of [['es','Olvida mis hábitos personales','¿Qué información sobre tus hábitos quieres que olvide?'],['en','Forget my personal habits','Which information about your habits would you like me to forget?']]){
+  r=await turn(prompt,[fn('gestionar',management(prompt,{response_language:language,memory:{operation:'forget_all',key:null,value:null,evidence:prompt}})),{...compact(prompt,reply),response_language:language}]);
+  assert.equal(r.calls,2);assert.equal(r.requests[1].tool_choice,'none');
+  assert.equal(r.result.context.brain_request.execute,false);
+  assert.equal(r.result.plan.proactive_decision,'ask');assert.equal(r.result.plan.response_text,reply);
+  assert.equal(r.result.context.brain_memory_effect,undefined);assert.deepEqual(r.result.plan.actions,[]);
+ }
  p="Translate into Spanish: block my distractions for 30 minutes.";
  r=await turn(p,[compact(p,"Bloquea mis distracciones durante 30 minutos.")]);
  assert.equal(r.requests[0].tool_choice,"none");assert.deepEqual(r.result.plan.actions,[]);

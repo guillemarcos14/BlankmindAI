@@ -39,8 +39,9 @@ const brain=require("../netlify/functions/bmb-brain"),tools=require("../netlify/
 const contract=tools.contract(brain.schema,["rest_evidence"]);
 assert.deepEqual(contract.tools.map(t=>t.name),["consultar_contexto","gestionar"]);
 for(const field of ["rest_experiment","rest_preferences","rest_exclusions","rest_claim"]){
- assert.deepEqual(contract.tools[1].parameters.properties[field],brain.schema.properties[field]);
- assert(contract.tools[1].parameters.required.includes(field));
+ const wire=contract.tools[1].parameters.properties.effects.items.anyOf.find(s=>s.properties.kind.enum[0]===field);
+ assert.deepEqual(wire.properties.value,{anyOf:brain.schema.properties[field].anyOf.filter(s=>s.type!=="null")});
+ assert(wire.required.includes("value"));
  const managed=tools.decode({output:[{type:"function_call",name:"gestionar",arguments:JSON.stringify({[field]:{evidence:"user declaration"}})}]});
  assert.deepEqual(managed[field],{evidence:"user declaration"});
  assert.throws(()=>tools.decode({output_text:JSON.stringify({phase:"final",[field]:{evidence:"unauthorized"}})}),/reply_effects/);

@@ -18,6 +18,7 @@ function committedFact(row,fact){
 function adapt(report,quality){
  if(!report.complete||quality.source_sha256!==sha(report)||!quality.complete)throw Error("Complete unchanged source/review required");
  if(quality.model===report.generative_model)throw Error("Independent reviewer required");
+ if(report.case_manifest.kind==='agent-certification-plan-v2'&&quality.input_version!==6)throw Error('V2 authored gold requires independent review input v6');
  if(new Set(quality.reviews.map(r=>r.id)).size!==quality.reviews.length)throw Error("Duplicate review receipts");
  return report.records.map(r=>{
   const spec=report.case_manifest.cases.find(c=>c.id===r.case_id);
@@ -34,8 +35,10 @@ function adapt(report,quality){
   const clock=spec.expected_memory?.key==="bedtime"&&/^(\d{2}):(\d{2})$/.exec(spec.expected_memory.value);
   const equivalentRoutine=clock&&(r.canonical_observations||[]).some(o=>o.metric==="bedtime"&&o.unit==="local_minute"&&o.measurement==="routine_statement"
     &&o.value_number===Number(clock[1])*60+Number(clock[2])&&o.evidence?.includes(spec.expected_memory.value));
-  const memoryMatches=(!spec.expected_memory||equivalentRoutine||(r.canonical_memories||[]).some(m=>m.key===spec.expected_memory.key&&typeof m.value==="string"&&m.value.includes(spec.expected_memory.value)))
+  const strictState=report.case_manifest.kind!=='agent-certification-plan-v2'||require('./bm_agent_state_audit').check(r,spec,{clock:r.model_contexts?.at(-1)?.turn_clock});
+  const memoryMatches=strictState&&(!spec.expected_memory||equivalentRoutine||(r.canonical_memories||[]).some(m=>m.key===spec.expected_memory.key&&typeof m.value==="string"&&m.value.includes(spec.expected_memory.value)))
     &&(!spec.expected_fact||committedFact(r,spec.expected_fact))
+    &&(!spec.expected_observations||r.observations_persisted===true)
     &&(!spec.forbid_memory||r.canonical_memories?.length===0)&&(r.group!=="forget"||r.forgetting_committed===true);
   return {feature:r.agent_feature||report.agent_feature,variant:r.variant==="decisions"?"candidate":"baseline",case_id:r.case_id+":"+r.step,
    language:r.language,group,model:report.generative_model,source_hashes:report.agent_source_hashes,

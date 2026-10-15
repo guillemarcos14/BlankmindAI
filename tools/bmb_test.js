@@ -166,10 +166,10 @@ async function main() {
   saved=[];
   await assert.rejects(()=>turn({...base(),memory:{operation:"set",key:"goal",value:"help",evidence:"help"},message_kind:"question"}),/ungrounded_memory/);
   result=await turn({...base(),memory:{operation:"set",key:"goal",value:"help",evidence:"help"}});assert.equal(result.context.brain_memory_effect.value,"help");
-  result=await turn({...base(),decision:"execute",message_kind:"action_request",memory:{operation:"forget_all",key:null,value:null,evidence:"help"}});
+  result=await turn({...base(),evidence:"Forget everything about me",decision:"execute",message_kind:"action_request",memory:{operation:"forget_all",key:null,value:null,evidence:"Forget everything about me"}},context(),"Forget everything about me");
   assert.equal(result.context.brain_memory_effect.operation,"forget_all");assert.equal(result.context.brain_request.execute,false);assert.equal(result.plan.actions.length,0);
   await assert.rejects(()=>turn({...base(),decision:"execute"}),/missing_action/);
-  await assert.rejects(()=>turn({...base(),decision:"execute",memory:{operation:"forget_all",key:null,value:null,evidence:"invented"}}),/ungrounded_memory/);
+  await assert.rejects(()=>turn({...base(),evidence:"Forget everything about me",decision:"execute",memory:{operation:"forget_all",key:null,value:null,evidence:"invented"}},context(),"Forget everything about me"),/ungrounded_memory/);
   await assert.rejects(()=>turn({...base(),decision:"execute",memory:{operation:"remove",key:null,value:null,evidence:"help"}}),/ungrounded_memory/);
   saved=[{key:"goal",value:null,source_at:"2026-10-01T00:00:00Z"}];calls=[];
   await turn(base());assert(calls.some(c=>c.path.includes("created_at=gt.2026-10-01")),"Forgotten history resurfaced");saved=[];

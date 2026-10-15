@@ -56,7 +56,11 @@ function memoryIdentity(channel, user) {
   return `assistant:${crypto.createHash("sha256").update(`${channel}:${user}`).digest("hex").slice(0,32)}`;
 }
 
-async function run(config, output, { infrastructureOnly = false } = {}) {
+function syntheticDeviceSnapshot(now = new Date().toISOString()) {
+  return {schema_version:1,generated_at:now,timezone:"Europe/Madrid",sessions:[]};
+}
+
+async function run(config, output, { infrastructureOnly = false, runtimeRegressions = false } = {}) {
   // Recheck even when called programmatically.
   target(config.supabase, "supabase", config); target(config.netlify, "netlify", config);
   const runId = crypto.randomUUID();
@@ -111,8 +115,19 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
     return event?.payload?.properties?.memory?.pending_assistant_action ?? null;
   }
   async function send(user, text) {
+    // Follow the current native lifecycle. A synthetic presence flag alone is
+    // not a fresh device snapshot and must never bypass the stale-state guard.
+    const now = new Date().toISOString();
+    const context = { anonymous_user_id:user.anonymous, context_revision:Date.now()*1000,
+      brain_snapshot:syntheticDeviceSnapshot(now), has_selected_apps:true,selection_count:3,
+      screen_time_authorized:true,protection_target:"selected_distractions",language:"en",locale:"en",
+      app_presence:{app_present:true,app_ready:true,last_seen_at:now} };
+    ok(await inbox(user,{action:"sync_context",context}),"fresh_synthetic_device_sync");
+    const saved=ok(await db(`bm_user_context_snapshots?user_id=eq.${user.id}&select=context`),"fresh_context_preflight");
+    expect(saved.length===1 && saved[0].context?.context_revision===context.context_revision
+      && saved[0].context?.brain_snapshot?.generated_at===now,"fresh_context_not_persisted");
     const id = crypto.randomUUID();
-    const response = await app(user, { action: "send", turn_id: id, text });
+    const response = await app(user, { action: "send", turn_id: id, text, context });
     expect(response.status === 200 && response.body?.turn?.status === "completed", `send_not_completed_http_${response.status}`);
     return response.body.turn;
   }
@@ -179,14 +194,34 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
         body: { p_auth_user_id: a.id, p_turn_id: crypto.randomUUID(), p_user_text: "forbidden", p_lease_owner: crypto.randomUUID() } });
       expect([401,403].includes(rpc.status), "client_claim_rpc_allowed");
     });
-    if (!infrastructureOnly) {
+    if(runtimeRegressions){
+      for(const [language,user,pause,forget]of [['es',a,'Pausa mis reglas de bloqueo durante 2 horas.','Elimina de tu memoria mis hábitos personales.'],['en',b,'Pause my blocking rules for 2 hours.','Remove my personal habits from your memory.']]){
+        await check('pause_hours_'+language,async()=>{
+          const turn=await send(user,pause),queued=await pending(user);
+          expect(turn.action_id&&queued?.id===turn.action_id&&queued.type==='pause_rules'&&queued.hours===2,'pause_not_queued_exact_hours');
+          expect(turn.action_status!=='verified','fabricated_native_verification');
+        });
+        await check('ambiguous_forget_preserves_memory_'+language,async()=>{
+          const facts=[['bedtime','23:00'],['preferences','reading on paper']].map(([key,value])=>({auth_user_id:user.id,key,value,source_text:'Synthetic regression fixture',source_at:new Date().toISOString()}));
+          ok(await db('bm_brain_memories',{method:'POST',body:facts}),'regression_memory_seed');
+          const turn=await send(user,forget);
+          const rows=ok(await db(`bm_brain_memories?auth_user_id=eq.${user.id}&select=key,value`),'regression_memory_read');
+          expect(!turn.action_id&&turn.assistant_text?.trim(),'ambiguous_forget_missing_clarification');
+          expect(rows.length===2&&facts.every(f=>rows.some(r=>r.key===f.key&&r.value===f.value)),'ambiguous_forget_deleted_memory');
+          const effect=ok(await db(`assistant_app_turns?id=eq.${turn.id}&select=brain_memory_effect`),'regression_effect_read');
+          expect(!effect[0]?.brain_memory_effect?.operation,'ambiguous_forget_committed_deletion');
+        });
+      }
+    }
+    if (!infrastructureOnly&&!runtimeRegressions) {
     let first;
     await check("send_commits_exact_reply_action_and_shared_state", async () => {
       first = await send(a, "Block my selected apps now for 25 minutes, just once.");
       expect(first.action_id === `app_${first.id}` && !["verified","delayed"].includes(first.action_status), "action_identity_or_unverified_status_invalid");
       expect(first.assistant_text.length > 0, "reply_missing");
       const state = await semantic(a);
-      expect(state.state?.semantic_state?.slots?.duration_minutes?.value === 25, "assistant_state_missing_app_turn");
+      expect(state.storage_version >= 1 && state.state?.last_user_message === first.user_text
+        && state.state?.last_assistant_message === first.assistant_text.slice(0,420), "assistant_state_missing_app_turn");
       const queued = await pending(a);
       expect(queued?.id === first.action_id && queued.minutes === 25, "canonical_pending_action_missing");
       const events = await memoryEvents(a);
@@ -219,7 +254,10 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
     await check("cancellation_updates_assistant_state_and_clears_inbox", async () => {
       const cancelled = await send(a, "Please cancel this request.");
       expect(!cancelled.action_id, "cancellation_created_action");
-      expect((await semantic(a)).state?.semantic_state?.intent === "cancelled", "shared_state_not_cancelled");
+      const state = (await semantic(a)).state;
+      expect(state?.last_user_message === cancelled.user_text
+        && (state?.semantic_state?.intent === "cancelled"
+          || (state?.bmb_state?.pending_request === null && state?.bmb_state?.proposal === null)), "shared_state_not_cancelled");
       expect(await pending(a) === null, "cancelled_action_still_pending");
       const original = await app(a, { action: "status", turn_id: first.id });
       expect(original.body?.turn?.action_status === "superseded", "cancelled_original_not_superseded");
@@ -273,10 +311,10 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
   const result = { evaluator: config.physicalQa ? "assistant-app-authorized-production-synthetic-qa-v1" : "assistant-app-real-staging-v1", generated_at: new Date().toISOString(), run_id: runId,
     script_sha256: crypto.createHash("sha256").update(fs.readFileSync(__filename)).digest("hex"),
     targets: { supabase: config.supabase, netlify: config.netlify }, checks, cleanup,
-    scope: infrastructureOnly ? "infrastructure_only_no_model_calls" : "full_conversation_recovery",
-    full_conversation_tested: !infrastructureOnly,
+    scope: runtimeRegressions ? "pause_and_ambiguous_forget_ES_EN" : infrastructureOnly ? "infrastructure_only_no_model_calls" : "full_conversation_recovery",
+    full_conversation_tested: !infrastructureOnly&&!runtimeRegressions,
     synthetic_auth_user_ids: users.map(user => user.id),
-    passed: !failure && checks.length === (infrastructureOnly ? 4 : 9) && cleanup.every(item => item.passed),
+    passed: !failure && checks.length === (runtimeRegressions ? 8 : infrastructureOnly ? 4 : 9) && cleanup.every(item => item.passed),
     limitations: [...(infrastructureOnly ? ["Only authentication, installation isolation and database access controls tested. Conversation generation, replay, shared memory and receipts are NOT tested in this run."] : []), "Seeded QA identities bypass phone OTP onboarding; no email or SMS is sent.",
       infrastructureOnly ? "No native receipt or iPhone enforcement is tested." : "Native receipt is a simulated failed result, never verified; no iPhone enforcement tested.",
       infrastructureOnly ? "Shared WhatsApp memory, provider webhooks and delivery are not tested." : "Shared WhatsApp semantic storage is checked directly; no external provider webhook or delivery is exercised."] };
@@ -286,6 +324,9 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
 
 function selfTest() {
   const assert = require("node:assert/strict");
+  const brainData=require("../netlify/functions/bm-brain-data"),now=Date.now();
+  assert(brainData.freshness(brainData.normalizeBrainSnapshot(syntheticDeviceSnapshot(new Date(now).toISOString())),now));
+  assert(!brainData.freshness(syntheticDeviceSnapshot(new Date(now-121000).toISOString()),now));
   assert.equal(target(SUPABASE_ORIGIN,"supabase"),SUPABASE_ORIGIN);
   for (const host of [`https://${STAGING_SITE}.netlify.app`, `https://preview--${STAGING_SITE}.netlify.app`]) assert.equal(target(host,"netlify"),host);
   for (const host of ["https://blankmind.netlify.app", "https://production.supabase.co", `${SUPABASE_ORIGIN}.evil.example`, `${SUPABASE_ORIGIN}/rest/v1`, `http://${STAGING_SITE}.netlify.app`, `https://${STAGING_SITE}.netlify.app.evil.example`, `https://x@${STAGING_SITE}.netlify.app`]) {

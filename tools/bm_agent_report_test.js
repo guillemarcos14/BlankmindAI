@@ -24,6 +24,9 @@ assert.equal(adapt(wrong,wrongReview)[0].quality.action_ok,false,"A model approv
 assert.equal(converted.cost_usd,.000032);assert.equal(converted.background_cost_usd,0);
 assert.equal(input(row,report).requested_action.type,"update_schedule","All actions became a hardcoded 30-minute block");
 assert(!Object.hasOwn(input(row,report),"variant"),"Reviewer was not blind");
+const routineReport=structuredClone(report);routineReport.case_manifest.cases[0].expected_observations=[{metric:'caffeine',measurement:'routine_statement',value_number:2,unit:'servings'}];
+assert.deepEqual(input(row,routineReport,5).requested_observations,routineReport.case_manifest.cases[0].expected_observations);
+assert.equal(input(row,routineReport,4).requested_observations,undefined,'Historical judge inputs must remain immutable');
 assert.throws(()=>adapt(report,{...quality,source_sha256:"changed"}),/unchanged/);
 assert.throws(()=>adapt(report,{...quality,model:report.generative_model}),/Independent/);
 assert.throws(()=>adapt(report,{...quality,reviews:[...quality.reviews,...quality.reviews]}),/Duplicate/);

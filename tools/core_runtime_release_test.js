@@ -1,0 +1,17 @@
+"use strict";
+const assert=require('node:assert/strict'),{manifest}=require('./core_runtime_release'),{CORE,RETIRED}=require('./core_production_cleanup');
+const fns=[...CORE,...Array.from({length:19},(_,i)=>'preserved-'+i)].map((n,i)=>({n,d:String(i).padStart(64,'0'),bd:{runtimeAPIVersion:/stream|voice/.test(n)?2:1},p:10}));
+const before={context:'production',functions:fns,files:[{path:'/index.html',sha:'a'.repeat(40)}],schedules:[{name:'bmb-tick',cron:'*/5 * * * *'}]};
+const packageInfo={source_tree_clean:true,functions:CORE.map(name=>({name,path:name+'.zip',sha256:'b'.repeat(64),compilation_target:'nodejs22.x',...(/stream|voice/.test(name)?{runtime_api_version:2,invocation_mode:'stream'}:{})}))};
+const r=manifest(before,packageInfo);
+assert.equal(r.body.draft,false);assert.equal(Object.keys(r.body.functions).length,27);
+assert.deepEqual(r.body.function_schedules,before.schedules);assert.deepEqual(r.body.files,{'index.html':'a'.repeat(40)});
+for(const f of fns)assert.equal(r.body.functions[f.n],CORE.includes(f.n)?'b'.repeat(64):f.d);
+assert(RETIRED.every(n=>!Object.hasOwn(r.body.functions,n)));
+assert.throws(()=>manifest({...before,context:'deploy-preview'},packageInfo));
+assert.throws(()=>manifest({...before,functions:fns.slice(1)},packageInfo));
+assert.throws(()=>manifest(before,{...packageInfo,source_tree_clean:false}));
+assert.throws(()=>manifest(before,{...packageInfo,functions:packageInfo.functions.slice(1)}));
+const wrong=structuredClone(packageInfo);wrong.functions.find(f=>f.name==='assistant-app-stream').runtime_api_version=1;
+assert.throws(()=>manifest(before,wrong));
+console.log('PASS current CORE repair publisher: production context, exact 27 inventory, preserved unrelated digests/static/cron, clean source and streaming metadata; no network');

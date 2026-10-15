@@ -61,6 +61,29 @@
     "max_repair_attempts": 0,
     "repair_commands": [],
     "commands": [
+      {"name":"bm_agent_campaign_safety","run":"node tools/bm_agent_campaign_safety_test.js"},
+      {"name":"bm_agent_prepared_sources","run":"node tools/bm_agent_prepared_sources_test.js"},
+      {"name":"bm_agent_corpus_v2","run":"node tools/bm_agent_corpus_v2_test.js"},
+      {"name":"bm_agent_work_reuse","run":"node tools/bm_agent_work_reuse_test.js"},
+      {"name":"bm_agent_context_parallel","run":"node tools/bm_agent_context_parallel_test.js"},
+      {"name":"bm_agent_fault_matrix","run":"node tools/bm_agent_fault_matrix_test.js"},
+      {"name":"bm_agent_state_audit","run":"node tools/bm_agent_state_audit_test.js"},
+      {
+        "name": "bm_agent_retrieval_regressions",
+        "run": "node tools/bm_agent_retrieval_regression_test.js"
+      },
+      {
+        "name": "bm_agent_label_replacement",
+        "run": "node tools/bm_agent_label_replacement_test.js"
+      },
+      {
+        "name": "core_runtime_release",
+        "run": "node tools/core_runtime_release_test.js"
+      },
+      {
+        "name": "core_production_cleanup",
+        "run": "node tools/core_production_cleanup_test.js"
+      },
       {
         "name": "core_launch",
         "run": "node tools/core_launch_test.js"

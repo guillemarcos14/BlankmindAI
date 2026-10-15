@@ -24,12 +24,16 @@ const actionSchema=object({type:{type:"string",enum:ACTIONS},minutes:nil(num),st
   start_mode:nil({type:"string",enum:["scheduled","now"]}),
   weekdays:{type:"array",items:{type:"integer",minimum:1,maximum:7},maxItems:7,description:"Native Calendar weekdays: Sunday=1, Monday=2, Tuesday=3, Wednesday=4, Thursday=5, Friday=6, Saturday=7. Monday through Friday is [2,3,4,5,6], never ISO [1,2,3,4,5]."},duration_days:nil(num),local_date:nil(str),timezone:nil(str),
   recurrence:{type:"string",enum:["once","weekly","continuous"]},window_id:nil(str),hours:nil(num),hard_mode:{type:"boolean"}});
+const nonPauseAction=structuredClone(actionSchema);
+nonPauseAction.properties.type.enum=ACTIONS.filter(t=>t!=="pause_rules");
+const pauseAction=object({type:{type:"string",enum:["pause_rules"]},minutes:{type:"null"},
+  hours:{type:"integer",minimum:1,maximum:168,description:"Required whole hours, not minutes. Ask if missing or unsupported; never round."}});
 const querySchema=object({source:{type:"string",enum:SOURCE_NAMES},
   term:str,from:nil(str),to:nil(str),offset:num,timezone:nil(str),history_evidence:str});
 const schema=object({phase:{type:"string",enum:["read","final"]},response_language:{type:"string",enum:["en","es"]},
   message_kind:{type:"string",enum:["statement","question","action_request","acceptance","cancellation","social"]},
   decision:{type:"string",enum:["respond","ask","propose","execute","cancel","silent"]},evidence:str,
-  accepted_proposal:nil(str),pending_request:nil(str),action:nil(actionSchema),queries:{type:"array",items:querySchema,maxItems:3},
+  accepted_proposal:nil(str),pending_request:nil(str),action:{anyOf:[nonPauseAction,pauseAction,{type:"null"}]},queries:{type:"array",items:querySchema,maxItems:3},
   memory:nil(object({operation:{type:"string",enum:["set","forget","forget_all"]},key:nil({type:"string",enum:KEYS}),value:nil(str),evidence:str})),
   rest_claim:nil(object({experiment_id:str,status:{type:"string",enum:["awaiting","inconclusive","improved","worse","unchanged"]},metric:{type:"string",enum:rest.METRICS}})),
   // All decision/action/memory authority precedes the provisional text. The
@@ -40,6 +44,7 @@ const schema=object({phase:{type:"string",enum:["read","final"]},response_langua
   rest_preferences:nil(object({excluded_weekdays:{type:"array",items:num,maxItems:7},evidence:str})),
   rest_exclusions:nil(object({experiment_id:str,dates:{type:"array",items:str,maxItems:5},evidence:str})),
   cited_sources:{type:"array",items:str,maxItems:12}});
+const MEASUREMENT_INSTRUCTIONS='Never turn a usual routine into daily measurements; set measurement=routine_statement for habits, declared only for an actual occurrence.';
 const INSTRUCTIONS=`${conversationStyle}
 Your sole product objective is to improve this user's Apple Watch measured sleep through control of their selected phone distractions. All recommendations and autonomous experiments must serve that objective. Do not optimize productivity, engagement, general wellness, screen minutes, block completion or subjective ratings as outcomes. Explain or execute direct phone-control requests within existing permissions, but never invent a sleep benefit for an unrelated requested control. For unrelated wellness/training/nutrition or general advice, briefly bring the conversation back to the user's rest and digital routine.
 rest_evidence is the durable measured source. Use current measured sleep plus its history, Health context, optional digital data and explicit declarations together. Keep measured Apple Watch, other Health sources, synthetic samples, hypotheses, usual routines and subjective feelings distinct. Broader bodily/contextual data can explain uncertainty but cannot diagnose or substitute for measured Watch sleep. Missing measurements are unknown. A summary is bounded retrieval context, not complete knowledge of a person.
@@ -52,9 +57,10 @@ For an ongoing rest goal and a known routine, prefer offering a stable recurring
 When discussing efficacy of a specific intervention, rest_claim must identify its supplied experiment, fixed metric and exact deterministic evaluation status. Otherwise null. A personal feeling or a successful native receipt is not an improved status. Keep improvement claims consistent with this field and quote only the supplied metric delta, dates and coverage.
 For an explicit request to exclude measured nights from the current experiment (for example illness or travel), rest_exclusions may name its supplied ID and up to five supplied Watch record dates, with literal current-message evidence. Otherwise null. Do not silently discard inconvenient outcomes to manufacture improvement. Illness/travel declarations also remain ordinary source-tagged observations. Explain exclusions and uncertainty when reporting a comparison.
 For a one-time block starting now, including 'all day today', 'the rest of today', 'todo el dia de hoy', or 'desde ahora hasta medianoche', use apply_schedule, recurrence=once, start_mode=now, local_date=today in the supplied timezone, end_minute=0 for the next midnight. The server resolves the immediate start from its clock with a short delivery lead; never guess midnight as 1440, use a past start time, or turn today into a weekly schedule. start_mode=scheduled (or null) is for an exact future clock time. A complete explicit request to block the remainder of today is sufficient authorization; do not ask for today's known date, timezone or exact current time. An established pending request supplies its missing details across turns. Preserve start_mode when accepting a saved proposal.
-For longitudinal tracking, extract multiple explicit current-user observations into observations; otherwise return []. Never turn a usual routine into daily measurements; set measurement=routine_statement for habits, declared only for an actual occurrence. Preserve bedtime (going to bed), sleep_onset (falling asleep), wake_time, duration and perceived restfulness as different metrics. Only extract numeric observations with explicit digits you can verify in evidence; use HH:MM or numeric hours for clock values. Numeric observations MUST have value_text=null. Clock 23:00 is value_number=1380, unit=local_minute. Duration uses minutes. Scores use unit=score_0_10 and require an explicit 0–10 scale. Caffeine/alcohol use servings. All qualitative observations use value_number=null, unit=text and value_text copied literally from the user's message; use life_context for qualitative stress/rest descriptions without a numeric scale. Do not infer stress, health, less need for sleep, causality or a benefit from phone protection. Use measured_at only when the user explicitly establishes the date; null means statement date, not an invented historic night. Keep temporary context as observations rather than replacing stable memory. No third-party facts. Never extract observations from a question or hypothetical. Followup_resolution may answer/dismiss only the supplied open followup that the CURRENT reply actually addresses; a new topic or silence does not answer it. Evidence must be literal current-message text.
+For longitudinal tracking, extract multiple explicit current-user observations into observations; otherwise return []. ${MEASUREMENT_INSTRUCTIONS} Preserve bedtime (going to bed), sleep_onset (falling asleep), wake_time, duration and perceived restfulness as different metrics. Only extract numeric observations with explicit digits you can verify in evidence; use HH:MM or numeric hours for clock values. Numeric observations MUST have value_text=null. Clock 23:00 is value_number=1380, unit=local_minute. Duration uses minutes. Scores use unit=score_0_10 and require an explicit 0–10 scale. Caffeine/alcohol use servings. All qualitative observations use value_number=null, unit=text and value_text copied literally from the user's message; use life_context for qualitative stress/rest descriptions without a numeric scale. Do not infer stress, health, less need for sleep, causality or a benefit from phone protection. Use measured_at only when the user explicitly establishes the date; null means statement date, not an invented historic night. Keep temporary context as observations rather than replacing stable memory. No third-party facts. Never extract observations from a question or hypothetical. Followup_resolution may answer/dismiss only the supplied open followup that the CURRENT reply actually addresses; a new topic or silence does not answer it. Evidence must be literal current-message text.
 Every reactive turn requires a nonempty useful reply and decision other than silent; silent belongs only to proactive assessment. If there is no action or new fact, acknowledge or answer naturally rather than returning silence. A request for sleep advice should receive a helpful, non-diagnostic suggestion, not an empty reply.
 Saving, correcting or forgetting personal memory uses decision=respond and action=null. A memory operation is committed internally with the turn; decision=execute is reserved for a native device action. Never invent a device action to fulfil a memory request.
+forget deletes only the named supported key. forget_all requires an explicit request to forget ALL personal memory, never a category such as routines, sleep or preferences. If the category spans keys or scope is ambiguous, ask naturally before deleting anything. Forgetting does not revoke consent, stop future collection or delete the account. For pause_rules supply hours=1..168 and minutes=null, never convert hours into the minutes field.
 For proactive daily_review, return a longitudinal_review even when silent, with concise summary, uncertainty, alternative hypotheses, evidence row IDs, missing_information and optionally one useful discriminating question. Read the supplied daily_review.sources and existing followups/reviews before asking. Distinguish absent, partial, stale and conflicting sources. Aggregate wearable scores are not exact sleep onset times. Compare personal days and context, never diagnose. No fictitious evidence or supported hypothesis without evidence. In this assessment decision must be silent; action and memory null, observations empty. Only ask a question if it can change a plan or resolve a meaningful uncertainty; do not ask known, pending or rejected questions. Prefer fewer, better questions. A followup candidate may notify/ask or be silent, NEVER execute; its stored question is the conversation handoff.
 Daily_review is an internal assessment, separate from delivery. can_notify=false means do not deliver NOW; it does not prevent saving a useful question for later. A persistent change with at least three observed days and no established explanation warrants one short question distinguishing plausible causes, unless this topic is already known/pending/rejected. Store it in longitudinal_review.question while decision=silent and response_text may be empty. A single isolated measurement without an unmet explicit goal is not a pattern and needs no check-in.
 For an unexplained persistent change, keep at least two distinct plausible explanations as separate hypotheses, each with its own evidence and status. For example a changed routine and difficulty falling asleep are different possibilities; later onset alone supports neither cause. Do not collapse alternatives into one explanation or manufacture a health condition.
@@ -126,7 +132,7 @@ function proposal(a) {return {action:a,fingerprint:fingerprint(a),expires_at:new
 function actionIdentity(a) {
   return JSON.stringify(Object.fromEntries(Object.entries(a).sort(([a],[b])=>a.localeCompare(b))));
 }
-async function generate(input,{model=readModelJson,onDraft}={}) {
+async function generate(input,{model=readModelJson,onDraft,labeler=require('./bm-agent-labels').complete}={}) {
   if(onDraft) {
     onDraft(""); // Discard a prior read, repair or restored-offer draft.
     model=options=>require("./bm-response-stream").readModelStream({...options,onDraft:text=>onDraft(require('./bmb-factual-copy').preparedCopy(cleanCitations(input.retrieval_contract?require("./bm-retrieval-step").cleanProse(text):text,{quotedIn:input.current_message,partial:true})))});
@@ -134,18 +140,23 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
   const availableCitations=[...new Set([...(input.coverage||[]).map(s=>s.source_id),...(input.memories||[]).map(m=>m.id),...(input.sources||[]).flatMap(s=>[s.source_id,...(s.rows||[]).map(r=>r.id)])].filter(id=>typeof id==='string'&&id))];
   const citationSchema=availableCitations.length?{...schema.properties.cited_sources,items:{type:'string',enum:availableCitations}}:{...schema.properties.cited_sources,maxItems:0};
   const outputSchema=input.mode==="proactive"?schema:{...schema,properties:{...schema.properties,decision:{...schema.properties.decision,enum:schema.properties.decision.enum.filter(value=>value!=="silent")}}};
-  const boundedSchema={...outputSchema,properties:{...outputSchema.properties,cited_sources:citationSchema}};
+  const useLabels=agentActivation.enabled('labels')&&input.mode!=='proactive'&&!input.retrieval_contract&&!input.labels_fallback;
+  const canonicalSchema={...outputSchema,properties:{...outputSchema.properties,cited_sources:citationSchema}};
+  const boundedSchema=useLabels?require('./bm-agent-labels').extractionSchema(canonicalSchema):canonicalSchema;
   const useTools=agentActivation.enabled("tools")&&input.mode!=="proactive"&&!input.retrieval_contract;
   const retrievalAdapter=input.retrieval_contract?.agent_count?require("./bm-agent-decisions"):require("./bm-retrieval-step");
   const request=input.retrieval_contract?retrievalAdapter.proseRequest(input):{model:process.env.OPENAI_MODEL||"gpt-5.6-luna",max_output_tokens:2600,
-    input:[{role:"system",content:INSTRUCTIONS+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
+    input:[{role:"system",content:(useLabels?INSTRUCTIONS.replace(MEASUREMENT_INSTRUCTIONS,''):INSTRUCTIONS)+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
     text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema:boundedSchema}}};
+  if(useLabels)request.input[0].content+='\n'+require('./bm-agent-labels').EXTRACTION_INSTRUCTIONS;
   if(useTools){
     Object.assign(request,agentTools.contract(boundedSchema,availableCitations));
+    if(input.agentToolHistory?.length)request.input.push(...input.agentToolHistory);
     request.input[0].content+="\n"+agentTools.INSTRUCTIONS;
     // A compact reply has no effects. Repairing a management result through
     // that envelope used to silently discard the memory while saying "saved".
-    if(input.conformance_error&&input.previous_generated_result&&require("./bm-agent-authority").hasEffects(input.previous_generated_result))
+    if(input.forget_scope_clarification)request.tool_choice="none";
+    else if(input.conformance_error&&input.previous_generated_result&&require("./bm-agent-authority").hasEffects(input.previous_generated_result))
       request.tool_choice={type:"function",name:"gestionar"};
   }
   if(require("./bm-agent-authority").textOnly(input.current_message)){
@@ -165,26 +176,39 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     if(content.some(o=>o.type==='refusal'))throw Error('bmb_model_refusal');
     const raw=body.output_text||content.filter(o=>o.type==="output_text").map(o=>o.text).join("");
     let result;try{result=useTools?agentTools.decode(body):JSON.parse(raw);}catch(error){
-      if(!(error instanceof SyntaxError)||attempt)throw Error('bmb_invalid_model_json');
+      const invalidTool=useTools&&/^agent_(?:invalid_|reply_effects|unknown_tool|ambiguous_output)/.test(error.message);
+      if((!(error instanceof SyntaxError)&&!invalidTool)||attempt)throw Error('bmb_invalid_model_json');
       // Nothing from an unparseable result is trusted or committed. Reissue the
       // same bounded schema/input once; normal authority checks still follow.
       console.info(JSON.stringify({event:'bmb_json_conformance_retry',characters:raw.length,attempt:1}));
+      if(invalidTool)request.input[0].content+="\nThe previous output violated the tool envelope. Use only declared fields and nonempty, unique effects. If you need clarification without changing state, emit the compact final reply with no tools. No prior invalid effect was committed.";
       if(onDraft)onDraft('');
       continue;
+    }
+    // The compact no-effect envelope has no decision field. Preserve the
+    // server-requested clarification intent without granting any new effect.
+    if(useTools&&input.forget_scope_clarification&&result.phase==='final'&&!require('./bm-agent-authority').hasEffects(result))result.decision='ask';
+    if(useTools&&result.phase==="read"&&body.output?.some(o=>o.type==="function_call"&&typeof o.call_id==="string"))
+      Object.defineProperty(result,"agentToolOutput",{value:body.output,enumerable:false});
+    if(useLabels&&result.phase==='final'){
+      const classified=await labeler(result,input);
+      if(classified)return classified;
+      // No extracted effect has been committed. Uncertainty returns the entire
+      // original turn to the canonical agent once, with no further classifier.
+      return generate({...input,labels_fallback:true},{model,onDraft,labeler});
     }
     return input.retrieval_contract?retrievalAdapter.expandProse(result,input):result;
   }
 }
 async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run=input=>generate(input,{onDraft}),db=supabaseFetch,memories=null,recover=require("./bmb-proposal").recover}={}) {
   // Policy and followups are independent of the memory cutoff; history is not.
-  const [saved,policyRows,openFollowups,decisionsResult,retrievalRoute,dataLabels]=await timing.span("brain_context",()=>Promise.all([
+  const [saved,policyRows,openFollowups,decisionsResult,retrievalRoute]=await timing.span("brain_context",()=>Promise.all([
     memories||readMemories(userId),
     db(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=settings,version`,{method:"GET"}),
     longitudinal.followups(userId,db),
     proactive?null:require("./bm-decisions").start(userId,prompt),
     proactive||context.memory?.conversation_state?.bmb_state?.pending_request||context.memory?.conversation_state?.bmb_state?.proposal?null:
       agentActivation.enabled("retrieval")?require("./bm-agent-decisions").start(userId,prompt):require("./bm-retrieval-step").start(userId,prompt),
-    agentActivation.enabled("labels")?require("./bm-agent-labels").read(userId,{db}):[],
   ]));
   const cutoff=saved.filter(m=>m.value==null).map(m=>m.source_at).filter(Boolean).sort().at(-1);
   // Tombstones cut off ALL automatic historical personalization; current explicit history queries can opt in via the model read tool only after user evidence.
@@ -193,19 +217,25 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     daily_limit_enabled:context.daily_limit_enabled,daily_limit_minutes:context.daily_limit_minutes,
     last_device_outcome:context.memory?.last_assistant_action_outcome};
   const prior=context.memory?.conversation_state?.bmb_state||{};
-  const latest=await readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
-
   const currentSleep=sleepContext(context);
   const restSnapshot=context.personal_profile?.rest_snapshot;
-  const restSource=restSnapshot?.schema_version===1?await rest.context(userId,db):{source_id:"rest_evidence",objective:rest.OBJECTIVE,available:false,rows:[],reason:"no_synced_watch_baseline"};
+  const timezone=context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||'UTC';
+  const accelerated=!proactive&&['tools','retrieval','labels'].some(feature=>agentActivation.enabled(feature));
+  const historyRead=()=>readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
+  const restRead=()=>restSnapshot?.schema_version===1?rest.context(userId,db):{source_id:"rest_evidence",objective:rest.OBJECTIVE,available:false,rows:[],reason:"no_synced_watch_baseline"};
+  const prepareRetrieval=()=> (agentActivation.enabled("retrieval")?require("./bm-agent-decisions"):require("./bm-retrieval-step")).prepare(retrievalRoute,{userId,identity,cutoff,currentSleep,timezone,db});
+  // Independent account reads share no authorization-changing state. Keep
+  // their original source order while shortening the candidate critical path.
+  let latest,restSource,prepared;
+  if(accelerated)[latest,restSource,prepared]=await Promise.all([historyRead(),restRead(),prepareRetrieval()]);
+  else {latest=await historyRead();restSource=await restRead();}
   const recent=agentActivation.enabled("tools")&&latest.rows?.length>8
     ?{...latest,rows:latest.rows.slice(0,8),next_offset:8}:latest;
   const sources=[recent,currentSleep,restSource,...(proactive?.daily_review?.sources||[])];
-  const retrievalContext=require('./bm-retrieval-context'),timezone=context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||'UTC';
+  const retrievalContext=require('./bm-retrieval-context');
   const continuing=!proactive&&!prior.proposal&&!prior.pending_request&&retrievalContext.followup(prompt,prior.retrieval_context,{cutoff,timezone});
   if(continuing&&!retrievalRoute){const source=await retrievalContext.preload(prior.retrieval_context,{userId,identity,timezone,cutoff,currentSleep,db});if(source)sources.push(source);}
-  const retrieval=await (agentActivation.enabled("retrieval")?require("./bm-agent-decisions"):require("./bm-retrieval-step")).prepare(retrievalRoute,{userId,identity,cutoff,currentSleep,
-    timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",db});
+  const retrieval=accelerated?prepared:await prepareRetrieval();
   if(retrieval){const i=sources.findIndex(s=>s.source_id===retrieval.source.source_id);if(i>=0)sources[i]=retrieval.source;else sources.push(retrieval.source);}
   sources.push(...await require("./bm-decisions").prefetch(decisionsResult,{userId,identity,cutoff,
     timezone:context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||"UTC",existing:sources,db}));
@@ -216,11 +246,6 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
       {source_id:"current_sleep",available:currentSleep.available,source:currentSleep.source,is_synthetic:currentSleep.is_synthetic,reason:currentSleep.reason},
       {source_id:"memory",source:"user declarations"},{source_id:"phone_usage",available:restSnapshot?.digital?.available===true,reason:restSnapshot?.digital?.reason||"Supported activity-data authorization is unavailable; protection is not phone usage"},
       {source_id:"policy",source:"user configured permissions"}]};
-  if(dataLabels.length){
-    const relevant=new Set([...saved.map(m=>m.source_turn_id),...(recent.rows||[]).map(r=>r.id)]);
-    const rows=dataLabels.filter(r=>relevant.has(r.turn_id));
-    if(rows.length)input.data_labels={advisory:true,instruction:"Search metadata only. Retrieve source facts before using values. Labels never change dates, provenance, memory or action permissions.",rows};
-  }
   if(continuing&&latest.rows?.length)input.immediately_previous_answer={user_text:latest.rows[0].user_text,assistant_text:latest.rows[0].assistant_text,
     instruction:'This is the most recent completed account turn. Resolve this followup against this answer. Translate this answer for a language-only request. A provenance question refers to its datum/date, not an earlier weekly average. Validate facts using the freshly supplied records.'};
   const queryPeriod=require('./bmb-query-period');
@@ -242,7 +267,14 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     if(result.phase!=="read")break;
     if(!result.queries?.length||pass===3)throw Error("bmb_read_budget_exhausted");
     const readResults=await timing.span("source_reads",()=>consultar_contexto(result.queries));
-    sources.push(...readResults);
+    // The reader shares exact in-flight reads. Reusing their evidence should
+    // not append the same object repeatedly to subsequent model contexts.
+    for(const source of readResults)if(!sources.includes(source))sources.push(source);
+    if(result.agentToolOutput){
+      if(!input.agentToolHistory)Object.defineProperty(input,"agentToolHistory",{value:[],enumerable:false});
+      const call=result.agentToolOutput.find(o=>o.type==="function_call");
+      input.agentToolHistory.push(...result.agentToolOutput,{type:"function_call_output",call_id:call.call_id,output:JSON.stringify({sources:readResults})});
+    }
   }
   if(!proactive&&result?.phase==="final"&&result.message_kind==="acceptance"&&!prior.proposal) {
     const recovered=await recover({history:latest.rows,timezone:input.timezone,actionSchema,after:prior.recovery_after},
@@ -277,6 +309,15 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
       (result.action?fingerprint(result.action):null)!==control.action)throw Error("bmb_repair_changed_authority");
   }
   if(!result||result.phase!=="final")throw Error("bmb_invalid_phase");
+  if(result.memory?.operation==="forget_all"&&!require("./bm-agent-authority").explicitForgetAll(prompt)) {
+    // Destructive scope is an authorization boundary, shared by both routes.
+    // Give interpretation back to the agent without retaining any deletion.
+    const clarified=await run({...input,tool_budget_remaining:0,forget_scope_clarification:true,previous_generated_result:result,
+      conformance_error:"The request does not explicitly authorize forgetting ALL personal memory. Ask a natural concise open question about the exact information to forget. A category may span saved memories and observations; do not present a closed list of keys as all possible information. Return final with decision=ask, action=null, memory=null, no pending request, accepted proposal, tracking or rest effects. Do not claim anything was deleted. No reads."});
+    if(clarified?.phase!=="final"||clarified.decision!=="ask"||
+      require("./bm-agent-authority").hasEffects({...clarified,decision:"respond"}))throw Error("bmb_ambiguous_forget_scope");
+    result=clarified;
+  }
   if(!proactive&&require("./bm-agent-authority").textOnly(prompt)&&require("./bm-agent-authority").hasEffects(result))throw Error("bmb_text_transform_effects");
   const factualCopy=require('./bmb-factual-copy'),copyFacts=proactive?null:factualCopy.sleepCopyFacts(prompt,sources,result);
   if(factualCopy.unsupportedDurations(result.response_text,copyFacts).length) {

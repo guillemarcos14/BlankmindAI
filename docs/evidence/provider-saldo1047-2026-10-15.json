@@ -1,0 +1,2259 @@
+{
+  "version": 1,
+  "provider_real": true,
+  "approved": false,
+  "physical_device_tested": false,
+  "audio_pairs": 0,
+  "source_hashes": {
+    "_app_onboarding_access.js": "04b0beb3278adbefcdea97e899835de5c19e5ff1f00c28a2bf3983a07892e71b",
+    "_apple_revoke.js": "09386711184a3b60e1982e34630a0fac0f27c4e8f04744519d22b06079cf9b30",
+    "_assistant_memory.js": "f9150f353a47f12dab0a7542c7b712324dfbdbc262171f6ea3ff8a9f01d6e0fc",
+    "_assistant_push.js": "951347b12c0dffce708cc778b06a055112e716623ac1e56823b838ce0c5e6091",
+    "_assistant_reply_text.js": "be45c8aae2098a8c03dba15fcf52854a6ae351446802c402a87c4bb729283f14",
+    "_bm_semantic_store.js": "df9d066bb3e1a07e0a6332d6465185cc45397b17bedac8df6d7e9379eb83fef3",
+    "_bm_user_context.js": "ef6addcd938589e0140c1b8f524b6c0643b918548de56a8a7a0762ad89d783b5",
+    "_identity.js": "bca5468e89b8d357e32ae516ba73df2e88bfce880220f56c10225dfb233125ec",
+    "_membership.js": "94f17f125473042bbeb775dd210f617f90f19acbab01f85f924b76de877c5c77",
+    "account-data.js": "bc5cdd5a7091fba5e015fbe4d6c0d09f2cca7dca6fb724f9ff4559446e3c4fdd",
+    "app-auth.js": "e731d2ea3c8948b3b2c9f8763b00b30dadfcffc3645baac5e7a0f654c77eb41f",
+    "assistant-app-agent.js": "f4c73e3bc472bc870ffcdc0e0acdef2924e8edbce7bafbd3ecd8b647641aa3a9",
+    "assistant-app-stream.mjs": "9ccf32fd1d090cbb5c4c546900e07b4da3098d0de09499a8272e72d37aa92669",
+    "assistant-app-voice.mjs": "5744a2ec8bb22c1bc665b971df5b15dc497a07b4c0f680c9d32e2162776db713",
+    "assistant-app.js": "d00219936f6ef2aae8ef08458afedab9950c947683103546fc3ce15c636f5db0",
+    "assistant-device.js": "d27540cac8e2f228f6fb2f4398603ae25ed76136f60673d1d37733459f96e8be",
+    "bm-agent-activation.js": "83b5029b1e914d5d648f00411fb288ccd5c2ba6109930b00620bdb056e5cd1ff",
+    "bm-agent-authority.js": "2dfc436cc00a35ac96ed5e0dbc8f3f1a953428ad8114e29b14c50789d0fbacdd",
+    "bm-agent-calendar.js": "584250f744ccf137cc140bc2a9dc71b7e72eeb175962d51dcfbad646f8fd12c5",
+    "bm-agent-decisions.js": "fb048dcfd7213a74310e1415a61a70328dee0e591a8a7c713cdddc0dae9b62bc",
+    "bm-agent-evidence.js": "a5912582d1238d2c9bdb268a18ca7f54909fd141a7fbf333afd21e21a145c469",
+    "bm-agent-labels.js": "bb410b86423e47080cb3f1156f95daaf90e81270a9808e46370932c251145eaa",
+    "bm-agent-tools.js": "da09c15fe15481e965ebc1e649a67c70e9b48906fde0bedce8d3b162a7dc3246",
+    "bm-audio-input.js": "ec608471c516ff86424eaeb6d001eac51f2e50e78935dcdccbb2618a9ed9195a",
+    "bm-brain-data.js": "00a1944f57c05877de177a309c160a216f9b9041634fa7369911d0cc922344f9",
+    "bm-context.js": "bcde7118f776e8b6df85f592edfdecc4df03943bc0def7dd53bf764b18b07136",
+    "bm-contracts.js": "1f680f5a5769e517f197e600ae503b67200d02a9e41a2f1c92c22de89d056ca7",
+    "bm-conversation-copy.js": "e7ff91c13d32285dabb24774a470239301b2ddebef8eeec78bcaf752d744b384",
+    "bm-conversation-style.js": "24c3c546249a4a146b1e5567e88f72e3700373ae8e87a9be04dec7c89562069d",
+    "bm-decisions.js": "327801d74c82398d048e2a02f14d1f3ee77edcbd272ef1db430d883f6ad4de04",
+    "bm-memory.js": "cfb3e0a22ff1cd0aa58a737e82f6806f3eec25ab349887bdf95fa59a487ebb1f",
+    "bm-model-request.js": "8f8b9585784e99f2f654f4d02fd94eb06822690d887c113a07567995e45bc768",
+    "bm-pending-action.js": "b6bdd23f2ed2604746e1930bce32d7e98c0539a4c679ac34452e16f64e104e2e",
+    "bm-response-stream.js": "7105ea2ee867cc81634575c0b8874c82d1ccf45395590bfa9c904b0300d8e1b3",
+    "bm-retrieval-context.js": "b728e92fb70de6ed90577156926c0cad474e3443b335b41ef49a1a55b440b136",
+    "bm-retrieval-step.js": "ef94234e9bbf2b80e5b90672f5a19a6ecd83a31f4d651981790ac524d49e4b5f",
+    "bm-semantic-delivery.js": "9a7af5c1aaac6a5da924cb0e6a41df342d81593773008cf6d554e9daafe86176",
+    "bm-semantic-state.js": "08859192b6a59ac223f22e9d3452ca1a8f40f6e3471a88125574a8ee07308021",
+    "bm-turn-timing.js": "35f60608e000472e087b71ea75297b5beff133d996511483a58f9600f0a63f0c",
+    "bm-voice-alignment.js": "2e1297dbd3508478377076a7e2cdb39ff0b79a2dd34c0ae64e02eebd9f502733",
+    "bm-voice-elevenlabs.js": "a1a0debcd51c42f62924238fc59d2024e64215015bb87731705ad76c4b4a6b06",
+    "bm-voice-output.js": "62dc3e6e2d7e03fe959d6ce11826fb0ed8533bf66cd96559c4c3b4b9fc4c75fc",
+    "bmb-brain.js": "9b935a3b2e595b6bdfedbcf45bcf840b38753c1721ecb0be284fa61e1412509d",
+    "bmb-factual-copy.js": "32ac925152844d6f8d7df69764b29153c54886cf4d203f2ced82f39ff9e4cd1e",
+    "bmb-greeting.js": "733acd075e0ea7a7cccd43e20afda16c5b603390fdae3a040efc502c00aebff7",
+    "bmb-longitudinal.js": "b5cf4094ddc48b781918c8eb0a03c6c617badbeda2b31bbe74f5db27b2c11e6d",
+    "bmb-policy.js": "eda384604cc7fb2010577326899f963590b5012151f2430ea9fa06d10a9b82f8",
+    "bmb-proposal.js": "6a94c5522ff55514e17ca543a4a00f317363b7a53f516d75004176f4beb47a4b",
+    "bmb-query-period.js": "ea5c5a6fce49d5aa87ecfc8978fc7398cc466f4f92ef57bb3d2ca533cfec6fb7",
+    "bmb-rest.js": "ab9599ff950fb862643cf48e371f8fad3b002a34459a84b2c780e1b0d747df43",
+    "bmb-service.js": "1f46084f425908fb71059a3cb8a4b1dbe8f9c7465510f4e3add41aa8b17c3e26",
+    "bmb-sleep-context.js": "a1f8892e0ebd07d511305b8bc71d4b91883d1d61981db50e08824759fa0d836b",
+    "bmb-sources.js": "a932f9dccb13bfbc5fd0a8962eff92f8a6d7f2ccbc0f5d621bf32f34b85ceb90",
+    "bmb-tick.js": "137d9b8ade307f608061041edc08b20b37011e955ecba54868f8624b3e6c2bcc",
+    "bmb-worker-background.js": "3f1b3967179d3d6fd0e1049ee4ea68d5a752dea7ad12100d08948149bcdc2e15",
+    "funnel-access.js": "4663e084705f7039833b85012783d9c6e29ebd2b24e11ce8307989efa0b1346b",
+    "funnel-diagnosis.js": "232d7cdd48533e20449202dadf67dc166f5da24cbbee1a4354fae2486edbf5ae",
+    "funnel-event.js": "0bc6de6881caaf541e4293d466648dec5ed2f97be5d92e7b99d1df02a63bafce",
+    "funnel-storekit.js": "13df07c327213a117407980ed50659b3ab6409b22ac3240d4384bcddaf0b0fcf",
+    "membership-admin-create-code.js": "bf5dfdb0b2b6b5bdee28914b4d21cffd33d2b8948685350afc5a8cab0bd07899",
+    "membership-admin-update.js": "a13f3ddfc9889f66c7afa07c0d44f387b74da03397b717d9bfd2803e5ae01a75",
+    "membership-status.js": "7bb22a5fdbfa50adc5bade718a8b315e4585de25a97d0f34d36c1439ffaa269d",
+    "onboarding-responses.js": "a55c2f99fb077d4d8d101e9c3557f43d8b9383f171d40613d1f0c05f0682c74b",
+    "redeem-code.js": "d32ae1df461e39e950efef32c25e0c4db5ed11f68b407d1f1c57455135597375",
+    "referral-program.js": "4e07d73fd37bb2cdc8e0cabd68ee79db57c00d16b344e85bd9ff258ba4abbb3c",
+    "referrals.js": "f697c9db5854cc3d22574e8f607c1e970a201a500497801001530d0c046c67d5",
+    "shopify-order-activation-code.js": "05b3b7417163cb16c0263c62354ee7a4630787badf9082343ba25fcfb9bedc2e",
+    "shopify-orders-paid.js": "9ac479367bf9200a2c2d83adfa83d1f98e2e0520fd32ff1abadc72d75bdc1327",
+    "supabase/migrations/035_bmb_measured_rest.sql": "ad6c5634cc235f3c0f52df3dad06676663283d1b667f0e95a6df913ce9e72f2e",
+    "supabase/migrations/036_bm_agent_labels.sql": "f611c07efca9a1fdeca0acff90f2e9915e0cb6a8d2f1d03cf384d9448347644f",
+    "netlify/functions/funnel-catalog.json": "2adf747ae2c71e4aedc2ae63258c752aeee3fff1f945d903bd05afa704e94d7c",
+    "netlify/package-lock.json": "0eb24a9183e44d60c10821910c7e55f1e4ab07a4e26112ce2580c1d2ace7236f",
+    "supabase/migrations/037_monetization_funnel.sql": "5072d720a39b03b06cc8a7451af51cf00cde6a4635f34a3e25e390b4919bad48"
+  },
+  "features": {
+    "labels": {
+      "raw_pairs": 20,
+      "original_assessment": {
+        "approved": false,
+        "provider_measured": true,
+        "quality_reviewed": true,
+        "coverage_passed": false,
+        "model": "gpt-5.6-luna",
+        "case_count": 20,
+        "source_hashes": {
+          "_app_onboarding_access.js": "04b0beb3278adbefcdea97e899835de5c19e5ff1f00c28a2bf3983a07892e71b",
+          "_apple_revoke.js": "09386711184a3b60e1982e34630a0fac0f27c4e8f04744519d22b06079cf9b30",
+          "_assistant_memory.js": "f9150f353a47f12dab0a7542c7b712324dfbdbc262171f6ea3ff8a9f01d6e0fc",
+          "_assistant_push.js": "951347b12c0dffce708cc778b06a055112e716623ac1e56823b838ce0c5e6091",
+          "_assistant_reply_text.js": "be45c8aae2098a8c03dba15fcf52854a6ae351446802c402a87c4bb729283f14",
+          "_bm_semantic_store.js": "df9d066bb3e1a07e0a6332d6465185cc45397b17bedac8df6d7e9379eb83fef3",
+          "_bm_user_context.js": "ef6addcd938589e0140c1b8f524b6c0643b918548de56a8a7a0762ad89d783b5",
+          "_identity.js": "bca5468e89b8d357e32ae516ba73df2e88bfce880220f56c10225dfb233125ec",
+          "_membership.js": "94f17f125473042bbeb775dd210f617f90f19acbab01f85f924b76de877c5c77",
+          "account-data.js": "bc5cdd5a7091fba5e015fbe4d6c0d09f2cca7dca6fb724f9ff4559446e3c4fdd",
+          "app-auth.js": "e731d2ea3c8948b3b2c9f8763b00b30dadfcffc3645baac5e7a0f654c77eb41f",
+          "assistant-app-agent.js": "f4c73e3bc472bc870ffcdc0e0acdef2924e8edbce7bafbd3ecd8b647641aa3a9",
+          "assistant-app-stream.mjs": "9ccf32fd1d090cbb5c4c546900e07b4da3098d0de09499a8272e72d37aa92669",
+          "assistant-app-voice.mjs": "5744a2ec8bb22c1bc665b971df5b15dc497a07b4c0f680c9d32e2162776db713",
+          "assistant-app.js": "d00219936f6ef2aae8ef08458afedab9950c947683103546fc3ce15c636f5db0",
+          "assistant-device.js": "d27540cac8e2f228f6fb2f4398603ae25ed76136f60673d1d37733459f96e8be",
+          "bm-agent-activation.js": "83b5029b1e914d5d648f00411fb288ccd5c2ba6109930b00620bdb056e5cd1ff",
+          "bm-agent-authority.js": "2dfc436cc00a35ac96ed5e0dbc8f3f1a953428ad8114e29b14c50789d0fbacdd",
+          "bm-agent-calendar.js": "584250f744ccf137cc140bc2a9dc71b7e72eeb175962d51dcfbad646f8fd12c5",
+          "bm-agent-decisions.js": "fb048dcfd7213a74310e1415a61a70328dee0e591a8a7c713cdddc0dae9b62bc",
+          "bm-agent-evidence.js": "a5912582d1238d2c9bdb268a18ca7f54909fd141a7fbf333afd21e21a145c469",
+          "bm-agent-labels.js": "bb410b86423e47080cb3f1156f95daaf90e81270a9808e46370932c251145eaa",
+          "bm-agent-tools.js": "da09c15fe15481e965ebc1e649a67c70e9b48906fde0bedce8d3b162a7dc3246",
+          "bm-audio-input.js": "ec608471c516ff86424eaeb6d001eac51f2e50e78935dcdccbb2618a9ed9195a",
+          "bm-brain-data.js": "00a1944f57c05877de177a309c160a216f9b9041634fa7369911d0cc922344f9",
+          "bm-context.js": "bcde7118f776e8b6df85f592edfdecc4df03943bc0def7dd53bf764b18b07136",
+          "bm-contracts.js": "1f680f5a5769e517f197e600ae503b67200d02a9e41a2f1c92c22de89d056ca7",
+          "bm-conversation-copy.js": "e7ff91c13d32285dabb24774a470239301b2ddebef8eeec78bcaf752d744b384",
+          "bm-conversation-style.js": "24c3c546249a4a146b1e5567e88f72e3700373ae8e87a9be04dec7c89562069d",
+          "bm-decisions.js": "327801d74c82398d048e2a02f14d1f3ee77edcbd272ef1db430d883f6ad4de04",
+          "bm-memory.js": "cfb3e0a22ff1cd0aa58a737e82f6806f3eec25ab349887bdf95fa59a487ebb1f",
+          "bm-model-request.js": "8f8b9585784e99f2f654f4d02fd94eb06822690d887c113a07567995e45bc768",
+          "bm-pending-action.js": "b6bdd23f2ed2604746e1930bce32d7e98c0539a4c679ac34452e16f64e104e2e",
+          "bm-response-stream.js": "7105ea2ee867cc81634575c0b8874c82d1ccf45395590bfa9c904b0300d8e1b3",
+          "bm-retrieval-context.js": "b728e92fb70de6ed90577156926c0cad474e3443b335b41ef49a1a55b440b136",
+          "bm-retrieval-step.js": "ef94234e9bbf2b80e5b90672f5a19a6ecd83a31f4d651981790ac524d49e4b5f",
+          "bm-semantic-delivery.js": "9a7af5c1aaac6a5da924cb0e6a41df342d81593773008cf6d554e9daafe86176",
+          "bm-semantic-state.js": "08859192b6a59ac223f22e9d3452ca1a8f40f6e3471a88125574a8ee07308021",
+          "bm-turn-timing.js": "35f60608e000472e087b71ea75297b5beff133d996511483a58f9600f0a63f0c",
+          "bm-voice-alignment.js": "2e1297dbd3508478377076a7e2cdb39ff0b79a2dd34c0ae64e02eebd9f502733",
+          "bm-voice-elevenlabs.js": "a1a0debcd51c42f62924238fc59d2024e64215015bb87731705ad76c4b4a6b06",
+          "bm-voice-output.js": "62dc3e6e2d7e03fe959d6ce11826fb0ed8533bf66cd96559c4c3b4b9fc4c75fc",
+          "bmb-brain.js": "9b935a3b2e595b6bdfedbcf45bcf840b38753c1721ecb0be284fa61e1412509d",
+          "bmb-factual-copy.js": "32ac925152844d6f8d7df69764b29153c54886cf4d203f2ced82f39ff9e4cd1e",
+          "bmb-greeting.js": "733acd075e0ea7a7cccd43e20afda16c5b603390fdae3a040efc502c00aebff7",
+          "bmb-longitudinal.js": "b5cf4094ddc48b781918c8eb0a03c6c617badbeda2b31bbe74f5db27b2c11e6d",
+          "bmb-policy.js": "eda384604cc7fb2010577326899f963590b5012151f2430ea9fa06d10a9b82f8",
+          "bmb-proposal.js": "6a94c5522ff55514e17ca543a4a00f317363b7a53f516d75004176f4beb47a4b",
+          "bmb-query-period.js": "ea5c5a6fce49d5aa87ecfc8978fc7398cc466f4f92ef57bb3d2ca533cfec6fb7",
+          "bmb-rest.js": "ab9599ff950fb862643cf48e371f8fad3b002a34459a84b2c780e1b0d747df43",
+          "bmb-service.js": "1f46084f425908fb71059a3cb8a4b1dbe8f9c7465510f4e3add41aa8b17c3e26",
+          "bmb-sleep-context.js": "a1f8892e0ebd07d511305b8bc71d4b91883d1d61981db50e08824759fa0d836b",
+          "bmb-sources.js": "a932f9dccb13bfbc5fd0a8962eff92f8a6d7f2ccbc0f5d621bf32f34b85ceb90",
+          "bmb-tick.js": "137d9b8ade307f608061041edc08b20b37011e955ecba54868f8624b3e6c2bcc",
+          "bmb-worker-background.js": "3f1b3967179d3d6fd0e1049ee4ea68d5a752dea7ad12100d08948149bcdc2e15",
+          "funnel-access.js": "4663e084705f7039833b85012783d9c6e29ebd2b24e11ce8307989efa0b1346b",
+          "funnel-diagnosis.js": "232d7cdd48533e20449202dadf67dc166f5da24cbbee1a4354fae2486edbf5ae",
+          "funnel-event.js": "0bc6de6881caaf541e4293d466648dec5ed2f97be5d92e7b99d1df02a63bafce",
+          "funnel-storekit.js": "13df07c327213a117407980ed50659b3ab6409b22ac3240d4384bcddaf0b0fcf",
+          "membership-admin-create-code.js": "bf5dfdb0b2b6b5bdee28914b4d21cffd33d2b8948685350afc5a8cab0bd07899",
+          "membership-admin-update.js": "a13f3ddfc9889f66c7afa07c0d44f387b74da03397b717d9bfd2803e5ae01a75",
+          "membership-status.js": "7bb22a5fdbfa50adc5bade718a8b315e4585de25a97d0f34d36c1439ffaa269d",
+          "onboarding-responses.js": "a55c2f99fb077d4d8d101e9c3557f43d8b9383f171d40613d1f0c05f0682c74b",
+          "redeem-code.js": "d32ae1df461e39e950efef32c25e0c4db5ed11f68b407d1f1c57455135597375",
+          "referral-program.js": "4e07d73fd37bb2cdc8e0cabd68ee79db57c00d16b344e85bd9ff258ba4abbb3c",
+          "referrals.js": "f697c9db5854cc3d22574e8f607c1e970a201a500497801001530d0c046c67d5",
+          "shopify-order-activation-code.js": "05b3b7417163cb16c0263c62354ee7a4630787badf9082343ba25fcfb9bedc2e",
+          "shopify-orders-paid.js": "9ac479367bf9200a2c2d83adfa83d1f98e2e0520fd32ff1abadc72d75bdc1327",
+          "supabase/migrations/035_bmb_measured_rest.sql": "ad6c5634cc235f3c0f52df3dad06676663283d1b667f0e95a6df913ce9e72f2e",
+          "supabase/migrations/036_bm_agent_labels.sql": "f611c07efca9a1fdeca0acff90f2e9915e0cb6a8d2f1d03cf384d9448347644f",
+          "netlify/functions/funnel-catalog.json": "2adf747ae2c71e4aedc2ae63258c752aeee3fff1f945d903bd05afa704e94d7c",
+          "netlify/package-lock.json": "0eb24a9183e44d60c10821910c7e55f1e4ab07a4e26112ce2580c1d2ace7236f",
+          "supabase/migrations/037_monetization_funnel.sql": "5072d720a39b03b06cc8a7451af51cf00cde6a4635f34a3e25e390b4919bad48"
+        },
+        "metrics": {
+          "baseline": {
+            "first_text_p50_ms": 2717.074499999999,
+            "first_text_p95_ms": 4517.474000000001,
+            "first_audio_p50_ms": null,
+            "first_audio_p95_ms": null,
+            "total_cost_usd": 0.014557400000000002,
+            "errors": 0,
+            "bad_responses": 4,
+            "memory_errors": 2,
+            "action_errors": 0
+          },
+          "candidate": {
+            "first_text_p50_ms": 3076.8134999999993,
+            "first_text_p95_ms": 5031.8131,
+            "first_audio_p50_ms": null,
+            "first_audio_p95_ms": null,
+            "total_cost_usd": 0.017152300000000002,
+            "errors": 0,
+            "bad_responses": 5,
+            "memory_errors": 3,
+            "action_errors": 1
+          },
+          "by_group": {},
+          "no_regression": false,
+          "improved": false
+        },
+        "reasons": [
+          "insufficient_pairs",
+          "language_coverage",
+          "audio_coverage",
+          "subgroup_coverage",
+          "metrics_not_improved"
+        ]
+      },
+      "text_only_metrics": {
+        "baseline": {
+          "turns": 20,
+          "functional_passed": 20,
+          "response_ok": 16,
+          "memory_ok": 18,
+          "action_ok": 20,
+          "fully_accepted": 14,
+          "first_text_p50_ms": 2717.074499999999,
+          "first_text_p95_ms": 4517.474000000001,
+          "known_runtime_cost_usd": 0.014557400000000002,
+          "unknown_runtime_requests": 0,
+          "complete_runtime_cost_usd": 0.014557400000000002
+        },
+        "candidate": {
+          "turns": 20,
+          "functional_passed": 20,
+          "response_ok": 15,
+          "memory_ok": 17,
+          "action_ok": 19,
+          "fully_accepted": 12,
+          "first_text_p50_ms": 3076.8134999999993,
+          "first_text_p95_ms": 5031.8131,
+          "known_runtime_cost_usd": 0.0171523,
+          "unknown_runtime_requests": 0,
+          "complete_runtime_cost_usd": 0.0171523
+        }
+      },
+      "by_language": {
+        "es": {
+          "baseline": {
+            "turns": 10,
+            "functional_passed": 10,
+            "response_ok": 8,
+            "memory_ok": 10,
+            "action_ok": 10,
+            "fully_accepted": 8,
+            "first_text_p50_ms": 2705.9231999999993,
+            "first_text_p95_ms": 4517.474000000001,
+            "known_runtime_cost_usd": 0.007907629999999999,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.007907629999999999
+          },
+          "candidate": {
+            "turns": 10,
+            "functional_passed": 10,
+            "response_ok": 7,
+            "memory_ok": 9,
+            "action_ok": 9,
+            "fully_accepted": 6,
+            "first_text_p50_ms": 3236.8914,
+            "first_text_p95_ms": 9117.4274,
+            "known_runtime_cost_usd": 0.01042995,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.01042995
+          }
+        },
+        "en": {
+          "baseline": {
+            "turns": 10,
+            "functional_passed": 10,
+            "response_ok": 8,
+            "memory_ok": 8,
+            "action_ok": 10,
+            "fully_accepted": 6,
+            "first_text_p50_ms": 2717.074499999999,
+            "first_text_p95_ms": 4577.861599999999,
+            "known_runtime_cost_usd": 0.006649769999999999,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.006649769999999999
+          },
+          "candidate": {
+            "turns": 10,
+            "functional_passed": 10,
+            "response_ok": 8,
+            "memory_ok": 8,
+            "action_ok": 10,
+            "fully_accepted": 6,
+            "first_text_p50_ms": 2581.2864999999983,
+            "first_text_p95_ms": 5031.8131,
+            "known_runtime_cost_usd": 0.006722349999999999,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.006722349999999999
+          }
+        }
+      },
+      "by_group": {
+        "chat": {
+          "baseline": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 2342.0159999999996,
+            "first_text_p95_ms": 2717.074499999999,
+            "known_runtime_cost_usd": 0.00232756,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00232756
+          },
+          "candidate": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 2114.944099999999,
+            "first_text_p95_ms": 2846.9301000000014,
+            "known_runtime_cost_usd": 0.0035891000000000004,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0035891000000000004
+          }
+        },
+        "query": {
+          "baseline": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 0,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 0,
+            "first_text_p50_ms": 2032.1749000000002,
+            "first_text_p95_ms": 2196.8561000000004,
+            "known_runtime_cost_usd": 0.0018797000000000002,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0018797000000000002
+          },
+          "candidate": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 0,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 0,
+            "first_text_p50_ms": 2071.4798,
+            "first_text_p95_ms": 2400.282299999999,
+            "known_runtime_cost_usd": 0.0018697000000000002,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0018697000000000002
+          }
+        },
+        "action": {
+          "baseline": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 2743.436599999999,
+            "first_text_p95_ms": 4517.474000000001,
+            "known_runtime_cost_usd": 0.00398727,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00398727
+          },
+          "candidate": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 3,
+            "memory_ok": 4,
+            "action_ok": 3,
+            "fully_accepted": 3,
+            "first_text_p50_ms": 3236.8914,
+            "first_text_p95_ms": 4183.310200000002,
+            "known_runtime_cost_usd": 0.003976400000000001,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.003976400000000001
+          }
+        },
+        "memory": {
+          "baseline": {
+            "turns": 8,
+            "functional_passed": 8,
+            "response_ok": 8,
+            "memory_ok": 6,
+            "action_ok": 8,
+            "fully_accepted": 6,
+            "first_text_p50_ms": 3305.4979999999996,
+            "first_text_p95_ms": 4577.861599999999,
+            "known_runtime_cost_usd": 0.00636287,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00636287
+          },
+          "candidate": {
+            "turns": 8,
+            "functional_passed": 8,
+            "response_ok": 8,
+            "memory_ok": 5,
+            "action_ok": 8,
+            "fully_accepted": 5,
+            "first_text_p50_ms": 3392.6485,
+            "first_text_p95_ms": 9117.4274,
+            "known_runtime_cost_usd": 0.007717100000000001,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.007717100000000001
+          }
+        }
+      },
+      "reports": [
+        "labels-cell-0.json",
+        "labels-cell-100.json",
+        "labels-cell-125.json",
+        "labels-cell-150.json",
+        "labels-cell-175.json",
+        "labels-cell-25.json",
+        "labels-cell-50.json",
+        "labels-cell-75.json",
+        "labels-target-195.json",
+        "labels-target-95.json"
+      ]
+    },
+    "retrieval": {
+      "raw_pairs": 22,
+      "original_assessment": {
+        "approved": false,
+        "provider_measured": false,
+        "quality_reviewed": false,
+        "coverage_passed": false,
+        "model": "gpt-5.6-luna",
+        "case_count": 21,
+        "source_hashes": {
+          "_app_onboarding_access.js": "04b0beb3278adbefcdea97e899835de5c19e5ff1f00c28a2bf3983a07892e71b",
+          "_apple_revoke.js": "09386711184a3b60e1982e34630a0fac0f27c4e8f04744519d22b06079cf9b30",
+          "_assistant_memory.js": "f9150f353a47f12dab0a7542c7b712324dfbdbc262171f6ea3ff8a9f01d6e0fc",
+          "_assistant_push.js": "951347b12c0dffce708cc778b06a055112e716623ac1e56823b838ce0c5e6091",
+          "_assistant_reply_text.js": "be45c8aae2098a8c03dba15fcf52854a6ae351446802c402a87c4bb729283f14",
+          "_bm_semantic_store.js": "df9d066bb3e1a07e0a6332d6465185cc45397b17bedac8df6d7e9379eb83fef3",
+          "_bm_user_context.js": "ef6addcd938589e0140c1b8f524b6c0643b918548de56a8a7a0762ad89d783b5",
+          "_identity.js": "bca5468e89b8d357e32ae516ba73df2e88bfce880220f56c10225dfb233125ec",
+          "_membership.js": "94f17f125473042bbeb775dd210f617f90f19acbab01f85f924b76de877c5c77",
+          "account-data.js": "bc5cdd5a7091fba5e015fbe4d6c0d09f2cca7dca6fb724f9ff4559446e3c4fdd",
+          "app-auth.js": "e731d2ea3c8948b3b2c9f8763b00b30dadfcffc3645baac5e7a0f654c77eb41f",
+          "assistant-app-agent.js": "f4c73e3bc472bc870ffcdc0e0acdef2924e8edbce7bafbd3ecd8b647641aa3a9",
+          "assistant-app-stream.mjs": "9ccf32fd1d090cbb5c4c546900e07b4da3098d0de09499a8272e72d37aa92669",
+          "assistant-app-voice.mjs": "5744a2ec8bb22c1bc665b971df5b15dc497a07b4c0f680c9d32e2162776db713",
+          "assistant-app.js": "d00219936f6ef2aae8ef08458afedab9950c947683103546fc3ce15c636f5db0",
+          "assistant-device.js": "d27540cac8e2f228f6fb2f4398603ae25ed76136f60673d1d37733459f96e8be",
+          "bm-agent-activation.js": "83b5029b1e914d5d648f00411fb288ccd5c2ba6109930b00620bdb056e5cd1ff",
+          "bm-agent-authority.js": "2dfc436cc00a35ac96ed5e0dbc8f3f1a953428ad8114e29b14c50789d0fbacdd",
+          "bm-agent-calendar.js": "584250f744ccf137cc140bc2a9dc71b7e72eeb175962d51dcfbad646f8fd12c5",
+          "bm-agent-decisions.js": "fb048dcfd7213a74310e1415a61a70328dee0e591a8a7c713cdddc0dae9b62bc",
+          "bm-agent-evidence.js": "a5912582d1238d2c9bdb268a18ca7f54909fd141a7fbf333afd21e21a145c469",
+          "bm-agent-labels.js": "bb410b86423e47080cb3f1156f95daaf90e81270a9808e46370932c251145eaa",
+          "bm-agent-tools.js": "da09c15fe15481e965ebc1e649a67c70e9b48906fde0bedce8d3b162a7dc3246",
+          "bm-audio-input.js": "ec608471c516ff86424eaeb6d001eac51f2e50e78935dcdccbb2618a9ed9195a",
+          "bm-brain-data.js": "00a1944f57c05877de177a309c160a216f9b9041634fa7369911d0cc922344f9",
+          "bm-context.js": "bcde7118f776e8b6df85f592edfdecc4df03943bc0def7dd53bf764b18b07136",
+          "bm-contracts.js": "1f680f5a5769e517f197e600ae503b67200d02a9e41a2f1c92c22de89d056ca7",
+          "bm-conversation-copy.js": "e7ff91c13d32285dabb24774a470239301b2ddebef8eeec78bcaf752d744b384",
+          "bm-conversation-style.js": "24c3c546249a4a146b1e5567e88f72e3700373ae8e87a9be04dec7c89562069d",
+          "bm-decisions.js": "327801d74c82398d048e2a02f14d1f3ee77edcbd272ef1db430d883f6ad4de04",
+          "bm-memory.js": "cfb3e0a22ff1cd0aa58a737e82f6806f3eec25ab349887bdf95fa59a487ebb1f",
+          "bm-model-request.js": "8f8b9585784e99f2f654f4d02fd94eb06822690d887c113a07567995e45bc768",
+          "bm-pending-action.js": "b6bdd23f2ed2604746e1930bce32d7e98c0539a4c679ac34452e16f64e104e2e",
+          "bm-response-stream.js": "7105ea2ee867cc81634575c0b8874c82d1ccf45395590bfa9c904b0300d8e1b3",
+          "bm-retrieval-context.js": "b728e92fb70de6ed90577156926c0cad474e3443b335b41ef49a1a55b440b136",
+          "bm-retrieval-step.js": "ef94234e9bbf2b80e5b90672f5a19a6ecd83a31f4d651981790ac524d49e4b5f",
+          "bm-semantic-delivery.js": "9a7af5c1aaac6a5da924cb0e6a41df342d81593773008cf6d554e9daafe86176",
+          "bm-semantic-state.js": "08859192b6a59ac223f22e9d3452ca1a8f40f6e3471a88125574a8ee07308021",
+          "bm-turn-timing.js": "35f60608e000472e087b71ea75297b5beff133d996511483a58f9600f0a63f0c",
+          "bm-voice-alignment.js": "2e1297dbd3508478377076a7e2cdb39ff0b79a2dd34c0ae64e02eebd9f502733",
+          "bm-voice-elevenlabs.js": "a1a0debcd51c42f62924238fc59d2024e64215015bb87731705ad76c4b4a6b06",
+          "bm-voice-output.js": "62dc3e6e2d7e03fe959d6ce11826fb0ed8533bf66cd96559c4c3b4b9fc4c75fc",
+          "bmb-brain.js": "9b935a3b2e595b6bdfedbcf45bcf840b38753c1721ecb0be284fa61e1412509d",
+          "bmb-factual-copy.js": "32ac925152844d6f8d7df69764b29153c54886cf4d203f2ced82f39ff9e4cd1e",
+          "bmb-greeting.js": "733acd075e0ea7a7cccd43e20afda16c5b603390fdae3a040efc502c00aebff7",
+          "bmb-longitudinal.js": "b5cf4094ddc48b781918c8eb0a03c6c617badbeda2b31bbe74f5db27b2c11e6d",
+          "bmb-policy.js": "eda384604cc7fb2010577326899f963590b5012151f2430ea9fa06d10a9b82f8",
+          "bmb-proposal.js": "6a94c5522ff55514e17ca543a4a00f317363b7a53f516d75004176f4beb47a4b",
+          "bmb-query-period.js": "ea5c5a6fce49d5aa87ecfc8978fc7398cc466f4f92ef57bb3d2ca533cfec6fb7",
+          "bmb-rest.js": "ab9599ff950fb862643cf48e371f8fad3b002a34459a84b2c780e1b0d747df43",
+          "bmb-service.js": "1f46084f425908fb71059a3cb8a4b1dbe8f9c7465510f4e3add41aa8b17c3e26",
+          "bmb-sleep-context.js": "a1f8892e0ebd07d511305b8bc71d4b91883d1d61981db50e08824759fa0d836b",
+          "bmb-sources.js": "a932f9dccb13bfbc5fd0a8962eff92f8a6d7f2ccbc0f5d621bf32f34b85ceb90",
+          "bmb-tick.js": "137d9b8ade307f608061041edc08b20b37011e955ecba54868f8624b3e6c2bcc",
+          "bmb-worker-background.js": "3f1b3967179d3d6fd0e1049ee4ea68d5a752dea7ad12100d08948149bcdc2e15",
+          "funnel-access.js": "4663e084705f7039833b85012783d9c6e29ebd2b24e11ce8307989efa0b1346b",
+          "funnel-diagnosis.js": "232d7cdd48533e20449202dadf67dc166f5da24cbbee1a4354fae2486edbf5ae",
+          "funnel-event.js": "0bc6de6881caaf541e4293d466648dec5ed2f97be5d92e7b99d1df02a63bafce",
+          "funnel-storekit.js": "13df07c327213a117407980ed50659b3ab6409b22ac3240d4384bcddaf0b0fcf",
+          "membership-admin-create-code.js": "bf5dfdb0b2b6b5bdee28914b4d21cffd33d2b8948685350afc5a8cab0bd07899",
+          "membership-admin-update.js": "a13f3ddfc9889f66c7afa07c0d44f387b74da03397b717d9bfd2803e5ae01a75",
+          "membership-status.js": "7bb22a5fdbfa50adc5bade718a8b315e4585de25a97d0f34d36c1439ffaa269d",
+          "onboarding-responses.js": "a55c2f99fb077d4d8d101e9c3557f43d8b9383f171d40613d1f0c05f0682c74b",
+          "redeem-code.js": "d32ae1df461e39e950efef32c25e0c4db5ed11f68b407d1f1c57455135597375",
+          "referral-program.js": "4e07d73fd37bb2cdc8e0cabd68ee79db57c00d16b344e85bd9ff258ba4abbb3c",
+          "referrals.js": "f697c9db5854cc3d22574e8f607c1e970a201a500497801001530d0c046c67d5",
+          "shopify-order-activation-code.js": "05b3b7417163cb16c0263c62354ee7a4630787badf9082343ba25fcfb9bedc2e",
+          "shopify-orders-paid.js": "9ac479367bf9200a2c2d83adfa83d1f98e2e0520fd32ff1abadc72d75bdc1327",
+          "supabase/migrations/035_bmb_measured_rest.sql": "ad6c5634cc235f3c0f52df3dad06676663283d1b667f0e95a6df913ce9e72f2e",
+          "supabase/migrations/036_bm_agent_labels.sql": "f611c07efca9a1fdeca0acff90f2e9915e0cb6a8d2f1d03cf384d9448347644f",
+          "netlify/functions/funnel-catalog.json": "2adf747ae2c71e4aedc2ae63258c752aeee3fff1f945d903bd05afa704e94d7c",
+          "netlify/package-lock.json": "0eb24a9183e44d60c10821910c7e55f1e4ab07a4e26112ce2580c1d2ace7236f",
+          "supabase/migrations/037_monetization_funnel.sql": "5072d720a39b03b06cc8a7451af51cf00cde6a4635f34a3e25e390b4919bad48"
+        },
+        "metrics": {
+          "baseline": {
+            "first_text_p50_ms": 2964.4341000000004,
+            "first_text_p95_ms": 4390.006599999999,
+            "first_audio_p50_ms": null,
+            "first_audio_p95_ms": null,
+            "total_cost_usd": 0.011728180000000001,
+            "errors": 0,
+            "bad_responses": 10,
+            "memory_errors": 2,
+            "action_errors": 1
+          },
+          "candidate": {
+            "first_text_p50_ms": 2865.832199999999,
+            "first_text_p95_ms": 3995.7619999999997,
+            "first_audio_p50_ms": null,
+            "first_audio_p95_ms": null,
+            "total_cost_usd": 0.01180018,
+            "errors": 0,
+            "bad_responses": 9,
+            "memory_errors": 2,
+            "action_errors": 0
+          },
+          "by_group": {},
+          "no_regression": false,
+          "improved": false
+        },
+        "reasons": [
+          "incomplete_measurement",
+          "insufficient_pairs",
+          "language_coverage",
+          "audio_coverage",
+          "subgroup_coverage",
+          "metrics_not_improved"
+        ]
+      },
+      "text_only_metrics": {
+        "baseline": {
+          "turns": 22,
+          "functional_passed": 22,
+          "response_ok": 11,
+          "memory_ok": 20,
+          "action_ok": 21,
+          "fully_accepted": 9,
+          "first_text_p50_ms": 2719.1517000000003,
+          "first_text_p95_ms": 4390.006599999999,
+          "known_runtime_cost_usd": 0.012287979999999995,
+          "unknown_runtime_requests": 0,
+          "complete_runtime_cost_usd": 0.012287979999999995
+        },
+        "candidate": {
+          "turns": 22,
+          "functional_passed": 22,
+          "response_ok": 13,
+          "memory_ok": 20,
+          "action_ok": 22,
+          "fully_accepted": 11,
+          "first_text_p50_ms": 2865.832199999999,
+          "first_text_p95_ms": 4170.988099999999,
+          "known_runtime_cost_usd": 0.016370930000000002,
+          "unknown_runtime_requests": 1,
+          "complete_runtime_cost_usd": null
+        }
+      },
+      "by_language": {
+        "es": {
+          "baseline": {
+            "turns": 11,
+            "functional_passed": 11,
+            "response_ok": 5,
+            "memory_ok": 10,
+            "action_ok": 10,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 2714.2553,
+            "first_text_p95_ms": 5614.425299999999,
+            "known_runtime_cost_usd": 0.0060830400000000005,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0060830400000000005
+          },
+          "candidate": {
+            "turns": 11,
+            "functional_passed": 11,
+            "response_ok": 7,
+            "memory_ok": 10,
+            "action_ok": 11,
+            "fully_accepted": 6,
+            "first_text_p50_ms": 3333.0590999999995,
+            "first_text_p95_ms": 13377.1675,
+            "known_runtime_cost_usd": 0.010189240000000002,
+            "unknown_runtime_requests": 1,
+            "complete_runtime_cost_usd": null
+          }
+        },
+        "en": {
+          "baseline": {
+            "turns": 11,
+            "functional_passed": 11,
+            "response_ok": 6,
+            "memory_ok": 10,
+            "action_ok": 11,
+            "fully_accepted": 5,
+            "first_text_p50_ms": 3018.300300000001,
+            "first_text_p95_ms": 4390.006599999999,
+            "known_runtime_cost_usd": 0.00620494,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00620494
+          },
+          "candidate": {
+            "turns": 11,
+            "functional_passed": 11,
+            "response_ok": 6,
+            "memory_ok": 10,
+            "action_ok": 11,
+            "fully_accepted": 5,
+            "first_text_p50_ms": 2345.2609,
+            "first_text_p95_ms": 4170.988099999999,
+            "known_runtime_cost_usd": 0.00618169,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00618169
+          }
+        }
+      },
+      "by_group": {
+        "chat": {
+          "baseline": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 2657.9408000000003,
+            "first_text_p95_ms": 3179.2079999999996,
+            "known_runtime_cost_usd": 0.0023719599999999998,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0023719599999999998
+          },
+          "candidate": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 2625.727999999999,
+            "first_text_p95_ms": 3505.9696999999996,
+            "known_runtime_cost_usd": 0.0022807599999999997,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0022807599999999997
+          }
+        },
+        "query": {
+          "baseline": {
+            "turns": 10,
+            "functional_passed": 10,
+            "response_ok": 0,
+            "memory_ok": 10,
+            "action_ok": 10,
+            "fully_accepted": 0,
+            "first_text_p50_ms": 2135.7158,
+            "first_text_p95_ms": 5614.425299999999,
+            "known_runtime_cost_usd": 0.0041796,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0041796
+          },
+          "candidate": {
+            "turns": 10,
+            "functional_passed": 10,
+            "response_ok": 1,
+            "memory_ok": 10,
+            "action_ok": 10,
+            "fully_accepted": 1,
+            "first_text_p50_ms": 2128.5411999999997,
+            "first_text_p95_ms": 13377.1675,
+            "known_runtime_cost_usd": 0.008292049999999999,
+            "unknown_runtime_requests": 1,
+            "complete_runtime_cost_usd": null
+          }
+        },
+        "action": {
+          "baseline": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 3,
+            "memory_ok": 4,
+            "action_ok": 3,
+            "fully_accepted": 3,
+            "first_text_p50_ms": 3018.300300000001,
+            "first_text_p95_ms": 3264.048100000001,
+            "known_runtime_cost_usd": 0.0027244599999999997,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0027244599999999997
+          },
+          "candidate": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 2968.406799999999,
+            "first_text_p95_ms": 3333.0590999999995,
+            "known_runtime_cost_usd": 0.00267406,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00267406
+          }
+        },
+        "memory": {
+          "baseline": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 2,
+            "action_ok": 4,
+            "fully_accepted": 2,
+            "first_text_p50_ms": 3801.4917000000005,
+            "first_text_p95_ms": 3948.2464,
+            "known_runtime_cost_usd": 0.00301196,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00301196
+          },
+          "candidate": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 2,
+            "action_ok": 4,
+            "fully_accepted": 2,
+            "first_text_p50_ms": 3841.3999,
+            "first_text_p95_ms": 4170.988099999999,
+            "known_runtime_cost_usd": 0.00312406,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00312406
+          }
+        }
+      },
+      "reports": [
+        "retrieval-cell-0.json",
+        "retrieval-cell-100.json",
+        "retrieval-cell-125.json",
+        "retrieval-cell-150.json",
+        "retrieval-cell-175.json",
+        "retrieval-cell-50.json",
+        "retrieval-cell-75.json",
+        "retrieval-query-a.json",
+        "retrieval-target-135.json",
+        "retrieval-target-140.json",
+        "retrieval-target-145.json",
+        "retrieval-target-35.json",
+        "retrieval-target-40.json",
+        "retrieval-target-45.json"
+      ]
+    },
+    "tools": {
+      "raw_pairs": 16,
+      "original_assessment": {
+        "approved": false,
+        "provider_measured": true,
+        "quality_reviewed": true,
+        "coverage_passed": false,
+        "model": "gpt-5.6-luna",
+        "case_count": 16,
+        "source_hashes": {
+          "_app_onboarding_access.js": "04b0beb3278adbefcdea97e899835de5c19e5ff1f00c28a2bf3983a07892e71b",
+          "_apple_revoke.js": "09386711184a3b60e1982e34630a0fac0f27c4e8f04744519d22b06079cf9b30",
+          "_assistant_memory.js": "f9150f353a47f12dab0a7542c7b712324dfbdbc262171f6ea3ff8a9f01d6e0fc",
+          "_assistant_push.js": "951347b12c0dffce708cc778b06a055112e716623ac1e56823b838ce0c5e6091",
+          "_assistant_reply_text.js": "be45c8aae2098a8c03dba15fcf52854a6ae351446802c402a87c4bb729283f14",
+          "_bm_semantic_store.js": "df9d066bb3e1a07e0a6332d6465185cc45397b17bedac8df6d7e9379eb83fef3",
+          "_bm_user_context.js": "ef6addcd938589e0140c1b8f524b6c0643b918548de56a8a7a0762ad89d783b5",
+          "_identity.js": "bca5468e89b8d357e32ae516ba73df2e88bfce880220f56c10225dfb233125ec",
+          "_membership.js": "94f17f125473042bbeb775dd210f617f90f19acbab01f85f924b76de877c5c77",
+          "account-data.js": "bc5cdd5a7091fba5e015fbe4d6c0d09f2cca7dca6fb724f9ff4559446e3c4fdd",
+          "app-auth.js": "e731d2ea3c8948b3b2c9f8763b00b30dadfcffc3645baac5e7a0f654c77eb41f",
+          "assistant-app-agent.js": "f4c73e3bc472bc870ffcdc0e0acdef2924e8edbce7bafbd3ecd8b647641aa3a9",
+          "assistant-app-stream.mjs": "9ccf32fd1d090cbb5c4c546900e07b4da3098d0de09499a8272e72d37aa92669",
+          "assistant-app-voice.mjs": "5744a2ec8bb22c1bc665b971df5b15dc497a07b4c0f680c9d32e2162776db713",
+          "assistant-app.js": "d00219936f6ef2aae8ef08458afedab9950c947683103546fc3ce15c636f5db0",
+          "assistant-device.js": "d27540cac8e2f228f6fb2f4398603ae25ed76136f60673d1d37733459f96e8be",
+          "bm-agent-activation.js": "83b5029b1e914d5d648f00411fb288ccd5c2ba6109930b00620bdb056e5cd1ff",
+          "bm-agent-authority.js": "2dfc436cc00a35ac96ed5e0dbc8f3f1a953428ad8114e29b14c50789d0fbacdd",
+          "bm-agent-calendar.js": "584250f744ccf137cc140bc2a9dc71b7e72eeb175962d51dcfbad646f8fd12c5",
+          "bm-agent-decisions.js": "fb048dcfd7213a74310e1415a61a70328dee0e591a8a7c713cdddc0dae9b62bc",
+          "bm-agent-evidence.js": "a5912582d1238d2c9bdb268a18ca7f54909fd141a7fbf333afd21e21a145c469",
+          "bm-agent-labels.js": "bb410b86423e47080cb3f1156f95daaf90e81270a9808e46370932c251145eaa",
+          "bm-agent-tools.js": "da09c15fe15481e965ebc1e649a67c70e9b48906fde0bedce8d3b162a7dc3246",
+          "bm-audio-input.js": "ec608471c516ff86424eaeb6d001eac51f2e50e78935dcdccbb2618a9ed9195a",
+          "bm-brain-data.js": "00a1944f57c05877de177a309c160a216f9b9041634fa7369911d0cc922344f9",
+          "bm-context.js": "bcde7118f776e8b6df85f592edfdecc4df03943bc0def7dd53bf764b18b07136",
+          "bm-contracts.js": "1f680f5a5769e517f197e600ae503b67200d02a9e41a2f1c92c22de89d056ca7",
+          "bm-conversation-copy.js": "e7ff91c13d32285dabb24774a470239301b2ddebef8eeec78bcaf752d744b384",
+          "bm-conversation-style.js": "24c3c546249a4a146b1e5567e88f72e3700373ae8e87a9be04dec7c89562069d",
+          "bm-decisions.js": "327801d74c82398d048e2a02f14d1f3ee77edcbd272ef1db430d883f6ad4de04",
+          "bm-memory.js": "cfb3e0a22ff1cd0aa58a737e82f6806f3eec25ab349887bdf95fa59a487ebb1f",
+          "bm-model-request.js": "8f8b9585784e99f2f654f4d02fd94eb06822690d887c113a07567995e45bc768",
+          "bm-pending-action.js": "b6bdd23f2ed2604746e1930bce32d7e98c0539a4c679ac34452e16f64e104e2e",
+          "bm-response-stream.js": "7105ea2ee867cc81634575c0b8874c82d1ccf45395590bfa9c904b0300d8e1b3",
+          "bm-retrieval-context.js": "b728e92fb70de6ed90577156926c0cad474e3443b335b41ef49a1a55b440b136",
+          "bm-retrieval-step.js": "ef94234e9bbf2b80e5b90672f5a19a6ecd83a31f4d651981790ac524d49e4b5f",
+          "bm-semantic-delivery.js": "9a7af5c1aaac6a5da924cb0e6a41df342d81593773008cf6d554e9daafe86176",
+          "bm-semantic-state.js": "08859192b6a59ac223f22e9d3452ca1a8f40f6e3471a88125574a8ee07308021",
+          "bm-turn-timing.js": "35f60608e000472e087b71ea75297b5beff133d996511483a58f9600f0a63f0c",
+          "bm-voice-alignment.js": "2e1297dbd3508478377076a7e2cdb39ff0b79a2dd34c0ae64e02eebd9f502733",
+          "bm-voice-elevenlabs.js": "a1a0debcd51c42f62924238fc59d2024e64215015bb87731705ad76c4b4a6b06",
+          "bm-voice-output.js": "62dc3e6e2d7e03fe959d6ce11826fb0ed8533bf66cd96559c4c3b4b9fc4c75fc",
+          "bmb-brain.js": "9b935a3b2e595b6bdfedbcf45bcf840b38753c1721ecb0be284fa61e1412509d",
+          "bmb-factual-copy.js": "32ac925152844d6f8d7df69764b29153c54886cf4d203f2ced82f39ff9e4cd1e",
+          "bmb-greeting.js": "733acd075e0ea7a7cccd43e20afda16c5b603390fdae3a040efc502c00aebff7",
+          "bmb-longitudinal.js": "b5cf4094ddc48b781918c8eb0a03c6c617badbeda2b31bbe74f5db27b2c11e6d",
+          "bmb-policy.js": "eda384604cc7fb2010577326899f963590b5012151f2430ea9fa06d10a9b82f8",
+          "bmb-proposal.js": "6a94c5522ff55514e17ca543a4a00f317363b7a53f516d75004176f4beb47a4b",
+          "bmb-query-period.js": "ea5c5a6fce49d5aa87ecfc8978fc7398cc466f4f92ef57bb3d2ca533cfec6fb7",
+          "bmb-rest.js": "ab9599ff950fb862643cf48e371f8fad3b002a34459a84b2c780e1b0d747df43",
+          "bmb-service.js": "1f46084f425908fb71059a3cb8a4b1dbe8f9c7465510f4e3add41aa8b17c3e26",
+          "bmb-sleep-context.js": "a1f8892e0ebd07d511305b8bc71d4b91883d1d61981db50e08824759fa0d836b",
+          "bmb-sources.js": "a932f9dccb13bfbc5fd0a8962eff92f8a6d7f2ccbc0f5d621bf32f34b85ceb90",
+          "bmb-tick.js": "137d9b8ade307f608061041edc08b20b37011e955ecba54868f8624b3e6c2bcc",
+          "bmb-worker-background.js": "3f1b3967179d3d6fd0e1049ee4ea68d5a752dea7ad12100d08948149bcdc2e15",
+          "funnel-access.js": "4663e084705f7039833b85012783d9c6e29ebd2b24e11ce8307989efa0b1346b",
+          "funnel-diagnosis.js": "232d7cdd48533e20449202dadf67dc166f5da24cbbee1a4354fae2486edbf5ae",
+          "funnel-event.js": "0bc6de6881caaf541e4293d466648dec5ed2f97be5d92e7b99d1df02a63bafce",
+          "funnel-storekit.js": "13df07c327213a117407980ed50659b3ab6409b22ac3240d4384bcddaf0b0fcf",
+          "membership-admin-create-code.js": "bf5dfdb0b2b6b5bdee28914b4d21cffd33d2b8948685350afc5a8cab0bd07899",
+          "membership-admin-update.js": "a13f3ddfc9889f66c7afa07c0d44f387b74da03397b717d9bfd2803e5ae01a75",
+          "membership-status.js": "7bb22a5fdbfa50adc5bade718a8b315e4585de25a97d0f34d36c1439ffaa269d",
+          "onboarding-responses.js": "a55c2f99fb077d4d8d101e9c3557f43d8b9383f171d40613d1f0c05f0682c74b",
+          "redeem-code.js": "d32ae1df461e39e950efef32c25e0c4db5ed11f68b407d1f1c57455135597375",
+          "referral-program.js": "4e07d73fd37bb2cdc8e0cabd68ee79db57c00d16b344e85bd9ff258ba4abbb3c",
+          "referrals.js": "f697c9db5854cc3d22574e8f607c1e970a201a500497801001530d0c046c67d5",
+          "shopify-order-activation-code.js": "05b3b7417163cb16c0263c62354ee7a4630787badf9082343ba25fcfb9bedc2e",
+          "shopify-orders-paid.js": "9ac479367bf9200a2c2d83adfa83d1f98e2e0520fd32ff1abadc72d75bdc1327",
+          "supabase/migrations/035_bmb_measured_rest.sql": "ad6c5634cc235f3c0f52df3dad06676663283d1b667f0e95a6df913ce9e72f2e",
+          "supabase/migrations/036_bm_agent_labels.sql": "f611c07efca9a1fdeca0acff90f2e9915e0cb6a8d2f1d03cf384d9448347644f",
+          "netlify/functions/funnel-catalog.json": "2adf747ae2c71e4aedc2ae63258c752aeee3fff1f945d903bd05afa704e94d7c",
+          "netlify/package-lock.json": "0eb24a9183e44d60c10821910c7e55f1e4ab07a4e26112ce2580c1d2ace7236f",
+          "supabase/migrations/037_monetization_funnel.sql": "5072d720a39b03b06cc8a7451af51cf00cde6a4635f34a3e25e390b4919bad48"
+        },
+        "metrics": {
+          "baseline": {
+            "first_text_p50_ms": 2878.1978,
+            "first_text_p95_ms": 3930.0532999999996,
+            "first_audio_p50_ms": null,
+            "first_audio_p95_ms": null,
+            "total_cost_usd": 0.01024928,
+            "errors": 0,
+            "bad_responses": 4,
+            "memory_errors": 2,
+            "action_errors": 0
+          },
+          "candidate": {
+            "first_text_p50_ms": 2782.4359000000004,
+            "first_text_p95_ms": 3678.1889,
+            "first_audio_p50_ms": null,
+            "first_audio_p95_ms": null,
+            "total_cost_usd": 0.01015934,
+            "errors": 0,
+            "bad_responses": 4,
+            "memory_errors": 0,
+            "action_errors": 0
+          },
+          "by_group": {},
+          "no_regression": false,
+          "improved": false
+        },
+        "reasons": [
+          "insufficient_pairs",
+          "language_coverage",
+          "audio_coverage",
+          "subgroup_coverage",
+          "metrics_not_improved"
+        ]
+      },
+      "text_only_metrics": {
+        "baseline": {
+          "turns": 16,
+          "functional_passed": 16,
+          "response_ok": 12,
+          "memory_ok": 14,
+          "action_ok": 16,
+          "fully_accepted": 10,
+          "first_text_p50_ms": 2878.1978,
+          "first_text_p95_ms": 3930.0532999999996,
+          "known_runtime_cost_usd": 0.01024928,
+          "unknown_runtime_requests": 0,
+          "complete_runtime_cost_usd": 0.01024928
+        },
+        "candidate": {
+          "turns": 16,
+          "functional_passed": 16,
+          "response_ok": 12,
+          "memory_ok": 16,
+          "action_ok": 16,
+          "fully_accepted": 12,
+          "first_text_p50_ms": 2782.4359000000004,
+          "first_text_p95_ms": 3678.1889,
+          "known_runtime_cost_usd": 0.01015934,
+          "unknown_runtime_requests": 0,
+          "complete_runtime_cost_usd": 0.01015934
+        }
+      },
+      "by_language": {
+        "es": {
+          "baseline": {
+            "turns": 8,
+            "functional_passed": 8,
+            "response_ok": 6,
+            "memory_ok": 6,
+            "action_ok": 8,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 2878.1978,
+            "first_text_p95_ms": 3930.0532999999996,
+            "known_runtime_cost_usd": 0.00520174,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00520174
+          },
+          "candidate": {
+            "turns": 8,
+            "functional_passed": 8,
+            "response_ok": 6,
+            "memory_ok": 8,
+            "action_ok": 8,
+            "fully_accepted": 6,
+            "first_text_p50_ms": 2489.203299999999,
+            "first_text_p95_ms": 3678.1889,
+            "known_runtime_cost_usd": 0.00578875,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00578875
+          }
+        },
+        "en": {
+          "baseline": {
+            "turns": 8,
+            "functional_passed": 8,
+            "response_ok": 6,
+            "memory_ok": 8,
+            "action_ok": 8,
+            "fully_accepted": 6,
+            "first_text_p50_ms": 2656.0616,
+            "first_text_p95_ms": 3466.9341999999997,
+            "known_runtime_cost_usd": 0.00504754,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00504754
+          },
+          "candidate": {
+            "turns": 8,
+            "functional_passed": 8,
+            "response_ok": 6,
+            "memory_ok": 8,
+            "action_ok": 8,
+            "fully_accepted": 6,
+            "first_text_p50_ms": 2782.4359000000004,
+            "first_text_p95_ms": 3102.7933999999996,
+            "known_runtime_cost_usd": 0.004370590000000001,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.004370590000000001
+          }
+        }
+      },
+      "by_group": {
+        "chat": {
+          "baseline": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 2475.5031,
+            "first_text_p95_ms": 2934.8131999999996,
+            "known_runtime_cost_usd": 0.00230956,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00230956
+          },
+          "candidate": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 2388.819099999999,
+            "first_text_p95_ms": 2896.1329000000005,
+            "known_runtime_cost_usd": 0.0033936199999999995,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0033936199999999995
+          }
+        },
+        "query": {
+          "baseline": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 0,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 0,
+            "first_text_p50_ms": 2164.4465999999998,
+            "first_text_p95_ms": 2781.044099999999,
+            "known_runtime_cost_usd": 0.0018817,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0018817
+          },
+          "candidate": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 0,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 0,
+            "first_text_p50_ms": 2009.0590999999995,
+            "first_text_p95_ms": 2317.8354999999992,
+            "known_runtime_cost_usd": 0.0018608000000000001,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0018608000000000001
+          }
+        },
+        "action": {
+          "baseline": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 3162.358399999999,
+            "first_text_p95_ms": 3648.6805000000004,
+            "known_runtime_cost_usd": 0.00274606,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00274606
+          },
+          "candidate": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 3102.7933999999996,
+            "first_text_p95_ms": 3678.1889,
+            "known_runtime_cost_usd": 0.0024080600000000005,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0024080600000000005
+          }
+        },
+        "memory": {
+          "baseline": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 2,
+            "action_ok": 4,
+            "fully_accepted": 2,
+            "first_text_p50_ms": 3466.9341999999997,
+            "first_text_p95_ms": 3930.0532999999996,
+            "known_runtime_cost_usd": 0.0033119599999999996,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.0033119599999999996
+          },
+          "candidate": {
+            "turns": 4,
+            "functional_passed": 4,
+            "response_ok": 4,
+            "memory_ok": 4,
+            "action_ok": 4,
+            "fully_accepted": 4,
+            "first_text_p50_ms": 3059.5555,
+            "first_text_p95_ms": 3143.0527,
+            "known_runtime_cost_usd": 0.00249686,
+            "unknown_runtime_requests": 0,
+            "complete_runtime_cost_usd": 0.00249686
+          }
+        }
+      },
+      "reports": [
+        "tools-cell-0.json",
+        "tools-cell-100.json",
+        "tools-cell-125.json",
+        "tools-cell-150.json",
+        "tools-cell-175.json",
+        "tools-cell-25.json",
+        "tools-cell-50.json",
+        "tools-cell-75.json"
+      ]
+    }
+  },
+  "failures": [
+    {
+      "feature": "labels",
+      "report": "labels-cell-125.json",
+      "case_id": "v2-labels-en-query-sleep_duration-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The duration is correct: 470 minutes equals 7 hours 50 minutes. However, the reply omits the required explicit date and coverage period (October 14, 2026, for the window from October 13 at 22:00 to October 14 at 22:00). No action or memory change was requested or performed, and the wording is natural.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-125.json",
+      "case_id": "v2-labels-en-query-sleep_duration-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The amount is correct: 470 minutes equals 7 hours 50 minutes. However, the reply omits the required explicit date and coverage period (2026-10-13 22:00 to 2026-10-14 22:00 UTC). No action or memory change was requested or performed, and the wording is natural.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-125.json",
+      "case_id": "v2-labels-en-query-sleep_average-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The average and coverage are accurate: 1,300 minutes across 3 measured entries equals about 7 hours 13 minutes, and missing days are correctly described as unknown. However, the response omits the required calendar-week period and the dates covered (entries on Oct 12–14, 2026; week beginning Oct 11 in the supplied timezone), so it does not fully satisfy the authored criterion. No action or memory change was requested or performed.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-125.json",
+      "case_id": "v2-labels-en-query-sleep_average-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The average is calculated correctly: 433.33 minutes equals about 7 hours 13 minutes, based on three measured records, and it correctly says missing days are unknown. However, the authored criterion explicitly requires dates and coverage; the reply does not identify the recorded dates (October 12–14, 2026) or clearly state the calendar-week date range. No action or memory change was requested or performed.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-175.json",
+      "case_id": "v2-labels-en-memory-bedtime-routine_statement-1320",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The reply is concise, natural, and accurately confirms the requested memory; no native action was requested or claimed. The stable bedtime memory and committed local-minute routine observation are correct. However, the after-turn state also contains an extra bedtime observation encoded as unit \"text\" with value_text \"22:00\", while the authored requested observation specifies only value_number 1320 with unit \"local_minute\". That additional persisted representation violates the criterion to persist only the authored classification and units.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-175.json",
+      "case_id": "v2-labels-en-memory-bedtime-routine_statement-1320",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The reply is concise, natural, and accurately acknowledges the user’s usual bedtime without claiming a dated occurrence, native action, or Watch efficacy. The stable bedtime memory and the requested routine observation (1320 local minutes) were persisted correctly. However, the after-turn state also contains an extra bedtime observation represented as value_text \"22:00\" with unit \"text\"; the authored expected observation specifies only the local_minute representation, so persistence was not limited to the requested classification/unit representation. No device action was requested or claimed.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-175.json",
+      "case_id": "v2-labels-en-memory-bedtime-routine_statement-1380",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The reply is natural and accurately confirms the persisted bedtime memory of 23:00. No native action was requested or claimed. However, the persisted observation state includes an extra bedtime observation encoded as text with unit `text`, in addition to the authored/requested `routine_statement` observation encoded as 1380 `local_minute`. This violates the requirement to persist only the authored classification and units for this turn.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-25.json",
+      "case_id": "v2-labels-es-query-sleep_duration-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La duración indicada, 7 horas y 50 minutos (470 minutos), es correcta. Sin embargo, la respuesta no identifica la fecha ni el periodo exacto cubierto por la medición (del 13 de octubre de 2026 a las 22:00 al 14 de octubre de 2026 a las 22:00, según la zona horaria del registro), pese a que el criterio lo exige. No hubo acciones ni cambios de memoria, lo cual es correcto.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-25.json",
+      "case_id": "v2-labels-es-query-sleep_duration-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La duración indicada (7 horas y 50 minutos = 470 minutos) es correcta, pero la respuesta no especifica las fechas ni el período exacto cubierto (del 13 de octubre de 2026 a las 22:00 al 14 de octubre de 2026 a las 22:00, zona Europe/Madrid), como exige el criterio. No realizó acciones ni modificó memoria, lo cual es correcto. La redacción es natural, aunque «según una medición disponible» resulta algo vaga.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-25.json",
+      "case_id": "v2-labels-es-query-sleep_average-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La media indicada es correcta: 433,33 minutos equivalen aproximadamente a 7 h 13 min, basada en 3 mediciones, y trata correctamente los días sin datos como desconocidos. Sin embargo, no cumple el criterio de especificar las fechas y la cobertura exacta del período: debía indicar que las mediciones disponibles corresponden al 12, 13 y 14 de octubre de 2026 (dentro del intervalo semanal consultado). No se solicitó ni se realizó ninguna acción o cambio de memoria.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-25.json",
+      "case_id": "v2-labels-es-query-sleep_average-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La media indicada es correcta: 433,33 minutos equivalen aproximadamente a 7 h 13 min, basada en 3 mediciones, y aclara correctamente que los días sin registro son desconocidos. Sin embargo, no cumple por completo el criterio porque omite el período exacto y las fechas con cobertura registrada (12, 13 y 14 de octubre de 2026; período consultado del 11 al 15 de octubre). No hubo acciones ni cambios de memoria, como correspondía.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-cell-50.json",
+      "case_id": "v2-labels-es-action-block-15",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": false,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "Se encoló correctamente el bloqueo único de 15 minutos y no hubo cambios de memoria. Sin embargo, «Hecho» presenta el bloqueo como ejecutado con éxito pese a que solo consta un intento encolado y no hay recibo de ejecución física. Además, «He preparado» tras una coma resulta algo redundante y tiene una mayúscula incorrecta.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-target-195.json",
+      "case_id": "v2-labels-en-memory-correction",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The reply accurately and naturally confirms the corrected usual bedtime, and no native action was requested or attempted. The stable bedtime memory and numeric routine observation at 1350 local minutes match the authored request. However, the persisted snapshot also contains an extra duplicate bedtime observation stored as text with unit \"text,\" which is not part of the authored requested observation or committed effect and violates the requirement to persist only the specified value, classification, and unit.",
+      "error": null
+    },
+    {
+      "feature": "labels",
+      "report": "labels-target-95.json",
+      "case_id": "v2-labels-es-memory-correction",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La respuesta confirma correctamente la corrección y no afirma ninguna acción nativa ni eficacia del Watch. La memoria estable bedtime=22:30 y la observación rutinaria canónica de 1350 minutos locales son correctas. Sin embargo, el estado final también contiene una segunda observación de bedtime como texto (value_text=\"22:30\", unit=\"text\"), que no coincide con la única observación solicitada/autorizada, clasificada como routine_statement en local_minute; por eso la persistencia no es plenamente correcta. No se solicitó ninguna acción de dispositivo y no se ejecutó ninguna.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-cell-125.json",
+      "case_id": "v2-retrieval-en-query-sleep_duration-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The amount is correct: 470 minutes equals 7 hours 50 minutes. However, the authored criterion explicitly requires the date and coverage period, and the reply only says “yesterday” without identifying October 14, 2026 or the covered interval. No action or memory change was requested or performed, and the wording is otherwise natural.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-cell-125.json",
+      "case_id": "v2-retrieval-en-query-sleep_duration-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The duration is correct: 470 minutes equals 7 hours 50 minutes. However, the authored criterion explicitly requires the date and coverage period; the reply only says “yesterday” and omits the October 13–14, 2026 coverage window. No action or memory change was requested or performed.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-cell-125.json",
+      "case_id": "v2-retrieval-en-query-sleep_average-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The average and coverage are accurate: 433.33 minutes is approximately 7 hours 13 minutes across 3 measured records, and missing days are correctly described as unknown. However, the required calendar-week dates/record dates were omitted (records on Oct 12–14, 2026; calendar week beginning Oct 12 in Europe/Madrid). No action or memory change was requested or performed, and the wording is natural.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-cell-125.json",
+      "case_id": "v2-retrieval-en-query-sleep_average-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The calculated average is correct: 433.33 minutes is about 7 hours 13 minutes, based on three measurements, and it correctly says missing days are unknown. However, the authored criterion explicitly requires dates and period coverage. The reply omits the calendar-week date range and the dates with records (October 12–14, 2026), so it is materially incomplete. No action or memory change was requested or performed, and the wording is natural.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-cell-175.json",
+      "case_id": "v2-retrieval-en-memory-bedtime-routine_statement-1320",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The reply accurately and naturally confirms the requested bedtime memory, and no native action was requested or claimed. The stable bedtime memory and canonical routine observation (1320 local minutes) are correct. However, the persisted state also contains an extra duplicate bedtime observation with value_text \"22:00\" and unit \"text\", beyond the authored expected local_minute observation, violating the requirement to persist only the specified values, classification, and units.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-cell-175.json",
+      "case_id": "v2-retrieval-en-memory-bedtime-routine_statement-1380",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The reply naturally and accurately confirms the routine bedtime without claiming a native action or Watch effect. The stable bedtime memory and requested 1380 local-minute routine observation were correctly persisted, but an additional duplicate bedtime observation was also stored as value_text \"23:00\" with unit \"text\"; this was not part of the authored requested observation schema, so the persisted memory/observation state is not fully correct. No device action was requested or attempted.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-cell-50.json",
+      "case_id": "v2-retrieval-es-action-block-5",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": false,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La acción encolada coincide exactamente con lo solicitado: iniciar una protección única de 5 minutos, sin cambios de memoria ni beneficios de sueño atribuidos. Sin embargo, no existe recibo de ejecución física, así que la respuesta «Bloqueo… empezando ahora» afirma éxito inmediato en vez de describirlo como un intento. Por esa falsa confirmación, fallan la respuesta y la exactitud de la acción comunicada.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-cell-75.json",
+      "case_id": "v2-retrieval-es-memory-bedtime-routine_statement-1320",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La respuesta es clara, natural y confirma correctamente el registro; no se solicitó ni se afirmó ninguna acción nativa. La memoria estable bedtime=22:00 y la observación rutinaria en minutos locales son adecuadas, pero el estado final contiene además una observación duplicada de bedtime con value_text=\"22:00\" y unit=\"text\", que no forma parte de la observación solicitada/autorizada con unit=\"local_minute\". Por esa persistencia adicional, la memoria no coincide estrictamente con el criterio authored.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-cell-75.json",
+      "case_id": "v2-retrieval-es-memory-bedtime-routine_statement-1380",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La respuesta confirma de forma correcta y natural el registro, y no afirma ninguna acción nativa ni eficacia del Watch. La memoria estable bedtime=23:00 y la observación canónica en local_minute=1380 se guardaron correctamente. Sin embargo, el estado final también contiene una observación duplicada de bedtime con value_text=\"23:00\" y unit=\"text\", que no forma parte de la observación solicitada/autorizada por el criterio; por eso la persistencia no es completamente correcta.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-query-a.json",
+      "case_id": "v2-retrieval-es-query-sleep_duration-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La duración indicada (7 horas y 50 minutos = 470 minutos) es correcta y está presentada como una medición. Sin embargo, no cumple el criterio de especificar la fecha y la cobertura exacta del periodo registrado (del 13 de octubre de 2026 a las 22:00 al 14 de octubre de 2026 a las 22:00). No se realizaron acciones ni cambios de memoria, lo cual es correcto.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-query-a.json",
+      "case_id": "v2-retrieval-es-query-sleep_duration-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La duración es correcta: 470 minutos equivalen a 7 horas y 50 minutos. Sin embargo, la respuesta no incluye la fecha exacta ni el período de cobertura solicitado (del 13 de octubre de 2026 a las 22:00 al 14 de octubre de 2026 a las 22:00, Europe/Madrid). No hubo acciones ni cambios de memoria, lo cual es correcto. La redacción es natural.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-query-a.json",
+      "case_id": "v2-retrieval-es-query-sleep_average-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La media indicada es correcta: 433,33 minutos equivalen a unas 7 h 13 min, calculadas con 3 registros, y acierta al tratar los días sin datos como desconocidos. Sin embargo, no cumple el requisito explícito de indicar las fechas y la cobertura temporal exacta: los registros corresponden al 12, 13 y 14 de octubre de 2026, dentro del período semanal consultado. No se solicitó ni se ejecutó ninguna acción o cambio de memoria. La redacción es natural.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-135.json",
+      "case_id": "v2-retrieval-en-query-sleep_duration-missing",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The reply correctly treats missing sleep data as unknown rather than zero and makes no prohibited claims or effects. However, it does not provide the required exact coverage period/dates (2026-10-13 22:00 to 2026-10-14 22:00, Europe/Madrid) or identify the duration unit, so it fails the authored criterion. No memory or action was requested or performed.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-135.json",
+      "case_id": "v2-retrieval-en-query-sleep_duration-missing",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The reply correctly says the missing sleep amount is unknown rather than zero, but it does not identify the exact covered period or dates (2026-10-13 22:00 to 2026-10-14 22:00, Europe/Madrid) or state the metric/unit. No action or memory change was requested or performed.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-140.json",
+      "case_id": "v2-retrieval-en-query-sleep_duration-zero",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The reply correctly reports a known measured value of 0 minutes and does not confuse zero with missing data. However, it omits the required explicit date and coverage window (2026-10-13 22:00 to 2026-10-14 22:00, Europe/Madrid). No action or memory change was requested or made, and the wording is natural.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-140.json",
+      "case_id": "v2-retrieval-en-query-sleep_duration-zero",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The recorded value of 0 minutes is correct, and it properly treats a measured zero as known rather than missing. However, the reply omits the required exact date and coverage window (2026-10-13 22:00Z through 2026-10-14 22:00Z). No action or memory change was requested or performed.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-145.json",
+      "case_id": "v2-retrieval-en-query-sleep_duration-sparse",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The sleep amount is correct: 470 minutes equals 7 hours 50 minutes. However, the authored criterion requires the exact date and coverage period, which the reply omits. No action or memory change was requested or performed, and the wording is natural.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-145.json",
+      "case_id": "v2-retrieval-en-query-sleep_duration-sparse",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The duration is correct: 470 minutes equals 7 hours 50 minutes. However, the authored criterion explicitly requires the date and coverage, and the reply gives neither the October 14, 2026 record date nor the covered interval/source. No action or memory change was requested or performed.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-35.json",
+      "case_id": "v2-retrieval-es-query-sleep_duration-missing",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La respuesta es clara y no inventa sueño: correctamente trata la ausencia de registros como falta de medición, no como cero. Sin embargo, no cumple el criterio de indicar la cobertura exacta con fechas o intervalo (del 13 de octubre de 2026 a las 22:00 al 14 de octubre de 2026 a las 22:00, según el registro). No hubo acciones ni cambios de memoria, lo cual es correcto.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-35.json",
+      "case_id": "v2-retrieval-es-query-sleep_duration-missing",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La respuesta comunica correctamente que no hay datos disponibles y no confunde ausencia con cero, pero no cumple el requisito explícito de indicar el período exacto y su cobertura: debía precisar que no había registros para el 14 de octubre de 2026 (ventana 2026-10-13 22:00Z a 2026-10-14 22:00Z, equivalente al día local en Europe/Madrid). No se solicitó ni se ejecutó ninguna acción, y no hubo cambios de memoria.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-40.json",
+      "case_id": "v2-retrieval-es-query-sleep_duration-zero",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La respuesta comunica correctamente el valor registrado de 0 minutos y no realiza acciones ni cambios de memoria. Sin embargo, no cumple el requisito de indicar las fechas y la cobertura exacta del periodo: del 13 de octubre de 2026 a las 22:00 al 14 de octubre de 2026 a las 22:00 (Europe/Madrid). La redacción en español es natural.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-40.json",
+      "case_id": "v2-retrieval-es-query-sleep_duration-zero",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La respuesta comunica correctamente el valor registrado de 0 minutos y no confunde cero con datos ausentes. Sin embargo, incumple el criterio explícito de indicar las fechas y la cobertura exacta del período: debía especificar que corresponde al intervalo del 13 de octubre de 2026 a las 22:00 UTC al 14 de octubre de 2026 a las 22:00 UTC (medianoche a medianoche en Europe/Madrid). No hubo acciones ni cambios de memoria, lo cual es correcto.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-45.json",
+      "case_id": "v2-retrieval-es-query-sleep_duration-sparse",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La duración indicada es correcta: 470 minutos equivalen a 7 horas y 50 minutos. Sin embargo, la respuesta no especifica las fechas ni la cobertura exacta del periodo registrado (del 13 de octubre de 2026 a las 22:00 al 14 de octubre de 2026 a las 22:00), como exige el criterio. No se realizaron acciones ni cambios de memoria, lo cual es correcto. La redacción en español es natural, aunque «según una medición disponible» resulta algo impreciso.",
+      "error": null
+    },
+    {
+      "feature": "retrieval",
+      "report": "retrieval-target-45.json",
+      "case_id": "v2-retrieval-es-query-sleep_duration-sparse",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La duración es correcta: 470 minutos equivalen a 7 horas y 50 minutos. Sin embargo, la respuesta no identifica las fechas ni la cobertura exacta del período registrado (del 13 de octubre de 2026 a las 22:00 al 14 de octubre de 2026 a las 22:00, según la zona aplicable), como exige el criterio. No se solicitó ni realizó ninguna acción o cambio de memoria.",
+      "error": null
+    },
+    {
+      "feature": "tools",
+      "report": "tools-cell-125.json",
+      "case_id": "v2-tools-en-query-sleep_duration-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The duration is correct: 470 minutes equals 7 hours 50 minutes. However, the authored criterion requires the exact date and coverage period, which the reply omits. It should identify October 14, 2026 and the covered interval (October 13 at 22:00 through October 14 at 22:00, Europe/Madrid). No action or memory change was requested or performed.",
+      "error": null
+    },
+    {
+      "feature": "tools",
+      "report": "tools-cell-125.json",
+      "case_id": "v2-tools-en-query-sleep_duration-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The duration is accurate: 470 minutes equals 7 hours 50 minutes. However, the authored criterion explicitly requires the exact date and coverage period; the reply only says “yesterday” and omits the October 14, 2026 date/coverage. No action or memory change was requested or performed, and the wording is natural.",
+      "error": null
+    },
+    {
+      "feature": "tools",
+      "report": "tools-cell-125.json",
+      "case_id": "v2-tools-en-query-sleep_average-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The computed average is accurate: 433.33 minutes is about 7 hours 13 minutes, and the reply correctly notes that it is based on three measured records and that missing days are unknown. However, the authored criterion explicitly requires dates and period coverage. The reply omits the record dates (October 12–14, 2026) and does not clearly identify the calendar-week date range/current coverage. No action or memory change was requested or performed.",
+      "error": null
+    },
+    {
+      "feature": "tools",
+      "report": "tools-cell-125.json",
+      "case_id": "v2-tools-en-query-sleep_average-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "The average is correctly calculated as approximately 7 hours 13 minutes from three measured entries, and the reply correctly says missing days are unknown. However, the criterion explicitly requires the calendar-week period and measurement dates; the reply omits the dates (October 12–14, 2026) and does not clearly identify the week's date range. No action or memory change was requested or made.",
+      "error": null
+    },
+    {
+      "feature": "tools",
+      "report": "tools-cell-25.json",
+      "case_id": "v2-tools-es-query-sleep_duration-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La duración es correcta: 470 minutos equivalen a 7 horas y 50 minutos. Sin embargo, la respuesta omite la fecha y la cobertura exacta exigidas para el período registrado (del 13 de octubre de 2026 a las 22:00 al 14 de octubre de 2026 a las 22:00, UTC). No se realizó ninguna acción ni se modificó la memoria, lo cual es correcto.",
+      "error": null
+    },
+    {
+      "feature": "tools",
+      "report": "tools-cell-25.json",
+      "case_id": "v2-tools-es-query-sleep_duration-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La duración es correcta: 470 minutos equivalen a 7 horas y 50 minutos. Sin embargo, la respuesta no identifica el período exacto cubierto ni sus fechas (del 13 de octubre de 2026 a las 22:00 al 14 de octubre de 2026 a las 22:00), como exigía el criterio. No hubo acciones ni cambios de memoria, lo cual es correcto.",
+      "error": null
+    },
+    {
+      "feature": "tools",
+      "report": "tools-cell-25.json",
+      "case_id": "v2-tools-es-query-sleep_average-standard",
+      "variant": "candidate",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La media indicada es correcta: 433,33 minutos equivalen aproximadamente a 7 h 13 min, calculados a partir de 3 mediciones, y también aclara correctamente que los días sin registro son desconocidos. Sin embargo, no especifica el período exacto ni las fechas con cobertura (12, 13 y 14 de octubre de 2026), como exige el criterio. No hubo acciones ni cambios de memoria, lo cual es correcto.",
+      "error": null
+    },
+    {
+      "feature": "tools",
+      "report": "tools-cell-25.json",
+      "case_id": "v2-tools-es-query-sleep_average-standard",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": false,
+        "memory_ok": true,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La media indicada es correcta: 433,33 minutos equivalen aproximadamente a 7 h 13 min, basada en 3 registros, y aclara correctamente que los días sin medición son desconocidos. Sin embargo, no identifica las fechas cubiertas (registros del 12, 13 y 14 de octubre de 2026, dentro del periodo semanal consultado), pese a que el criterio exige fechas, periodo, unidades y cobertura exactos. No se solicitó ni realizó ninguna acción o cambio de memoria.",
+      "error": null
+    },
+    {
+      "feature": "tools",
+      "report": "tools-cell-75.json",
+      "case_id": "v2-tools-es-memory-bedtime-routine_statement-1320",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La respuesta confirma de forma clara y correcta el registro solicitado, y no afirma ninguna acción nativa ni eficacia del Watch. La memoria estable bedtime=22:00 y la observación rutinaria canónica de 1320 minutos locales son correctas. Sin embargo, el estado final también contiene una observación adicional duplicada de bedtime con value_text='22:00' y unit='text', que no forma parte de la observación solicitada/autorizada; por ello la persistencia no se limita estrictamente a los valores, clasificación y unidades esperados. No se solicitó ninguna acción de dispositivo y no se ejecutó ninguna.",
+      "error": null
+    },
+    {
+      "feature": "tools",
+      "report": "tools-cell-75.json",
+      "case_id": "v2-tools-es-memory-bedtime-routine_statement-1380",
+      "variant": "baseline",
+      "functional": true,
+      "quality": {
+        "response_ok": true,
+        "memory_ok": false,
+        "action_ok": true,
+        "reviewed": true,
+        "reviewer": "gpt-5.6-sol"
+      },
+      "rationale": "La respuesta confirma correctamente el registro de una rutina habitual a las 23:00 y no afirma ninguna acción nativa ni eficacia del Watch. La memoria estable bedtime=23:00 y el efecto confirmado como routine_statement de 1380 local_minute son correctos. Sin embargo, el estado final también contiene una observación adicional duplicada de bedtime con value_text='23:00' y unit='text', que no forma parte de la observación solicitada/autorizada; por eso la persistencia no es completamente correcta. No se solicitó ninguna acción física.",
+      "error": null
+    }
+  ],
+  "independent_review": {
+    "model": "gpt-5.6-sol",
+    "requests": 116,
+    "known_cost_usd": 1.6074926000000007,
+    "unknown_cost_requests": 0
+  },
+  "real_provider_request_ids": 278,
+  "budget": {
+    "shared_limit_usd": 55,
+    "campaign_maximum_additional_usd": 10.47,
+    "new_known_usd": 1.6882698299999461,
+    "new_reserved_upper_usd": 1.688590529999992,
+    "new_unknown_reserved_usd": 0.0003207000000458038,
+    "new_requests": 279,
+    "remaining_campaign_usd": 8.781409470000009,
+    "known_total_usd": 35.89327215999994,
+    "reserved_total_usd": 41.37379678500024,
+    "original_opaque_reservations_preserved": 15,
+    "new_opaque_reservations": 1
+  },
+  "receipts": [
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-0.json",
+      "sha256": "2393b465dadddc491b9ad9a220fa8cbd10b19152e8275fc704e69cc5140b2ce1"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-0-quality.json",
+      "sha256": "1d782bf2b198086ee664447c74a3cc4955e8574d4380222aebf1e2fe906eb898"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-0-quality.json.requests.json",
+      "sha256": "7189f5227fc21562341b026daf422158c51f21d7fc203f0c7c8fed92123093e0"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-100.json",
+      "sha256": "418300cc2af118ed881011f6ca781720da2bd272e57c478ada7f9fa9f624a2c4"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-100-quality.json",
+      "sha256": "04e42a5cf1c216251de4bbe3675796040bd50e91de0de9ab32c38489800cce5e"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-100-quality.json.requests.json",
+      "sha256": "67242493483f4d9f113c0eeaafe639e8c2a4fc61f09b9f1746bb0f1ba9f02daf"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-125.json",
+      "sha256": "a2d986b90203beb7bf8609b3f977b7d437c014a243dcef3dd37c914cdda7d155"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-125-quality.json",
+      "sha256": "88c56f39707db8ec053f0f94880a364045b8bc79f40864e5d8c716b8a80ca3d4"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-125-quality.json.requests.json",
+      "sha256": "a8eb0da227527c39dfa31214eabe2561ce3f5d201cb4c471f2568cd1e645a91c"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-150.json",
+      "sha256": "34f5391634299deaa5b2f4ee2c68eb443bf27ca5f0b28cbe1d367cbe5715e2d6"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-150-quality.json",
+      "sha256": "46895b72bab10d24c06bc79950066ee7e7a0fe0d64105e344f5bbacc7b23becb"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-150-quality.json.requests.json",
+      "sha256": "dca041beec63f4b1b5d3bb2f1545297b97d35e28ddb30f491d37da067995de2c"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-175.json",
+      "sha256": "2e9496343e4306b4960aa76a853e88e80f9575e4dfbe4fde0549c9891ba37ceb"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-175-quality.json",
+      "sha256": "02a05d93a66032b27432dfc17364c6b9a540bd34402ce997fb7565b15182ff74"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-175-quality.json.requests.json",
+      "sha256": "477bbb867d81915b4d8865955db3dbdbd20d88dcd93294e3cd238c3c1bd642dd"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-25.json",
+      "sha256": "ef13dbabc439d66b528561949b2728e8a044cd93ee86e04aefcfe44498fa1e48"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-25-quality.json",
+      "sha256": "7b08c461e6f64f4550816ca7e6864a2ce0af905062dfd252dd493d83d95f639f"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-25-quality.json.requests.json",
+      "sha256": "6e57adf31751d65daebf8ac7e0915f393652ce6f9bb9ed3a917ad589070f6f06"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-50.json",
+      "sha256": "4c04270de97af706b8adeaad71741b7fe65f5bdf2faa9cfe21e5a3bf9a8f0e7a"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-50-quality.json",
+      "sha256": "71b9905ccc74b7dd226a7e58fbf943b5b96cf73c7eb8f204b3a40544298e463a"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-50-quality.json.requests.json",
+      "sha256": "5f662af9c6b370a01b89d23d769c64b887ff49f68382f38d45d58c472cb6628a"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-75.json",
+      "sha256": "78cd90217fbb9639082c9ac6d4b5581a72c43bc71d2f24caffeb1129b85019c6"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-75-quality.json",
+      "sha256": "2a61351334458b8726eb4f1049b0a0bac49aeb584c1e23e9d1a7a0a2171209a3"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-cell-75-quality.json.requests.json",
+      "sha256": "e7e07733f447f78424b99d0c1c2010213802aca119b1d17a1edf0df561e26cd0"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-target-195.json",
+      "sha256": "1e2676996ca68611ea25a245c1f6ecca9e3c45e8f9555080832494a1352dd6f2"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-target-195-quality.json",
+      "sha256": "8c9a672e9a88ebcddafcbdbad4d752a36eb0c63cd84035fa14ed85b7344d813b"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-target-195-quality.json.requests.json",
+      "sha256": "c60fd12f923c7d1a8ebe1d296e5e9b673b139d4744720e2f301d24ea6af8f2e0"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-target-95.json",
+      "sha256": "b36571dff64f21ea748d643a279ab1fda350aac1c48d303e9332d7b549c4f528"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-target-95-quality.json",
+      "sha256": "7376fac1aa2ccd6eb857bf2269942da4f579da8ecdc8af14396f4290016f0d07"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/labels-target-95-quality.json.requests.json",
+      "sha256": "b767a3546b553a8e9c9fa4807b41581e58044c0567dc7c663254eac2e3b910eb"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-0.json",
+      "sha256": "eb7683139d957e58ac13623b70372fa47b09fb51f9bb8375de545a6c569b644b"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-0-quality.json",
+      "sha256": "9d6ae70a3a3deb9f0c42446db80d63cad81fec3f4b937faddd23b5dac958d908"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-0-quality.json.requests.json",
+      "sha256": "33e0a1e17f5749aacb8d724343a2c48b0f17df53b1b9979ac08717f866939af5"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-100.json",
+      "sha256": "d2dc603c3f10625f927fcc91bdc3ef827a87d29c176ab22dab762d76daa6730d"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-100-quality.json",
+      "sha256": "b416ebb15bb368f5f1045ed2930a3633698febdd09af6d77acd4384050d46b12"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-100-quality.json.requests.json",
+      "sha256": "a812c71f3a3f7335dca546b88e9d3fcc3bddeb17a63a79c366edb123d41e5919"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-125.json",
+      "sha256": "0dcc928c0a5c653b0703890750868788c6337ded758be9958b322678e1c1520f"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-125-quality.json",
+      "sha256": "0b5cfaf87fd3b215f39e044f4e9aa0a2006a79afe2d824ce7f6a87a17191c068"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-125-quality.json.requests.json",
+      "sha256": "cd6cf7f7c4f9bf31b7841db9cdcff8f9a964c8764640385dd592f33dfd7986b0"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-150.json",
+      "sha256": "ae9e92eecfa50994518685ed72dac13f6aae670f8baf3fde5e9f58deddc3094b"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-150-quality.json",
+      "sha256": "1f86a513a3a448c3e5fbd015e6f570189541abb5cc6f3f2fa5d782ef6c4686bb"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-150-quality.json.requests.json",
+      "sha256": "4868243b5a6666c142f4628ca64920fd920d8bca4198cdf47ee45e16fcb86a09"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-175.json",
+      "sha256": "26f0d18d38570869fde65dbe4534442f6612d3685340487a45a2eb084a5603ae"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-175-quality.json",
+      "sha256": "169f838bb37ae5fb735e087f67b8e70279f6c06cc4b01dc8f682af8bd4389dbc"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-175-quality.json.requests.json",
+      "sha256": "ef4f0cdf5f739bb687be8f7b9306d80b1e0c0495ec01a8252ce8864c77335d47"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-50.json",
+      "sha256": "9b8a7ec0a6930f9961fb84b5b6743b8a4bfbafe229816c92b49b0b2c71910834"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-50-quality.json",
+      "sha256": "3b9c9d1fdba1397283d6414fe52083f00323780a24ae5e90b591082bb7d81750"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-50-quality.json.requests.json",
+      "sha256": "8521de92a0ec947158e582b94fef9cd3ab8ad998fa340f61554638a576c4878c"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-75.json",
+      "sha256": "9469733555e012374ef29bb2b6ebb443838bfda09eefa26adcbe9a22f0b248b7"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-75-quality.json",
+      "sha256": "c0ae9b00314b670d524980063c99c50921b801a882a13349fef2cb5c9287e6f9"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-cell-75-quality.json.requests.json",
+      "sha256": "1581e49aec6018ca10a164647a50c809b07b9d9fc99ebb99f405d61bb3ad1284"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-query-a.json",
+      "sha256": "7bd04162aae82c6e7a0e54ce0980f83abb7e7c93b7e84bc8fc4c30a2bd584098"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-query-a-quality.json",
+      "sha256": "3a1f77cf1993aad9554ce7e46503cd42856e07b56daf83037810daaa3f5cf112"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-query-a-quality.json.requests.json",
+      "sha256": "b95caab0988a4602706ac4aedef0c471ddc2db4d080827ca643da403e8a354d3"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-135.json",
+      "sha256": "43bbaa8831135be2b54ed028ca4b13dfcfe26d1e0bf47f103cd3644037ed79a3"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-135-quality.json",
+      "sha256": "7015f321b26a6ae804997ca19619b3fe5cb8d8ff495f3e8e480fe9800fb6beb9"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-135-quality.json.requests.json",
+      "sha256": "b0efa46f2af9b8d122461dc4635ea93d4ddd684dfabdfc3e58325cf3ddf91220"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-140.json",
+      "sha256": "6534d478cd63fe8b5e4ddf7333446bc6b453e73ea1ec6b632c72d2a55d79d998"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-140-quality.json",
+      "sha256": "b0163f9a8b3e2609a6ee3787f560bc9d110bde4333af1ccf53f3ec0f61facc26"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-140-quality.json.requests.json",
+      "sha256": "19700dfe708aa6149a6f34c2cd4f05bf6298c106a0cfcdb3036cfe33c21027eb"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-145.json",
+      "sha256": "24c258da87a3cb9a6e55623b379af5030e8345c573f077017a53be7bf731572c"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-145-quality.json",
+      "sha256": "3d25c272edfa846f783ef094cd55b96e020d046d5005e826c299be9c1b6fac46"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-145-quality.json.requests.json",
+      "sha256": "89f92749adff37663254de8dc1d59a95f5bd051f027c085540dbebd687a9156a"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-35.json",
+      "sha256": "aa679af9a119a2d1a3e44371e4835bdcf2075ca8179b499bfd8f2d4f417a0ef2"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-35-quality.json",
+      "sha256": "8c6c826a6d0450bd4717cdb0aa7b0f8e20c6338218734580fe77933973633121"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-35-quality.json.requests.json",
+      "sha256": "d464e9ebcd1510e9485ef6f2143961d3e2ea6a48d829da7b4798c98fdd28a800"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-40.json",
+      "sha256": "8bfc97c2b92f885f8e62eb8b8bf138bdb2c64617ee28556d478f9667b40c82e8"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-40-quality.json",
+      "sha256": "529bf6b2ae0613f246676e17119c242c1969ba89bd784379a2c392295e2e1d1f"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-40-quality.json.requests.json",
+      "sha256": "ca8c9df86a612e6c61c2aa641cda25fc6b88ecc915d9a0283904b9a74a999791"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-45.json",
+      "sha256": "df1424e3b88b89633bf89b5881f8a24e55ffb86eaf563e13604440c6aa02e9fb"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-45-quality.json",
+      "sha256": "fd2ddcffe2eedb0edf50135bf01c65efcd6434e8adf67c578b47ec91e9f2291f"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/retrieval-target-45-quality.json.requests.json",
+      "sha256": "fece7b1f70f50f45f0716dc6a2ab71a05e2de63715146810b99f8a0229ae5497"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-0.json",
+      "sha256": "97615403d64e11d5bd3e407ba7c298a9c2b433467e5a8b16c2a5534788ceab5c"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-0-quality.json",
+      "sha256": "6c8ee1c5fe8436b7c58c3a4b156b118c374f824899d2fd3dc2b5e93e99470348"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-0-quality.json.requests.json",
+      "sha256": "91bd3fa673c6857a1f9687a51ac62c226a664e68209953f3eb2af1ae2e627876"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-100.json",
+      "sha256": "6b555708525d10f7edde19460564c992edd01a1d9c17c4dfbd6ec076eb1b1296"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-100-quality.json",
+      "sha256": "128a39baf6285eb7be2fac0081cda62906741c11a180b121d2a97f970222e990"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-100-quality.json.requests.json",
+      "sha256": "5533a2bafcf1a449528b7cb55b461ce29a656aa229fd0e7877f8340c5ba02f7a"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-125.json",
+      "sha256": "b78f1d9f7b18a3f8f048e8e68cfa9f0d215146c88653f053b1a24ae44d17d39d"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-125-quality.json",
+      "sha256": "74f0629506b9b9fec7b46c0449ff0059cb649bab0ac7e20e22dcc51ae93980da"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-125-quality.json.requests.json",
+      "sha256": "17434c072e44416eadd8460a09fee96639f79fe81bce6307a74009fc393997af"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-150.json",
+      "sha256": "de4499215abe3f6cf4f2f72defca672ebb3bcf8b4ca9398b8bd5a9eef57e54f0"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-150-quality.json",
+      "sha256": "d4fdc08f83b52627e93b49c002b28435a08017c38b855227b190d1d1a2342cd0"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-150-quality.json.requests.json",
+      "sha256": "e4abef9a87874541059331406f5bd2f3c7e585782cbdb695c3a2b429f404a6a4"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-175.json",
+      "sha256": "ca620d2a439fab132ce472d68e43924fa1e08a3636ea10010828151b512c423e"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-175-quality.json",
+      "sha256": "4f439c8fbe5a1aed4704271f6c9bf992c018f2a8f37b2e3ccebae96c477a7756"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-175-quality.json.requests.json",
+      "sha256": "bf92fa1a38c8811637f1ff0e58338b49050c500cb42c44cecf283051b5cdaa36"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-25.json",
+      "sha256": "601fc1691a6cd66855b276210d14f0208935780e9dcf5e6e6c70f1abccee6dda"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-25-quality.json",
+      "sha256": "ba81cce5fc755fe60b39da95365e9471b4fbdceb5aff70ed9fd4cefca85c08ac"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-25-quality.json.requests.json",
+      "sha256": "70a97c5aba0ce0bec0f7e0835812278c13b77e75faba13cee955e20606acfda0"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-50.json",
+      "sha256": "9a5a27bcc1b36f0fdd1f91fb8f01b376750eafa2cd24e1fc854c40f9269f88c7"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-50-quality.json",
+      "sha256": "718a9506c30975a9c4b5b1e75e7fa3c4f8db453459d3f6b1fff41c8dfb4d7e7d"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-50-quality.json.requests.json",
+      "sha256": "f4f6d1e1f6941e1759947cb5ff7d06503e9908cac11f1f0ec537ba6724f6dd66"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-75.json",
+      "sha256": "63abfebcd0ca4b94d1f0257cd11cc232e8ce0509ef22908f53de5faed2154506"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-75-quality.json",
+      "sha256": "12d9f259ebee8f8acd5f0e25ba4006068ec610ed5410b3f72421bc27770ee23b"
+    },
+    {
+      "path": "tmp/provider-saldo1047-20261015/tools-cell-75-quality.json.requests.json",
+      "sha256": "773d78c9659f1f17714041bd246232958bf0aaac22dc5030f0cf74c0b02da1dc"
+    }
+  ]
+}

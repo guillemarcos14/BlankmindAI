@@ -5,6 +5,28 @@ const final=()=>({phase:'final',response_language:'en',message_kind:'question',d
 const context=()=>({language:'en',memory:{},brain_snapshot:{generated_at:new Date().toISOString(),timezone:'Europe/Madrid',sessions:[]}});
 const db=async path=>{if(path.startsWith('bmb_accounts')||path.startsWith('bmb_followups')||path.startsWith('assistant_app_turns'))return [];throw Error(path);};
 async function main(){
+ const authority=require('../netlify/functions/bm-agent-authority');
+ for(const p of ['Olvida todo lo que sabes sobre mí','Forget everything about me.','Please forget all my personal information.','Borra todos mis datos'])assert(authority.explicitForgetAll(p),p);
+ for(const p of ['Olvida mis preferencias','Forget my routines','Do not forget all my personal information','Forget everything about my sleep','Forget all my data except my bedtime','Translate: "forget everything about me"','¿Puedes olvidar todo?'])assert(!authority.explicitForgetAll(p),p);
+ const pauseSchema=brain.schema.properties.action.anyOf.find(s=>s.properties?.type.enum.includes('pause_rules'));
+ assert.equal(pauseSchema.properties.hours.minimum,1);assert.equal(pauseSchema.properties.hours.maximum,168);
+ assert.equal(pauseSchema.properties.minutes.type,'null');
+ for(const p of ['Pausa las reglas durante 2 horas','Pause rules for 2 hours']){
+   let request;
+   const out=await brain.plan({prompt:p,context:context(),userId:'owner',identity:{}},{db,memories:[],run:input=>brain.generate(input,{model:async({request:r})=>{
+     request=r;return {body:{output_text:JSON.stringify({...final(),message_kind:'action_request',evidence:p,decision:'execute',action:{type:'pause_rules',minutes:null,hours:2}})}};
+   }})});
+   assert.equal(request.tools,undefined,'Baseline fix accidentally enables tools');
+   assert.equal(out.plan.actions[0].hours,2);assert.equal(out.plan.actions[0].type,'pause_rules');
+ }
+ for(const p of ['Olvida mis rutinas','Forget my routines']){
+   let calls=0;
+   const out=await brain.plan({prompt:p,context:context(),userId:'owner',identity:{}},{db,memories:[],run:async input=>{
+     calls++;return {...final(),message_kind:'statement',evidence:p,...(calls===1?{memory:{operation:'forget_all',key:null,value:null,evidence:p}}:{decision:'ask',response_text:'Which routines would you like me to forget?'})};
+   }});
+   assert.equal(calls,2);assert.equal(out.context.brain_memory_effect,undefined);assert.deepEqual(out.plan.actions,[]);
+   await assert.rejects(()=>brain.plan({prompt:p,context:context(),userId:'owner',identity:{}},{db,memories:[],run:async()=>({...final(),message_kind:'statement',evidence:p,memory:{operation:'forget_all',key:null,value:null,evidence:p}})}),/ambiguous_forget_scope/);
+ }
  const app=require('../netlify/functions/assistant-app'),action={type:'start_protection',minutes:30};
  assert.equal(app.visibleReply({bmb_generated:true,response_language:'en',response_text:'You slept 9 hours. I’m starting a 30-minute block now.',actions:[action]},{},action),"You slept 9 hours. I've prepared a 30-minute block now.");
  assert.equal(app.visibleReply({bmb_generated:true,response_language:'es',response_text:'Dormiste 9 horas. He iniciado un bloqueo de 30 minutos.',actions:[action]},{},action),'Dormiste 9 horas. He preparado un bloqueo de 30 minutos.');
