@@ -36,6 +36,7 @@ function adapt(report,quality){
     &&o.value_number===Number(clock[1])*60+Number(clock[2])&&o.evidence?.includes(spec.expected_memory.value));
   const memoryMatches=(!spec.expected_memory||equivalentRoutine||(r.canonical_memories||[]).some(m=>m.key===spec.expected_memory.key&&typeof m.value==="string"&&m.value.includes(spec.expected_memory.value)))
     &&(!spec.expected_fact||committedFact(r,spec.expected_fact))
+    &&(!spec.expected_observations||r.observations_persisted===true)
     &&(!spec.forbid_memory||r.canonical_memories?.length===0)&&(r.group!=="forget"||r.forgetting_committed===true);
   return {feature:r.agent_feature||report.agent_feature,variant:r.variant==="decisions"?"candidate":"baseline",case_id:r.case_id+":"+r.step,
    language:r.language,group,model:report.generative_model,source_hashes:report.agent_source_hashes,
