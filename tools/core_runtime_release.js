@@ -26,7 +26,7 @@ function manifest(snapshot,packaged){
  return {body,artifacts,retained:base.retained,removed:[]};
 }
 async function main(){
- const mode=process.argv[2];assert(['plan','prepare','resume','smoke-draft','smoke-live','publish','verify','rollback'].includes(mode));
+ const mode=process.argv[2];assert(['plan','prepare','resume','smoke-draft','smoke-live','regression-draft','publish','verify','rollback'].includes(mode));
  if(!['plan','verify'].includes(mode))assert(process.argv.includes('--confirm'));
  const cfg=read(path.join(process.env.APPDATA,'netlify/Config/config.json')),token=(cfg.users[cfg.userId]||Object.values(cfg.users)[0]).auth.token;
  async function api(route,method='GET',body,binary=false){
@@ -83,12 +83,20 @@ async function main(){
   }await new Promise(r=>setTimeout(r,1000));}throw Error('Readiness timeout; resume same deployment');
  }
  const r=load('publication.json');
- if(mode.startsWith('smoke-')){
-  const cloud=require('./assistant_app_cloud_test'),config=cloud.configuration({BM_CLOUD_TEST_SUPABASE_URL:value('SUPABASE_URL'),BM_CLOUD_TEST_SERVICE_ROLE_KEY:value('SUPABASE_SERVICE_ROLE_KEY'),BM_CLOUD_TEST_ANON_KEY:value('SUPABASE_ANON_KEY'),BM_CLOUD_TEST_NETLIFY_URL:mode==='smoke-draft'?r.url:site.ssl_url},true,{physicalQa:true});
-  const result=await cloud.run(config,path.join(DIR,mode+'.json'),{infrastructureOnly:true});assert(result.passed);return;
+ if(mode.startsWith('smoke-')||mode==='regression-draft'){
+  const regression=mode==='regression-draft',output=path.join(DIR,mode+'.json');
+  assert(!fs.existsSync(output),'Preserve existing receipt; do not repeat paid run');
+  if(regression){
+   const file=path.resolve(ROOT,'../Codigo-retrieval/tmp/retrieval-wide/budget.json'),budget=read(file);
+   assert(budget.final_cap&&budget.limit_usd===40&&budget.reserved_upper_usd+.25<=40,'Final budget cap');
+   budget.reserved_upper_usd+=.25;budget.remote_opaque_reservations.push({run_id:crypto.randomUUID(),kind:'current-runtime-pause-forget-regression',report_path:output,reserved_upper_usd:.25,provider_usage:null,provider_call_count:null,planned_app_turns:4,reason:'Four synthetic ES/EN turns on exact immutable production-context draft; monetary usage not exposed; retain reserve.'});
+   fs.writeFileSync(file,JSON.stringify(budget,null,2)+'\n');
+  }
+  const cloud=require('./assistant_app_cloud_test'),config=cloud.configuration({BM_CLOUD_TEST_SUPABASE_URL:value('SUPABASE_URL'),BM_CLOUD_TEST_SERVICE_ROLE_KEY:value('SUPABASE_SERVICE_ROLE_KEY'),BM_CLOUD_TEST_ANON_KEY:value('SUPABASE_ANON_KEY'),BM_CLOUD_TEST_NETLIFY_URL:mode.endsWith('draft')?r.url:site.ssl_url},true,{physicalQa:true});
+  const result=await cloud.run(config,output,{infrastructureOnly:!regression,runtimeRegressions:regression});assert(result.passed);return;
  }
  if(mode==='publish'){
-  assert.equal(site.published_deploy.id,p.previous);assert.equal(r.status,'prepared');assert(load('smoke-draft.json').passed);
+  assert.equal(site.published_deploy.id,p.previous);assert.equal(r.status,'prepared');assert(load('smoke-draft.json').passed);assert(load('regression-draft.json').passed);
   preservation.verify(await snapshot(r.deploy_id),p);await api('/sites/'+SITE+'/deploys/'+r.deploy_id+'/restore','POST',{});
  }
  assert.equal((await api('/sites/'+SITE)).published_deploy.id,r.deploy_id);preservation.verify(await snapshot(r.deploy_id),p);
