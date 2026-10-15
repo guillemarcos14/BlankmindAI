@@ -19,7 +19,7 @@ on:
       ui_tests:
         description: UI coverage (targeted confirmation after full-suite diagnostics)
         type: choice
-        options: [all, onboarding, progress, control, basic, polish]
+        options: [all, onboarding, progress, control, basic, polish, funnel]
         default: all
   pull_request:
     paths:
@@ -61,6 +61,7 @@ jobs:
       - name: Test native conversation recovery
         run: |
           mkdir -p tmp/native-tests
+          node tools/run_funnel_native_tests.js
           swiftc ios/Blank/Blank/AssistantComposerState.swift tools/assistant_composer_test.swift -o tmp/native-tests/composer
           tmp/native-tests/composer
           swiftc ios/Blank/Blank/SleepAccessPolicy.swift tools/sleep_access_test.swift -o tmp/native-tests/sleep-access
@@ -96,6 +97,9 @@ jobs:
           device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for g in json.load(sys.stdin)["devices"].values() for d in g if d["name"].startswith("iPhone") and "Pro" in d["name"]))')
           suite=BlankHomeUITests
           extra_tests=()
+          if [ "${{ inputs.ui_tests || 'all' }}" = funnel ]; then
+            suite=BlankHomeUITests/MinimalHomeUITests/testBasicBlockingWithoutSleepKeepsOriginalHomeAndProgress
+          fi
           if [ "${{ inputs.ui_tests || 'all' }}" = onboarding ]; then
             suite=BlankHomeUITests/MinimalHomeUITests/testLargestTextKeepsOnboardingActionsReachable
             extra_tests=(-only-testing:BlankHomeUITests/MinimalHomeUITests/testSampleSleepWithoutWatchIsVisibleAndRequiresSeparateAIConsent)

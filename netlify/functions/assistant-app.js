@@ -178,7 +178,7 @@ function actionCopy(action, spanish) {
     const selectedDays = [...new Set(action.weekdays || [])].filter(day => Number.isInteger(day) && day >= 1 && day <= 7);
     const weekdays = !selectedDays.length || selectedDays.length === 7 ? (spanish ? "cada día" : "every day") : selectedDays.map(day => days[day - 1]).join(", ");
     // Mirror native creation defaults; editing a schedule preserves its expiry.
-    const durationDays = type === "apply_schedule" ? Math.min(14, Math.max(1, action.duration_days ?? 7)) : null;
+    const durationDays = type === "apply_schedule" && action.recurrence !== "continuous" ? Math.min(14, Math.max(1, action.duration_days ?? 7)) : null;
     const horizon = durationDays === null ? "" : (spanish ? ` durante ${durationDays} días` : ` for ${durationDays} days`);
     description = spanish ? `Bloqueo de ${clock(action.start_minute)} a ${clock(action.end_minute)}, ${weekdays}${horizon}`
       : `Block from ${clock(action.start_minute)} to ${clock(action.end_minute)}, ${weekdays}${horizon}`;
@@ -246,6 +246,7 @@ async function prepare(auth, row, leaseOwner, prompt, deviceContext, onDraft) {
   const version = context.memory?.semantic_store_version;
   if (!Number.isSafeInteger(version) || version < 0) throw new Error("semantic_store_missing_version");
   const action = pendingActionFromPlan(plan, { idPrefix: "app" });
+  if (!require("./funnel-access").actionAllowed(action,context.funnel_access || await require("./funnel-access").access(auth.user.id),context.schedule?.windows||[])) throw new Error("personalized_followup_required");
   if (action) {
     action.id = `app_${row.id}`;
     action.semantic_version = version + 1;
@@ -373,6 +374,14 @@ async function handle(event, _context, { onDraft, afterCommit } = {}) {
   try {
     const auth = await timing.span("authentication", () => authenticatedIdentity(event, body, body.action));
     if (auth.error) return json(auth.status, { error: auth.error });
+    if (body.action?.startsWith("funnel_")) return await require("./funnel-access").api(auth,body) || json(400,{error:"unsupported_action"});
+    if (["send","transcribe"].includes(body.action)) {
+      const existing = body.action === "send" && UUID.test(body.turn_id || "") ? await readTurn(auth.user.id,body.turn_id) : null;
+      if (!existing) {
+        const denied=await require("./funnel-access").requireFeature(auth.user.id,"conversation");
+        if(denied)return denied;
+      }
+    }
     if (body.action === "activate") return await activate(auth);
     if (body.action === "greeting") {
       if (!["en", "es"].includes(body.language)) return json(400, { error: "invalid_language" });
@@ -389,6 +398,7 @@ async function handle(event, _context, { onDraft, afterCommit } = {}) {
     return json(400, { error: "unsupported_action" });
   } catch (error) {
     // Diagnostic codes only: never log messages, tokens or provider payloads.
+    if(error.message==="personalized_followup_required")return json(402,{error:error.message,feature:"additional_window",free_plan_preserved:true});
     console.error("assistant_app_failure", JSON.stringify({
       action: ["activate","history","status","send","transcribe"].includes(body.action) ? body.action : "other",
       code: /^\w{1,100}$/.test(error.message || "") ? error.message : "unexpected_failure",

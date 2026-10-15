@@ -39,7 +39,7 @@ final class HealthKitStore: ObservableObject {
     var aiSharingAllowed: Bool { RestAIConsent.allowed(owner: AssistantAppSession.userID, defaults: defaults) }
     var restAIAvailable: Bool {
         guard let owner = AssistantAppSession.userID else { return false }
-        return sleepDataAvailable && aiSharingAllowed && defaults.bool(forKey: "blankRestSetup.v1." + owner)
+        return aiSharingAllowed && defaults.bool(forKey: "blankRestSetup.v1." + owner)
     }
     func completeRestSetup(owner: String) {
         guard owner == AssistantAppSession.userID else { return }

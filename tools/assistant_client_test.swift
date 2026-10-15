@@ -647,5 +647,11 @@ private func makeTurn(id: String, text: String) -> AssistantAppTurn {
     view.composer = AssistantComposerState(); view.voiceRepliesEnabled = true; view.isHomeVisible = false
     await view.sendForTest(audioText: "Hidden request")
     check(view.voice.played.count == 1, "Hidden chat unexpectedly spoke")
+    view.composer = AssistantComposerState(); view.composer.draft = "Paid follow-up"
+    StoreKitPurchaseStore.shared.canConverse = false
+    await view.sendForTest()
+    check(StoreKitPurchaseStore.shared.requestedBenefit != nil, "Paid request must explain its benefit")
+    check(view.composer.draft == "Paid follow-up", "Paywall must preserve the unsent draft")
+    StoreKitPurchaseStore.shared.canConverse = true
     print("voice autoplay: spoken final only, written/muted/hidden silence PASS")
 }

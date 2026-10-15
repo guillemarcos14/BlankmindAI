@@ -20,7 +20,7 @@ let reserved = 0, generated = 0, reads = 0;
 let row = { status: "completed", assistant_text: "Tu respuesta final, con sueño y descanso." };
 let readOverride, reserveOverride, fetchOverride;
 let input, aborted = false;
-const deps = {
+const deps = { access: async () => ({premium:true}),
   readTurn: async (owner, id) => {
     assert.equal(owner, userID); assert.equal(id, turnID); reads++;
     return readOverride ? readOverride(reads) : row;

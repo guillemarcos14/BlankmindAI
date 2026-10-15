@@ -114,6 +114,7 @@ ${between(home, '    private func assistantActionRequiresScreenTime(', '    priv
 }
 enum BlankSharedState {
     static var sharedActive = false
+    static func commercialWindowAllowed(_ id: UUID, defaults: UserDefaults, now: Date) -> Bool { true }
     enum Keys {
         static let isBlankActive = "blankIsActive"
         static let blankActiveSince = "blankActiveSince"
@@ -124,6 +125,7 @@ enum BlankSharedState {
     static func loadActiveState(defaults: UserDefaults) -> ActiveState { ActiveState(isActive: sharedActive) }
 }
 enum AssistantAppSession { static var userID: String? = "account-A" }
+enum DeviceActivityMonitorExtension { static let sharedDefaults = UserDefaults.standard }
 enum DeviceActivityTimerScheduler {
     static var hasIndependentProtection = false
 ${between(scheduler, '    private static func makeExpiryInterval', '    private static func recurringIntervals').replace('private static func makeExpiryInterval', 'static func makeExpiryInterval')}

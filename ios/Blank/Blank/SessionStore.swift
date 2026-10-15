@@ -153,6 +153,14 @@ final class SessionStore: ObservableObject {
 
     @Published var schedule: BlankFocusSchedule {
         didSet {
+            if !StoreKitPurchaseStore.shared.hasPremiumAccess {
+                let freeID = oldValue.windows.isEmpty ? schedule.windows.first?.id : (StoreKitPurchaseStore.shared.freeWindowUUID ?? oldValue.windows.first?.id)
+                if schedule.windows.contains(where: { candidate in candidate.id != freeID && candidate.enabled && !oldValue.windows.contains(where: { $0.id == candidate.id && $0.enabled }) }) {
+                    schedule = oldValue
+                    StoreKitPurchaseStore.shared.requestPremium("Add another recurring window or different hours by day.")
+                    return
+                }
+            }
             saveSchedule(schedule)
             adaptiveScheduleExpiresAt = schedule.windows.compactMap(\.expiresAt).max()
             syncRecurringSchedule()
@@ -620,7 +628,7 @@ final class SessionStore: ObservableObject {
             self.schedulePausedUntil = nil
         }
 
-        if let activeWindow = schedule.window(containing: date) {
+        if let activeWindow = schedule.window(containing: date), BlankSharedState.commercialWindowAllowed(activeWindow.id, defaults: defaults, now: date) {
             _ = activateBlank(
                 forceStarted: true,
                 durationMinutes: activeWindow.remainingMinutes(from: date),
@@ -764,6 +772,9 @@ final class SessionStore: ObservableObject {
         name: String = "AI Plan",
         weekdays: [Int] = Array(1...7)
     ) {
+        if !StoreKitPurchaseStore.shared.hasPremiumAccess && !schedule.windows.isEmpty {
+            StoreKitPurchaseStore.shared.requestPremium("Add another recurring window."); return
+        }
         let candidateExpiry = durationDays == 0 ? nil : Calendar.current.date(
             byAdding: .day,
             value: max(1, min(365, durationDays)),
@@ -777,7 +788,7 @@ final class SessionStore: ObservableObject {
             startMinute: startMinute,
             endMinute: endMinute,
             weekdays: normalizedWeekdays.isEmpty ? Array(1...7) : normalizedWeekdays,
-            expiresAt: candidateExpiry
+            expiresAt: StoreKitPurchaseStore.shared.hasPremiumAccess ? candidateExpiry : nil
         )
         var windows = schedule.windows
         if let existingIndex = windows.firstIndex(where: {
@@ -833,10 +844,27 @@ final class SessionStore: ObservableObject {
     }
 
     func syncRecurringSchedule() {
+        if let owner = AssistantAppSession.userID, let first = schedule.windows.first(where: { $0.startsAt == nil }) {
+            let stored = defaults.string(forKey: "funnel.window." + owner).flatMap(UUID.init(uuidString:))
+            if stored == nil || !schedule.windows.contains(where: { $0.id == stored }) {
+                defaults.set(first.id.uuidString, forKey: "funnel.window." + owner)
+            }
+        }
         recurringScheduleRegistered = DeviceActivityTimerScheduler.syncRecurringSchedule(
             schedule,
             until: schedule.windows.compactMap(\.expiresAt).max()
         )
+    }
+
+    func reconcileCommercialAccess() {
+        guard !isBlankActive, !StoreKitPurchaseStore.shared.hasPremiumAccess, !schedule.windows.isEmpty else { return }
+        let freeID = FunnelPolicy.freeWindowID(stored: StoreKitPurchaseStore.shared.freeWindowUUID, windows: schedule.windows.map(\.id))
+        var values = schedule.windows
+        for index in values.indices {
+            if values[index].id != freeID { values[index].enabled = false }
+        }
+        if values != schedule.windows { schedule = BlankFocusSchedule(enabled: values.contains { $0.enabled }, windows: values) }
+        syncRecurringSchedule()
     }
 
     func recordRelapseReview(_ reason: RelapseReviewReason) {
@@ -1104,6 +1132,14 @@ final class SessionStore: ObservableObject {
     @discardableResult
     func applyBMBProtectionSchedule(_ command: AssistantInboxAction) -> Bool {
         bmbScheduleFailure = "schedule_invalid_metadata"
+        if !StoreKitPurchaseStore.shared.hasPremiumAccess {
+            let updatingFree = command.type == "update_schedule" && command.windowId.flatMap(UUID.init(uuidString:)) == (StoreKitPurchaseStore.shared.freeWindowUUID ?? schedule.windows.first?.id)
+            guard command.autonomous != true, updatingFree || schedule.windows.isEmpty, command.recurrence == "continuous" else {
+                bmbScheduleFailure = "personalized_followup_required"
+                StoreKitPurchaseStore.shared.requestPremium("Multiple windows and automatic plan adjustments")
+                return false
+            }
+        }
         guard let timezone = command.timezone, TimeZone(identifier: timezone) != nil,
               let startMinute = command.startMinute, let endMinute = command.endMinute,
               let id = UUID(uuidString: String(command.id.dropFirst(4))) else { return false }
@@ -1144,6 +1180,9 @@ final class SessionStore: ObservableObject {
 
     @discardableResult
     func updateScheduleWindow(id: String, name: String, startMinute: Int, endMinute: Int, weekdays: [Int]) -> Bool {
+        if !StoreKitPurchaseStore.shared.hasPremiumAccess, UUID(uuidString: id) != (StoreKitPurchaseStore.shared.freeWindowUUID ?? schedule.windows.first?.id) {
+            StoreKitPurchaseStore.shared.requestPremium("Edit additional windows with personalized follow-up."); return false
+        }
         guard let uuid = UUID(uuidString: id),
               let index = schedule.windows.firstIndex(where: { $0.id == uuid }) else { return false }
         var values = schedule.windows

@@ -149,6 +149,7 @@ async function generate(input,{model=readModelJson,onDraft,labeler=require('./bm
     input:[{role:"system",content:(useLabels?INSTRUCTIONS.replace(MEASUREMENT_INSTRUCTIONS,''):INSTRUCTIONS)+(input.retrieval_contract?require("./bm-retrieval-step").INSTRUCTIONS:"")},{role:"user",content:JSON.stringify(input)}],
     text:{format:{type:"json_schema",name:"bmb_turn",strict:true,schema:boundedSchema}}};
   if(useLabels)request.input[0].content+='\n'+require('./bm-agent-labels').EXTRACTION_INSTRUCTIONS;
+  if(input.commercial_access)request.input[0].content+='\nCommercial access is supplied by the server in commercial_access and overrides client-reported account flags. Use its instruction as access policy; initial_diagnosis is user-declared context, never execution authority. Do not claim paid history, comparisons or autonomous followup is unlocked on the free plan. Subscription never replaces consent or native execution evidence.';
   if(useTools){
     Object.assign(request,agentTools.contract(boundedSchema,availableCitations));
     if(input.agentToolHistory?.length)request.input.push(...input.agentToolHistory);
@@ -206,8 +207,8 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     memories||readMemories(userId),
     db(`bmb_accounts?auth_user_id=eq.${encodeURIComponent(userId)}&select=settings,version`,{method:"GET"}),
     longitudinal.followups(userId,db),
-    proactive?null:require("./bm-decisions").start(userId,prompt),
-    proactive||context.memory?.conversation_state?.bmb_state?.pending_request||context.memory?.conversation_state?.bmb_state?.proposal?null:
+    proactive||(context.funnel_access&&!context.funnel_access.premium)?null:require("./bm-decisions").start(userId,prompt),
+    proactive||(context.funnel_access&&!context.funnel_access.premium)||context.memory?.conversation_state?.bmb_state?.pending_request||context.memory?.conversation_state?.bmb_state?.proposal?null:
       agentActivation.enabled("retrieval")?require("./bm-agent-decisions").start(userId,prompt):require("./bm-retrieval-step").start(userId,prompt),
   ]));
   const cutoff=saved.filter(m=>m.value==null).map(m=>m.source_at).filter(Boolean).sort().at(-1);
@@ -218,11 +219,12 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     last_device_outcome:context.memory?.last_assistant_action_outcome};
   const prior=context.memory?.conversation_state?.bmb_state||{};
   const currentSleep=sleepContext(context);
+  if(context.funnel_access&&!context.funnel_access.premium) currentSleep.rows=currentSleep.rows.slice(-1);
   const restSnapshot=context.personal_profile?.rest_snapshot;
   const timezone=context.brain_snapshot?.timezone||policyRows[0]?.settings?.timezone||'UTC';
   const accelerated=!proactive&&['tools','retrieval','labels'].some(feature=>agentActivation.enabled(feature));
   const historyRead=()=>readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
-  const restRead=()=>restSnapshot?.schema_version===1?rest.context(userId,db):{source_id:"rest_evidence",objective:rest.OBJECTIVE,available:false,rows:[],reason:"no_synced_watch_baseline"};
+  const restRead=()=>restSnapshot?.schema_version===1&&(!context.funnel_access||context.funnel_access.premium)?rest.context(userId,db):{source_id:"rest_evidence",objective:rest.OBJECTIVE,available:false,rows:[],reason:"no_synced_watch_baseline"};
   const prepareRetrieval=()=> (agentActivation.enabled("retrieval")?require("./bm-agent-decisions"):require("./bm-retrieval-step")).prepare(retrievalRoute,{userId,identity,cutoff,currentSleep,timezone,db});
   // Independent account reads share no authorization-changing state. Keep
   // their original source order while shortening the candidate critical path.
@@ -233,7 +235,7 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     ?{...latest,rows:latest.rows.slice(0,8),next_offset:8}:latest;
   const sources=[recent,currentSleep,restSource,...(proactive?.daily_review?.sources||[])];
   const retrievalContext=require('./bm-retrieval-context');
-  const continuing=!proactive&&!prior.proposal&&!prior.pending_request&&retrievalContext.followup(prompt,prior.retrieval_context,{cutoff,timezone});
+  const continuing=(!context.funnel_access||context.funnel_access.premium)&&!proactive&&!prior.proposal&&!prior.pending_request&&retrievalContext.followup(prompt,prior.retrieval_context,{cutoff,timezone});
   if(continuing&&!retrievalRoute){const source=await retrievalContext.preload(prior.retrieval_context,{userId,identity,timezone,cutoff,currentSleep,db});if(source)sources.push(source);}
   const retrieval=accelerated?prepared:await prepareRetrieval();
   if(retrieval){const i=sources.findIndex(s=>s.source_id===retrieval.source.source_id);if(i>=0)sources[i]=retrieval.source;else sources.push(retrieval.source);}
@@ -252,13 +254,20 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   const explicitPeriod=proactive?null:queryPeriod.previousDays(prompt,input.timezone,Date.parse(input.now));
   input.query_date_boundaries='All query from boundaries are inclusive and to boundaries are exclusive instants. A requested end day must be included through midnight of the following local day. Days before today exclude today and end at local midnight today. Use the supplied requested_observation_period when present; never omit its last day.';
   if(explicitPeriod)input.requested_observation_period=explicitPeriod;
+  if(context.funnel_access) input.commercial_access={...context.funnel_access,initial_diagnosis:context.funnel_diagnosis,
+    instruction:"Commercial access does not change consent or evidence. The free initial experience continues until one permanent recurring window is registered on iOS. Offer that scope explicitly, agree its hours and days, and use recurrence continuous, duration_days null only after acceptance. Never silently change a once-only request into recurring. No message/token countdown. Do not require sleep for initial setup. A proposed plan is not implementation; a future registered window is scheduled, not active. Only real shield execution establishes active/completed. No efficacy claim without measured Watch comparison. Additional windows, advanced analysis and ongoing text/voice followup require premium. Free manual edit/pause/disable remain available in Control."};
   let result=await require("./bm-retrieval-step").answer(input,run,retrieval?.contract);
   if(retrieval)console.info(JSON.stringify({event:"bm_retrieval_step_answer",route:retrieval.contract.route,accepted:Boolean(result)}));
   if(retrieval&&!result&&retrieval.source.source_id===currentSleep.source_id){
     const i=sources.findIndex(s=>s.source_id===currentSleep.source_id);if(i>=0)sources[i]=currentSleep;
   }
   if(retrieval&&!result&&onDraft)onDraft("");
-  const consultar_contexto=agentTools.reader({userId,identity,cutoff,timezone:input.timezone,db,read:readSource,prompt,
+  const commercialRead=async(...args)=>{
+    const query=args[2];
+    if(context.funnel_access&&!context.funnel_access.premium&&!["history","onboarding"].includes(query?.source))throw Error("personalized_followup_required");
+    return readSource(...args);
+  };
+  const consultar_contexto=agentTools.reader({userId,identity,cutoff,timezone:input.timezone,db,read:commercialRead,prompt,
     get isQuestion(){return result?.message_kind==="question";},bound:q=>queryPeriod.boundQuery(q,explicitPeriod,result)});
   for(let pass=0;!result||result.phase==="read";pass++) {
     if(pass>=4)throw Error("bmb_read_budget_exhausted");

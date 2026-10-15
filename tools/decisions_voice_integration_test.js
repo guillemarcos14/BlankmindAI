@@ -43,7 +43,7 @@ async function main() {
       const row = { status: "completed", assistant_text: result.plan.message_text, response_language: result.plan.response_language };
       const request = consent => new Request("https://fixture.invalid/voice", { method: "POST",
         body: JSON.stringify({ turn_id: turn, request_id: requestId, synchronized: true, elevenlabs_consent: consent }) });
-      const deps = { authenticate: async () => ({ user: { id: owner }, identity: {} }),
+      const deps = { access: async () => ({premium:true}), authenticate: async () => ({ user: { id: owner }, identity: {} }),
         readTurn: async (user, id) => { assert.equal(user, owner); assert.equal(id, turn); return row; },
         reserve: async () => { reservations++; return [{ reserved: true }]; },
         fetch: async (url, options) => {

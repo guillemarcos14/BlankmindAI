@@ -72,6 +72,8 @@ push.sendAssistantActionPush = async () => { effects.push += 1; return { sent: t
 delete process.env.URL;
 
 membership.supabaseFetch = async (path, options = {}) => {
+  if(path.startsWith("funnel_accounts?"))return [];
+  if(path.startsWith("funnel_storekit_grants?"))return [{checked_at:new Date().toISOString(),expires_at:new Date(Date.now()+86400000).toISOString()}];
   const body = options.body ? JSON.parse(options.body) : null;
   if (path === "rpc/commit_assistant_brain_memory") {
     if (memoryCommitUnavailable) throw new Error("private memory outage");
@@ -430,6 +432,7 @@ const send = (id, text = "Bloquea ahora 45 min, una vez", token) => request({ ac
     { action: { type: "set_daily_limit", minutes: 35 }, label: "Aplicar límite", required: /35 minutos de uso al día/ },
     { action: { type: "apply_schedule", start_minute: 510, end_minute: 565, weekdays: [1, 7], duration_days: 14 }, label: "Aplicar horario", required: /08:30 a 09:25, domingo, sábado durante 14 días/ },
     { action: { type: "apply_schedule", start_minute: 540, end_minute: 600 }, label: "Aplicar horario", required: /09:00 a 10:00, cada día durante 7 días/ },
+    { action: { type: "apply_schedule", recurrence: "continuous", start_minute: 540, end_minute: 600, duration_days: null }, label: "Aplicar horario", required: /09:00 a 10:00, cada día\./, forbidden: /durante|7 días/ },
     { action: { type: "update_schedule", window_id: "existing", start_minute: 540, end_minute: 600, duration_days: 3 }, label: "Aplicar horario", required: /09:00 a 10:00, cada día\./, forbidden: /durante 3 días/ },
     { action: { type: "request_screen_time_permission" }, label: "Conceder permiso", required: /dar permiso al bloqueo.*Avísame/ },
     { action: { type: "open_app_picker", name: "Daily Limit", minutes: 25 }, label: "Elegir distracciones", required: /25 minutos de uso al día.*confirma la selección/ },

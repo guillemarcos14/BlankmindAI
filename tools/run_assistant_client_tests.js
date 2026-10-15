@@ -22,6 +22,12 @@ const applyMethod = source.slice(source.indexOf('    private func applyAction(')
 const appSource = fs.readFileSync(path.join(__dirname, '../ios/Blank/Blank/BlankApp.swift'), 'utf8');
 const notificationNames = appSource.slice(appSource.indexOf('enum AssistantRemoteNotification'), appSource.indexOf('// Only private QA archives'));
 const viewFixture = `
+@MainActor final class StoreKitPurchaseStore {
+    static let shared = StoreKitPurchaseStore()
+    var canConverse = true
+    var requestedBenefit: String?
+    func requestPremium(_ benefit: String) { requestedBenefit = benefit }
+}
 @MainActor final class BlankBrain {
     static let shared = BlankBrain()
     func freshSnapshot() async -> [String: Any]? { nil }

@@ -368,6 +368,10 @@ async function acknowledgePendingAction(body, appAuth = null) {
     }
     if (!pending || pending.id !== actionId) return json(200, { ok: true, acknowledged: false, reason: pending ? "action_mismatch" : "no_pending_action" });
   }
+  if(["confirmed","execution_started"].includes(status)&&!require("./funnel-access").actionAllowed(pending,
+    await require("./funnel-access").access(result.appAuth.user.id),memory.user_context?.schedule?.windows||[])){
+    return json(402,{error:"personalized_followup_required",free_plan_preserved:true});
+  }
   const transition = pendingActionTransition(pending.status, status);
   if (pending.autonomous && ["confirmed","execution_started"].includes(status)
       && (!result.appAuth || !await require("./bmb-service").autonomousPendingAllowed(result.appAuth.user.id,pending,memory.user_context || {}))) {

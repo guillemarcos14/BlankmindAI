@@ -1,344 +1,320 @@
 import Combine
 import Foundation
 import StoreKit
+import SwiftUI
 
 @MainActor
 final class StoreKitPurchaseStore: ObservableObject {
-    static let monthlyProductId = "blanked_monthly_299"
-    static let annualProductId = "blanked_annual_19"
-    private static let referralTrialEndsAtKey = "blankReferralTrialEndsAt"
-    private static let referralCountKey = "blankReferralCount"
-    private static let pendingReferrerUserIdKey = "blankPendingReferrerAnonymousUserId"
-    private static let demoProAccessKey = "blankDemoProAccess"
-
+    static let shared = StoreKitPurchaseStore()
     @Published private(set) var products: [Product] = []
+    @Published private(set) var introductoryOfferEligibleIDs: Set<String> = []
     @Published private(set) var purchasedProductIds: Set<String> = []
-    @Published private(set) var referralTrialEndsAt: Date?
-    @Published private(set) var referralCount = 0
-    @Published private(set) var demoProAccess = false
-    @Published var pendingReferrerUserId = ""
     @Published private(set) var isLoading = false
     @Published private(set) var isPurchasing = false
     @Published private(set) var hasLoadedProducts = false
     @Published var message: String?
-
-    private let productIds = [monthlyProductId, annualProductId]
-
-    var hasEntitlement: Bool {
-        !purchasedProductIds.isEmpty
-    }
-
+    @Published var paywallReason: String?
+    @Published var showingFirstSummary = false
+    @Published private(set) var initialImplemented = false
+    @Published private(set) var freeWindowID: String?
+    @Published private(set) var premiumUntil: Date?
+    @Published private(set) var premiumOwner: String?
+    private var salesApproved = false
+    private var productIDs: [String] = []
+    private var entitlementIDs: [String] = []
+    private var refreshing = false
+    private let defaults = BlankSharedState.defaults
+    init() { resetAccount() }
+    var referralTrialEndsAt: Date? { nil }
+    var referralCount: Int { 0 }
+    var demoProAccess: Bool { false }
+    var hasEntitlement: Bool { hasPremiumAccess }
     var hasPremiumAccess: Bool {
-        hasEntitlement || isReferralTrialActive || demoProAccess
+        premiumOwner == AssistantAppSession.userID && premiumOwner != nil && (premiumUntil ?? .distantPast) > Date()
     }
-
-    var isReferralTrialActive: Bool {
-        guard let referralTrialEndsAt else { return false }
-        return referralTrialEndsAt > Date()
-    }
-
-    var referralTrialRemainingText: String? {
-        guard let referralTrialEndsAt, referralTrialEndsAt > Date() else { return nil }
-        let days = Calendar.current.dateComponents([.day], from: Date(), to: referralTrialEndsAt).day ?? 0
-        return "\(max(1, days + 1)) days left"
-    }
-
-    var annualProduct: Product? {
-        product(for: Self.annualProductId)
-    }
-
-    var monthlyProduct: Product? {
-        product(for: Self.monthlyProductId)
-    }
-
-    init() {
-        let defaults = BlankSharedState.defaults
-        let timestamp = defaults.double(forKey: Self.referralTrialEndsAtKey)
-        if timestamp > 0 {
-            referralTrialEndsAt = Date(timeIntervalSince1970: timestamp)
+    var canConverse: Bool { FunnelPolicy.canConverse(implemented: initialImplemented, premium: hasPremiumAccess) }
+    var hasActiveProtection: Bool {
+        if BlankSharedState.loadActiveState().isActive { return true }
+        guard let owner = AssistantAppSession.userID else { return false }
+        let rows = defaults.array(forKey: "blankRestProtectionIntervals") as? [[String: Any]] ?? []
+        return rows.contains { row in
+            guard row["owner"] as? String == owner, row["ended_at"] == nil, row["uncertain"] as? Bool == false,
+                  let start = AssistantInboxAction.parseDate(row["started_at"] as? String), let plan = row["plan"] as? [String: Any],
+                  let from = plan["start_minute"] as? Int, let to = plan["end_minute"] as? Int else { return false }
+            return Date() >= start && Date().timeIntervalSince(start) < Double((to - from + 1440) % 1440) * 60 + 60
         }
-        referralCount = defaults.integer(forKey: Self.referralCountKey)
-        demoProAccess = defaults.bool(forKey: Self.demoProAccessKey)
-        pendingReferrerUserId = defaults.string(forKey: Self.pendingReferrerUserIdKey) ?? ""
+    }
+    var freeWindowUUID: UUID? {
+        let cached = AssistantAppSession.userID.flatMap { defaults.string(forKey: "funnel.window." + $0) }
+        return (cached ?? freeWindowID).flatMap(UUID.init(uuidString:))
+    }
+    func enableDemoProAccess() {} // Legacy preview hook cannot grant commercial rights.
+    func captureReferral(from url: URL) {}
+    func registerReferredActivation(referredUserId: String) async {}
+    func claimDiagnosis(_ token: String) async throws -> [String: Any] {
+        let response = try await request(["action": "funnel_claim", "token": token.trimmingCharacters(in: .whitespacesAndNewlines)])
+        defaults.removeObject(forKey: "funnel.pendingDiagnosis")
+        return response["diagnosis"] as? [String: Any] ?? [:]
     }
 
-    func enableDemoProAccess() {
-        demoProAccess = true
-        BlankSharedState.defaults.set(true, forKey: Self.demoProAccessKey)
-        message = "Review access enabled"
+    func requestPremium(_ benefit: String) {
+        guard !hasPremiumAccess else { return }
+        // Payment never interrupts active protection. The free controls remain reachable.
+        guard !hasActiveProtection else {
+            message = "Your block is active. You can review personalized follow-up after it ends."
+            return
+        }
+        paywallReason = benefit
     }
-
+    func resetAccount() {
+        products = []; introductoryOfferEligibleIDs = []; purchasedProductIds = []; premiumUntil = nil; premiumOwner = nil
+        initialImplemented = false; freeWindowID = nil; salesApproved = false
+        paywallReason = nil; showingFirstSummary = false
+        if let owner = AssistantAppSession.userID {
+            initialImplemented = defaults.bool(forKey: "funnel.implemented." + owner)
+            freeWindowID = defaults.string(forKey: "funnel.window." + owner)
+        }
+    }
+    func request(_ body: [String: Any]) async throws -> [String: Any] {
+        let owner = AssistantAppSession.userID
+        var payload = body; payload["app_install_id"] = BlankSharedState.appInstallId
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        let (result, response) = try await AssistantAppClient().postAuthorized(path: "assistant-app", payload: data, timeout: 20)
+        guard owner != nil, owner == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+        guard (200..<300).contains(response.statusCode), let decoded = try JSONSerialization.jsonObject(with: result) as? [String: Any] else {
+            if response.statusCode == 402 { requestPremium("Personalized follow-up") }
+            throw URLError(.badServerResponse)
+        }
+        return decoded
+    }
     func loadProducts() async {
-        guard products.isEmpty else { return }
-        isLoading = true
-        defer {
-            isLoading = false
-            hasLoadedProducts = true
-        }
-
+        guard !refreshing else { return }; refreshing = true
+        let owner = AssistantAppSession.userID
+        isLoading = true; defer { isLoading = false; refreshing = false; hasLoadedProducts = true }
         do {
-            let loadedProducts = try await Product.products(for: productIds)
-            products = loadedProducts.sorted { first, second in
-                (productIds.firstIndex(of: first.id) ?? 0) < (productIds.firstIndex(of: second.id) ?? 0)
+            let status = try await request(["action": "funnel_status"])
+            apply(status)
+            let catalog = status["catalog"] as? [String: Any] ?? [:]
+            salesApproved = catalog["sales_approved"] as? Bool == true
+            productIDs = salesApproved ? (catalog["product_ids"] as? [String] ?? []) : []
+            entitlementIDs = catalog["entitlement_ids"] as? [String] ?? []
+            let offersApproved = catalog["introductory_offers_approved"] as? Bool == true
+            let approvedTerms = catalog["product_terms"] as? [String: [String: Any]] ?? [:]
+            let loaded = try await Product.products(for: productIDs).filter { product in
+                guard product.type == .autoRenewable, let info = product.subscription else { return false }
+                let trial = info.introductoryOffer.map { offer in
+                    offersApproved && offer.paymentMode == .freeTrial && offer.period.unit == .day ? offer.period.value : -1
+                }
+                return FunnelPolicy.approvedProduct(id: product.id, periodUnit: Self.periodUnit(info.subscriptionPeriod),
+                    periodValue: info.subscriptionPeriod.value, actualTrialDays: trial, terms: approvedTerms)
+            }.sorted { (productIDs.firstIndex(of: $0.id) ?? Int.max) < (productIDs.firstIndex(of: $1.id) ?? Int.max) }
+            var eligible = Set<String>()
+            for product in loaded {
+                if let info = product.subscription, info.introductoryOffer != nil, await info.isEligibleForIntroOffer { eligible.insert(product.id) }
             }
-            message = loadedProducts.isEmpty ? "Subscriptions are not available yet." : nil
+            guard owner == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+            products = loaded; introductoryOfferEligibleIDs = eligible
+            message = products.isEmpty ? "Subscriptions could not be loaded from the App Store. Try again. Your first recurring window stays free." : nil
+            await updateCustomerProductStatus()
         } catch {
-            message = "Could not load subscriptions."
+            // No fabricated prices or optimistic entitlement when the server is unavailable.
+            message = "Could not refresh follow-up access. Try again. Your free window remains available."
         }
-
-        await updateCustomerProductStatus()
     }
-
+    static func periodUnit(_ period: Product.SubscriptionPeriod) -> String {
+        switch period.unit { case .day: return "day"; case .week: return "week"; case .month: return "month"; case .year: return "year"; @unknown default: return "unknown" }
+    }
+    private func apply(_ status: [String: Any]) {
+        guard let owner = AssistantAppSession.userID else { return }
+        if let implemented = status["initial_implemented_at"] as? String, !implemented.isEmpty {
+            initialImplemented = true; defaults.set(true, forKey: "funnel.implemented." + owner)
+        }
+        if let id = status["free_window_id"] as? String {
+            freeWindowID = id
+            // A local replacement can be registered while its receipt is still in flight.
+            // Keep that slot until reconciliation, rather than restoring a deleted server ID.
+            if defaults.string(forKey: "funnel.window." + owner) == nil { defaults.set(id, forKey: "funnel.window." + owner) }
+        }
+        if status["premium"] as? Bool != true { premiumUntil = nil; purchasedProductIds = [] }
+        if status["premium"] as? Bool != true { defaults.removeObject(forKey: "funnel.premiumUntil." + owner) }
+    }
+    private func verify(_ result: VerificationResult<StoreKit.Transaction>) async throws -> StoreKit.Transaction {
+        let transaction: StoreKit.Transaction
+        switch result { case .verified(let value): transaction = value; case .unverified: throw URLError(.cannotParseResponse) }
+        guard let owner = AssistantAppSession.userID, let token = UUID(uuidString: owner), transaction.appAccountToken == token,
+              entitlementIDs.contains(transaction.productID) else { throw URLError(.userAuthenticationRequired) }
+        let response = try await request(["action": "funnel_verify", "signed_transaction": result.jwsRepresentation])
+        guard owner == AssistantAppSession.userID else { throw AssistantAppError.sessionChanged }
+        if response["premium"] as? Bool == true, let expiry = response["expires_at"] as? String {
+            premiumUntil = AssistantInboxAction.parseDate(expiry); premiumOwner = owner
+            defaults.set(premiumUntil?.timeIntervalSince1970 ?? 0, forKey: "funnel.premiumUntil." + owner)
+            defaults.set(premiumUntil?.timeIntervalSince1970 ?? 0, forKey: "funnel.lastPremiumUntil." + owner)
+            purchasedProductIds.insert(transaction.productID)
+        } else { premiumUntil = nil; purchasedProductIds = []; defaults.removeObject(forKey: "funnel.premiumUntil." + owner) }
+        return transaction
+    }
     func purchase(productId: String) async -> Bool {
-        guard let accountID = AssistantAppSession.userID,
-              AssistantAppSession.hasAppleIdentity,
-              let accountToken = UUID(uuidString: accountID) else {
-            message = "Sign in with Apple before subscribing."
-            return false
+        guard !isPurchasing else { return false }
+        guard salesApproved, productIDs.contains(productId), let product = products.first(where: { $0.id == productId }),
+              let owner = AssistantAppSession.userID, AssistantAppSession.hasAppleIdentity, let token = UUID(uuidString: owner) else {
+            message = "This subscription is not available yet."; return false
         }
-        if products.isEmpty {
-            await loadProducts()
-        }
-
-        guard let product = product(for: productId) else {
-            message = "This subscription is not available yet."
-            return false
-        }
-
-        isPurchasing = true
-        defer { isPurchasing = false }
-
+        isPurchasing = true; defer { isPurchasing = false }
         do {
-            let result = try await product.purchase(options: [.appAccountToken(accountToken)])
-            switch result {
+            switch try await product.purchase(options: [.appAccountToken(token)]) {
             case .success(let verification):
-                let transaction = try checkVerified(verification)
-                await transaction.finish()
-                await updateCustomerProductStatus()
-                message = nil
-                return true
-            case .userCancelled:
-                message = "Purchase cancelled."
+                let t = try await verify(verification)
+                await t.finish()
+                if hasPremiumAccess { paywallReason = nil; message = nil; return true }
                 return false
-            case .pending:
-                message = "Purchase pending approval."
-                return false
-            @unknown default:
-                message = "Purchase could not be completed."
-                return false
+            case .pending: message = "Purchase pending approval. Your free window is available."
+            case .userCancelled: message = nil
+            @unknown default: message = "Purchase could not be completed. Try again."
             }
-        } catch {
-            message = "Purchase could not be completed."
-            return false
-        }
+        } catch { message = "Could not verify the purchase. Restore purchases to retry." }
+        return false
     }
-
     func restorePurchases() async {
         do {
             try await AppStore.sync()
+            await loadProducts()
             await updateCustomerProductStatus()
-            message = hasEntitlement ? "Purchase restored." : "No active subscription found."
-        } catch {
-            message = "Could not restore purchases."
-        }
+            message = hasPremiumAccess ? "Purchase restored." : "No verified active subscription found for this account."
+        } catch { message = "Could not restore purchases. Try again." }
     }
-
-    func observeTransactionUpdates() async {
-        for await result in Transaction.updates {
-            guard let transaction = try? checkVerified(result) else { continue }
-            await transaction.finish()
-            await updateCustomerProductStatus()
-        }
-    }
-
-    func priceText(for productId: String, fallback: String) -> String {
-        if let displayPrice = product(for: productId)?.displayPrice {
-            return displayPrice
-        }
-        return hasLoadedProducts ? fallback : "Loading..."
-    }
-
-    func savePendingReferrerUserId(_ value: String) {
-        let cleaned = cleanReferralCode(value)
-        pendingReferrerUserId = cleaned
-        if cleaned.isEmpty {
-            BlankSharedState.defaults.removeObject(forKey: Self.pendingReferrerUserIdKey)
-        } else {
-            BlankSharedState.defaults.set(cleaned, forKey: Self.pendingReferrerUserIdKey)
-        }
-    }
-
-    func captureReferral(from url: URL) {
-        guard url.scheme == "blank", url.host == "referral" else { return }
-        let ref = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-            .queryItems?
-            .first { $0.name == "ref" }?
-            .value
-        savePendingReferrerUserId(ref ?? "")
-    }
-
-    func refreshReferralStatus(for anonymousUserId: String) async {
-        guard let baseURL = configuredBaseURL() else { return }
-        do {
-            let response: ReferralResponse = try await postReferralRequest(
-                baseURL: baseURL,
-                body: ReferralStatusRequest(action: "status", anonymous_user_id: anonymousUserId)
-            )
-            applyReferralResponse(response)
-        } catch {
-            message = "Could not refresh referral status."
-        }
-    }
-
-    func registerReferredActivation(referredUserId: String) async {
-        let referrer = cleanReferralCode(pendingReferrerUserId)
-        guard !referrer.isEmpty, referrer != referredUserId, let baseURL = configuredBaseURL() else { return }
-
-        do {
-            let response: ReferralResponse = try await postReferralRequest(
-                baseURL: baseURL,
-                body: ReferralActivationRequest(
-                    action: "register_activation",
-                    referrer_anonymous_user_id: referrer,
-                    referred_anonymous_user_id: referredUserId,
-                    source: "ios",
-                    app_version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
-                    build_number: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
-                )
-            )
-            applyReferralResponse(response)
-            savePendingReferrerUserId("")
-        } catch {
-            message = "Could not register invite."
-        }
-    }
-
-    private func applyReferralResponse(_ response: ReferralResponse) {
-        referralCount = response.referral_count
-        BlankSharedState.defaults.set(referralCount, forKey: Self.referralCountKey)
-
-        guard response.reward_unlocked else { return }
-        let parsedEnd = response.reward_ends_at.flatMap(Self.parseDate)
-        let fallbackEnd = Calendar.current.date(byAdding: .day, value: response.reward_days, to: Date()) ?? Date().addingTimeInterval(7 * 24 * 60 * 60)
-        let newEnd = parsedEnd ?? fallbackEnd
-        referralTrialEndsAt = max(referralTrialEndsAt ?? Date.distantPast, newEnd)
-        BlankSharedState.defaults.set(referralTrialEndsAt?.timeIntervalSince1970 ?? 0, forKey: Self.referralTrialEndsAtKey)
-        message = "7-day Pro pass unlocked."
-    }
-
-    private func postReferralRequest<RequestBody: Encodable, ResponseBody: Decodable>(
-        baseURL: URL,
-        body: RequestBody
-    ) async throws -> ResponseBody {
-        let url = baseURL.appendingPathComponent("referrals")
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(body)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
-            throw URLError(.badServerResponse)
-        }
-        return try JSONDecoder().decode(ResponseBody.self, from: data)
-    }
-
-    private func configuredBaseURL() -> URL? {
-        guard let rawValue = Bundle.main.object(forInfoDictionaryKey: "BlankMembershipAPIBaseURL") as? String else {
-            return nil
-        }
-        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !trimmed.contains("$(") else {
-            return nil
-        }
-        return URL(string: trimmed)
-    }
-
-    private func cleanReferralCode(_ value: String) -> String {
-        value.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private static func parseDate(_ value: String) -> Date? {
-        let fractionalFormatter = ISO8601DateFormatter()
-        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = fractionalFormatter.date(from: value) {
-            return date
-        }
-        return ISO8601DateFormatter().date(from: value)
-    }
-
-    private func product(for productId: String) -> Product? {
-        products.first { $0.id == productId }
-    }
-
     func updateCustomerProductStatus() async {
-        var activeProductIds = Set<String>()
-        guard let accountID = AssistantAppSession.userID,
-              AssistantAppSession.hasAppleIdentity,
-              let accountToken = UUID(uuidString: accountID) else {
-            purchasedProductIds = []
-            return
+        guard AssistantAppSession.hasAppleIdentity else { resetAccount(); return }
+        premiumUntil = nil; purchasedProductIds = []
+        for await result in StoreKit.Transaction.currentEntitlements {
+            guard case .verified(let t) = result, entitlementIDs.contains(t.productID), t.revocationDate == nil,
+                  !t.isUpgraded, let expiry = t.expirationDate, expiry > Date() else { continue }
+            do { _ = try await verify(result) } catch { message = "Could not verify follow-up access. Restore purchases to retry." }
         }
-
-        for await result in Transaction.currentEntitlements {
-            guard let transaction = try? checkVerified(result) else { continue }
-            guard productIds.contains(transaction.productID) else { continue }
-            // Purchases made before account tokens existed remain restorable.
-            if let owner = transaction.appAccountToken, owner != accountToken { continue }
-            activeProductIds.insert(transaction.productID)
-        }
-
-        purchasedProductIds = activeProductIds
+        if !hasPremiumAccess, let owner = AssistantAppSession.userID { defaults.removeObject(forKey: "funnel.premiumUntil." + owner) }
     }
-
-    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
-        switch result {
-        case .verified(let safe):
-            return safe
-        case .unverified:
-            throw StoreKitPurchaseError.failedVerification
+    func observeTransactionUpdates() async {
+        for await result in StoreKit.Transaction.updates {
+            do { let transaction = try await verify(result); await transaction.finish() }
+            catch { await updateCustomerProductStatus() }
         }
     }
-}
-
-private enum StoreKitPurchaseError: Error {
-    case failedVerification
-}
-
-private struct ReferralStatusRequest: Encodable {
-    let action: String
-    let anonymous_user_id: String
-}
-
-private struct ReferralActivationRequest: Encodable {
-    let action: String
-    let referrer_anonymous_user_id: String
-    let referred_anonymous_user_id: String
-    let source: String
-    let app_version: String
-    let build_number: String
-}
-
-private struct ReferralResponse: Decodable {
-    let referral_count: Int
-    let required_referrals: Int
-    let reward_days: Int
-    let reward_unlocked: Bool
-    let reward_ends_at: String?
-
-    private enum CodingKeys: String, CodingKey {
-        case referral_count
-        case required_referrals
-        case reward_days
-        case reward_unlocked
-        case reward_ends_at
+    func reconcile(store: SessionStore, onOpening: Bool = false) async {
+        guard let owner = AssistantAppSession.userID else { return }
+        if let window = store.schedule.windows.first(where: { $0.id == freeWindowUUID }) ?? store.schedule.windows.first,
+           window.startsAt == nil, window.expiresAt == nil, store.recurringScheduleRegistered, store.hasSelectedApps,
+           BlankSharedState.familyControlsApproved, window.enabled {
+            var receipt: [String: Any] = ["window_id": window.id.uuidString, "registered": true, "screen_time_authorized": true,
+                "selection_count": store.selectionCount, "start_minute": window.startMinute, "end_minute": window.endMinute,
+                "weekdays": window.weekdays, "permanent": true, "window_count": store.schedule.windows.count]
+            if let prior = freeWindowID, prior.lowercased() != window.id.uuidString.lowercased() { receipt["replaces_window_id"] = prior }
+            do { apply(try await request(["action": "funnel_receipt", "receipt": receipt])) }
+            catch { message = "Your window is scheduled on this iPhone. Setup confirmation will retry when connected." }
+        }
+        guard owner == AssistantAppSession.userID else { return }
+        let completed = completedBlocks(owner: owner)
+        if onOpening, FunnelPolicy.offerSummary(completed: !completed.isEmpty, active: store.isBlankActive || hasActiveProtection,
+            premium: hasPremiumAccess, seen: defaults.bool(forKey: "funnel.summarySeen." + owner)) {
+            showingFirstSummary = true
+            defaults.set(true, forKey: "funnel.summarySeen." + owner)
+        }
     }
+    func completedBlocks(owner: String) -> [[String: Any]] {
+        let rows = defaults.array(forKey: "blankRestProtectionIntervals") as? [[String: Any]] ?? []
+        return rows.filter { FunnelPolicy.completedBlock($0, owner: owner) }
+    }
+}
 
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        referral_count = try container.decodeIfPresent(Int.self, forKey: .referral_count) ?? 0
-        required_referrals = try container.decodeIfPresent(Int.self, forKey: .required_referrals) ?? 3
-        reward_days = try container.decodeIfPresent(Int.self, forKey: .reward_days) ?? 7
-        reward_unlocked = try container.decodeIfPresent(Bool.self, forKey: .reward_unlocked) ?? false
-        reward_ends_at = try container.decodeIfPresent(String.self, forKey: .reward_ends_at)
+struct WebDiagnosisImportView: View {
+    @EnvironmentObject private var purchases: StoreKitPurchaseStore
+    @State private var code = BlankSharedState.defaults.string(forKey: "funnel.pendingDiagnosis") ?? ""
+    @State private var status = ""
+    @State private var busy = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Continue web diagnosis").font(.blankInter(size: 17, relativeTo: .headline))
+            TextField("Private continuation code", text: $code).textInputAutocapitalization(.never).autocorrectionDisabled()
+                .textFieldStyle(.roundedBorder).accessibilityIdentifier("funnel-diagnosis-code")
+            Button("Import my context and proposal") {
+                busy = true
+                Task {
+                    defer { busy = false }
+                    do {
+                        let diagnosis = try await purchases.claimDiagnosis(code)
+                        let routine = diagnosis["routine"] as? String ?? ""
+                        status = "Context imported: \(routine). Continue your initial conversation to agree the window and implement it. Importing does not apply a block."
+                        code = ""
+                    } catch { status = "Could not import this code. Check the code or create a new one on the website; codes expire after 24 hours." }
+                }
+            }.frame(minHeight: 44).disabled(busy || code.count != 64)
+            if busy { ProgressView() }
+            if !status.isEmpty { Text(status).font(.blankInter(size: 14, relativeTo: .footnote)) }
+        }
+    }
+}
+
+struct PersonalizedFollowupSheet: View {
+    @EnvironmentObject private var purchases: StoreKitPurchaseStore
+    @Environment(\.dismiss) private var dismiss
+    let reason: String
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Text("Personalized follow-up").font(.blankInter(size: 26, relativeTo: .title))
+                    Text(reason).font(.blankInter(size: 17, relativeTo: .body))
+                    Text("Your first recurring window stays free permanently. You can edit, pause or disable it in Control. Add follow-up when you want help adapting your routine.")
+                }.listRowBackground(BlankColors.minimalBackground.overlay(BlankColors.cardSurface))
+                Section {
+                    Text("Multiple windows and different schedules by day")
+                    Text("Unlimited conversations by text and voice")
+                    Text("Full Progress history, trends, comparisons and explanations")
+                    Text("Automatic evaluation and adjustments within your permissions")
+                } header: {
+                    Text("Included with follow-up").foregroundStyle(BlankColors.ink)
+                }.listRowBackground(BlankColors.minimalBackground.overlay(BlankColors.cardSurface))
+                Section {
+                    ForEach(purchases.products, id: \.id) { product in
+                        Button { Task { _ = await purchases.purchase(productId: product.id) } } label: {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(product.displayName)
+                                Text(FunnelPolicy.purchaseTerms(price: product.displayPrice, period: period(product),
+                                    eligibleTrialDays: purchases.introductoryOfferEligibleIDs.contains(product.id) ? product.subscription?.introductoryOffer?.period.value : nil))
+                            }.frame(minHeight: 44)
+                        }.disabled(purchases.isPurchasing)
+                    }
+                    if purchases.isLoading { ProgressView("Loading subscriptions") }
+                    if let message = purchases.message { Text(message) }
+                    Button("Restore purchases") { Task { await purchases.restorePurchases() } }.disabled(purchases.isPurchasing)
+                    Link("Manage subscription", destination: URL(string: "https://apps.apple.com/account/subscriptions")!)
+                    Link("Privacy", destination: URL(string: "https://blankmind.ai/privacy/")!)
+                    Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                    Text("Payment is charged to your Apple account after confirmation. Subscriptions renew unless canceled at least 24 hours before the current period ends. Manage or cancel in the App Store.")
+                        .font(.blankInter(size: 13, relativeTo: .footnote))
+                }.listRowBackground(BlankColors.minimalBackground.overlay(BlankColors.cardSurface))
+            }
+            .tint(BlankColors.ink)
+            .foregroundStyle(BlankColors.cardInk)
+            .font(.blankInter(size: 17, relativeTo: .body))
+            .scrollContentBackground(.hidden)
+            .background(BlankColors.minimalBackground)
+            .safeAreaInset(edge: .bottom) {
+                Button("Continue free") { purchases.paywallReason = nil; dismiss() }
+                    .font(.blankInter(size: 17, relativeTo: .body))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
+                    .accessibilityIdentifier("funnel-continue-free")
+                    .padding(.horizontal, 20).padding(.vertical, 12)
+                    .background(BlankColors.minimalBackground)
+            }
+            .preferredColorScheme(.light)
+            .navigationTitle("Follow-up")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { purchases.paywallReason = nil; dismiss() } } }
+            .task { await purchases.loadProducts() }
+        }
+    }
+    private func period(_ product: Product) -> String {
+        guard let period = product.subscription?.subscriptionPeriod else { return "billing period" }
+        let unit = StoreKitPurchaseStore.periodUnit(period)
+        return period.value == 1 ? unit : "\(period.value) \(unit)s"
     }
 }

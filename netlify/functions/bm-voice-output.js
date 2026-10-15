@@ -50,6 +50,10 @@ async function voice(request, deps = {}) {
     const row = await readTurn(auth.user.id, body.turn_id);
     if (!row) { cleanup(); return failure(404, "turn_not_found"); }
     if (row.status !== "completed") { cleanup(); return failure(409, "voice_turn_not_ready"); }
+    const rights=await (deps.access||require("./funnel-access").access)(auth.user.id);
+    if(!rights.premium&&!rights.initial_setup&&Date.parse(row.created_at)>Date.parse(rights.initial_implemented_at)){
+      cleanup();return failure(402,"personalized_followup_required");
+    }
     const text = plainAssistantText(row.assistant_text || "");
     if (!text.trim() || text.length > 4000) { cleanup(); return failure(422, "voice_text_unavailable"); }
     const eleven = process.env.BM_VOICE_PROVIDER === "elevenlabs";

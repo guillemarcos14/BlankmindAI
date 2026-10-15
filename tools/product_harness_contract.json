@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "bm-product-harness",
-  "objective": "Construir y validar BM con un ciclo reproducible de contexto, implementación, validación, reparación acotada y cierre operativo.",
+  "objective": "Implement the approved permanent free first window and paid personalized follow-up, independently of model architecture and consent.",
   "scope": [
     "netlify/functions/**",
     "tools/**",
@@ -32,7 +32,10 @@
     "settings.gradle.kts",
     "gradle.properties",
     "gradlew",
-    "gradlew.bat"
+    "gradlew.bat",
+    "netlify/package.json",
+    "netlify/package-lock.json",
+    "web/funnel/**"
   ],
   "acceptance": [
     "El cambio tiene contexto mínimo de Blank Brain y del proceso de desarrollo.",
@@ -67,6 +70,10 @@
       {"name":"bm_agent_context_parallel","run":"node tools/bm_agent_context_parallel_test.js"},
       {"name":"bm_agent_fault_matrix","run":"node tools/bm_agent_fault_matrix_test.js"},
       {"name":"bm_agent_state_audit","run":"node tools/bm_agent_state_audit_test.js"},
+      {
+        "name": "monetization_funnel",
+        "run": "node tools/funnel_test.js"
+      },
       {
         "name": "bm_agent_retrieval_regressions",
         "run": "node tools/bm_agent_retrieval_regression_test.js"

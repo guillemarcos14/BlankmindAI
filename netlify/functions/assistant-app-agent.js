@@ -119,6 +119,8 @@ async function queuePendingAssistantAction(connection, plan, prompt = "", idPref
 async function callBlankedAgent(prompt,from,connection,{onDraft,identity}={}){
   if(identity?.auth_user_id!==from||identity?.assistant_connect_code!==connection?.connectCode)throw Error("assistant_identity_mismatch");
   const context=await require("./bm-turn-timing").span("context",()=>agentContext(from,prompt,connection,{identity}));
+  context.funnel_access=await require("./funnel-access").access(from);
+  context.funnel_diagnosis=(await require("./funnel-access").state(from)).diagnosis || null;
   return require("./bmb-brain").plan({prompt,context,userId:from,identity,onDraft});
 }
 module.exports={callBlankedAgent,queuePendingAssistantAction};

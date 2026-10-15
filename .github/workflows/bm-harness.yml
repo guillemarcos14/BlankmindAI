@@ -74,6 +74,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f tools/assistant_app_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/bm_brain_database_test.sql
           psql -v ON_ERROR_STOP=1 -f tools/bmb_database_test.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/037_monetization_funnel.sql
+          psql -v ON_ERROR_STOP=1 -f tools/funnel_database_test.sql
   harness:
     name: Contract and runtime gate
     runs-on: ubuntu-latest
@@ -87,6 +89,7 @@ jobs:
       - name: Verify scope and run product harness
         shell: bash
         run: |
+          npm ci --prefix netlify --ignore-scripts --no-audit --no-fund
           if [ -n "${{ github.base_ref }}" ]; then
             node tools/product_harness.js --contract tools/product_harness_contract.json --mode validate --diff-base "origin/${{ github.base_ref }}" --enforce-scope --allow-missing-external-context --report tmp/product-harness/ci.json
           else

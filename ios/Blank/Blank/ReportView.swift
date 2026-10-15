@@ -10,7 +10,7 @@ struct ReportView: View {
     var onClose: (() -> Void)? = nil
 
     private var headerPrimary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite : BlankColors.charcoal }
-    private var headerSecondary: Color { sessionStore.isBlankActive ? BlankColors.pureWhite.opacity(0.72) : BlankColors.mutedInk }
+    private var headerSecondary: Color { headerPrimary }
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
             Group {

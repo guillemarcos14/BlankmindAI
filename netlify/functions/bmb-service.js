@@ -8,6 +8,9 @@ async function account(userId) {
   return rows[0]||{auth_user_id:userId,version:0,settings:settings()};
 }
 async function api(auth,body) {
+  if(["bmb_rest_evidence","bmb_followup","bmb_activity"].includes(body.action)){
+    const denied=await require("./funnel-access").requireFeature(auth.user.id,"advanced_progress");if(denied)return denied;
+  }
   if(body.action==="bmb_sync_rest"){
     try {const result=await require("./bmb-rest").sync(auth.user.id,auth.identity.app_install_id,body.snapshot);return json(200,{ok:true,...(Array.isArray(result)?result[0]:result)});}
     catch(error){if(/^rest_(invalid|stale|missing)/.test(error.message))return json(400,{error:error.message});throw error;}
@@ -28,6 +31,15 @@ async function api(auth,body) {
   }
   if(body.action==="bmb_save_settings") {
     const normalized=settings(body.settings);
+    if(normalized.grant?.active||normalized.rest?.adjustments_enabled){
+      if(!await require("./funnel-access").premium(auth.user.id)){
+        const previous=(await account(auth.user.id)).settings;
+        if((normalized.grant?.active&&!previous.grant?.active)||(normalized.rest?.adjustments_enabled&&!previous.rest?.adjustments_enabled))
+          return json(402,{error:"personalized_followup_required",feature:"autonomy",free_plan_preserved:true});
+        // A free account can always pause/revoke an old grant. Never revive it after expiry.
+        normalized.grant.active=false;normalized.rest.adjustments_enabled=false;
+      }
+    }
     if(!Number.isSafeInteger(body.version)||body.version<0)return json(400,{error:"bmb_invalid_version"});
     const rows=await supabaseFetch("rpc/bmb_save_settings",{method:"POST",body:JSON.stringify({p_user:auth.user.id,p_install:auth.identity.app_install_id,p_settings:normalized,p_version:body.version})});
     const result=Array.isArray(rows)?rows[0]:rows;
@@ -48,6 +60,7 @@ async function api(auth,body) {
 }
 async function autonomousPendingAllowed(userId,pending,context) {
   if(!pending?.id?.startsWith("bmb_"))return true;
+  if(!await require("./funnel-access").premium(userId))return false;
   const current=await account(userId);
   const ev=await supabaseFetch(`bmb_events?id=eq.${encodeURIComponent(pending.id.slice(4))}&auth_user_id=eq.${encodeURIComponent(userId)}&kind=eq.action&select=*`,{method:"GET"});
   return Boolean(ev[0]&&ev[0].grant_version===current.version&&ev[0].expires_at===pending.expires_at
@@ -68,6 +81,7 @@ function opportunities(events,now=Date.now()) {
 }
 async function tickAccount(a,{brain=require("./bmb-brain").plan,push=require("./_assistant_push").sendAssistantActionPush,notify=require("./_assistant_push").sendBMBNotification,
   db=supabaseFetch,identityLookup=require("./_identity").identityForAuthUser,getMemory=require("./_assistant_memory").getAssistantMemory,getContext=require("./_bm_user_context").enrichAssistantContext}={}) {
+  if(!await require("./funnel-access").premium(a.auth_user_id,db))return {skipped:"personalized_followup_required"};
   if(a.settings.rest?.sharing_revoked)return {skipped:"rest_sharing_revoked"};
   const identity=await identityLookup(a.auth_user_id);
   if(!identity||identity.app_install_id!==a.app_install_id)return {skipped:"installation_changed"};
