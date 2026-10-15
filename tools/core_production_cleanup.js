@@ -3,7 +3,7 @@
 // user-data mutations. A replacement deploy preserves every retained digest.
 const fs=require("node:fs"),path=require("node:path"),assert=require("node:assert/strict"),crypto=require("node:crypto");
 const {execFileSync}=require("node:child_process");
-const ROOT=path.resolve(__dirname,".."),SITE="59955668-9a9b-4979-a283-63fbf3115fe5",DIR=path.join(ROOT,"tmp/core-completion-20261015");
+const ROOT=path.resolve(__dirname,".."),SITE="59955668-9a9b-4979-a283-63fbf3115fe5",DIR=path.join(ROOT,"tmp/core-completion-production-20261015");
 const CORE=["account-data","app-auth","assistant-app","assistant-app-stream","assistant-app-voice","assistant-device","bmb-tick","bmb-worker-background"];
 const RETIRED=Object.freeze(["app-handoff","assistant-action-retry-background","assistant-audio","assistant-channel","bai-call-twiml","bai-call","bai-feedback","bai-intelligence","bai-learning-dashboard","bai-learning-notifications","bai-outcome","blanked-agent","bm-blocking-contract","bm-contextual-response","bm-harness","bm-learning","bm-loop","bm-onboarding","bm-personal-context-view","bm-policy","bm-schedule-management","bm-semantic-extraction","bm-verification","digital-wellness-features","elevenlabs-bai-tool","sms-agent","twilio-voice-configure","waitlist-agent-background","waitlist-agent","waitlist-data","waitlist-start","wearable-connections","wearable-oauth-callback","wearable-oauth-start","wearable-outcome","wearable-scheduled-sync","wearable-sync","weather-context","wellness-signal","whatsapp-agent","_assistant_channel","_bm_action_link","_bm_final_qa_access","_bm_final_qa_dispatch","_bm_tone","_twilio_voice","_waitlist_ai","_waitlist_store","_waitlist_whatsapp","_wearable_intelligence","_wearable_oauth"]);
 const load=n=>JSON.parse(fs.readFileSync(path.join(DIR,n),"utf8"));
@@ -18,10 +18,11 @@ function plan({functions,files,schedules,sourceExists=n=>[".js",".mjs",".ts"].so
  for(const f of functions)assert(/^[a-f0-9]{64}$/.test(digest(f)),"Invalid existing function digest");
  for(const s of schedules)assert(keep.some(f=>name(f)===s.name),"Retirement would orphan a schedule");
  assert(files.length>0);assert.equal(new Set(files.map(f=>f.path)).size,files.length);
- const body={draft:true,files:Object.fromEntries(files.map(f=>[f.path.replace(/^\//,""),f.sha])),functions:Object.fromEntries(keep.map(f=>[name(f),digest(f)])),functions_config:Object.fromEntries(keep.map(f=>[name(f),{priority:f.p??f.priority??10,build_data:f.bd??f.build_data??{}}])),function_schedules:schedules,title:"Authorized CORE retirement, 15 Oct 2026; preserve current iOS119 runtime"};
+ const body={draft:false,files:Object.fromEntries(files.map(f=>[f.path.replace(/^\//,""),f.sha])),functions:Object.fromEntries(keep.map(f=>[name(f),digest(f)])),functions_config:Object.fromEntries(keep.map(f=>[name(f),{priority:f.p??f.priority??10,build_data:f.bd??f.build_data??{}}])),function_schedules:schedules,title:"Authorized CORE retirement, 15 Oct 2026; preserve current iOS119 runtime"};
  return {removed:remove.map(name).sort(),retained:keep.map(name).sort(),body};
 }
-function verify({functions,files,schedules},prepared){
+function verify({context,functions,files,schedules},prepared){
+ assert.equal(context,"production","Deploy must load production-scoped environment");
  assert.deepEqual(Object.fromEntries(functions.map(f=>[name(f),digest(f)])),prepared.body.functions,"Remote inventory/digests differ from the retirement manifest");
  assert(!functions.some(f=>RETIRED.includes(name(f))),"Retired function still published");
  assert.deepEqual(schedules,prepared.body.function_schedules,"Schedule changed");
@@ -42,7 +43,7 @@ async function main(){
  async function api(route,method="GET",body,binary=false){const r=await fetch("https://api.netlify.com/api/v1"+route,{method,headers:{authorization:"Bearer "+token,"content-type":binary?"application/octet-stream":"application/json"},...(body===undefined?{}:{body:binary?body:JSON.stringify(body)}),signal:AbortSignal.timeout(30000)});assert(r.ok,method+" "+route+" HTTP "+r.status);return r.status===204?null:r.json();}
  const site=await api("/sites/"+SITE);assert.equal(site.ssl_url,"https://getblank.netlify.app");
  const env=await api("/accounts/"+site.account_id+"/env?site_id="+SITE),envHash=environmentDigest(env);
- async function snapshot(id){return {functions:inventory(await api("/deploys/"+id+"/functions")),files:await api("/deploys/"+id+"/files"),schedules:(await api("/deploys/"+id)).function_schedules};}
+ async function snapshot(id){return {context:(await api("/deploys/"+id)).context,functions:inventory(await api("/deploys/"+id+"/functions")),files:await api("/deploys/"+id+"/files"),schedules:(await api("/deploys/"+id)).function_schedules};}
  if(mode==="plan"){
   const previous=site.published_deploy.id,snap=await snapshot(previous),prepared=plan(snap);assert(prepared.removed.length,"No retired functions to remove");
   save("cleanup-plan.json",{created_at:new Date().toISOString(),authorization:"Guillem 15 Oct 2026: corrige limpieza servidor y completa validación/activación respetando40USD",previous,previous_locked:!!(await api("/deploys/"+previous)).locked,environment_digest:envHash,source:execFileSync("git",["rev-parse","HEAD"],{cwd:ROOT,encoding:"utf8"}).trim(),...prepared});

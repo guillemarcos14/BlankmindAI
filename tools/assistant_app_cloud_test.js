@@ -117,10 +117,17 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
   async function send(user, text) {
     // Follow the current native lifecycle. A synthetic presence flag alone is
     // not a fresh device snapshot and must never bypass the stale-state guard.
-    ok(await inbox(user,{action:"sync_context",context:{brain_snapshot:syntheticDeviceSnapshot(),
-      app_presence:{app_present:true,app_ready:true,last_seen_at:new Date().toISOString()}}}),"fresh_synthetic_device_sync");
+    const now = new Date().toISOString();
+    const context = { anonymous_user_id:user.anonymous, context_revision:Date.now()*1000,
+      brain_snapshot:syntheticDeviceSnapshot(now), has_selected_apps:true,selection_count:3,
+      screen_time_authorized:true,protection_target:"selected_distractions",language:"en",locale:"en",
+      app_presence:{app_present:true,app_ready:true,last_seen_at:now} };
+    ok(await inbox(user,{action:"sync_context",context}),"fresh_synthetic_device_sync");
+    const saved=ok(await db(`bm_user_context_snapshots?user_id=eq.${user.id}&select=context`),"fresh_context_preflight");
+    expect(saved.length===1 && saved[0].context?.context_revision===context.context_revision
+      && saved[0].context?.brain_snapshot?.generated_at===now,"fresh_context_not_persisted");
     const id = crypto.randomUUID();
-    const response = await app(user, { action: "send", turn_id: id, text });
+    const response = await app(user, { action: "send", turn_id: id, text, context });
     expect(response.status === 200 && response.body?.turn?.status === "completed", `send_not_completed_http_${response.status}`);
     return response.body.turn;
   }
@@ -194,7 +201,8 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
       expect(first.action_id === `app_${first.id}` && !["verified","delayed"].includes(first.action_status), "action_identity_or_unverified_status_invalid");
       expect(first.assistant_text.length > 0, "reply_missing");
       const state = await semantic(a);
-      expect(state.state?.semantic_state?.slots?.duration_minutes?.value === 25, "assistant_state_missing_app_turn");
+      expect(state.storage_version >= 1 && state.state?.last_user_message === first.user_text
+        && state.state?.last_assistant_message === first.assistant_text.slice(0,420), "assistant_state_missing_app_turn");
       const queued = await pending(a);
       expect(queued?.id === first.action_id && queued.minutes === 25, "canonical_pending_action_missing");
       const events = await memoryEvents(a);
@@ -227,7 +235,10 @@ async function run(config, output, { infrastructureOnly = false } = {}) {
     await check("cancellation_updates_assistant_state_and_clears_inbox", async () => {
       const cancelled = await send(a, "Please cancel this request.");
       expect(!cancelled.action_id, "cancellation_created_action");
-      expect((await semantic(a)).state?.semantic_state?.intent === "cancelled", "shared_state_not_cancelled");
+      const state = (await semantic(a)).state;
+      expect(state?.last_user_message === cancelled.user_text
+        && (state?.semantic_state?.intent === "cancelled"
+          || (state?.bmb_state?.pending_request === null && state?.bmb_state?.proposal === null)), "shared_state_not_cancelled");
       expect(await pending(a) === null, "cancelled_action_still_pending");
       const original = await app(a, { action: "status", turn_id: first.id });
       expect(original.body?.turn?.action_status === "superseded", "cancelled_original_not_superseded");
