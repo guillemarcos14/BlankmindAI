@@ -32,6 +32,17 @@ final class StoreKitPurchaseStore: ObservableObject {
         premiumOwner == AssistantAppSession.userID && premiumOwner != nil && (premiumUntil ?? .distantPast) > Date()
     }
     var canConverse: Bool { FunnelPolicy.canConverse(implemented: initialImplemented, premium: hasPremiumAccess) }
+    var hasActiveProtection: Bool {
+        if BlankSharedState.loadActiveState().isActive { return true }
+        guard let owner = AssistantAppSession.userID else { return false }
+        let rows = defaults.array(forKey: "blankRestProtectionIntervals") as? [[String: Any]] ?? []
+        return rows.contains { row in
+            guard row["owner"] as? String == owner, row["ended_at"] == nil, row["uncertain"] as? Bool == false,
+                  let start = AssistantInboxAction.parseDate(row["started_at"] as? String), let plan = row["plan"] as? [String: Any],
+                  let from = plan["start_minute"] as? Int, let to = plan["end_minute"] as? Int else { return false }
+            return Date() >= start && Date().timeIntervalSince(start) < Double((to - from + 1440) % 1440) * 60 + 60
+        }
+    }
     var freeWindowUUID: UUID? {
         let cached = AssistantAppSession.userID.flatMap { defaults.string(forKey: "funnel.window." + $0) }
         return (freeWindowID ?? cached).flatMap(UUID.init(uuidString:))
@@ -48,7 +59,7 @@ final class StoreKitPurchaseStore: ObservableObject {
     func requestPremium(_ benefit: String) {
         guard !hasPremiumAccess else { return }
         // Payment never interrupts active protection. The free controls remain reachable.
-        guard !BlankSharedState.loadActiveState().isActive else {
+        guard !hasActiveProtection else {
             message = "Your block is active. You can review personalized follow-up after it ends."
             return
         }
@@ -176,7 +187,7 @@ final class StoreKitPurchaseStore: ObservableObject {
         }
         guard owner == AssistantAppSession.userID else { return }
         let completed = completedBlocks(owner: owner)
-        if onOpening, FunnelPolicy.offerSummary(completed: !completed.isEmpty, active: store.isBlankActive,
+        if onOpening, FunnelPolicy.offerSummary(completed: !completed.isEmpty, active: store.isBlankActive || hasActiveProtection,
             premium: hasPremiumAccess, seen: defaults.bool(forKey: "funnel.summarySeen." + owner)) {
             showingFirstSummary = true
             defaults.set(true, forKey: "funnel.summarySeen." + owner)

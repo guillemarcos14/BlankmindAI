@@ -220,8 +220,9 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
   const latest=await readSource(userId,identity,{source:"history",term:"",from:null,to:null,offset:0},cutoff,db);
 
   const currentSleep=sleepContext(context);
+  if(context.funnel_access&&!context.funnel_access.premium) currentSleep.rows=currentSleep.rows.slice(-1);
   const restSnapshot=context.personal_profile?.rest_snapshot;
-  const restSource=restSnapshot?.schema_version===1?await rest.context(userId,db):{source_id:"rest_evidence",objective:rest.OBJECTIVE,available:false,rows:[],reason:"no_synced_watch_baseline"};
+  const restSource=restSnapshot?.schema_version===1&&(!context.funnel_access||context.funnel_access.premium)?await rest.context(userId,db):{source_id:"rest_evidence",objective:rest.OBJECTIVE,available:false,rows:[],reason:"no_synced_watch_baseline"};
   const recent=agentActivation.enabled("tools")&&latest.rows?.length>8
     ?{...latest,rows:latest.rows.slice(0,8),next_offset:8}:latest;
   const sources=[recent,currentSleep,restSource,...(proactive?.daily_review?.sources||[])];
@@ -254,7 +255,12 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
     const i=sources.findIndex(s=>s.source_id===currentSleep.source_id);if(i>=0)sources[i]=currentSleep;
   }
   if(retrieval&&!result&&onDraft)onDraft("");
-  const consultar_contexto=agentTools.reader({userId,identity,cutoff,timezone:input.timezone,db,read:readSource,prompt,
+  const commercialRead=async(...args)=>{
+    const query=args[2];
+    if(context.funnel_access&&!context.funnel_access.premium&&["rest_nights","rest_experiments","reviews","protection_statistics","health_context","digital_usage"].includes(query?.source))throw Error("personalized_followup_required");
+    return readSource(...args);
+  };
+  const consultar_contexto=agentTools.reader({userId,identity,cutoff,timezone:input.timezone,db,read:commercialRead,prompt,
     get isQuestion(){return result?.message_kind==="question";},bound:q=>queryPeriod.boundQuery(q,explicitPeriod,result)});
   for(let pass=0;!result||result.phase==="read";pass++) {
     if(pass>=4)throw Error("bmb_read_budget_exhausted");

@@ -7,8 +7,7 @@ const context = normalizeUserContext({ onboarding_version: 6, screen_time_author
   sleep_data_available: true, sleep_data_checked_at: new Date(now).toISOString(),
   has_selected_apps: false, selection_count: 0, notification_authorized: false, device_execution_ready: false });
 assert.equal(onboardingReady(context, {}, "app", now), true, "App entry does not require selected apps, push or notifications");
-for (const patch of [{ screen_time_authorized: false }, { sleep_data_available: false },
-  { sleep_data_available: "true" }, { sleep_data_checked_at: "invalid" },
+for (const patch of [{ screen_time_authorized: false }, { sleep_data_checked_at: "invalid" },
   { sleep_data_checked_at: new Date(now - 11 * 60_000).toISOString() },
   { sleep_data_checked_at: new Date(now + 60_000).toISOString() }]) {
   assert.equal(onboardingReady({ ...context, ...patch }, {}, "app", now), false);
@@ -48,6 +47,8 @@ const request = install => handler({ httpMethod: "POST", headers: { authorizatio
   assert.equal(JSON.parse((await request(record.app_install_id)).body).ready, true,
     "Explicit sample sleep enables authenticated app onboarding without Watch records");
   currentContext.sleep_data_available = false;
+  assert.equal(JSON.parse((await request(record.app_install_id)).body).ready, true, "Initial conversation does not require sleep");
+  currentContext.screen_time_authorized = false;
   assert.equal(JSON.parse((await request(record.app_install_id)).body).ready, false);
   assert.equal((await request("another-install")).statusCode, 403);
   console.log("Authenticated onboarding endpoint: verified install, usable sleep and absent push passed");
