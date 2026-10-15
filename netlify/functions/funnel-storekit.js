@@ -7,7 +7,12 @@ function configuration(){
  const environment=process.env.FUNNEL_STOREKIT_ENVIRONMENT==="Sandbox"?Environment.SANDBOX:Environment.PRODUCTION;
  // Sandbox never grants access on a production backend.
  if(environment===Environment.SANDBOX&&process.env.CONTEXT==="production")throw Error("storekit_sandbox_forbidden");
- const roots=JSON.parse(process.env.FUNNEL_APPLE_ROOT_CERTIFICATES||"[]").map(x=>Buffer.from(x,"base64"));
+ // Public trust anchors ship with the frozen bundle, outside Lambda's 4KB environment limit.
+ // An explicitly configured override remains fail-closed, including an empty list.
+ const encodedRoots=process.env.FUNNEL_APPLE_ROOT_CERTIFICATES===undefined
+  ? require("./funnel-apple-roots.json").certificates.map(c=>c.der_base64)
+  : JSON.parse(process.env.FUNNEL_APPLE_ROOT_CERTIFICATES);
+ const roots=encodedRoots.map(x=>Buffer.from(x,"base64"));
  if(!roots.length||!process.env.FUNNEL_APPLE_ISSUER_ID||!process.env.FUNNEL_APPLE_KEY_ID||!process.env.FUNNEL_APPLE_PRIVATE_KEY)throw Error("storekit_not_configured");
  return {
   client:new AppStoreServerAPIClient(process.env.FUNNEL_APPLE_PRIVATE_KEY,process.env.FUNNEL_APPLE_KEY_ID,process.env.FUNNEL_APPLE_ISSUER_ID,bundleId,environment),

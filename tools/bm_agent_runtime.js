@@ -7,7 +7,7 @@ function actual(){
  const files=fs.readdirSync(root).filter(n=>/\.(?:js|mjs)$/.test(n)).sort().map(n=>[n,path.join(root,n)]);
  files.push(["supabase/migrations/035_bmb_measured_rest.sql",path.resolve(root,"../../supabase/migrations/035_bmb_measured_rest.sql")]);
  files.push(["supabase/migrations/036_bm_agent_labels.sql",path.resolve(root,"../../supabase/migrations/036_bm_agent_labels.sql")]);
- for(const name of ["funnel-catalog.json","../package-lock.json","../../supabase/migrations/037_monetization_funnel.sql"]){
+ for(const name of ["funnel-catalog.json","funnel-apple-roots.json","../package-lock.json","../../supabase/migrations/037_monetization_funnel.sql"]){
   const file=path.resolve(root,name);files.push([path.relative(path.resolve(root,"../.."),file).replace(/\\/g,"/"),file]);
  }
  return {version:1,hash_format:"utf8-lf-sha256",source_hashes:Object.fromEntries(files.map(([n,file])=>[n,crypto.createHash("sha256").update(fs.readFileSync(file,"utf8").replace(/\r\n/g,"\n")).digest("hex")]))};

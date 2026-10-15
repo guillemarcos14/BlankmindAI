@@ -77,6 +77,19 @@ async function main(){
  const {SignedDataVerifier,Environment}=require("../netlify/node_modules/@apple/app-store-server-library");
  const verifier=new SignedDataVerifier([],true,Environment.SANDBOX,"com.blanknfc.app.ios");
  await assert.rejects(()=>verifier.verifyAndDecodeTransaction("eyJhbGciOiJFUzI1NiJ9.e30.AA"));checks++;
+ const crypto=require("node:crypto"),anchors=require("../netlify/functions/funnel-apple-roots.json");
+ check(anchors.certificates.length===2,"Both official Apple G2/G3 trust anchors ship in the bundle");
+ const pins={"AppleRootCA-G2":"C2:B9:B0:42:DD:57:83:0E:7D:11:7D:AC:55:AC:8A:E1:94:07:D3:8E:41:D8:8F:32:15:BC:3A:89:04:44:A0:50","AppleRootCA-G3":"63:34:3A:BF:B8:9A:6A:03:EB:B5:7E:9B:3F:5F:A7:BE:7C:4F:5C:75:6F:30:17:B3:A8:C4:88:C3:65:3E:91:79"};
+ for(const root of anchors.certificates){const certificate=new crypto.X509Certificate(Buffer.from(root.der_base64,"base64"));check(certificate.ca&&certificate.verify(certificate.publicKey),"Packaged anchor is a self-signed CA");check(certificate.fingerprint256===pins[root.name],"Packaged anchor matches the official Apple fingerprint");}
+ const names=["FUNNEL_STOREKIT_ENVIRONMENT","CONTEXT","FUNNEL_APPLE_PRIVATE_KEY","FUNNEL_APPLE_KEY_ID","FUNNEL_APPLE_ISSUER_ID","FUNNEL_APPLE_ROOT_CERTIFICATES"],previous=Object.fromEntries(names.map(n=>[n,process.env[n]]));
+ try{
+  Object.assign(process.env,{FUNNEL_STOREKIT_ENVIRONMENT:"Sandbox",CONTEXT:"deploy-preview",FUNNEL_APPLE_KEY_ID:"OFFLINEKEY",FUNNEL_APPLE_ISSUER_ID:user,FUNNEL_APPLE_PRIVATE_KEY:crypto.generateKeyPairSync("ec",{namedCurve:"prime256v1"}).privateKey.export({type:"pkcs8",format:"pem"})});
+  delete process.env.FUNNEL_APPLE_ROOT_CERTIFICATES;
+  check(S.configuration().environment===Environment.SANDBOX,"Actual Apple SDK starts with packaged roots and no certificate environment variable");
+  process.env.FUNNEL_APPLE_ROOT_CERTIFICATES="[]";assert.throws(()=>S.configuration(),/storekit_not_configured/);checks++;
+  process.env.FUNNEL_APPLE_ROOT_CERTIFICATES="invalid";assert.throws(()=>S.configuration(),SyntaxError);checks++;
+  delete process.env.FUNNEL_APPLE_ROOT_CERTIFICATES;process.env.CONTEXT="production";assert.throws(()=>S.configuration(),/storekit_sandbox_forbidden/);checks++;
+ }finally{for(const name of names){if(previous[name]===undefined)delete process.env[name];else process.env[name]=previous[name];}}
  const sql=fs.readFileSync(path.join(__dirname,"../supabase/migrations/037_monetization_funnel.sql"),"utf8");
  check(sql.includes("original_transaction_id text unique"),"A purchase cannot be linked to two accounts");
  check(sql.includes("for update")&&sql.includes("d.claimed_by<>p_user"),"Atomic cross-account diagnosis claim");

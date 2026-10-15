@@ -60,7 +60,7 @@
     "funnel-access.js": "4663e084705f7039833b85012783d9c6e29ebd2b24e11ce8307989efa0b1346b",
     "funnel-diagnosis.js": "232d7cdd48533e20449202dadf67dc166f5da24cbbee1a4354fae2486edbf5ae",
     "funnel-event.js": "0bc6de6881caaf541e4293d466648dec5ed2f97be5d92e7b99d1df02a63bafce",
-    "funnel-storekit.js": "13df07c327213a117407980ed50659b3ab6409b22ac3240d4384bcddaf0b0fcf",
+    "funnel-storekit.js": "4a6baeb5390b04e7081be3c44d168c5daf6f90f780b9151765c9eecff20c6628",
     "membership-admin-create-code.js": "bf5dfdb0b2b6b5bdee28914b4d21cffd33d2b8948685350afc5a8cab0bd07899",
     "membership-admin-update.js": "a13f3ddfc9889f66c7afa07c0d44f387b74da03397b717d9bfd2803e5ae01a75",
     "membership-status.js": "7bb22a5fdbfa50adc5bade718a8b315e4585de25a97d0f34d36c1439ffaa269d",
@@ -73,6 +73,7 @@
     "supabase/migrations/035_bmb_measured_rest.sql": "ad6c5634cc235f3c0f52df3dad06676663283d1b667f0e95a6df913ce9e72f2e",
     "supabase/migrations/036_bm_agent_labels.sql": "f611c07efca9a1fdeca0acff90f2e9915e0cb6a8d2f1d03cf384d9448347644f",
     "netlify/functions/funnel-catalog.json": "2adf747ae2c71e4aedc2ae63258c752aeee3fff1f945d903bd05afa704e94d7c",
+    "netlify/functions/funnel-apple-roots.json": "8531ffcdeacc31e97a032936496457361205966981edb292e02988a1b537315e",
     "netlify/package-lock.json": "0eb24a9183e44d60c10821910c7e55f1e4ab07a4e26112ce2580c1d2ace7236f",
     "supabase/migrations/037_monetization_funnel.sql": "5072d720a39b03b06cc8a7451af51cf00cde6a4635f34a3e25e390b4919bad48"
   }

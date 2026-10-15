@@ -12,7 +12,8 @@ async function main(){
   const currentHashes=require('./bm_agent_runtime').verify();
   const historical=JSON.parse(fs.readFileSync(path.join(directory,'source-lock.json')));
   assert.throws(()=>preflight.verify(plan,historical,{feature,hashes:currentHashes}),/stale_source/,'The pre-funnel preparation must remain stale, never relabelled as executed evidence');
-  preflight.verify(plan,JSON.parse(fs.readFileSync(path.join(directory,'source-lock-funnel-pricing.json'))),{feature,hashes:currentHashes});
+  assert.throws(()=>preflight.verify(plan,JSON.parse(fs.readFileSync(path.join(directory,'source-lock-funnel-pricing.json'))),{feature,hashes:currentHashes}),/stale_source/,'Pricing preparation must also remain stale after the packaged-root runtime change');
+  preflight.verify(plan,JSON.parse(fs.readFileSync(path.join(directory,'source-lock-funnel-sandbox.json'))),{feature,hashes:currentHashes});
   for(const mutate of [p=>{p.cases.pop();},p=>{p.cases[1]=p.cases[0];},p=>{p.cases.forEach(c=>c.audio_requested=false);},p=>{p.cases[0].text='changed';},p=>{p.executed=true;}]){const changed=structuredClone(plan);mutate(changed);assert.equal(corpus.coverage(changed).coverage_prepared,false);}
   const hashes={fixture:'f'.repeat(64)},lock={kind:'agent-unexecuted-source-lock-v1',source_hashes:hashes,corpora:{[feature]:corpus.sha(plan)}};
   assert.equal(preflight.verify(plan,lock,{feature,hashes}).activation_ready,false);
