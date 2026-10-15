@@ -244,7 +244,7 @@ struct PersonalizedFollowupSheet: View {
                     Text("Personalized follow-up").font(.blankInter(size: 26, relativeTo: .title))
                     Text(reason).font(.blankInter(size: 17, relativeTo: .body))
                     Text("Your first recurring window stays free permanently. You can edit, pause or disable it in Control. Add follow-up when you want help adapting your routine.")
-                }
+                }.listRowBackground(BlankColors.minimalBackground.overlay(BlankColors.cardSurface))
                 Section {
                     Text("Multiple windows and different schedules by day")
                     Text("Unlimited conversations by text and voice")
@@ -252,7 +252,7 @@ struct PersonalizedFollowupSheet: View {
                     Text("Automatic evaluation and adjustments within your permissions")
                 } header: {
                     Text("Included with follow-up").foregroundStyle(BlankColors.ink)
-                }
+                }.listRowBackground(BlankColors.minimalBackground.overlay(BlankColors.cardSurface))
                 Section {
                     ForEach(purchases.products, id: \.id) { product in
                         Button { Task { _ = await purchases.purchase(productId: product.id) } } label: {
@@ -270,9 +270,10 @@ struct PersonalizedFollowupSheet: View {
                     Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
                     Text("Payment is charged to your Apple account after confirmation. Subscriptions renew unless canceled at least 24 hours before the current period ends. Manage or cancel in the App Store.")
                         .font(.blankInter(size: 13, relativeTo: .footnote))
-                }
+                }.listRowBackground(BlankColors.minimalBackground.overlay(BlankColors.cardSurface))
             }
             .tint(BlankColors.ink)
+            .foregroundStyle(BlankColors.cardInk)
             .font(.blankInter(size: 17, relativeTo: .body))
             .scrollContentBackground(.hidden)
             .background(BlankColors.minimalBackground)
