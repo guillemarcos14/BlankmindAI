@@ -24,12 +24,16 @@ const actionSchema=object({type:{type:"string",enum:ACTIONS},minutes:nil(num),st
   start_mode:nil({type:"string",enum:["scheduled","now"]}),
   weekdays:{type:"array",items:{type:"integer",minimum:1,maximum:7},maxItems:7,description:"Native Calendar weekdays: Sunday=1, Monday=2, Tuesday=3, Wednesday=4, Thursday=5, Friday=6, Saturday=7. Monday through Friday is [2,3,4,5,6], never ISO [1,2,3,4,5]."},duration_days:nil(num),local_date:nil(str),timezone:nil(str),
   recurrence:{type:"string",enum:["once","weekly","continuous"]},window_id:nil(str),hours:nil(num),hard_mode:{type:"boolean"}});
+const nonPauseAction=structuredClone(actionSchema);
+nonPauseAction.properties.type.enum=ACTIONS.filter(t=>t!=="pause_rules");
+const pauseAction=object({type:{type:"string",enum:["pause_rules"]},minutes:{type:"null"},
+  hours:{type:"integer",minimum:1,maximum:168,description:"Required whole hours, not minutes. Ask if missing or unsupported; never round."}});
 const querySchema=object({source:{type:"string",enum:SOURCE_NAMES},
   term:str,from:nil(str),to:nil(str),offset:num,timezone:nil(str),history_evidence:str});
 const schema=object({phase:{type:"string",enum:["read","final"]},response_language:{type:"string",enum:["en","es"]},
   message_kind:{type:"string",enum:["statement","question","action_request","acceptance","cancellation","social"]},
   decision:{type:"string",enum:["respond","ask","propose","execute","cancel","silent"]},evidence:str,
-  accepted_proposal:nil(str),pending_request:nil(str),action:nil(actionSchema),queries:{type:"array",items:querySchema,maxItems:3},
+  accepted_proposal:nil(str),pending_request:nil(str),action:{anyOf:[nonPauseAction,pauseAction,{type:"null"}]},queries:{type:"array",items:querySchema,maxItems:3},
   memory:nil(object({operation:{type:"string",enum:["set","forget","forget_all"]},key:nil({type:"string",enum:KEYS}),value:nil(str),evidence:str})),
   rest_claim:nil(object({experiment_id:str,status:{type:"string",enum:["awaiting","inconclusive","improved","worse","unchanged"]},metric:{type:"string",enum:rest.METRICS}})),
   // All decision/action/memory authority precedes the provisional text. The
@@ -55,6 +59,7 @@ For a one-time block starting now, including 'all day today', 'the rest of today
 For longitudinal tracking, extract multiple explicit current-user observations into observations; otherwise return []. Never turn a usual routine into daily measurements; set measurement=routine_statement for habits, declared only for an actual occurrence. Preserve bedtime (going to bed), sleep_onset (falling asleep), wake_time, duration and perceived restfulness as different metrics. Only extract numeric observations with explicit digits you can verify in evidence; use HH:MM or numeric hours for clock values. Numeric observations MUST have value_text=null. Clock 23:00 is value_number=1380, unit=local_minute. Duration uses minutes. Scores use unit=score_0_10 and require an explicit 0–10 scale. Caffeine/alcohol use servings. All qualitative observations use value_number=null, unit=text and value_text copied literally from the user's message; use life_context for qualitative stress/rest descriptions without a numeric scale. Do not infer stress, health, less need for sleep, causality or a benefit from phone protection. Use measured_at only when the user explicitly establishes the date; null means statement date, not an invented historic night. Keep temporary context as observations rather than replacing stable memory. No third-party facts. Never extract observations from a question or hypothetical. Followup_resolution may answer/dismiss only the supplied open followup that the CURRENT reply actually addresses; a new topic or silence does not answer it. Evidence must be literal current-message text.
 Every reactive turn requires a nonempty useful reply and decision other than silent; silent belongs only to proactive assessment. If there is no action or new fact, acknowledge or answer naturally rather than returning silence. A request for sleep advice should receive a helpful, non-diagnostic suggestion, not an empty reply.
 Saving, correcting or forgetting personal memory uses decision=respond and action=null. A memory operation is committed internally with the turn; decision=execute is reserved for a native device action. Never invent a device action to fulfil a memory request.
+forget deletes only the named supported key. forget_all requires an explicit request to forget ALL personal memory, never a category such as routines, sleep or preferences. If the category spans keys or scope is ambiguous, ask naturally before deleting anything. Forgetting does not revoke consent, stop future collection or delete the account. For pause_rules supply hours=1..168 and minutes=null, never convert hours into the minutes field.
 For proactive daily_review, return a longitudinal_review even when silent, with concise summary, uncertainty, alternative hypotheses, evidence row IDs, missing_information and optionally one useful discriminating question. Read the supplied daily_review.sources and existing followups/reviews before asking. Distinguish absent, partial, stale and conflicting sources. Aggregate wearable scores are not exact sleep onset times. Compare personal days and context, never diagnose. No fictitious evidence or supported hypothesis without evidence. In this assessment decision must be silent; action and memory null, observations empty. Only ask a question if it can change a plan or resolve a meaningful uncertainty; do not ask known, pending or rejected questions. Prefer fewer, better questions. A followup candidate may notify/ask or be silent, NEVER execute; its stored question is the conversation handoff.
 Daily_review is an internal assessment, separate from delivery. can_notify=false means do not deliver NOW; it does not prevent saving a useful question for later. A persistent change with at least three observed days and no established explanation warrants one short question distinguishing plausible causes, unless this topic is already known/pending/rejected. Store it in longitudinal_review.question while decision=silent and response_text may be empty. A single isolated measurement without an unmet explicit goal is not a pattern and needs no check-in.
 For an unexplained persistent change, keep at least two distinct plausible explanations as separate hypotheses, each with its own evidence and status. For example a changed routine and difficulty falling asleep are different possibilities; later onset alone supports neither cause. Do not collapse alternatives into one explanation or manufacture a health condition.
@@ -146,7 +151,8 @@ async function generate(input,{model=readModelJson,onDraft}={}) {
     request.input[0].content+="\n"+agentTools.INSTRUCTIONS;
     // A compact reply has no effects. Repairing a management result through
     // that envelope used to silently discard the memory while saying "saved".
-    if(input.conformance_error&&input.previous_generated_result&&require("./bm-agent-authority").hasEffects(input.previous_generated_result))
+    if(input.forget_scope_clarification)request.tool_choice="none";
+    else if(input.conformance_error&&input.previous_generated_result&&require("./bm-agent-authority").hasEffects(input.previous_generated_result))
       request.tool_choice={type:"function",name:"gestionar"};
   }
   if(require("./bm-agent-authority").textOnly(input.current_message)){
@@ -287,6 +293,15 @@ async function plan({prompt,context,userId,identity,proactive=null,onDraft},{run
       (result.action?fingerprint(result.action):null)!==control.action)throw Error("bmb_repair_changed_authority");
   }
   if(!result||result.phase!=="final")throw Error("bmb_invalid_phase");
+  if(result.memory?.operation==="forget_all"&&!require("./bm-agent-authority").explicitForgetAll(prompt)) {
+    // Destructive scope is an authorization boundary, shared by both routes.
+    // Give interpretation back to the agent without retaining any deletion.
+    const clarified=await run({...input,tool_budget_remaining:0,forget_scope_clarification:true,previous_generated_result:result,
+      conformance_error:"The request does not explicitly authorize forgetting ALL personal memory. Ask a natural concise question about the exact scope. Return final with decision=ask, action=null, memory=null, no pending request, accepted proposal, tracking or rest effects. Do not claim anything was deleted. No reads."});
+    if(clarified?.phase!=="final"||clarified.decision!=="ask"||
+      require("./bm-agent-authority").hasEffects({...clarified,decision:"respond"}))throw Error("bmb_ambiguous_forget_scope");
+    result=clarified;
+  }
   if(!proactive&&require("./bm-agent-authority").textOnly(prompt)&&require("./bm-agent-authority").hasEffects(result))throw Error("bmb_text_transform_effects");
   const factualCopy=require('./bmb-factual-copy'),copyFacts=proactive?null:factualCopy.sleepCopyFacts(prompt,sources,result);
   if(factualCopy.unsupportedDurations(result.response_text,copyFacts).length) {

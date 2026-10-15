@@ -79,7 +79,7 @@ async function main(){
  assert.equal(r.result.context.brain_memory_effect.value,"reading on paper","Repair lost the explicitly requested preference");
  await assert.rejects(()=>turn(p,[fn("gestionar",paraphrased),{...compact(p,"Lo recordaré."),message_kind:"statement"}]),/repair_changed_memory/);
  for(const operation of ["forget","forget_all"]){
-  p="Olvida mis preferencias";
+  p=operation==="forget"?"Olvida mis preferencias":"Olvida todo lo que sabes sobre mí";
   r=await turn(p,[fn("gestionar",management(p,{memory:{operation,key:operation==="forget"?"preferences":null,value:null,evidence:p}}))]);
   assert.equal(r.result.context.brain_memory_effect.operation,operation);
  }

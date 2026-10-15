@@ -15,14 +15,6 @@ function contract(legacy, citations = []) {
   // paraphrase belongs in the reply, not in the persisted source value.
   const literal = "Literal substring of current_message. Keep original words and language.";
   const memory = structuredClone(p.memory), observations = structuredClone(p.observations), action = structuredClone(p.action);
-  const actionIndex=action.anyOf.findIndex(s=>s.type==="object"), otherAction=action.anyOf[actionIndex], pauseAction=structuredClone(otherAction);
-  otherAction.properties.type.enum=otherAction.properties.type.enum.filter(t=>t!=="pause_rules");
-  pauseAction.properties.type.enum=["pause_rules"];
-  pauseAction.properties.hours={type:"integer",minimum:1,maximum:168,description:"Required pause duration in whole hours. A request for 2 hours uses hours=2, never minutes=120. Ask for a supported duration rather than rounding."};
-  pauseAction.properties.minutes={type:"null"};
-  for(const key of Object.keys(pauseAction.properties))if(!["type","hours","minutes"].includes(key))delete pauseAction.properties[key];
-  pauseAction.required=Object.keys(pauseAction.properties);
-  action.anyOf.splice(actionIndex,1,otherAction,pauseAction);
   const memoryFields = memory.anyOf.find(s=>s.type==="object").properties;
   memoryFields.operation.description="forget deletes only key; forget_all forgets existing personal memory. Neither disables future collection, changes consent nor deletes the account; never promise those unsupported effects. For a category spanning multiple keys, ask for a precise supported scope before deleting. Never claim a wider deletion than this operation.";
   memoryFields.value.anyOf.find(s=>s.type==="string").description=literal;
