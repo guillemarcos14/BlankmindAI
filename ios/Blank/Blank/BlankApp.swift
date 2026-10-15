@@ -41,7 +41,7 @@ enum BlankPrivateStageQA {
 struct BlankApp: App {
     @UIApplicationDelegateAdaptor(BlankAppDelegate.self) private var appDelegate
     @StateObject private var sessionStore = SessionStore()
-    @StateObject private var purchaseStore = StoreKitPurchaseStore()
+    @StateObject private var purchaseStore = StoreKitPurchaseStore.shared
     @StateObject private var screenTimeBlocker = ScreenTimeBlocker()
     @Environment(\.scenePhase) private var scenePhase
 
@@ -150,6 +150,11 @@ struct BlankApp: App {
 
         if action == "referral" {
             purchaseStore.captureReferral(from: url)
+            return
+        }
+        if action == "diagnosis", let token = components?.stringQueryItem("token"), token.count == 64 {
+            BlankSharedState.defaults.set(token, forKey: "funnel.pendingDiagnosis")
+            NotificationCenter.default.post(name: .blankAssistantFollowupRequested, object: nil)
             return
         }
 

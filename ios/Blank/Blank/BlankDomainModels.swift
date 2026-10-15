@@ -1,5 +1,25 @@
 import Foundation
 
+enum FunnelPolicy {
+    static func canConverse(implemented: Bool, premium: Bool) -> Bool { premium || !implemented }
+    static func offerSummary(completed: Bool, active: Bool, premium: Bool, seen: Bool) -> Bool {
+        completed && !active && !premium && !seen
+    }
+    static func completedBlock(_ row: [String: Any], owner: String, now: Date = Date()) -> Bool {
+        func date(_ raw: Any?) -> Date? {
+            guard let text = raw as? String else { return nil }
+            let formatter = ISO8601DateFormatter(); formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            return formatter.date(from: text) ?? ISO8601DateFormatter().date(from: text)
+        }
+        guard row["owner"] as? String == owner, row["source"] as? String == "native_schedule_shield",
+              row["uncertain"] as? Bool == false, let start = date(row["started_at"]), let end = date(row["ended_at"]),
+              end <= now, end > start, let plan = row["plan"] as? [String: Any],
+              let from = plan["start_minute"] as? Int, let to = plan["end_minute"] as? Int else { return false }
+        let duration = Double((to - from + 1440) % 1440) * 60
+        return duration > 0 && end.timeIntervalSince(start) >= duration - 60 && end.timeIntervalSince(start) <= duration + 300
+    }
+}
+
 enum BlankmindAppPresence {
     static func payload(appReady: Bool) -> [String: Any] {
         [

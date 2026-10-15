@@ -3,6 +3,7 @@ import Charts
 
 struct RestProgressContent: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @EnvironmentObject private var purchases: StoreKitPurchaseStore
     @Environment(\.dynamicTypeSize) private var textSize
     @ObservedObject private var health = RestHealthContext.shared
     @ObservedObject private var sleep = HealthKitStore.shared
@@ -54,7 +55,8 @@ struct RestProgressContent: View {
 
     var body: some View {
         Group {
-            if showContext { contextContent }
+            if !showsFullProgress { reducedContent }
+            else if showContext { contextContent }
             else { summaryContent }
         }
         .foregroundStyle(ink)
@@ -64,6 +66,40 @@ struct RestProgressContent: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
             reload(); health.refresh()
+        }
+    }
+    private var showsFullProgress: Bool {
+        #if DEBUG && targetEnvironment(simulator)
+        if PostOnboardingPreviewScene.enabled && AssistantAppPreview.scenario.contains("progress") { return true }
+        #endif
+        return purchases.hasPremiumAccess
+    }
+    private var reducedContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Your completed blocks").font(.blankInter(size: 22, relativeTo: .title3))
+                let blocks = account.map { purchases.completedBlocks(owner: $0) } ?? []
+                if blocks.isEmpty { Text("No completed protection window recorded yet.") }
+                ForEach(Array(blocks.suffix(7).enumerated()), id: \.offset) { _, row in
+                    if let date = AssistantInboxAction.parseDate(row["ended_at"] as? String) {
+                        Text("Completed \(date.formatted(date: .abbreviated, time: .shortened))")
+                    }
+                }
+                caption("Recorded by Screen Time. Completing a block does not establish better sleep.")
+            }.padding(16).reportFlatCard().accessibilityIdentifier("funnel-free-blocks")
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Latest Watch sleep").font(.blankInter(size: 22, relativeTo: .title3))
+                if let night = health.nights.filter({ $0.watchMeasured && !$0.manual && $0.end <= Date() }).max(by: { $0.end < $1.end }) {
+                    Text(night.date.formatted(date: .abbreviated, time: .omitted))
+                    Text("\(Int(RestInterval.minutes(night.asleep))) minutes asleep")
+                    caption("Apple Watch · one available night is not evidence of improvement.")
+                } else {
+                    Text("No measured Apple Watch sleep available.")
+                    caption("You can keep using and editing your free window without sleep data.")
+                }
+            }.padding(16).reportFlatCard().accessibilityIdentifier("funnel-free-sleep")
+            Button("Explore full Progress") { purchases.requestPremium("View your sleep history, trends, comparisons and personalized explanations.") }
+                .font(.blankInter(size: 17, relativeTo: .body)).frame(minHeight: 44)
         }
     }
     private var summaryContent: some View {

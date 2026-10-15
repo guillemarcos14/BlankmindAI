@@ -14,6 +14,7 @@ async function main(){
     brain_snapshot:{generated_at:now(),timezone:"UTC",sessions:[]}};
   const db=async(path,options={})=>{
     const p=options.body?JSON.parse(options.body):{};
+    if(path.startsWith("funnel_storekit_grants?"))return [{checked_at:new Date().toISOString(),expires_at:new Date(Date.now()+86400000).toISOString()}];
     if(path.startsWith("bmb_followups?")||path.startsWith("bmb_daily_reviews?"))return [];
     if(path==="rpc/bmb_claim_daily_review")return {claimed:false};
     if(path.startsWith("assistant_app_turns?"))return [];

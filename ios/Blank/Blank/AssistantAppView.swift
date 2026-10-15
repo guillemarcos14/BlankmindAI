@@ -1707,6 +1707,10 @@ struct AssistantAppView: View {
 
     private func send(audioText: String? = nil, allowAutoApply: Bool = true) async {
         guard assistantAvailable else { onRequestAssistantAccess(); return }
+        if !StoreKitPurchaseStore.shared.canConverse {
+            StoreKitPurchaseStore.shared.requestPremium("Continue your conversation with unlimited text and voice follow-up. Your free window can always be edited, paused or disabled in Control.")
+            return
+        }
         guard !preview, !simulatorGuest, !isSending, !requiresVerification else { return }
         voice.reset()
         acceptingSpeech = false
@@ -1781,6 +1785,9 @@ struct AssistantAppView: View {
         } catch {
             guard expectedOwner == owner, expectedRevision == conversationRevision else { return }
             writingHaptics.stop()
+            if let failure = error as? AssistantAppError, case .server(_, let code) = failure, code == "personalized_followup_required" {
+                StoreKitPurchaseStore.shared.requestPremium("Unlock personalized conversations, additional windows and advanced Progress. Your first window stays free.")
+            }
             handle(error)
             if let recovered = try? await AssistantAppClient().status(turnId: pending.id),
                expectedOwner == owner, expectedOwner == AssistantAppSession.userID,

@@ -139,6 +139,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         let timeZoneIdentifier: String?
 
         func contains(_ date: Date, calendar: Calendar = .current) -> Bool {
+            guard BlankSharedState.commercialWindowAllowed(id, defaults: DeviceActivityMonitorExtension.sharedDefaults, now: date) else { return false }
             guard enabled, expiresAt.map({ $0 > date }) ?? true else { return false }
             if let startsAt, let endsAt { return date >= startsAt && date < endsAt }
             var calendar = calendar

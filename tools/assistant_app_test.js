@@ -72,6 +72,8 @@ push.sendAssistantActionPush = async () => { effects.push += 1; return { sent: t
 delete process.env.URL;
 
 membership.supabaseFetch = async (path, options = {}) => {
+  if(path.startsWith("funnel_accounts?"))return [];
+  if(path.startsWith("funnel_storekit_grants?"))return [{checked_at:new Date().toISOString(),expires_at:new Date(Date.now()+86400000).toISOString()}];
   const body = options.body ? JSON.parse(options.body) : null;
   if (path === "rpc/commit_assistant_brain_memory") {
     if (memoryCommitUnavailable) throw new Error("private memory outage");

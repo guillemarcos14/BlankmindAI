@@ -2,6 +2,23 @@ import FamilyControls
 import Foundation
 
 enum BlankSharedState {
+    static func commercialWindowAllowed(_ id: UUID, defaults: UserDefaults = Self.defaults, now: Date = Date()) -> Bool {
+        guard let owner = defaults.string(forKey: "blankBMBSignalOwner"), !owner.isEmpty else { return false }
+        let until = defaults.double(forKey: "funnel.premiumUntil." + owner)
+        if until > now.timeIntervalSince1970 { return true }
+        let free = defaults.string(forKey: "funnel.window." + owner)
+        if free?.lowercased() == id.uuidString.lowercased() { return true }
+        // Expiration stops new premium windows; a shield already running finishes normally.
+        let rows = defaults.array(forKey: "blankRestProtectionIntervals") as? [[String: Any]] ?? []
+        return rows.contains { row in
+            guard row["owner"] as? String == owner, (row["window_id"] as? String)?.lowercased() == id.uuidString.lowercased(),
+                  row["ended_at"] == nil, row["uncertain"] as? Bool == false,
+                  let raw = row["started_at"] as? String, let start = ISO8601DateFormatter().date(from: raw),
+                  start.timeIntervalSince1970 < defaults.double(forKey: "funnel.lastPremiumUntil." + owner), let plan = row["plan"] as? [String: Any],
+                  let from = plan["start_minute"] as? Int, let to = plan["end_minute"] as? Int else { return false }
+            return now >= start && now.timeIntervalSince(start) < Double((to - from + 1440) % 1440) * 60 + 60
+        }
+    }
     static var familyControlsApproved: Bool {
         let status = AuthorizationCenter.shared.authorizationStatus
         if status == .approved { return true }

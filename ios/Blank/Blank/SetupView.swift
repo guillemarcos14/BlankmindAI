@@ -248,7 +248,7 @@ struct SetupView: View {
                 Text("Sleep records are available. We'll keep gathering context to understand your patterns.")
                     .font(.blankBody).accessibilityIdentifier("onboarding-sleep-available")
             }
-            if healthKitStore.sleepDataAvailable && !healthKitStore.aiSharingAllowed {
+            if !healthKitStore.aiSharingAllowed {
                 Text("To use Blankmind AI, your messages, protection history and selected sleep summaries are sent to our backend and OpenAI. For spoken replies, the response text is also sent to ElevenLabs to generate audio. This is separate from Apple Health read access. Additional Health context and phone-use data require separate optional choices in Automatic protection. Original clinical documents stay in Apple Health. Spoken replies are AI-generated.")
                     .font(.blankBody).fixedSize(horizontal: false, vertical: true)
                 Link("Privacy Policy", destination: URL(string: "https://blankmind.ai/privacy")!)
@@ -335,9 +335,7 @@ struct SetupView: View {
     }
 
     private var deviceReady: Bool {
-        !assistantConnectCode.isEmpty && SleepAccessPolicy.canEnter(
-            screenTimeApproved: screenTimeBlocker.hasAuthorization,
-            sleep: healthKitStore.onboardingSleepAccess)
+        !assistantConnectCode.isEmpty && SleepAccessPolicy.canEnterBasic(screenTimeApproved: screenTimeBlocker.hasAuthorization)
     }
 
     private func authorizeScreenTime() {
@@ -392,7 +390,7 @@ struct SetupView: View {
             await refreshDeviceState()
             try Task.checkCancellation()
             guard deviceReady && healthKitStore.aiSharingAllowed else {
-                message = "Allow Screen Time and choose measured or sample sleep to continue."
+                message = "Allow Screen Time and AI sharing to continue. Sleep data is optional."
                 return
             }
             guard let setupOwner, setupOwner == AssistantAppSession.userID else {

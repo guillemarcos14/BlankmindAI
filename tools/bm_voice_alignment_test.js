@@ -27,7 +27,7 @@ async function run() {
     turn_id: turn, request_id: "33333333-3333-4333-8333-333333333333", synchronized: true,
   }) });
   let deleted = false, mismatch = false, reads = 0, calls = [];
-  const deps = {
+  const deps = { access: async () => ({premium:true}),
     authenticate: async () => ({ user: { id: "fixture-owner" } }),
     readTurn: async () => { reads++; return deleted && reads === 3 ? null : { status: "completed", assistant_text: "Hola mundo." }; },
     reserve: async () => [{ reserved: true }],

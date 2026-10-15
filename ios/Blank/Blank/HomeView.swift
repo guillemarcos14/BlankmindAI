@@ -2740,6 +2740,10 @@ private struct SettingsScreen: View {
                         })
                     }
                 case .account:
+                    Text("Your first recurring window stays free permanently. Personalized follow-up adds multiple windows, unlimited text and voice, full Progress and automatic adjustments.")
+                        .font(.blankInter(size: 14, relativeTo: .footnote)).foregroundStyle(secondaryColor)
+                    Button("Explore personalized follow-up") { StoreKitPurchaseStore.shared.requestPremium("Choose personalized support for your routine.") }.frame(minHeight: 44)
+                    WebDiagnosisImportView()
                     settingsRow(title: "manage account", detail: "Apple sign-in and account controls", action: { showingAccount = true })
                     settingsRow(title: "privacy policy", detail: "how Blankmind handles your data", symbol: "arrow.up.right", secondary: true,
                                 action: { openURL(URL(string: "https://blankmind.ai/privacy")!) })
@@ -2831,7 +2835,7 @@ private struct ScheduleEditorContent: View {
             VStack(alignment: .center, spacing: 16) {
                 SectionHeader(
                     title: "Routines",
-                    subtitle: "BM schedules routines.\nYou review and override them here.",
+                    subtitle: "Your first recurring window is free permanently.\nEdit, pause or disable it here.",
                     action: onClose,
                     titleColor: textColor,
                     subtitleColor: secondaryColor
@@ -2915,7 +2919,7 @@ private struct ScheduleEditorContent: View {
                 startMinute: window.startMinute,
                 endMinute: window.endMinute,
                 weekdays: window.weekdays,
-                expiresAt: window.expiresAt,
+                expiresAt: StoreKitPurchaseStore.shared.hasPremiumAccess ? window.expiresAt : nil,
                 startsAt: window.startsAt,
                 endsAt: window.endsAt,
                 timeZoneIdentifier: window.timeZoneIdentifier
@@ -2933,6 +2937,9 @@ private struct ScheduleEditorContent: View {
     }
 
     private func addWindow() {
+        guard StoreKitPurchaseStore.shared.hasPremiumAccess || windows.isEmpty else {
+            StoreKitPurchaseStore.shared.requestPremium("Add another recurring window or different hours by day."); return
+        }
         let number = windows.count + 1
         windows.append(BlankHabitWindow(name: "Routine \(number)", enabled: true, startMinute: 9 * 60, endMinute: 10 * 60))
     }
@@ -4523,6 +4530,7 @@ private struct BMBSettingsView: View {
         var payload=body; payload["app_install_id"]=BlankSharedState.appInstallId
         let data=try JSONSerialization.data(withJSONObject:payload)
         let (result,response)=try await AssistantAppClient().postAuthorized(path:"assistant-app",payload:data,timeout:8)
+        if response.statusCode == 402 { StoreKitPurchaseStore.shared.requestPremium("Automatic evaluation and plan adjustments within your permissions.") }
         guard owner != nil, owner==AssistantAppSession.userID, (200..<300).contains(response.statusCode),
               let decoded=try JSONSerialization.jsonObject(with:result) as? [String:Any] else { throw URLError(.badServerResponse) }
         return decoded

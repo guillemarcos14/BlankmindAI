@@ -1,0 +1,4 @@
+{
+  "private": true,
+  "dependencies": {"@apple/app-store-server-library": "3.1.0"}
+}

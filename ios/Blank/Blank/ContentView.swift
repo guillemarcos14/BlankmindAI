@@ -64,8 +64,46 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.35), value: showingOnboardingDemo)
         .environment(\.blankMinimalAppearance, true)
         .task { healthKitStore.verifySleepAccess() }
+        .sheet(isPresented: Binding(get: { purchaseStore.paywallReason != nil }, set: { if !$0 { purchaseStore.paywallReason = nil } })) {
+            PersonalizedFollowupSheet(reason: purchaseStore.paywallReason ?? "Personalized follow-up")
+        }
+        .sheet(isPresented: $purchaseStore.showingFirstSummary) {
+            NavigationStack {
+                List {
+                    Text("Your first completed block").font(.blankInter(size: 26, relativeTo: .title))
+                    Text("Your iPhone recorded a completed protection window. This does not establish that your sleep improved.")
+                    Text("Your recurring window stays free. View completed blocks and your latest available Watch night in Progress.")
+                    Button("Activate personalized follow-up") {
+                        purchaseStore.showingFirstSummary = false
+                        Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 350_000_000)
+                            purchaseStore.requestPremium("Understand your nights and adapt your plan to your routine.")
+                        }
+                    }.frame(minHeight: 44)
+                    Button("Continue free") { purchaseStore.showingFirstSummary = false }.frame(minHeight: 44)
+                }.navigationTitle("Your progress")
+            }
+        }
+        .task {
+            await purchaseStore.loadProducts()
+            await purchaseStore.reconcile(store: sessionStore, onOpening: true)
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 240_000_000_000)
+                if scenePhase == .active {
+                    await purchaseStore.loadProducts()
+                    sessionStore.reconcileCommercialAccess()
+                }
+            }
+        }
+        .onChange(of: sessionStore.schedule) { _ in Task { await purchaseStore.reconcile(store: sessionStore) } }
+        .onChange(of: sessionStore.selectionCount) { _ in Task { await purchaseStore.reconcile(store: sessionStore) } }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
+                Task {
+                    await purchaseStore.loadProducts()
+                    sessionStore.reconcileCommercialAccess()
+                    await purchaseStore.reconcile(store: sessionStore, onOpening: true)
+                }
                 healthKitStore.refresh()
                 RestHealthContext.shared.refresh()
                 Task { await RestDigitalContext.shared.refresh(); BlankBrain.shared.sync() }
@@ -73,7 +111,8 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: AssistantAppSession.didChangeNotification)) { _ in
             accountRevision += 1
-            Task { await purchaseStore.updateCustomerProductStatus() }
+            purchaseStore.resetAccount()
+            Task { await purchaseStore.loadProducts() }
         }
     }
 }

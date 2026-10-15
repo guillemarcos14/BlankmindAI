@@ -21,6 +21,7 @@ build/
 /screenshots/*.xml
 /screenshots/*.preferences_pb
 /tmp/
+node_modules/
 /.impeccable/review/
 
 # Generated visual experiments

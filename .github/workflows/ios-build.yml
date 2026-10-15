@@ -61,6 +61,7 @@ jobs:
       - name: Test native conversation recovery
         run: |
           mkdir -p tmp/native-tests
+          node tools/run_funnel_native_tests.js
           swiftc ios/Blank/Blank/AssistantComposerState.swift tools/assistant_composer_test.swift -o tmp/native-tests/composer
           tmp/native-tests/composer
           swiftc ios/Blank/Blank/SleepAccessPolicy.swift tools/sleep_access_test.swift -o tmp/native-tests/sleep-access
